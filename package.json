@@ -1,0 +1,11 @@
+{
+  "name": "nobet-cizelgesi",
+  "private": true,
+  "description": "Nöbet çizelgesi uygulaması (index.html) için senaryo testleri",
+  "scripts": {
+    "test": "node --test tests/cizelge.test.js"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

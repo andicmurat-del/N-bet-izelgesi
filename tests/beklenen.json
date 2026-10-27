@@ -1,0 +1,199 @@
+{
+  "rahat-kadro": [
+    {
+      "ay": 0,
+      "imza": "7eee1e6e3645",
+      "hatalar": [],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": null,
+      "nobetFarki": 2,
+      "hazirlamaFarki": 1
+    },
+    {
+      "ay": 1,
+      "imza": "4b92ddc40199",
+      "hatalar": [],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": null,
+      "nobetFarki": 1,
+      "hazirlamaFarki": 1
+    },
+    {
+      "ay": 2,
+      "imza": "292a6806eb5e",
+      "hatalar": [],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": null,
+      "nobetFarki": 1,
+      "hazirlamaFarki": 1
+    },
+    {
+      "ay": 3,
+      "imza": "1edf861a00a8",
+      "hatalar": [],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": null,
+      "nobetFarki": 2,
+      "hazirlamaFarki": 1
+    }
+  ],
+  "uzun-izin": [
+    {
+      "ay": 0,
+      "imza": "7eee1e6e3645",
+      "hatalar": [],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": null,
+      "nobetFarki": 2,
+      "hazirlamaFarki": 1
+    },
+    {
+      "ay": 1,
+      "imza": "3c9e50384081",
+      "hatalar": [
+        "Fazla mesai farkı",
+        "Hazırlama farkı"
+      ],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": 32,
+      "nobetFarki": 2,
+      "hazirlamaFarki": 2
+    },
+    {
+      "ay": 2,
+      "imza": "5f1c51867039",
+      "hatalar": [],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": null,
+      "nobetFarki": 1,
+      "hazirlamaFarki": 1
+    }
+  ],
+  "ay-ortasi-baslayan": [
+    {
+      "ay": 0,
+      "imza": "7eee1e6e3645",
+      "hatalar": [],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": null,
+      "nobetFarki": 2,
+      "hazirlamaFarki": 1
+    },
+    {
+      "ay": 1,
+      "imza": "dbf6e7684215",
+      "hatalar": [],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": null,
+      "nobetFarki": 1,
+      "hazirlamaFarki": 1
+    },
+    {
+      "ay": 2,
+      "imza": "b7711d57cb3c",
+      "hatalar": [],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": null,
+      "nobetFarki": 2,
+      "hazirlamaFarki": 1
+    }
+  ],
+  "orta-kadro": [
+    {
+      "ay": 0,
+      "imza": "8225e57a7dd8",
+      "hatalar": [
+        "Fazla mesai farkı",
+        "Hafta sonu kuralı"
+      ],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": 16,
+      "nobetFarki": 2,
+      "hazirlamaFarki": 1
+    },
+    {
+      "ay": 1,
+      "imza": "8df826a25ad1",
+      "hatalar": [],
+      "uyarilar": [
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": null,
+      "nobetFarki": 2,
+      "hazirlamaFarki": 1
+    },
+    {
+      "ay": 2,
+      "imza": "91d471e86bc6",
+      "hatalar": [
+        "Hafta sonu kuralı"
+      ],
+      "uyarilar": [],
+      "fazlaMesaiFarki": null,
+      "nobetFarki": 2,
+      "hazirlamaFarki": 1
+    }
+  ],
+  "az-kadro": [
+    {
+      "ay": 0,
+      "imza": "a96632693a71",
+      "hatalar": [
+        "Eksik hazırlama",
+        "Fazla mesai farkı",
+        "Hafta sonu kuralı",
+        "Hazırlama farkı",
+        "Nöbet sayısı farkı",
+        "Zorunlu atama yapılan günler"
+      ],
+      "uyarilar": [
+        "3 ya da daha fazla hafta sonu nöbeti",
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": 32,
+      "nobetFarki": 4,
+      "hazirlamaFarki": 2
+    },
+    {
+      "ay": 1,
+      "imza": "5c72532097d3",
+      "hatalar": [
+        "Eksik hazırlama",
+        "Fazla mesai farkı",
+        "Hafta sonu kuralı",
+        "Hazırlama farkı",
+        "Nöbet sayısı farkı",
+        "Zorunlu atama yapılan günler"
+      ],
+      "uyarilar": [
+        "3 ya da daha fazla hafta sonu nöbeti",
+        "Yıllık gün dağılımı"
+      ],
+      "fazlaMesaiFarki": 32,
+      "nobetFarki": 3,
+      "hazirlamaFarki": 2
+    }
+  ]
+}
