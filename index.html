@@ -1704,7 +1704,7 @@
 
   /* ---------- telefonda ajanda görünümü ----------
      7 sütunlu takvim 640px altında sığmıyordu; günler alt alta kart olur, hafta başlıkları yapışkan */
-  .hafta-bas, .sched-cell .gun-ad, .sched-cell .neden-kisa { display: none; }
+  .hafta-bas, .sched-cell .gun-ad, .sched-cell .neden-kisa, .ac-cell .gun-ad { display: none; }
   @media (max-width: 640px) {
     #generate-section:not(.isaret-tatil):not(.isaret-tercih) .takvim-alan { overflow: visible; }
     #sched-dow-row { display: none !important; }
@@ -1728,6 +1728,23 @@
     #sched-grid .sched-cell .neden-kisa { display: block; flex-basis: 100%; margin-top: 4px; font-size: 12px; font-weight: 600; }
     #sched-grid .sched-cell .neden-kisa.c-kritik { color: var(--danger); }
     #sched-grid .sched-cell .neden-kisa.c-dikkat { color: var(--amber); }
+    /* acil nöbet: aynı ajanda düzeni */
+    #ac-icerik > .overflow-x:first-child { overflow: visible; }
+    .ac-grid { display: flex !important; flex-direction: column; gap: 6px; min-width: 0 !important; }
+    .ac-grid .ac-dow, .ac-grid .ac-cell.bos { display: none; }
+    .ac-grid .hafta-bas { display: block; position: sticky; top: 0; z-index: 2; margin: 10px 0 0; padding: 8px 2px 6px;
+      background: var(--surface); font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
+    .ac-grid .ac-cell.bos + .hafta-bas, .ac-grid .ac-dow + .hafta-bas { margin-top: 0; padding-top: 0; }
+    .ac-grid .ac-cell { display: grid; grid-template-columns: 50px minmax(0, 1fr); column-gap: 12px; align-items: start; min-height: 0; padding: 10px 12px; }
+    .ac-grid .ac-cell .dn { font-size: 17px; margin: 0; line-height: 1.25; }
+    .ac-grid .ac-cell .gun-ad { display: block; margin-top: 1px; font-size: 11.5px; color: var(--muted); }
+    .ac-grid .ac-cell.tt .gun-ad { color: var(--tatil); }
+    .ac-grid .ac-cell.bugun { border-color: var(--accent) !important; box-shadow: inset 0 0 0 1px var(--accent); }
+    .ac-grid .ac-cell .kisiler { display: flex; flex-wrap: wrap; gap: 1px 14px; padding-top: 2px; }
+    .ac-grid .ac-cell .k { font-size: 13px; }
+    /* raporlar: 4 sekme 2×2, metin tek satır */
+    #rapor-sekme { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 3px; }
+    #rapor-sekme button { white-space: nowrap; padding: 8px 6px; }
   }
   /* ---------- düzen: 4 sekme, tek ana düğme, "Dışa aktar" menüsü, kompakt üst alan ---------- */
   .cz-bar:not([data-tip="puantaj"]) .sadece-puantaj,
@@ -4617,8 +4634,8 @@
   // telefonda ajanda görünümü: bu ay açıksa bugünün kartına kaydırır
   function bugunuGoster(){
     if (!window.matchMedia || !window.matchMedia("(max-width: 640px)").matches) return;
-    if (aktifGorunum!=="cizelge" || cizelgeTipi!=="gunluk") return;
-    const c = document.querySelector("#sched-grid .sched-cell.bugun"); if (!c) return;
+    if (aktifGorunum!=="cizelge" || (cizelgeTipi!=="gunluk" && cizelgeTipi!=="acil")) return;
+    const c = document.querySelector(cizelgeTipi==="acil" ? "#ac-icerik .ac-cell.bugun" : "#sched-grid .sched-cell.bugun"); if (!c) return;
     const hb = c.previousElementSibling && c.previousElementSibling.classList.contains("hafta-bas") ? c.previousElementSibling : c;
     requestAnimationFrame(()=> hb.scrollIntoView({block:"start"}));
   }
@@ -7163,9 +7180,11 @@
     let h = '<div class="overflow-x"><div class="ac-grid">'+["Pzt","Sal","Çar","Per","Cum","Cmt","Paz"].map(x=>'<div class="ac-dow">'+x+'</div>').join("");
     for (let i=0;i<ilk;i++) h += '<div class="ac-cell bos"></div>';
     for (let g=1; g<=dim; g++){
-      const ids = ay[g] || [];
-      h += '<div class="ac-cell'+(isTatilGunu(y,m,g)?' tt':'')+(ids.length?' dolu':'')+'" data-gun="'+g+'"><div class="dn">'+g+'</div>'+
-        [0,1].map(i=> ids[i]!==undefined ? '<span class="k">'+(i+1)+'. '+escapeHtml(ad(ids[i]))+'</span>' : '<span class="k bos2">'+(i+1)+'. –</span>').join("")+'</div>';
+      const ids = ay[g] || [], dw = jsDowToMonFirst(new Date(y,m,g).getDay());
+      // telefonda ajanda görünümü için hafta başlığı ve gün adı (masaüstünde gizli)
+      if (g===1 || dw===0){ const son = Math.min(g + 6 - dw, dim); h += '<div class="hafta-bas">'+(son>g ? g+"–"+son : g)+' '+AYLAR[m]+'</div>'; }
+      h += '<div class="ac-cell'+(isTatilGunu(y,m,g)?' tt':'')+(ids.length?' dolu':'')+(bugunMu(y,m,g)?' bugun':'')+'" data-gun="'+g+'"><div class="gun-bas"><div class="dn">'+g+'</div><div class="gun-ad">'+GUN_ADI_UZUN[dw]+'</div></div><div class="kisiler">'+
+        [0,1].map(i=> ids[i]!==undefined ? '<span class="k">'+(i+1)+'. '+escapeHtml(ad(ids[i]))+'</span>' : '<span class="k bos2">'+(i+1)+'. –</span>').join("")+'</div></div>';
     }
     h += '</div></div>';
     // özet
