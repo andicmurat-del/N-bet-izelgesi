@@ -237,7 +237,7 @@
   .dg-isaret { margin-left: 6px; color: var(--accent); font-weight: 700; font-size: 12px; }
   .dg-chip { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 1px 4px; margin: 0; font-size: 11px; line-height: 1.3; color: var(--ink); cursor: pointer; white-space: normal; overflow-wrap: break-word; word-break: normal; font-family: inherit; }
   .dg-chip .dg-bas { display: none; }
-  #tip-secici .kisa { display: none; }
+  #tip-secici .kisa, #ayar-sekme .kisa { display: none; }
   .dg-chip.n.ecz { color: var(--accent-ink); font-weight: 600; }
   .dg-chip.h { font-style: italic; color: var(--ink-soft); }
   .dg-chip.h b { font-style: normal; font-weight: 600; }
@@ -249,6 +249,7 @@
     .dg-cell { min-height: 70px; padding: 4px 3px; } .dg-chip { font-size: 10.5px; padding: 1px 2px; text-align: center; }
     .dg-chip .dg-ad, .dg-chip b { display: none; } .dg-chip .dg-bas { display: inline; }
     #tip-secici .uzun { display: none; } #tip-secici .kisa { display: inline; }
+    #ayar-sekme .uzun { display: none; } #ayar-sekme .kisa { display: inline; }
   }
   #tip-secici { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
   #tip-secici::-webkit-scrollbar { display: none; }
@@ -429,8 +430,10 @@
   table.pz td.k-DI, table.pz td.pzc.tt.k-DI { background: var(--kDI-bg); color: var(--kDI-fg); font-weight: 600; }
   table.pz td.k-S, table.pz td.pzc.tt.k-S { background: var(--kS-bg); }
   table.pz td.ov::after { content: ""; position: absolute; top: 0; right: 0; border-top: 7px solid var(--accent); border-left: 7px solid transparent; }
-  table.pz td.sum, table.pz th.sum { width: 76px; min-width: 76px; box-sizing: border-box; padding: 0 8px; font-weight: 600; position: sticky; background: var(--surface); border-left: 1px solid var(--border); }
-  @media (max-width: 900px) { table.pz td.sum, table.pz th.sum { position: static; } table.pz td.ad, table.pz th.ad { min-width: 84px; } }
+  table.pz td.sum, table.pz th.sum { width: 76px; min-width: 76px; box-sizing: border-box; padding: 0 8px; font-weight: 600; background: var(--surface); border-left: 1px solid var(--border); }
+  /* özet sütunları sabit değil, tablonun sonunda akar: günlerin üstünü örtmez */
+  table.pz td.sum.toplam, table.pz th.sum.toplam { border-left: 2px solid var(--border); }
+  @media (max-width: 900px) { table.pz td.ad, table.pz th.ad { min-width: 84px; } }
   table.pz td.rol { text-align: left; background: var(--bg); font-size: 11.5px; font-weight: 600; color: var(--muted); padding: 3px 8px; position: sticky; left: 0; }
   .pz-kodlar { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; }
   .pz-kodlar label { display: flex; align-items: center; gap: 9px; padding: 6px 9px; border: 1px solid var(--border); font-size: 13.5px; cursor: pointer; }
@@ -922,6 +925,9 @@
   .uyari-rozet { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px !important; border-radius: 999px !important; font-size: 13px !important; border: 1px solid transparent !important; box-shadow: none !important; cursor: pointer; }
   .uyari-rozet.r-hata { background: var(--danger-soft) !important; color: var(--danger) !important; border-color: color-mix(in srgb, var(--danger) 30%, transparent) !important; }
   .uyari-rozet.r-uyari { background: var(--amber-soft) !important; color: var(--amber) !important; border-color: color-mix(in srgb, var(--amber) 30%, transparent) !important; }
+  table.rt th.bos-ay, table.rt td.bos-ay { color: var(--muted); opacity: .45; }
+  .rblok .sub.dipnot, #rapor-icerik p.sub.dipnot { display: block; margin: 8px 0 0; }
+  .sched-cell.uy-isaret { outline: 2.5px solid var(--amber); outline-offset: 1px; }
   .uyari-rozet.r-bilgi { background: var(--bg) !important; color: var(--muted) !important; border-color: var(--border) !important; }
   .cz-bar .onay-bar, .cz-bar .onay-bar.onayli { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: none; background: none; box-shadow: none; }
   .cz-bar .onay-bar:empty { display: none; }
@@ -1338,9 +1344,9 @@
   .sched-cell:hover, .ac-cell:hover, .ls-cell:hover, .cal-cell:hover { border-color: var(--hat); box-shadow: none; }
   .sched-cell:hover:not(.vurgu) { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
   .sched-cell .daynum, .ac-cell .dn, .ls-cell .daynum { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-bottom: 5px; }
-  .sched-cell .who { font-size: 11px; letter-spacing: .015em; line-height: 1.5; }
+  .sched-cell .who { font-size: 12.5px; letter-spacing: 0; line-height: 1.45; }
   .sched-cell .who.ecz { font-weight: 600; }
-  .sched-cell .who.prep { font-style: normal; letter-spacing: .015em; }
+  .sched-cell .who.prep { font-style: normal; }
   .sched-cell .who.prep .hn { font-weight: 600; color: var(--muted); margin-right: 2px; }
   /* hafta sonu ve tatil: yalnızca zemin tonu, renkli çerçeve yok */
   .sched-cell.weekend:not(.conflict):not(.vurgu):not(.bugun), .sched-cell.tatil:not(.conflict):not(.vurgu):not(.bugun),
@@ -1398,6 +1404,9 @@
   .sched-cell.vurgu.manual-edit { box-shadow: inset 0 0 0 1px var(--vg-kenar) !important; }
   .sched-cell .ben, .sched-cell .who.ecz.ben { font-weight: 600 !important; border-radius: 4px; padding: 0 5px; }
   .sched-cell .who.ben::before { background: var(--vg-kenar) !important; }
+  /* vurgulanan kişinin kendi rengi (Kişiler panelindeki renk) */
+  #sched-grid.kisi-renkli { --vg-kenar: var(--vg-renk); --vg-zemin: color-mix(in srgb, var(--vg-renk) 7%, var(--surface)); --vg-isaret: color-mix(in srgb, var(--vg-renk) 22%, var(--surface)); --vg-yazi: var(--ink); }
+  .kisi-panel .kp-kisi.on[data-renk] { --vg-kenar: var(--kr); --vg-zemin: color-mix(in srgb, var(--kr) 9%, var(--surface)); }
   .sched-cell.soluk { opacity: .5; filter: saturate(.4); }
   .vurgu-sec.secili select { box-shadow: none; }
 
@@ -1516,6 +1525,9 @@
   i.kr { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 0; background: var(--kr, var(--kr-0)); font-style: normal; }
   i.kr.kare { border-radius: 1.5px; }
   [data-renk="0"] { --kr: var(--kr-0); }
+  /* takvim ve Kişiler panelinde varsayılan renk görevi gösterir; kişi rengi (data-renk) yalnız vurgulanan kişide */
+  .sched-cell .who.ecz, .sched-cell i.kr:not(.kare), .kp-kisi.kp-ecz, #cz-aciklama i.kr:not(.kare) { --kr-0: var(--role-ecz); }
+  .sched-cell .who.tek, .sched-cell i.kr.kare, .kp-kisi.kp-tek, #cz-aciklama i.kr.kare { --kr-0: var(--role-tek); }
   /* personel listesinde de aynı renk ve biçim: eczacı yuvarlak, tekniker / destek kare, dışarıdan gelen halka */
   ul.staff-list li[data-renk]::before { width: 9px; height: 9px; background: var(--kr) !important; border: none !important; }
   #teknisyen-list li[data-renk]::before, #destek-list li[data-renk]::before { border-radius: 2px; }
@@ -1640,8 +1652,9 @@
   .kp-kisi i.kr { margin: 0; width: 9px; height: 9px; }
   .kp-ad { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kp-say { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .kp-bar { grid-column: 2 / 4; height: 5px; border-radius: 9px; background: var(--border-soft); overflow: hidden; }
+  .kp-bar { grid-column: 2 / 4; height: 5px; border-radius: 9px; background: var(--border-soft); position: relative; }
   .kp-bar u { display: block; height: 100%; border-radius: 9px; background: var(--kr, var(--kr-0)); }
+  .kp-bar .kp-ort { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--ink); opacity: .55; }
   .kp-ozet { display: flex; flex-direction: column; gap: 2px; margin-top: 12px; padding: 12px 10px 0; border-top: 1px solid var(--border-soft); font-size: 12.5px; color: var(--ink-soft); }
   .kp-ozet b { color: var(--ink); }
   .kp-ozet button { align-self: flex-start; margin-top: 8px; }
@@ -1883,7 +1896,7 @@
       <button type="button" data-ayar-sekme="personel" class="on">Personel</button>
       <button type="button" data-ayar-sekme="kurallar">Kurallar</button>
       <button type="button" data-ayar-sekme="servisler">Servisler</button>
-      <button type="button" data-ayar-sekme="kurum">Kurum ve yedek</button>
+      <button type="button" data-ayar-sekme="kurum"><span class="uzun">Kurum ve yedek</span><span class="kisa">Kurum</span></button>
     </div>
   </div>
 
@@ -2346,6 +2359,14 @@
   let calArac = "resmi";   // takvimde tıklayınca: "resmi" tatil ya da "arife"
   // Tüm isimler büyük harfle (Türkçe kurallarına göre: i→İ, ı→I) tutulur
   function buyukAd(n){ return String(n||"").trim().replace(/\s+/g," ").toLocaleUpperCase("tr-TR"); }
+  // Ekranda ad "Zeynep Demir" biçiminde gösterilir (okunur, hücreye sığar); kayıt ve çıktılar büyük harf kalır.
+  // Sesli harfi olmayan kısaltmalar (ör. YB) olduğu gibi kalır.
+  function gorunenAd(n){ return String(n||"").split(/([\s\-'’.]+)/).map(w=>/[AEIİOÖUÜaeıioöuü]/.test(w) ? w.charAt(0).toLocaleUpperCase("tr-TR")+w.slice(1).toLocaleLowerCase("tr-TR") : w).join(""); }
+  // metindeki personel adlarını ekran biçimine çevirir (uyarı metinleri ad içerir)
+  function adlariGorunur(metin){
+    const adlar = (state.staff||[]).map(s=>s.name).filter(Boolean).sort((a,b)=>b.length-a.length);
+    let t = String(metin); adlar.forEach(a=>{ t = t.split(a).join(gorunenAd(a)); }); return t;
+  }
   (function adlariBuyut(){
     (state.staff||[]).forEach(x=>{ x.name = buyukAd(x.name); });
     const ad = {}; (state.staff||[]).forEach(x=>{ ad[x.id] = x.name; });
@@ -2491,7 +2512,6 @@
   function renderStaff(){
     const aranan = !!(document.getElementById("staff-search") && document.getElementById("staff-search").value.trim()); let toplamEslesen = 0;
     const gruplar = [["eczaci","eczaci-list","eczaci-count","Henüz eczacı eklenmedi"],["teknisyen","teknisyen-list","teknisyen-count","Henüz teknikeri eklenmedi"],["destek","destek-list","destek-count","Henüz destek personeli eklenmedi"],["nobetci","nobetci-list","nobetci-count","Henüz dışarıdan gelen eczacı eklenmedi"],["servis","servis-list","servis-count","Henüz eklenmedi"]];
-    const renk = kisiRenkleri(state.year, state.month);   // takvimdeki kişi rengi (seçili ay)
     gruplar.forEach(([rol, listId, cntId, bos])=>{
       const ul = document.getElementById(listId); if (!ul) return;
       const tum = state.staff.filter(s=>s.role===rol && !listedeAyrilmisMi(s)).sort((a,b)=>a.name.localeCompare(b.name,"tr"));
@@ -2502,8 +2522,7 @@
       if (!kisiler.length){ ul.innerHTML = '<li class="empty-note" style="border:none;background:none;">'+(tum.length ? 'Eşleşen kişi yok' : bos)+'</li>'; return; }
       kisiler.forEach(s=>{
         const li = document.createElement("li");
-        if (rol!=="servis") li.dataset.renk = renk[s.id] || 0;
-        li.innerHTML = '<span class="kisi-ad">'+escapeHtml(s.name)+'</span>';
+        li.innerHTML = '<span class="kisi-ad">'+escapeHtml(gorunenAd(s.name))+'</span>';
         const meta = personelMeta(s);
         const kutu = document.createElement("span"); kutu.className = "li-btn li-menu-kutu";
         const mb = document.createElement("button"); mb.type = "button"; mb.className = "li-menu-ac"; mb.setAttribute("aria-label", s.name+" için işlemler"); mb.setAttribute("aria-haspopup", "true"); mb.setAttribute("aria-expanded", "false"); mb.title = "İşlemler";
@@ -2528,7 +2547,7 @@
       al.innerHTML = "";
       ayr.forEach(s=>{
         const li = document.createElement("li");
-        li.innerHTML = '<span>'+escapeHtml(s.name)+' <span class="tarih">'+escapeHtml(roleLabel(s.role))+'</span></span>';
+        li.innerHTML = '<span>'+escapeHtml(gorunenAd(s.name))+' <span class="tarih">'+escapeHtml(roleLabel(s.role))+'</span></span>';
         const kutu = document.createElement("span"); kutu.className = "li-btn";
         const bg = document.createElement("button"); bg.textContent = "Geri al"; bg.onclick = ()=>{ delete s.bitis; saveState(); tumunuYenile(); };
         const bs = document.createElement("button"); bs.textContent = "Kalıcı sil"; bs.onclick = async ()=>{ if (onayliAydaGorevliMi(s)) return; if (await onayla(s.name+" kalıcı olarak silinsin mi?\n\nKişiyle birlikte çizelge, puantaj ve acil nöbet kayıtlarındaki tüm geçmişi de silinir. Sadece işten ayrıldıysa silmek yerine ayrılış tarihi gir; geçmiş raporlar korunur.", {tehlike:true, evet:"Kalıcı sil"})) removeStaff(s.id); };
@@ -2578,7 +2597,7 @@
   function personelCikar(id){
     const s = state.staff.find(x=>x.id===id); if (!s) return;
     const ayAd = AYLAR[state.month]+" "+state.year;
-    pzModalAc('<h3>'+escapeHtml(s.name)+' - personeli çıkar</h3>'+
+    pzModalAc('<h3>'+escapeHtml(gorunenAd(s.name))+' - personeli çıkar</h3>'+
       '<div class="pz-kodlar"><label><input type="radio" name="pc" value="ayril" checked><span><b style="min-width:0;text-align:left">Ayrıldı olarak işaretle (önerilen)</b><br><small style="color:var(--muted)">'+ayAd+' ayından itibaren çizelge ve puantaja yazılmaz. Önceki aylardaki çizelge, puantaj ve raporları korunur.</small></span></label>'+
       '<label><input type="radio" name="pc" value="sil"><span><b style="min-width:0;text-align:left">Listeden tamamen sil</b><br><small style="color:var(--danger)">Bu kişinin tüm geçmiş kayıtları (nöbet, acil nöbet, puantaj) silinir. Sadece yanlış eklenen kişi için kullan.</small></span></label></div>'+
       (cizVarMi() ? '<label class="pdz-chk"><input type="checkbox" id="pc-yeni" checked> "Ayrıldı" seçilirse '+ayAd+' çizelgesini yeniden oluştur (kilitli günler değişmez)</label>' : '')+
@@ -2602,7 +2621,7 @@
   function personelDuzenle(id){
     const s = state.staff.find(x=>x.id===id); if (!s) return;
     const roller = ["eczaci","teknisyen","destek","nobetci","servis"], ayAd = AYLAR[state.month]+" "+state.year;
-    pzModalAc('<h3>'+escapeHtml(s.name)+' - düzenle</h3>'+
+    pzModalAc('<h3>'+escapeHtml(gorunenAd(s.name))+' - düzenle</h3>'+
       '<p class="hint" style="margin-top:0">Ad ya da rol değişikliği, geçmiş çizelge, puantaj ve raporlarda da bu kişi için geçerli olur.</p>'+
       '<div class="pz-form"><div class="tam"><label>Ad Soyad</label><input type="text" id="pdz-ad" maxlength="40" autocomplete="off" value="'+escapeHtml(s.name).replace(/"/g,"&quot;")+'"></div>'+
       '<div class="tam"><label>Rol</label><select id="pdz-rol">'+roller.map(r=>'<option value="'+r+'"'+(r===s.role?' selected':'')+'>'+roleLabel(r)+'</option>').join("")+'</select></div>'+
@@ -2647,7 +2666,7 @@
         satir("Yıllık izin", gunListe(grp.YI)) + satir("Rapor", gunListe(grp.R)) + (grp.DI.length ? satir("Diğer izin", gunListe(grp.DI)) : "") +
         satir("Perşembe nöbeti", String(thu)) + satir("Hafta sonu nöbeti", String(r.cmt + r.paz)) + satir("Toplam saat", String(r.toplam)) + satir("Fazla mesai", '<b style="min-width:0;flex:none">'+r.fm+' saat</b>');
     }
-    pzModalAc('<div class="po-ust"><h3 style="margin:0">'+escapeHtml(s.name)+' <small style="font-weight:500;color:var(--muted)">'+escapeHtml(roleLabel(s.role))+'</small></h3>'+
+    pzModalAc('<div class="po-ust"><h3 style="margin:0">'+escapeHtml(gorunenAd(s.name))+' <small style="font-weight:500;color:var(--muted)">'+escapeHtml(roleLabel(s.role))+'</small></h3>'+
       '<div class="month-switch"><button type="button" id="po-prev" aria-label="Önceki ay">&#8249;</button><strong>'+AYLAR[m]+' '+y+'</strong><button type="button" id="po-next" aria-label="Sonraki ay">&#8250;</button></div></div>'+govde+
       '<div class="actions-row">'+(V && (V.grp.N.length+V.grp.H.length) ? '<button class="primary" id="po-yazdir">Kişisel listeyi yazdır / PDF</button>' : '')+'<button class="ghost" id="po-kapat">Kapat</button></div>');
     document.getElementById("po-kapat").onclick = pzModalKapat;
@@ -2964,7 +2983,7 @@
     return '<div class="rblok"><h3>'+y+' resmi tatil görevleri (yıllık denge, gün sayısı)</h3><p class="sub">İşaretli '+tatilGun+' resmi tatil günü. Nöbet ve hazırlama ayrı ayrı, gün sayısı olarak eşitlenir (saat olarak değil). '+
       [ozet("Nöbet", sN), ozet("Hazırlama (eczacı/tekniker)", sH), ozet("Hazırlama (destek)", sD)].filter(Boolean).join(". ")+'. Dağıtım her yıl kendi içinde dengelenir; yıl başında sıfırlanır.</p>'+
       '<div class="overflow-x"><table class="rt"><thead><tr><th class="l">Ad Soyad</th><th class="l">Görev</th><th>Resmi tatil nöbeti</th><th class="l">Nöbet günleri</th><th>Resmi tatil hazırlama</th><th class="l">Hazırlama günleri</th></tr></thead><tbody>'+
-      ids.map(id=>{ const q = adlar[id], nb = q && nobetciRol(q.role); return '<tr><td class="l">'+escapeHtml(q ? q.name : "(silinmiş)")+'</td><td class="l">'+escapeHtml(q ? roleLabel(q.role) : "")+'</td><td class="top">'+(nb ? kisi[id] : "-")+'</td><td class="gunler l">'+escapeHtml((gunler[id]||[]).join(", ") || "-")+'</td><td class="top">'+(kisiH[id]||0)+'</td><td class="gunler l">'+escapeHtml((gunlerH[id]||[]).join(", ") || "-")+'</td></tr>'; }).join("")+'</tbody></table></div></div>';
+      ids.map(id=>{ const q = adlar[id], nb = q && nobetciRol(q.role); return '<tr><td class="l">'+escapeHtml(q ? gorunenAd(q.name) : "(silinmiş)")+'</td><td class="l">'+escapeHtml(q ? roleLabel(q.role) : "")+'</td><td class="top">'+(nb ? kisi[id] : "-")+'</td><td class="gunler l">'+escapeHtml((gunler[id]||[]).join(", ") || "-")+'</td><td class="top">'+(kisiH[id]||0)+'</td><td class="gunler l">'+escapeHtml((gunlerH[id]||[]).join(", ") || "-")+'</td></tr>'; }).join("")+'</tbody></table></div></div>';
   }
   // ---------- tercih arayüzü ----------
   function renderPrefSelect(){
@@ -2988,7 +3007,7 @@
     aktifler.forEach(s=>{
       const opt = document.createElement("option");
       opt.value = s.id;
-      opt.textContent = s.name;
+      opt.textContent = gorunenAd(s.name);
       sel.appendChild(opt);
     });
     const stillExists = aktifler.some(s=>String(s.id)===String(prevValue));
@@ -4324,7 +4343,7 @@
     warnings.map(w=>({w, u:uyariSinif(w)})).sort((a,b)=>sira[a.u.seviye]-sira[b.u.seviye]).forEach(({w,u})=>{
       const el = document.createElement("details");
       el.className = "warning-box uy uy-"+u.seviye+(u.seviye==="bilgi" ? " info" : "");
-      el.innerHTML = '<summary>'+UYARI_IKON[u.seviye]+'<b>'+escapeHtml(u.baslik)+'</b><span class="uy-ozet">'+escapeHtml(w)+'</span></summary><div class="uy-detay">'+escapeHtml(w)+'</div>';
+      el.innerHTML = '<summary>'+UYARI_IKON[u.seviye]+'<b>'+escapeHtml(u.baslik)+'</b><span class="uy-ozet">'+escapeHtml(adlariGorunur(w))+'</span></summary><div class="uy-detay">'+escapeHtml(adlariGorunur(w))+'</div>';
       box.appendChild(el);
     });
   }
@@ -4384,7 +4403,11 @@
     const ayniKume = (a,b)=> a.length===b.length && a.every(x=>b.indexOf(x)>=0);
     const kisiAd = id=>{ const q = state.staff.find(x=>x.id===id); return q ? q.name : "?"; };
     const renk = kisiRenkleri(y, m);
-    const renkAt = id=> renk[id] ? ' data-renk="'+renk[id]+'"' : '';
+    // renk varsayılan olarak görevi gösterir (eczacı / tekniker); kişi rengi yalnız vurgulanan kişide
+    const renkAt = id=> (id===vurguId && renk[id]) ? ' data-renk="'+renk[id]+'"' : '';
+    // vurgulanan günlerin çerçevesi ve işareti de kişinin renginde
+    if (vurguId && renk[vurguId]) grid.style.setProperty("--vg-renk", "var(--kr-"+renk[vurguId]+")"); else grid.style.removeProperty("--vg-renk");
+    grid.classList.toggle("kisi-renkli", !!(vurguId && renk[vurguId]));
     let kritikGun = 0, dikkatGun = 0;
     state.schedule.days.forEach(day=>{
       const dw = jsDowToMonFirst(new Date(y,m,day.day).getDay());
@@ -4396,7 +4419,7 @@
         sev = gunUyariSeviyesi(day.kuralNotu);
         if (sev==="kritik") kritikGun++; else dikkatGun++;
         cell.classList.add("conflict", "c-"+sev);
-        if (day.kuralNotu) cell.title = (sev==="kritik" ? "Kritik" : "Dikkat")+" — neden işaretli:\n• " + day.kuralNotu.join("\n• ");
+        if (day.kuralNotu) cell.title = adlariGorunur((sev==="kritik" ? "Kritik" : "Dikkat")+" — neden işaretli:\n• " + day.kuralNotu.join("\n• "));
       }
       if (day.locked) cell.classList.add("manual-edit");
       if (bugunMu(y, m, day.day)){ cell.classList.add("bugun"); cell.setAttribute("aria-current", "date"); }
@@ -4404,12 +4427,12 @@
       let html = '<div class="daynum">'+day.day+'</div>';
       eczOnce(day.assigned).forEach(p=>{
         const cls = (eczaciMi(p.role) ? "who ecz" : "who tek") + (p.role==="nobetci" ? " nob" : "") + (vurguId && p.id===vurguId ? " ben" : "");
-        const kisayad = p.name.length>14 ? p.name.slice(0,13)+"…" : p.name;
+        const ad = gorunenAd(p.name), kisayad = ad.length>14 ? ad.slice(0,13)+"…" : ad;
         html += '<span class="'+cls+'"'+renkAt(p.id)+'>'+escapeHtml(kisayad)+'</span>';
       });
       if (day.prep && day.prep.length){
         day.prep.forEach((pp,i)=>{
-          const a = escapeHtml(pp.name.length>14 ? pp.name.slice(0,13)+'…' : pp.name);
+          const ad = gorunenAd(pp.name), a = escapeHtml(ad.length>14 ? ad.slice(0,13)+'…' : ad);
           const nokta = '<i class="kr'+(pp.role==="nobetci" ? ' halka' : (eczaciMi(pp.role) ? '' : ' kare'))+'"'+renkAt(pp.id)+' aria-hidden="true"></i>';
           html += '<span class="who prep'+(i ? ' prep2' : '')+'"><b class="hn">H'+(i+1)+':</b> '+nokta+(vurguId && pp.id===vurguId ? '<span class="ben">'+a+'</span>' : a)+'</span>';
         });
@@ -4446,10 +4469,10 @@
       PG.satirlar.forEach(r=>{ const c = r.cells[day.day-1]; if (c && c.ov && (c.kod==="R" || c.kod==="YI" || c.kod==="NI")) drL.push({k:c.kod, ad:r.s.name}); });
       if (drL.length){
         const kisa = a=>{ const t = a.split(" "); return t.length>1 ? t[0]+" "+t[t.length-1].charAt(0)+"." : a; };
-        html += '<div class="dr-not">'+drL.slice(0,2).map(x=>'<span class="dr-'+x.k+'">'+DURUM_KISA[x.k]+'</span> '+escapeHtml(kisa(x.ad))).join("<br>")+(drL.length>2 ? '<br>+'+(drL.length-2) : '')+'</div>';
+        html += '<div class="dr-not">'+drL.slice(0,2).map(x=>'<span class="dr-'+x.k+'">'+DURUM_KISA[x.k]+'</span> '+escapeHtml(kisa(gorunenAd(x.ad)))).join("<br>")+(drL.length>2 ? '<br>+'+(drL.length-2) : '')+'</div>';
         ipucu.push(drL.map(x=>x.ad+": "+DURUM_AD[x.k]).join("\n"));
       }
-      if (ipucu.length) cell.title = ipucu.join("\n");
+      if (ipucu.length) cell.title = adlariGorunur(ipucu.join("\n"));
       cell.innerHTML = html;
       cell.addEventListener("click", ()=> gunTikla(day));
       grid.appendChild(cell);
@@ -4515,7 +4538,7 @@
     const sel = document.getElementById("vurgu-kisi"); if (!sel) return 0;
     const onceki = sel.value, y = state.year, m = state.month;
     const kisiler = state.staff.filter(s=>(nobetciRol(s.role) || s.role==="destek") && aktifAydaMi(s,y,m)).sort((a,b)=>a.name.localeCompare(b.name,"tr") || a.id-b.id);
-    sel.innerHTML = '<option value="">Kişi vurgula</option>'+kisiler.map(s=>'<option value="'+s.id+'">'+escapeHtml(s.name)+'</option>').join("");
+    sel.innerHTML = '<option value="">Kişi vurgula</option>'+kisiler.map(s=>'<option value="'+s.id+'">'+escapeHtml(gorunenAd(s.name))+'</option>').join("");
     if (kisiler.some(s=>String(s.id)===onceki)) sel.value = onceki;
     const bar = document.getElementById("vurgu-bar"); if (bar) bar.classList.toggle("secili", !!sel.value);
     return sel.value ? Number(sel.value) : 0;
@@ -4529,7 +4552,7 @@
     if (!st){ el.textContent = ""; return; }
     let n = 0, h = 0, fm = 0; const hz = ayar('hazSaat');
     state.schedule.days.forEach(d=>{ if (d.assigned.some(p=>p.id===id)){ n++; fm += d.fazlaMesai; } if ((d.prep||[]).some(p=>p.id===id)){ h++; fm += hz; } });
-    el.innerHTML = '<span class="vb-ad">'+escapeHtml(st.name)+'</span><span class="vb-chip"><b>'+n+'</b> nöbet</span> <span class="vb-chip"><b>'+h+'</b> hazırlama</span> <span class="vb-chip"><b>'+fm+'</b> saat fazla mesai</span> <span class="vb-not">çizelgeye göre</span>';
+    el.innerHTML = '<span class="vb-ad">'+escapeHtml(gorunenAd(st.name))+'</span><span class="vb-chip"><b>'+n+'</b> nöbet</span> <span class="vb-chip"><b>'+h+'</b> hazırlama</span> <span class="vb-chip"><b>'+fm+'</b> saat fazla mesai</span> <span class="vb-not">çizelgeye göre</span>';
   }
 
   // ---------- kişi paneli: renkler, bu ayki nöbet sayısı ve fazla mesai; tıklayınca takvimde vurgular ----------
@@ -4548,18 +4571,20 @@
     });
     const enCok = Math.max(1, ...kisiler.map(s=>say[s.id].fm));
     const sekil = s=> s.role==="nobetci" ? "kr halka" : (eczaciMi(s.role) ? "kr" : "kr kare");
+    // çubuktaki çizgi: nöbetçilerin ortalama fazla mesaisi (kim fazla, kim az tek bakışta)
+    const ekip = kisiler.filter(s=>nobetciRol(s.role)), ort = ekip.length ? Math.round(ekip.reduce((t,s)=>t+say[s.id].fm, 0)/ekip.length) : 0;
     const satir = s=>{ const x = say[s.id], on = s.id===id;
-      return '<button type="button" class="kp-kisi'+(on ? ' on' : '')+'" data-kp="'+s.id+'"'+(renk[s.id] ? ' data-renk="'+renk[s.id]+'"' : '')+' aria-pressed="'+(on ? 'true' : 'false')+'" title="'+escapeHtml(s.name)+': '+x.n+' nöbet, '+x.h+' hazırlama, '+x.fm+' saat fazla mesai">'+
-        '<i class="'+sekil(s)+'"></i><span class="kp-ad">'+escapeHtml(s.name)+'</span><span class="kp-say">'+x.n+(x.h ? ' + '+x.h+'H' : '')+'</span>'+
-        '<span class="kp-bar" aria-hidden="true"><u style="width:'+Math.round(x.fm/enCok*100)+'%"></u></span></button>'; };
+      return '<button type="button" class="kp-kisi '+(eczaciMi(s.role) ? 'kp-ecz' : 'kp-tek')+(on ? ' on' : '')+'" data-kp="'+s.id+'"'+(on && renk[s.id] ? ' data-renk="'+renk[s.id]+'"' : '')+' aria-pressed="'+(on ? 'true' : 'false')+'" title="'+escapeHtml(gorunenAd(s.name))+': '+x.n+' nöbet, '+x.h+' hazırlama, '+x.fm+' saat fazla mesai">'+
+        '<i class="'+sekil(s)+'"></i><span class="kp-ad">'+escapeHtml(gorunenAd(s.name))+'</span><span class="kp-say">'+x.n+(x.h ? ' + '+x.h+'H' : '')+'</span>'+
+        '<span class="kp-bar" aria-hidden="true"><u style="width:'+Math.round(x.fm/enCok*100)+'%"></u>'+(nobetciRol(s.role) && ekip.length>1 ? '<i class="kp-ort" style="left:'+Math.round(ort/enCok*100)+'%"></i>' : '')+'</span></button>'; };
     const gruplar = [["Eczacılar", s=>eczaciMi(s.role)], ["Teknikerler", s=>s.role==="teknisyen"], ["Destek personeli", s=>s.role==="destek"]];
-    let h = '<div class="kp-bas">Kişiler</div><div class="kp-ipucu">Tıkla: takvimde vurgula · sayı: nöbet + hazırlama · çubuk: fazla mesai</div><div class="kp-liste">';
+    let h = '<div class="kp-bas">Kişiler</div><div class="kp-ipucu">Tıkla: takvimde vurgula · sayı: nöbet + hazırlama · çubuk: fazla mesai, çizgi: ortalama ('+ort+' sa)</div><div class="kp-liste">';
     gruplar.forEach(([ad, f])=>{ const L = kisiler.filter(f); if (L.length) h += '<div class="kp-grup">'+ad+'</div>'+L.map(satir).join(""); });
     h += '</div>';
     const st = id ? kisiler.find(s=>s.id===id) : null;
     if (st){
-      const x = say[st.id], ekip = kisiler.filter(s=>nobetciRol(s.role)), ort = ekip.length ? Math.round(ekip.reduce((t,s)=>t+say[s.id].fm, 0)/ekip.length) : 0;
-      h += '<div class="kp-ozet"><b>'+escapeHtml(st.name)+'</b><span>'+x.n+' nöbet, '+x.h+' hazırlama</span><span>'+x.fm+' saat fazla mesai'+(nobetciRol(st.role) ? ' (ekip ort. '+ort+')' : '')+'</span><button type="button" class="ghost small" data-kp-temizle>Vurgulamayı kaldır</button></div>';
+      const x = say[st.id];
+      h += '<div class="kp-ozet"><b>'+escapeHtml(gorunenAd(st.name))+'</b><span>'+x.n+' nöbet, '+x.h+' hazırlama</span><span>'+x.fm+' saat fazla mesai'+(nobetciRol(st.role) ? ' (ekip ort. '+ort+')' : '')+'</span><button type="button" class="ghost small" data-kp-temizle>Vurgulamayı kaldır</button></div>';
     }
     el.innerHTML = h;
   }
@@ -4597,7 +4622,7 @@
     h += '<div class="overflow-x"><table class="rt"><thead><tr><th class="l">Kişi</th><th class="l">Görev</th><th>Müsait gün</th><th>İzinli gün</th><th>Beklenen nöbet</th><th>Beklenen hazırlama</th><th>Devir (saat)</th><th>Resmi tatil nöbet / hazırlama ('+y+', önceki aylar)</th></tr></thead><tbody>'+
       satir.map(r=>{
         const bek = nobetYeri * r.musait / topMusait, haz = hazirlamaRol(r.s.role) ? havuzHaz * r.musait / topHaz : 0, dv = Math.round(devir.off[r.s.id] || 0);
-        return '<tr><td class="l">'+escapeHtml(r.s.name)+'</td><td class="l">'+escapeHtml(roleLabel(r.s.role))+'</td><td>'+r.musait+'</td><td>'+(r.izinli||"-")+'</td><td class="top">'+bek.toFixed(1)+'</td><td>'+(hazirlamaRol(r.s.role) ? haz.toFixed(1) : "-")+'</td><td>'+(dv>0 ? "+"+dv : dv)+'</td><td>'+(resmiD.say[r.s.id]||0)+' / '+(resmiD.sayH[r.s.id]||0)+'</td></tr>';
+        return '<tr><td class="l">'+escapeHtml(gorunenAd(r.s.name))+'</td><td class="l">'+escapeHtml(roleLabel(r.s.role))+'</td><td>'+r.musait+'</td><td>'+(r.izinli||"-")+'</td><td class="top">'+bek.toFixed(1)+'</td><td>'+(hazirlamaRol(r.s.role) ? haz.toFixed(1) : "-")+'</td><td>'+(dv>0 ? "+"+dv : dv)+'</td><td>'+(resmiD.say[r.s.id]||0)+' / '+(resmiD.sayH[r.s.id]||0)+'</td></tr>';
       }).join("")+'</tbody></table></div><p class="hint" style="margin-bottom:0">Beklenen değerler müsait gün sayısına göre kabaca hesaplanır; gerçek dağılım ayrıca Perşembe, hafta sonu, 3 gün ara ve önceki aylardan devir kurallarına göre belirlenir. Devir, aynı yılın önceki aylarından gelir (yıl başında sıfırlanır); artıysa kişi bu yıl fazla mesai yapmıştır, o yüzden daha az nöbet alır. Elle kilitlediğin günler ('+(state.schedule ? state.schedule.days.filter(d=>d.locked).length : 0)+') olduğu gibi kalır.</p>';
     return h;
   }
@@ -4694,7 +4719,7 @@
   function denemeKarsilastir(id){
     const d = denemeBul(id); if (!d || !state.schedule) return;
     const su = state.schedule, mtSu = cizelgeMetrik(su), mtDn = d.metrik, m = su.month;
-    const isim = a=> a.length ? a.map(p=>escapeHtml(p.name)).join(", ") : "-";
+    const isim = a=> a.length ? a.map(p=>escapeHtml(gorunenAd(p.name))).join(", ") : "-";
     const farkli = [];
     su.days.forEach((g,i)=>{ const o = d.days[i]; if (!o) return; if (cizelgeImza([g]) !== cizelgeImza([o])) farkli.push({g, o}); });
     const mrow = (ad, a, b)=>'<tr><td class="l">'+ad+'</td><td>'+a+'</td><td>'+b+'</td></tr>';
@@ -4846,7 +4871,7 @@
     return {y, m, gunler, satirlar, mesaiGun, mesaiS, arifeVar, mesaiToplam, ay: AYLAR[m]+" "+y};
   }
   // puantajda ad: eczacılarda "Ecz." öneki (kurum örneğindeki gibi)
-  function pzAdi(s){ return ((eczaciMi(s.role) || s.role==="servis") ? "Ecz." : (s.role==="teknisyen" ? "Ecz.Tek." : "")) + s.name; }
+  function pzAdi(s, ekran){ return ((eczaciMi(s.role) || s.role==="servis") ? "Ecz." : (s.role==="teknisyen" ? "Ecz.Tek." : "")) + (ekran ? gorunenAd(s.name) : s.name); }
   const PZ_ROL_BASLIK = {eczaci:"Eczacı", teknisyen:"Eczane teknikeri", destek:"Destek personeli", servis:"Acil servis nöbetçi eczacı", nobetci:"Dışarıdan nöbete gelen eczacı"};
   // fazla mesainin nasıl hesaplandığı (hücre ipucu)
   function pzFmAciklama(r){
@@ -4875,17 +4900,17 @@
       '<span><i style="background:var(--pz-hs);border-color:var(--border)">&nbsp;</i>Hafta sonu / tatil günü</span>'+(G.arifeVar ? '<span><i style="background:var(--arife-soft);border-color:var(--arife)">&nbsp;</i>Arife (mesai '+ayar('arifeSaat')+' saat)</span>' : '')+'<span><i style="border:none;position:relative;padding:0 4px">&#9698;</i>Elle değiştirilmiş</span>';
     if (lejant!==pzLejantOnceki){ document.getElementById("pz-legend").innerHTML = lejant; pzLejantOnceki = lejant; }
     const bas = '<thead><tr><th class="ad">SIRA · Adı ve Soyadı</th>'+G.gunler.map(g=>'<th class="'+(g.tatil?'tt':(g.arife?'ar':''))+(bugunMu(G.y,G.m,g.gun)?' bugun':'')+'" title="'+pzGunEtiket(G,g)+(g.arife?' · arife, normal mesai '+g.ms+' saat':'')+'">'+g.gun+'<small>'+(g.arife?'arife':KISA[g.dw])+'</small></th>').join("")+
-      '<th class="sum" style="right:304px">Toplam Çalışma Saati</th><th class="sum" style="right:228px">Aylık Çalışma Saati</th><th class="sum" style="right:152px">Fazla Mesai</th><th class="sum dilim" style="right:76px" title="Fazla mesainin 08:00-20:00 arasına düşen saatleri">08:00-20:00<small>fazla mesai</small></th><th class="sum dilim" style="right:0" title="Fazla mesainin 20:00-08:00 arasına düşen saatleri">20:00-08:00<small>fazla mesai</small></th></tr></thead>';
+      '<th class="sum toplam">Toplam Çalışma Saati</th><th class="sum">Aylık Çalışma Saati</th><th class="sum">Fazla Mesai</th><th class="sum dilim" title="Fazla mesainin 08:00-20:00 arasına düşen saatleri">08:00-20:00<small>fazla mesai</small></th><th class="sum dilim" title="Fazla mesainin 20:00-08:00 arasına düşen saatleri">20:00-08:00<small>fazla mesai</small></th></tr></thead>';
     let sonRol = null, sira = 0, h; const toplamKol = G.gunler.length + 6, satirlar = [];
     G.satirlar.forEach(r=>{
       if (r.s.role !== sonRol){ sonRol = r.s.role; satirlar.push('<tr><td class="rol" colspan="'+toplamKol+'">'+PZ_ROL_BASLIK[sonRol]+'</td></tr>'); }
       sira++;
-      h = '<tr><td class="ad" title="'+escapeHtml(roleLabel(r.s.role))+'"><span class="sira">'+sira+'</span>'+escapeHtml(pzAdi(r.s))+'</td>';
+      h = '<tr><td class="ad" title="'+escapeHtml(roleLabel(r.s.role))+'"><span class="sira">'+sira+'</span>'+escapeHtml(pzAdi(r.s, true))+'</td>';
       r.cells.forEach((c,i)=>{
         const g = G.gunler[i];
         h += '<td class="pzc '+pzSinif(c.kod)+(g.tatil?' tt':'')+(c.ov?' ov':'')+(bugunMu(G.y,G.m,g.gun)?' bugun':'')+'" data-id="'+r.s.id+'" data-gun="'+g.gun+'"'+(c.acil?' title="Acil servis nöbeti"':'')+'>'+pzHucreMetin(c, g)+'</td>';
       });
-      h += '<td class="sum toplam" style="right:304px">'+r.toplam+'</td><td class="sum aylik" style="right:228px">'+(r.aylik===null ? '–' : r.aylik)+'</td><td class="sum fm" style="right:152px" title="'+escapeHtml(pzFmAciklama(r))+'">'+r.fm+'</td><td class="sum gunduz" style="right:76px">'+r.fmGunduz+'</td><td class="sum gece" style="right:0">'+r.fmGece+'</td></tr>';
+      h += '<td class="sum toplam">'+r.toplam+'</td><td class="sum aylik">'+(r.aylik===null ? '–' : r.aylik)+'</td><td class="sum fm" title="'+escapeHtml(pzFmAciklama(r))+'">'+r.fm+'</td><td class="sum gunduz">'+r.fmGunduz+'</td><td class="sum gece">'+r.fmGece+'</td></tr>';
       satirlar.push(h);
     });
     if (!G.satirlar.length) satirlar.push('<tr><td class="rol" colspan="'+toplamKol+'">Henüz personel yok. Personel ve kurallar sekmesinden personel ekle.</td></tr>');
@@ -4897,7 +4922,7 @@
     // özet
     const oz = document.getElementById("pz-ozet");
     let o = '<thead><tr><th class="l">Ad Soyad</th><th class="l">Görev</th><th title="Hafta içi, Cuma, Cumartesi, Pazar nöbetleri ve hazırlamanın toplamı">Nöbet sayısı</th><th>Perşembe</th><th>Cuma</th><th>Cumartesi</th><th>Pazar</th><th>Hazırlama</th><th>Resmi tatil</th><th>Yİ</th><th>Rapor</th><th>Toplam saat</th><th class="top">Fazla mesai</th><th>08:00-20:00</th><th>20:00-08:00</th></tr></thead><tbody>';
-    G.satirlar.forEach(r=>{ o += '<tr><td>'+escapeHtml(r.s.name)+'</td><td class="l">'+roleLabel(r.s.role)+'</td><td class="top">'+(r.n+r.h)+'</td><td>'+r.thu+'</td><td>'+r.cu+'</td><td>'+r.cmt+'</td><td>'+r.paz+'</td><td>'+r.h+'</td><td>'+r.rt+'</td><td>'+r.yi+'</td><td>'+r.rd+'</td><td>'+r.toplam+'</td><td class="top">'+r.fm+'</td><td>'+r.fmGunduz+'</td><td>'+r.fmGece+'</td></tr>'; });
+    G.satirlar.forEach(r=>{ o += '<tr><td>'+escapeHtml(gorunenAd(r.s.name))+'</td><td class="l">'+roleLabel(r.s.role)+'</td><td class="top">'+(r.n+r.h)+'</td><td>'+r.thu+'</td><td>'+r.cu+'</td><td>'+r.cmt+'</td><td>'+r.paz+'</td><td>'+r.h+'</td><td>'+r.rt+'</td><td>'+r.yi+'</td><td>'+r.rd+'</td><td>'+r.toplam+'</td><td class="top">'+r.fm+'</td><td>'+r.fmGunduz+'</td><td>'+r.fmGece+'</td></tr>'; });
     o += '</tbody>';
     if (o!==pzOzetOnceki || !oz.firstChild){ oz.innerHTML = o; pzOzetOnceki = o; }
     if (gunPanelAcikMi()) renderGunluk();
@@ -4919,7 +4944,7 @@
     const y = state.year, m = state.month, G = puantajGrid(y,m);
     const r = G.satirlar.find(x=>x.s.id===id); if (!r) return;
     const g = G.gunler[gun-1], c = r.cells[gun-1];
-    pzModalAc('<h3>'+escapeHtml(r.s.name)+' - '+pzGunEtiket(G,g)+'</h3><p class="hint" style="margin-top:0">'+(c.ov?'Elle değiştirilmiş.':'Çizelgeden otomatik geliyor.')+(g.tatil?' Bu gün tatil günü.':'')+'</p><div class="pz-kodlar">'+pzKodSecenekleri(c.kod)+'</div>'+
+    pzModalAc('<h3>'+escapeHtml(gorunenAd(r.s.name))+' - '+pzGunEtiket(G,g)+'</h3><p class="hint" style="margin-top:0">'+(c.ov?'Elle değiştirilmiş.':'Çizelgeden otomatik geliyor.')+(g.tatil?' Bu gün tatil günü.':'')+'</p><div class="pz-kodlar">'+pzKodSecenekleri(c.kod)+'</div>'+
       '<div class="actions-row"><button class="primary" id="pz-kaydet">Kaydet</button><button class="ghost" id="pz-oto">Otomatiğe döndür</button><button class="ghost" id="pz-iptal">İptal</button></div>');
     document.getElementById("pz-kaydet").onclick = ()=>{
       const kod = pzSecimOku(); if (!kod){ alert("Bir seçenek seç (özel saat için geçerli bir sayı gir)."); return; }
@@ -5065,9 +5090,9 @@
   function kontrolHtml(k){
     let h = "";
     if (!k.engel.length && !k.uyari.length) h += '<div class="ck ok"><b>Kural sorunu yok.</b></div>';
-    k.engel.forEach(t=> h += '<div class="ck hata"><b>Kural dışı:</b> '+escapeHtml(t)+'</div>');
-    k.uyari.forEach(t=> h += '<div class="ck uyari">'+escapeHtml(t)+'</div>');
-    k.bilgi.forEach(t=> h += '<div class="ck">'+escapeHtml(t)+'</div>');
+    k.engel.forEach(t=> h += '<div class="ck hata"><b>Kural dışı:</b> '+escapeHtml(adlariGorunur(t))+'</div>');
+    k.uyari.forEach(t=> h += '<div class="ck uyari">'+escapeHtml(adlariGorunur(t))+'</div>');
+    k.bilgi.forEach(t=> h += '<div class="ck">'+escapeHtml(adlariGorunur(t))+'</div>');
     return h;
   }
   // ---------- ay içi izin / rapor / nöbet izni (çizelge ve puantajdan aynı kayıt) ----------
@@ -5151,7 +5176,7 @@
     const gunOpt = Array.from({length:dim}, (_,i)=>'<option value="'+(i+1)+'">'+gunAdi(i+1)+'</option>').join("");
     const formHtml = (sekme ? '<h3 class="dr-baslik">Yeni kayıt</h3><p class="hint" style="margin-top:0">' : '<h3>İzin, rapor, nöbet izni - '+AYLAR[m]+' '+y+'</h3><p class="hint" style="margin-top:0">')+'Ay içinde gelişen yıllık izin, rapor ve fazla mesai karşılığı nöbet izni buradan girilir; aynı kayıt puantaja da işlenir ve puantajdan da değiştirilebilir. Kişinin bu günlerde nöbeti ya da hazırlaması varsa yerine geçecek kişiyi seçersin; değişim çizelgeye ve yıllık dengeye de yansır.</p>'+
       '<div class="seg" id="dr-tur" role="group" aria-label="Tür" style="margin-bottom:10px"><button type="button" data-tur="R">Rapor</button><button type="button" data-tur="YI">Yıllık izin</button><button type="button" data-tur="NI">Nöbet izni</button></div>'+
-      '<div class="pz-form"><div class="tam"><label for="dr-kisi">Kişi</label><select id="dr-kisi"><option value="">Kişi seçin</option>'+kisiler.map(s=>'<option value="'+s.id+'">'+escapeHtml(s.name)+' ('+roleLabel(s.role)+')</option>').join("")+'</select></div>'+
+      '<div class="pz-form"><div class="tam"><label for="dr-kisi">Kişi</label><select id="dr-kisi"><option value="">Kişi seçin</option>'+kisiler.map(s=>'<option value="'+s.id+'">'+escapeHtml(gorunenAd(s.name))+' ('+roleLabel(s.role)+')</option>').join("")+'</select></div>'+
       '<div><label for="dr-bas">Başlangıç</label><select id="dr-bas">'+gunOpt+'</select></div><div><label for="dr-bit">Bitiş</label><select id="dr-bit">'+gunOpt+'</select></div></div>'+
       '<div id="dr-etki" aria-live="polite"></div>'+
       '<div class="actions-row"><button class="primary" id="dr-kaydet">Kaydet</button>'+(sekme ? '<button class="ghost" id="dr-iptal">Temizle</button>' : '<button class="ghost" id="dr-iptal">İptal</button>')+'</div>'+
@@ -5193,7 +5218,7 @@
         const ad = yerineAdaylar(y,m,cz.gun,d.kisi,cz.gorev);
         cz.adaylar = ad;
         const ilkU = ad.findIndex(a=>!a.engel);
-        h += '<div class="dr-cakisma"><b>'+gunAdi(cz.gun)+'</b>: '+escapeHtml(r.s.name)+(cz.gorev==="H" ? ' hazırlama görevinde.' : ' nöbetçi.')+' Yerine:'+
+        h += '<div class="dr-cakisma"><b>'+gunAdi(cz.gun)+'</b>: '+escapeHtml(gorunenAd(r.s.name))+(cz.gorev==="H" ? ' hazırlama görevinde.' : ' nöbetçi.')+' Yerine:'+
           '<select data-cz="'+i+'">'+ad.map((a,j)=>'<option value="'+a.id+'"'+(j===(ilkU<0?0:ilkU) ? ' selected' : '')+'>'+escapeHtml(a.ad)+' — yıl içinde '+a.yil+(cz.gorev==="H" ? ' hazırlama' : ' nöbet')+(a.engel ? ' (kural dışı)' : (a.uyari ? ' (uyarı var)' : ''))+'</option>').join("")+
           '<option value="0"'+(!ad.length ? ' selected' : '')+'>Şimdilik boş bırak (sonra Değişim ile ayarlarım)</option></select><div class="edit-checks" data-czk="'+i+'"></div></div>';
       });
@@ -5278,7 +5303,7 @@
     if (izinKisi && !kisiler.some(s=>s.id===izinKisi)) izinKisi = null;
     const G = puantajGrid(y,m), rSec = izinKisi ? G.satirlar.find(x=>x.s.id===izinKisi) : null;
     const ARAC = [["R","Rapor"],["YI","Yıllık izin"],["NI","Nöbet izni"],["clear","Temizle"]];
-    let h = '<div class="dr-ust"><div class="isaret-kisi dr-kisi-kutu"><select id="dr-kisi-sec" aria-label="İşaretlenecek kişi"><option value="">Kişi seçin</option>'+kisiler.map(s=>'<option value="'+s.id+'"'+(s.id===izinKisi?' selected':'')+'>'+escapeHtml(s.name)+' ('+roleLabel(s.role)+')</option>').join("")+'</select></div>'+
+    let h = '<div class="dr-ust"><div class="isaret-kisi dr-kisi-kutu"><select id="dr-kisi-sec" aria-label="İşaretlenecek kişi"><option value="">Kişi seçin</option>'+kisiler.map(s=>'<option value="'+s.id+'"'+(s.id===izinKisi?' selected':'')+'>'+escapeHtml(gorunenAd(s.name))+' ('+roleLabel(s.role)+')</option>').join("")+'</select></div>'+
       '<div class="palette dr-palet" id="dr-palet" role="group" aria-label="İşaretlenecek tür">'+ARAC.map(a=>'<button type="button" data-arac="'+a[0]+'"'+(a[0]===izinArac?' class="on"':'')+'>'+a[1]+'</button>').join("")+'</div></div>'+
       '<p class="hint dr-ipucu">'+(izinKisi ? 'Güne tıkla ya da sürükleyerek aralık seç. Aynı türle yeniden tıklamak kaydı kaldırır. Nöbet ya da hazırlama gününe denk gelirse yerine geçecek kişiyi sorarım. Nöbet izni fazla mesai karşılığıdır, o gün fazla mesaiden düşer.' : 'Önce kişiyi seç; takvimde yalnız o kişinin kayıtları ve nöbet günleri görünür. Ayın bütün kayıtları aşağıdaki listede.')+'</p>';
     h += '<div class="dr-takvim"><div class="dr-dow">'+GUNLER.map(g=>'<div>'+g+'</div>').join("")+'</div><div class="dr-grid" id="dr-grid">';
@@ -5374,7 +5399,7 @@
       const gg = G.gunler[d-1], gr = gorevli(d), degisti = dgAy.some(z=>z.gun===d);
       const chip = (r, kod, i)=>{
         const sec = (dgSec1 && dgSec1.id===r.s.id && dgSec1.gun===d && dgSec1.kod===kod) ? " sec1" : ((dgSec2 && dgSec2.id===r.s.id && dgSec2.gun===d && dgSec2.kod===kod) ? " sec2" : "");
-        return '<button type="button" class="dg-chip '+(kod==="H" ? "h" : (eczaciMi(r.s.role) ? "n ecz" : "n tek"))+sec+'" data-id="'+r.s.id+'" data-gun="'+d+'" data-kod="'+kod+'" title="'+escapeHtml(r.s.name+", "+gunAdi(d)+": "+gorevAdi(kod))+'">'+(kod==="H" ? '<b>H'+(i+1)+'</b> ' : '')+'<span class="dg-ad">'+escapeHtml(kisa(r.s.name))+'</span><span class="dg-bas">'+escapeHtml(r.s.name.split(" ").filter(Boolean).map(t=>t.charAt(0)).join("").slice(0,3))+'</span></button>';
+        return '<button type="button" class="dg-chip '+(kod==="H" ? "h" : (eczaciMi(r.s.role) ? "n ecz" : "n tek"))+sec+'" data-id="'+r.s.id+'" data-gun="'+d+'" data-kod="'+kod+'" title="'+escapeHtml(gorunenAd(r.s.name)+", "+gunAdi(d)+": "+gorevAdi(kod))+'">'+(kod==="H" ? '<b>H'+(i+1)+'</b> ' : '')+'<span class="dg-ad">'+escapeHtml(kisa(r.s.name))+'</span><span class="dg-bas">'+escapeHtml(r.s.name.split(" ").filter(Boolean).map(t=>t.charAt(0)).join("").slice(0,3))+'</span></button>';
       };
       h += '<div class="dr-cell dg-cell'+(gg.tatil ? " tatil" : "")+(bugunMu(y,m,d) ? " bugun" : "")+'" data-gun="'+d+'"><div class="dr-gun">'+d+'<small>'+(gg.tatil ? (isManualTatil(y,m,d) ? "resmi" : GUNLER[gg.dw]) : (gg.arife ? "arife" : GUNLER[gg.dw]))+'</small>'+(degisti ? '<span class="dg-isaret" title="Bu günde değişim var">⇄</span>' : '')+'</div>'+
         eczOnce(gr.N.map(r=>({id:r.s.id, role:r.s.role, r}))).map(x=>chip(x.r,"N",0)).join("")+gr.H.map((r,i)=>chip(r,"H",i)).join("")+'</div>';
@@ -5655,9 +5680,9 @@
     const hatalar = liste.filter(x=>x.sev==="hata"), uyarilar = liste.filter(x=>x.sev==="uyari"), bilgiler = liste.filter(x=>x.sev==="bilgi");
     let h = "";
     if (!hatalar.length && !uyarilar.length) h += '<div class="ck ok"><b>Kural ihlali yok.</b></div>';
-    hatalar.forEach(x=> h += '<div class="ck hata"><b>Kural dışı:</b> '+escapeHtml(x.t)+'</div>');
-    uyarilar.forEach(x=> h += '<div class="ck uyari">'+escapeHtml(x.t)+'</div>');
-    bilgiler.forEach(x=> h += '<div class="ck">'+escapeHtml(x.t)+'</div>');
+    hatalar.forEach(x=> h += '<div class="ck hata"><b>Kural dışı:</b> '+escapeHtml(adlariGorunur(x.t))+'</div>');
+    uyarilar.forEach(x=> h += '<div class="ck uyari">'+escapeHtml(adlariGorunur(x.t))+'</div>');
+    bilgiler.forEach(x=> h += '<div class="ck">'+escapeHtml(adlariGorunur(x.t))+'</div>');
     kutu.innerHTML = h;
   }
 
@@ -5680,7 +5705,7 @@
     } else {
       eczacilar.forEach(s=>{
         const opt = document.createElement("option");
-        opt.value = s.id; opt.textContent = s.name;
+        opt.value = s.id; opt.textContent = gorunenAd(s.name);
         slot1.appendChild(opt);
       });
     }
@@ -5693,7 +5718,7 @@
     state.staff.filter(s=>nobetciRol(s.role) && aktifGunMu(s, state.schedule.year, state.schedule.month, day.day)).forEach(s=>{
       const opt = document.createElement("option");
       opt.value = s.id;
-      opt.textContent = s.name + " (" + roleLabel(s.role) + ")";
+      opt.textContent = gorunenAd(s.name) + " (" + roleLabel(s.role) + ")";
       slot2.appendChild(opt);
     });
     const currentP2 = day.assigned[1];
@@ -5710,7 +5735,7 @@
         (idx===0 ? state.staff.filter(s=>hazirlamaRol(s.role) && aktifGunMu(s, state.schedule.year, state.schedule.month, day.day)) : state.staff.filter(s=>s.role!=="servis" && aktifGunMu(s, state.schedule.year, state.schedule.month, day.day))).forEach(s=>{
           const opt = document.createElement("option");
           opt.value = s.id;
-          opt.textContent = s.name + " (" + roleLabel(s.role) + ")";
+          opt.textContent = gorunenAd(s.name) + " (" + roleLabel(s.role) + ")";
           sel.appendChild(opt);
         });
         const mevcut = idx===0 ? ilkHaz : ikinciHaz;
@@ -5809,7 +5834,7 @@
       const durum = r.sec ? '<span class="nd-rozet sec">Seçildi</span>' : (r.engel.length ? '<span class="nd-rozet engel">Yazılamaz</span>' : '<span class="nd-rozet uygun">Uygundu</span>');
       const acik = r.sec ? secilenAciklama(r) : (r.engel.length ? r.engel : r.not);
       const sinif = r.sec ? 'sec' : (r.engel.length ? 'engel' : '');
-      h += '<tr class="'+sinif+'"><td>'+escapeHtml(r.s.name)+' <small style="color:var(--muted)">'+escapeHtml(roleLabel(r.s.role))+'</small></td><td>'+durum+'</td><td class="n">'+r.x.n+'</td>'+(tipK ? '<td class="n">'+r.yh+'</td>' : '')+'<td class="n">'+sa(r.x.fm)+' sa.'+(r.dv ? ' <small style="color:var(--muted)">(önceki aylar '+(r.dv>0?'+':'')+sa(r.dv)+')</small>' : '')+'</td></tr>'+
+      h += '<tr class="'+sinif+'"><td>'+escapeHtml(gorunenAd(r.s.name))+' <small style="color:var(--muted)">'+escapeHtml(roleLabel(r.s.role))+'</small></td><td>'+durum+'</td><td class="n">'+r.x.n+'</td>'+(tipK ? '<td class="n">'+r.yh+'</td>' : '')+'<td class="n">'+sa(r.x.fm)+' sa.'+(r.dv ? ' <small style="color:var(--muted)">(önceki aylar '+(r.dv>0?'+':'')+sa(r.dv)+')</small>' : '')+'</td></tr>'+
         (acik.length ? '<tr class="'+sinif+' acik"><td colspan="'+(tipK ? 5 : 4)+'">'+escapeHtml(acik.join("; "))+'</td></tr>' : '');
     });
     h += '</tbody></table></div><p class="neden-ozet" style="margin:6px 0 0">Nöbet sayısı ve fazla mesai bu gün hariç, bu ay için sayılır; "önceki aylar" yıl içindeki önceki aylardan gelen farktır (ortalamanın üstü +).</p>';
@@ -6527,7 +6552,7 @@
     let L = []; try { L = uygunlukSorunlari(y, m); } catch(e){ console.warn("uygunluk kontrolü", e); }
     if (!L.length){ isle(); return; }
     pzModalAc('<h3>'+AYLAR[m]+' '+y+': oluşturmadan önce</h3><p class="hint" style="margin-top:0">İşaretlenen izin ve eş durumuna göre bu ay bazı kurallar tutmayabilir (tahmin):</p>'+
-      '<ul class="uyg-liste">'+L.map(t=>'<li>'+escapeHtml(t)+'</li>').join("")+'</ul>'+
+      '<ul class="uyg-liste">'+L.map(t=>'<li>'+escapeHtml(adlariGorunur(t))+'</li>').join("")+'</ul>'+
       '<div class="actions-row"><button class="primary" id="uyg-devam">Yine de oluştur</button><button class="ghost" id="uyg-vazgec">Vazgeç</button></div>');
     document.getElementById("uyg-vazgec").onclick = pzModalKapat;
     document.getElementById("uyg-devam").onclick = ()=>{ pzModalKapat(); isle(); };
@@ -6635,7 +6660,7 @@
     if (raporSekme==="servis"){ try { kutu.innerHTML = servisModul.yillikHtml(raporYil); } catch(e){ console.warn(e); kutu.innerHTML = '<div class="empty-panel">Servis raporu hazırlanamadı.</div>'; } return; }
     if (!V.kisiler.length){ kutu.innerHTML = '<div class="empty-panel">Henüz personel yok.</div>'; return; }
     if (!raporKisi || !V.kisiler.some(k=>k.id===raporKisi)) raporKisi = V.kisiler[0].id;
-    sel.innerHTML = V.kisiler.map(k=>'<option value="'+k.id+'"'+(k.id===raporKisi?' selected':'')+'>'+escapeHtml(k.name)+' ('+roleLabel(k.role)+(k.aktif ? (k.ayrildi ? ', ayrıldı' : '') : ', listeden çıkarıldı')+')</option>').join("");
+    sel.innerHTML = V.kisiler.map(k=>'<option value="'+k.id+'"'+(k.id===raporKisi?' selected':'')+'>'+escapeHtml(gorunenAd(k.name))+' ('+roleLabel(k.role)+(k.aktif ? (k.ayrildi ? ', ayrıldı' : '') : ', listeden çıkarıldı')+')</option>').join("");
     if (!V.kayitli){ kutu.innerHTML = '<div class="empty-panel"><p><strong>'+raporYil+' yılı için kayıtlı çizelge yok.</strong><br>Çizelge oluşturduğun aylar burada raporlanır.</p></div>'; return; }
     kutu.innerHTML = raporSekme==="yillik" ? yillikHtml(V) : (raporSekme==="denge" ? dengeHtml(V) : kisiHtml(V));
   }
@@ -6698,7 +6723,7 @@
     D.kisiler.forEach(x=>{
       const grup = eczaciMi(x.k.role) ? "Eczacılar" : "Eczane teknikerleri";
       if (grup!==sonRol){ sonRol = grup; govde += '<tr class="rol"><td colspan="'+(DENGE_KOL.length+1)+'">'+grup+'</td></tr>'; }
-      govde += '<tr><td title="'+escapeHtml(roleLabel(x.k.role))+'">'+escapeHtml(x.k.name)+(x.kismi ? ' <small style="color:var(--muted)">('+x.ay+' ay)</small>' : '')+'</td>'+
+      govde += '<tr><td title="'+escapeHtml(roleLabel(x.k.role))+'">'+escapeHtml(gorunenAd(x.k.name))+(x.kismi ? ' <small style="color:var(--muted)">('+x.ay+' ay)</small>' : '')+'</td>'+
         DENGE_KOL.map(c=>{ const d = x.fark[c.k], cls = D.sinif(c, d);
           return '<td class="'+cls+'" title="Beklenen '+(c.saat ? Math.round(x.bek[c.k]) : String(Math.round(x.bek[c.k]*10)/10).replace(".",","))+'">'+x.t[c.k]+'<span class="df">'+dengeFarkMetni(d, c.saat)+'</span></td>'; }).join("")+'</tr>';
     });
@@ -6733,12 +6758,13 @@
       '<div class="kpi"><small>Toplam fazla mesai</small><div class="v">'+toplamFM+'<span>saat</span></div><div class="s">Nöbetçi başı ortalama '+Math.round(dOrt)+' saat</div></div>'+
       '<div class="kpi"><small>Yıllık fark (en çok − en az)</small><div class="v">'+fark+'<span>saat</span></div><div class="s">'+chip+'</div></div></div>';
     // tablo 1: aylara göre FM
-    const bas = '<tr><th>Ad Soyad</th>'+AY_KISA.map(a=>'<th>'+a+'</th>').join("")+'<th class="top">Toplam</th><th>Ay ort.</th><th>Fark*</th></tr>';
+    // kaydı olmayan aylar soluk: dolu aylar göze çarpsın
+    const bas = '<tr><th>Ad Soyad</th>'+AY_KISA.map((a,i)=>'<th'+(V.aylar[i] ? '' : ' class="bos-ay"')+'>'+a+'</th>').join("")+'<th class="top">Toplam</th><th>Ay ort.</th><th title="Yıllık toplamın nöbetçi ortalamasından sapması (saat)">Fark*</th></tr>';
     function satirFM(k){
       const t = tum[k.id].fm;
-      let r = '<tr><td title="'+roleLabel(k.role)+'">'+escapeHtml(k.name)+'</td>';
+      let r = '<tr><td title="'+roleLabel(k.role)+'">'+escapeHtml(gorunenAd(k.name))+'</td>';
       V.aylar.forEach((a,i)=>{
-        if (!a){ r += '<td style="color:var(--muted)">–</td>'; return; }
+        if (!a){ r += '<td class="bos-ay">–</td>'; return; }
         const v = (a.det[k.id]||bosDet).fm;
         r += '<td class="'+(!nobetciRol(k.role) ? "" : isiSinif(v, aylikOrt[i], hedef))+'">'+v+'</td>';
       });
@@ -6747,21 +6773,21 @@
       r += '<td class="top">'+t+'</td><td>'+ao+'</td><td>'+(dev===""?"":(dev>0?"+":"")+dev)+'</td></tr>';
       return r;
     }
-    h += '<div class="rblok"><h3>Aylara göre fazla mesai (saat)</h3><p class="sub">Raporlar puantaja göredir (gerçekleşen; nöbet değişimleri dahil). Adalet referansı olan çizelge dağılımı Çizelge sayfasındaki özettedir. Turuncu: ayın nöbetçi ortalamasının '+hedef+' saatten fazla üstü, mavi: altı. *Fark, yıllık toplamın nöbetçi ortalamasından sapmasıdır.</p><div class="overflow-x"><table class="rt"><thead>'+bas+'</thead><tbody>'+
+    h += '<div class="rblok"><h3>Aylara göre fazla mesai (saat)</h3><p class="sub">Raporlar puantaja göredir (gerçekleşen; nöbet değişimleri dahil). Adalet referansı olan çizelge dağılımı Çizelge sayfasındaki özettedir. Turuncu: ayın nöbetçi ortalamasının '+hedef+' saatten fazla üstü, mavi: altı.</p><div class="overflow-x"><table class="rt"><thead>'+bas+'</thead><tbody>'+
       '<tr class="rol"><td colspan="16">Eczacı ve teknikeri</td></tr>'+duty.map(satirFM).join("")+
-      (destek.length ? '<tr class="rol"><td colspan="16">Destek personeli</td></tr>'+destek.map(satirFM).join("") : '')+(servis.length ? '<tr class="rol"><td colspan="16">Acil servis nöbetçi eczacılar</td></tr>'+servis.map(satirFM).join("") : '')+'</tbody></table></div></div>';
+      (destek.length ? '<tr class="rol"><td colspan="16">Destek personeli</td></tr>'+destek.map(satirFM).join("") : '')+(servis.length ? '<tr class="rol"><td colspan="16">Acil servis nöbetçi eczacılar</td></tr>'+servis.map(satirFM).join("") : '')+'</tbody></table></div><p class="sub dipnot">*Fark: kişinin yıllık toplamının nöbetçi ortalamasından sapması (saat).</p></div>';
     // grafik
     const mx = Math.max(dMax, 16)*1.08, ortPct = dOrt/mx*100;
     const bars = duty.slice().sort((a,b)=>tum[b.id].fm-tum[a.id].fm || a.name.localeCompare(b.name,"tr")).map(k=>{
       const v = tum[k.id].fm, sn = eczaciMi(k.role) ? "ecz" : "tek", fk = Math.round(v - dOrt);
-      const ipucu = escapeHtml(k.name)+' ('+roleLabel(k.role)+'): '+v+' saat · ortalamanın '+(fk===0 ? 'tam üzerinde' : Math.abs(fk)+' saat '+(fk>0 ? 'üstünde' : 'altında'));
-      return '<div class="fmrow" title="'+ipucu+'" aria-label="'+ipucu+'" role="img"><span class="nm">'+escapeHtml(k.name)+'</span><div class="track"><i class="fill '+sn+'" style="width:'+(v/mx*100)+'%"></i><i class="tick" style="left:'+ortPct+'%"></i></div><span class="val">'+v+'</span></div>';
+      const ipucu = escapeHtml(gorunenAd(k.name))+' ('+roleLabel(k.role)+'): '+v+' saat · ortalamanın '+(fk===0 ? 'tam üzerinde' : Math.abs(fk)+' saat '+(fk>0 ? 'üstünde' : 'altında'));
+      return '<div class="fmrow" title="'+ipucu+'" aria-label="'+ipucu+'" role="img"><span class="nm">'+escapeHtml(gorunenAd(k.name))+'</span><div class="track"><i class="fill '+sn+'" style="width:'+(v/mx*100)+'%"></i><i class="tick" style="left:'+ortPct+'%"></i></div><span class="val">'+v+'</span></div>';
     }).join("");
     const lgd = '<div class="chart-legend">'+(duty.some(k=>eczaciMi(k.role)) ? '<span><i style="background:var(--role-ecz)"></i>Eczacı</span>' : '')+(duty.some(k=>!eczaciMi(k.role)) ? '<span><i style="background:var(--role-tek)"></i>Eczane teknikeri</span>' : '')+'<span><i class="lg-cizgi"></i>Nöbetçi ortalaması ('+Math.round(dOrt)+' saat)</span></div>';
     h += '<div class="rblok"><h3>Yıllık toplam fazla mesai</h3><p class="sub">Çizgi, nöbetçi ortalamasını ('+Math.round(dOrt)+' saat) gösterir. Çubuğun üzerine gelince kişinin ortalamaya göre farkı görünür.</p>'+bars+lgd+'</div>';
     // tablo 2: görev dağılımı
     const bas2 = '<tr><th>Ad Soyad</th><th title="Hafta içi, Cuma, Cumartesi, Pazar nöbetleri ve hazırlamanın toplamı">Nöbet sayısı</th><th>Perşembe</th><th>Cuma</th><th>Cumartesi</th><th>Pazar</th><th>Hazırlama</th><th>Resmi tatil</th><th>Yıllık izin</th><th>Rapor</th></tr>';
-    const satir2 = k=>{ const t = tum[k.id]; return '<tr><td title="'+roleLabel(k.role)+'">'+escapeHtml(k.name)+'</td><td class="top">'+(t.nobet+t.prep)+'</td><td>'+t.thu+'</td><td>'+t.cu+'</td><td>'+t.cmt+'</td><td>'+t.paz+'</td><td>'+t.prep+'</td><td>'+t.rt+'</td><td>'+t.yi+'</td><td>'+t.rd+'</td></tr>'; };
+    const satir2 = k=>{ const t = tum[k.id]; return '<tr><td title="'+roleLabel(k.role)+'">'+escapeHtml(gorunenAd(k.name))+'</td><td class="top">'+(t.nobet+t.prep)+'</td><td>'+t.thu+'</td><td>'+t.cu+'</td><td>'+t.cmt+'</td><td>'+t.paz+'</td><td>'+t.prep+'</td><td>'+t.rt+'</td><td>'+t.yi+'</td><td>'+t.rd+'</td></tr>'; };
     h += '<div class="rblok"><h3>Görev dağılımı (yıl toplamı)</h3><p class="sub">Nöbet sayısı: hafta içi, Cuma, Cumartesi, Pazar nöbetleri ile hazırlamanın toplamı. Resmi tatil: işaretli resmi tatil günlerinde tutulan nöbet sayısı (her yıl kendi içinde dengelenir). Yİ: yıllık izin (izinli işaretlenen mesai günleri).</p><div class="overflow-x"><table class="rt rt-renkli rt-gorev"><thead>'+bas2+'</thead><tbody>'+duty.map(satir2).join("")+(destek.length?'<tr class="rol"><td colspan="10">Destek personeli</td></tr>'+destek.map(satir2).join(""):'')+(servis.length?'<tr class="rol"><td colspan="10">Acil servis nöbetçi eczacılar</td></tr>'+servis.map(satir2).join(""):'')+'</tbody></table></div></div>';
     try { h += resmiDagilimHtml(V.yil); } catch(e){ console.warn(e); }
     return h;
@@ -6788,7 +6814,7 @@
       const sn = eczaciMi(k.role) ? "ecz" : (k.role==="teknisyen" ? "tek" : "dst");
       bars += '<div class="fmrow"><span class="nm">'+AY_KISA[i]+'</span><div class="track"><i class="fill '+sn+'" style="width:'+(d.fm/mx*100)+'%"></i><i class="tick" style="left:'+(ekipOrt[i]/mx*100)+'%"></i></div><span class="val">'+d.fm+'</span></div>';
     });
-    h += '<div class="rblok"><h3>'+escapeHtml(k.name)+' - aylık fazla mesai</h3><p class="sub">Çizgi, o ayın nöbetçi ortalamasıdır. (H): hazırlama görevi.</p>'+bars+'</div>';
+    h += '<div class="rblok"><h3>'+escapeHtml(gorunenAd(k.name))+' - aylık fazla mesai</h3><p class="sub">Çizgi, o ayın nöbetçi ortalamasıdır. (H): hazırlama görevi.</p>'+bars+'</div>';
     h += '<div class="rblok"><h3>Aylık döküm</h3><div class="overflow-x"><table class="rt"><thead>'+bas+'</thead><tbody>'+satirlar+
       '<tr><td class="top">Toplam</td><td class="top">'+(t.nobet+t.prep)+'</td><td class="top">'+t.thu+'</td><td class="top">'+t.cu+'</td><td class="top">'+t.cmt+'</td><td class="top">'+t.paz+'</td><td class="top">'+t.prep+'</td><td class="top">'+t.rt+'</td><td class="top">'+t.yi+'</td><td class="top">'+t.rd+'</td><td class="top">'+t.fm+'</td><td></td><td></td><td></td></tr></tbody></table></div></div>';
     return h;
@@ -6937,7 +6963,7 @@
     const GUN = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
     const destekGoster = L.dst.length > 0;
     const rozet = x=>{ let h = ""; if (x.kod==="N" && x.acil) h += '<span class="rozet s">Acil servis nöbeti</span>'; else if (x.kod==="N") h += '<span class="rozet n">Nöbetçi</span>'; if (x.kod==="H") h += '<span class="rozet h">Hazırlama (tatil)</span>'; if (L.tatil && x.kod==="H") h += '<span class="rozet">'+roleLabel(x.s.role)+'</span>'; if (x.kod && x.kod.indexOf("S:")===0) h += '<span class="rozet s">'+x.saat+' saat</span>'; return h; };
-    const kolon = (sinif, baslik, liste, bosMetin)=> '<div class="gl-kolon '+sinif+'"><h4>'+baslik+'<b>'+liste.length+'</b></h4><ul>'+(liste.length ? liste.map(x=>'<li><span>'+escapeHtml(x.s.name)+'</span><span>'+rozet(x)+'</span></li>').join("") : '<li class="bos">'+bosMetin+'</li>')+'</ul></div>';
+    const kolon = (sinif, baslik, liste, bosMetin)=> '<div class="gl-kolon '+sinif+'"><h4>'+baslik+'<b>'+liste.length+'</b></h4><ul>'+(liste.length ? liste.map(x=>'<li><span>'+escapeHtml(gorunenAd(x.s.name))+'</span><span>'+rozet(x)+'</span></li>').join("") : '<li class="bos">'+bosMetin+'</li>')+'</ul></div>';
     let h = '<div class="gl-baslik">'+T.d+' '+AYLAR[T.m]+' '+T.y+' '+GUN[g.dw]+'<small>'+(g.tatil ? "Tatil günü" : "Mesai günü")+'</small></div>';
     const scGun = state.schedules[T.y+"-"+T.m].days[T.d-1];
     if (!scGun || !scGun.assigned.length) h += '<div class="warning-box info">Bu gün için çizelgede nöbetçi yok; çizelgeyi tamamlayınca liste de tamamlanır.</div>';
@@ -6948,7 +6974,7 @@
       if (notlar && notlar.length) { const sv = gunUyariSeviyesi(notlar); h += '<div class="gl-kural c-'+sv+'" role="note"><b>'+(sv==="kritik" ? "Kritik: bu gün kırmızı işaretli; sebebi:" : "Dikkat: bu günde denge kuralı esnetildi; sebebi:")+'</b><ul>'+notlar.map(t=>'<li>'+escapeHtml(t)+'</li>').join("")+'</ul>'+(state.schedule && state.schedule.year===T.y && state.schedule.month===T.m ? '<small>Değiştirmek için <b>Düzenle</b>’ye dokun.</small>' : '')+'</div>'; }
     }
     h += '<div class="gl-kolonlar">'+kolon("onay",L.tatil ? "Onaycı" : "Eczacılar",L.onay,"Bu gün onay görevinde kimse yok")+kolon("haz",L.tatil ? "Hazırlamacı" : "Eczane Teknikerleri",L.haz,"Bu gün hazırlama görevinde kimse yok")+(L.gel.length ? kolon("gel","Dışarıdan nöbete gelen eczacılar",L.gel,"Bu gün dışarıdan nöbete gelen eczacı yok") : "")+(destekGoster ? kolon("dst","Destek personeli",L.dst,"Bu gün destek personeli yok") : "")+'</div>';
-    if (L.yok.length) h += '<details class="gl-yok"><summary>Listede olmayanlar ('+L.yok.length+' kişi: izinli, raporlu, nöbet ertesi)</summary><ul>'+L.yok.map(x=>'<li>'+escapeHtml(x.s.name)+' ('+roleLabel(x.s.role)+'): '+x.neden+'</li>').join("")+'</ul></details>';
+    if (L.yok.length) h += '<details class="gl-yok"><summary>Listede olmayanlar ('+L.yok.length+' kişi: izinli, raporlu, nöbet ertesi)</summary><ul>'+L.yok.map(x=>'<li>'+escapeHtml(gorunenAd(x.s.name))+' ('+roleLabel(x.s.role)+'): '+x.neden+'</li>').join("")+'</ul></details>';
     kutu.innerHTML = h;
   }
   function gunlukSayfaHtml(G, d, ilk){
@@ -7099,7 +7125,7 @@
     const adaylar = acilAdaylar(g);
     if (!adaylar.length){ alert("Acil eczane nöbeti yazmak için önce Ayarlar > Personel bölümünden görevi \"Acil servis nöbetçi eczacı\" olan bir kişi ekle."); return; }
     const dw = jsDowToMonFirst(new Date(y,m,g).getDay()), GUN = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
-    const sec = i => '<option value="">— Seçilmedi —</option>'+adaylar.map(a=>'<option value="'+a.id+'"'+(mevcut[i]===a.id?' selected':'')+'>'+escapeHtml(a.name)+' ('+roleLabel(a.role)+')</option>').join("");
+    const sec = i => '<option value="">— Seçilmedi —</option>'+adaylar.map(a=>'<option value="'+a.id+'"'+(mevcut[i]===a.id?' selected':'')+'>'+escapeHtml(gorunenAd(a.name))+' ('+roleLabel(a.role)+')</option>').join("");
     pzModalAc('<h3>Acil eczane - '+g+' '+AYLAR[m]+' '+GUN[dw]+'</h3><p class="hint" style="margin-top:0">En fazla 2 nöbetçi seçebilirsin.</p>'+
       '<div class="pz-form"><div class="tam"><label>1. Nöbetçi</label><select id="ac-1">'+sec(0)+'</select></div><div class="tam"><label>2. Nöbetçi</label><select id="ac-2">'+sec(1)+'</select></div></div>'+
       '<div id="ac-kontrol" class="edit-checks"></div><div class="actions-row"><button class="primary" id="ac-kaydet">Kaydet</button><button class="ghost" id="ac-temizle">Günü temizle</button><button class="ghost" id="ac-iptal">İptal</button></div>');
@@ -7201,7 +7227,7 @@
   }
   function pzAralikDuzenle(id, bas, bit){
     const y = state.year, m = state.month, G = puantajGrid(y,m), r = G.satirlar.find(x=>x.s.id===id); if (!r) return;
-    pzModalAc('<h3>'+escapeHtml(r.s.name)+' - '+bas+'-'+bit+' '+AYLAR[m]+'</h3><p class="hint" style="margin-top:0">Seçtiğin '+(bit-bas+1)+' güne aynı kodu yaz. Yıllık izin ve rapor kodları tatil günlerine yazılmaz.</p><div class="pz-kodlar">'+pzKodSecenekleri("YI")+'<label><input type="radio" name="pzk" value="AUTO"><b>oto</b>Otomatiğe döndür (aralıktaki elle değişiklikler silinir)</label></div>'+
+    pzModalAc('<h3>'+escapeHtml(gorunenAd(r.s.name))+' - '+bas+'-'+bit+' '+AYLAR[m]+'</h3><p class="hint" style="margin-top:0">Seçtiğin '+(bit-bas+1)+' güne aynı kodu yaz. Yıllık izin ve rapor kodları tatil günlerine yazılmaz.</p><div class="pz-kodlar">'+pzKodSecenekleri("YI")+'<label><input type="radio" name="pzk" value="AUTO"><b>oto</b>Otomatiğe döndür (aralıktaki elle değişiklikler silinir)</label></div>'+
       '<div class="actions-row"><button class="primary" id="pz-kaydet">Uygula</button><button class="ghost" id="pz-iptal">İptal</button></div>');
     document.getElementById("pz-kaydet").onclick = ()=>{
       const kod = pzSecimOku(); if (!kod){ alert("Bir seçenek seç."); return; }
@@ -7659,7 +7685,17 @@
   document.getElementById("isaretle-btn").addEventListener("click", ()=>{ if (isaretModu) isaretKapat(); else isaretAc(); });
   document.getElementById("isaret-mod").addEventListener("click", (e)=>{ const b = e.target.closest("[data-mod]"); if (b) isaretAc(b.dataset.mod); });
   document.getElementById("isaret-bitti").addEventListener("click", ()=> isaretKapat());
-  document.getElementById("uyari-rozet").addEventListener("click", ()=>{ const c = document.getElementById("uyari-cekmece"); c.open = !c.open; uyariRozetiGuncelle(); if (c.open) c.scrollIntoView({block:"nearest", behavior:"smooth"}); });
+  document.getElementById("uyari-rozet").addEventListener("click", ()=>{ const c = document.getElementById("uyari-cekmece"); c.open = !c.open; uyariRozetiGuncelle(); if (c.open){ c.scrollIntoView({block:"nearest", behavior:"smooth"}); uyariGunleriniVurgula(); } });
+  // uyarı metinlerinde geçen günler ("12. gün", "12 Kasım") takvimde birkaç saniye işaretlenir
+  function uyariGunleriniVurgula(){
+    const ay = AYLAR[state.month], gunler = new Set();
+    sonUyarilar.forEach(w=>{
+      for (const x of String(w).matchAll(new RegExp("(\\d{1,2})(?:\\. gün| "+ay+")", "g"))) gunler.add(Number(x[1]));
+    });
+    const hucreler = [...gunler].map(g=>document.querySelector('#sched-grid .sched-cell[data-gun="'+g+'"]')).filter(Boolean);
+    hucreler.forEach(h=>h.classList.add("uy-isaret"));
+    setTimeout(()=>hucreler.forEach(h=>h.classList.remove("uy-isaret")), 3500);
+  }
   document.getElementById("uyari-cekmece").addEventListener("toggle", uyariRozetiGuncelle);
   // araç çubuğu menüleri ("Dışa aktar" ve "⋯"): her sayfada aynı davranış
   document.querySelectorAll(".cz-menu-kutu > .li-menu-ac").forEach(ac=> ac.addEventListener("click", (e)=>{
@@ -8394,15 +8430,15 @@
       let h = '<div class="sv-gunust"><div><button type="button" class="ghost small" data-svg="-1" aria-label="Önceki mesai günü">&#8249;</button><b class="sv-gunad">'+gunMetni(y,m,d)+'</b><button type="button" class="ghost small" data-svg="1" aria-label="Sonraki mesai günü">&#8250;</button></div>'+
         '<label class="sv-ngun">Çok günlük servisler <select id="sv-ngun">'+Array.from({length:Math.max(6, oto, n)}, (_, i)=>i+1).map(v=>'<option value="'+v+'"'+(v===n ? ' selected' : '')+'>'+v+' gün'+(v===oto ? ' (takvime göre)' : '')+'</option>').join("")+'</select></label></div>';
       if (rec && rec.bayat) h += '<div class="warning-box">Bu geçmiş günün kaydından sonra puantaj ya da servis ayarı değişti; kayıt olduğu gibi duruyor. <button type="button" class="ghost small" id="sv-yeniden">Bu günden itibaren yeniden dağıt</button></div>';
-      h += '<div class="sv-chips" id="sv-kisiler">'+(kisiler.length ? kisiler.map(k=>'<button type="button" class="sv-chip'+(k.on ? ' on' : '')+'" data-k="'+k.id+'" aria-pressed="'+(k.on ? 'true' : 'false')+'"><i class="sv-ck"></i><span>'+escapeHtml(k.name)+'</span>'+(k.etiket ? '<small>'+escapeHtml(k.etiket)+'</small>' : '')+(k.elle ? '<small>elle</small>' : '')+'</button>').join("") : '<div class="empty-note">Bu gün çalışan tekniker yok.</div>')+'</div>';
+      h += '<div class="sv-chips" id="sv-kisiler">'+(kisiler.length ? kisiler.map(k=>'<button type="button" class="sv-chip'+(k.on ? ' on' : '')+'" data-k="'+k.id+'" aria-pressed="'+(k.on ? 'true' : 'false')+'"><i class="sv-ck"></i><span>'+escapeHtml(gorunenAd(k.name))+'</span>'+(k.etiket ? '<small>'+escapeHtml(k.etiket)+'</small>' : '')+(k.elle ? '<small>elle</small>' : '')+'</button>').join("") : '<div class="empty-note">Bu gün çalışan tekniker yok.</div>')+'</div>';
       h += '<div class="hint sv-chipnot">Kişiler puantajdan gelir; puantajda izin, rapor ya da nöbet ertesi izni olan kapalıdır. Buradan kapattığın kişi yalnızca servis dağıtımında çıkarılır.'+(gecmis ? ' Geçmiş gün: değişiklik bu günden sonraki günleri de yeniden dağıtır.' : '')+'</div>';
       if (!S){ return h + '<div class="empty-note">Bu gün için dağıtım yok (seçili kişi ya da servis yok).</div>'; }
       const P = S.kisi, topl = P.reduce((a,p)=>a+p.total,0), ort = topl/Math.max(1,P.length);
       const mx = Math.max.apply(null, P.map(p=>p.total).concat([1]));
-      const bar = P.map(p=>'<div class="fmrow"><span class="nm">'+escapeHtml(p.name)+'</span><div class="track"><div class="fill tek" style="width:'+(p.total/mx*100)+'%"></div><div class="tick" style="left:'+(ort/mx*100)+'%"></div></div><span class="val">'+p.total+'</span></div>').join("");
+      const bar = P.map(p=>'<div class="fmrow"><span class="nm">'+escapeHtml(gorunenAd(p.name))+'</span><div class="track"><div class="fill tek" style="width:'+(p.total/mx*100)+'%"></div><div class="tick" style="left:'+(ort/mx*100)+'%"></div></div><span class="val">'+p.total+'</span></div>').join("");
       const ata = V.R.ata && V.R.ata[d] || {};
       const elleMi = sn=> ata[sn]!==undefined && ata[sn]===rec.a[sn];
-      const kart = P.map(p=>'<div class="sv-kisi"><header><b>'+escapeHtml(p.name)+'</b><span>'+p.items.length+'</span></header><div class="sv-meta">'+p.w+' servis-gün · '+p.yb+' YB · '+p.zr+' zor</div><ul>'+
+      const kart = P.map(p=>'<div class="sv-kisi"><header><b>'+escapeHtml(gorunenAd(p.name))+'</b><span>'+p.items.length+'</span></header><div class="sv-meta">'+p.w+' servis-gün · '+p.yb+' YB · '+p.zr+' zor</div><ul>'+
         p.items.map(s=>'<li'+(/\sYB$/.test(s.name) ? ' class="yb"' : '')+'><button type="button" class="sv-svc-btn" data-sn="'+escapeHtml(s.name)+'" title="'+escapeHtml(s.name)+' servisini başka teknikere ver">'+escapeHtml(s.name.replace(/\sYB$/, ""))+(s.multi && rec.n>1 ? '<em>×'+rec.n+'</em>' : '')+(elleMi(s.name) ? '<i class="sv-elle" title="Elle atandı">✎</i>' : '')+'</button></li>').join("")+'</ul></div>').join("");
       const kim = new Map(); P.forEach(p=>p.items.forEach(x=>kim.set(x.name, p.name)));
       const satir = S.svcs.map(s=>s.name).sort((a,b)=>a.localeCompare(b, "tr")).map(sn=>[sn, kim.get(sn)||""]);
@@ -8644,7 +8680,7 @@
         if (r.hata){ not.hidden = false; not.textContent = r.hata; kisi.innerHTML = '<option value="">—</option>'; yaz.disabled = true; return; }
         son = {T, S:r.S}; not.hidden = true; yaz.disabled = false;
         const once = kisi.value;
-        kisi.innerHTML = '<option value="hepsi">Tüm teknikerler ('+r.S.kisi.length+' kişi)</option>'+r.S.kisi.map(p=>'<option value="'+p.id+'">'+escapeHtml(p.name)+' · '+p.items.length+' servis</option>').join("");
+        kisi.innerHTML = '<option value="hepsi">Tüm teknikerler ('+r.S.kisi.length+' kişi)</option>'+r.S.kisi.map(p=>'<option value="'+p.id+'">'+escapeHtml(gorunenAd(p.name))+' · '+p.items.length+' servis</option>').join("");
         if ([...kisi.options].some(o=>o.value===once)) kisi.value = once;
       };
       tarih.onchange = yenile;
