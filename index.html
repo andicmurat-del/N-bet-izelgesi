@@ -1597,7 +1597,6 @@
     .vurgu-bilgi .vb-ad { display: inline; }
     .cz-durum { min-height: 0; }
   }
-  .sv-kisi li.zor::after, .sv-kisi li.yb.zor::after { content: "Z"; display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 4px; background: var(--danger-soft); color: var(--danger); font-style: normal; }
   /* =====================================================================
      DÜZEN C — koyu simge menü (bilgisayar: solda, telefon: altta) ve çizelgede
      kişi paneli (geniş ekranda sağda, dar ekranda takvimin üstünde şerit)
@@ -8355,7 +8354,7 @@
       const ata = V.R.ata && V.R.ata[d] || {};
       const elleMi = sn=> ata[sn]!==undefined && ata[sn]===rec.a[sn];
       const kart = P.map(p=>'<div class="sv-kisi"><header><b>'+escapeHtml(p.name)+'</b><span>'+p.items.length+'</span></header><div class="sv-meta">'+p.w+' servis-gün · '+p.yb+' YB · '+p.zr+' zor</div><ul>'+
-        p.items.map(s=>'<li class="'+(/\sYB$/.test(s.name) ? 'yb' : '')+(s.zor ? ' zor' : '')+'" title="'+(s.zor ? 'Zor servis (zorluk '+ZOR_ESIK+'+)' : '')+'"><button type="button" class="sv-svc-btn" data-sn="'+escapeHtml(s.name)+'" title="'+escapeHtml(s.name)+' servisini başka teknikere ver">'+escapeHtml(s.name.replace(/\sYB$/, ""))+(s.multi && rec.n>1 ? '<em>×'+rec.n+'</em>' : '')+(elleMi(s.name) ? '<i class="sv-elle" title="Elle atandı">✎</i>' : '')+'</button></li>').join("")+'</ul></div>').join("");
+        p.items.map(s=>'<li'+(/\sYB$/.test(s.name) ? ' class="yb"' : '')+'><button type="button" class="sv-svc-btn" data-sn="'+escapeHtml(s.name)+'" title="'+escapeHtml(s.name)+' servisini başka teknikere ver">'+escapeHtml(s.name.replace(/\sYB$/, ""))+(s.multi && rec.n>1 ? '<em>×'+rec.n+'</em>' : '')+(elleMi(s.name) ? '<i class="sv-elle" title="Elle atandı">✎</i>' : '')+'</button></li>').join("")+'</ul></div>').join("");
       const kim = new Map(); P.forEach(p=>p.items.forEach(x=>kim.set(x.name, p.name)));
       const satir = S.svcs.map(s=>s.name).sort((a,b)=>a.localeCompare(b, "tr")).map(sn=>[sn, kim.get(sn)||""]);
       const yari = Math.ceil(satir.length/2);
