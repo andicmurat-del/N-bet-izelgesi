@@ -379,7 +379,7 @@
   /* acil eczane */
   .ac-cell.tt { border-color: var(--tatil); }
   .ac-cell .k { display: block; color: var(--ink); font-weight: 500; }
-  .ac-cell .k.bos2 { color: var(--muted); font-weight: 400; }
+  .ac-cell .k.bos2 { color: var(--muted); font-weight: 400; font-style: italic; }
   .ac-cell.dolu { box-shadow: inset 0 0 0 1.5px var(--accent); }
   /* günlük çalışma listesi */
 
@@ -1647,8 +1647,8 @@
       <div class="brand-metin"><h1>Nöbet Çizelgesi</h1><p id="brand-sub">Hastane eczanesi</p></div>
     </div>
     <nav aria-label="Bölümler">
-      <button type="button" data-nav="cizelge"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 9.5h17M3.5 15h17M9.5 9.5v11M15 9.5v11"/></svg><span>Çizelge</span></button>
-      <button type="button" data-nav="acil"><svg viewBox="0 0 24 24"><path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/></svg><span><span class="uzun">Acil nöbet</span><span class="kisa">Acil</span></span></button>
+      <button type="button" data-nav="cizelge"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="12" cy="13.6" r="1.8"/><path d="M8.8 18.6a3.4 3.4 0 0 1 6.4 0"/></svg><span>Çizelge</span></button>
+      <button type="button" data-nav="acil"><svg viewBox="0 0 24 24"><path d="M2.5 12h4l2.2-5.5 4.3 11 2.2-5.5h6.3"/></svg><span><span class="uzun">Acil nöbet</span><span class="kisa">Acil</span></span></button>
       <button type="button" data-nav="rapor"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg><span>Raporlar</span></button>
       <button type="button" data-nav="servis"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg><span>Hazırlama</span></button>
       <button type="button" data-nav="ayarlar" class="nav-ayarlar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Ayarlar</span></button>
@@ -6952,7 +6952,7 @@
       // telefonda ajanda görünümü için hafta başlığı ve gün adı (masaüstünde gizli)
       if (g===1 || dw===0){ const son = Math.min(g + 6 - dw, dim); h += '<div class="hafta-bas">'+(son>g ? g+"–"+son : g)+' '+AYLAR[m]+'</div>'; }
       h += '<div class="ac-cell'+(isTatilGunu(y,m,g)?' tt':'')+(ids.length?' dolu':'')+(bugunMu(y,m,g)?' bugun':'')+'" data-gun="'+g+'"><div class="gun-bas"><div class="dn">'+g+'</div><div class="gun-ad">'+GUN_ADI_UZUN[dw]+'</div></div><div class="kisiler">'+
-        [0,1].map(i=> ids[i]!==undefined ? '<span class="k">'+(i+1)+'. '+escapeHtml(ad(ids[i]))+'</span>' : '<span class="k bos2">'+(i+1)+'. –</span>').join("")+'</div></div>';
+        (ids.length ? ids.map(id=>'<span class="k">'+escapeHtml(ad(id))+'</span>').join("") : '<span class="k bos2">Nöbetçi yok</span>')+'</div></div>';
     }
     h += '</div></div>';
     // özet
@@ -7048,7 +7048,7 @@
     for (let g=1; g<=dim; g++){
       if (hucre%7===0 && hucre>0) cal += '</tr><tr>';
       const ids = ay[g]||[];
-      cal += '<td'+(isTatilGunu(y,m,g)?' class="tt"':'')+'><div class="dn">'+g+'</div><div class="ec">'+(ids[0]!==undefined?'1. '+ad(ids[0]):'')+'</div><div class="ec">'+(ids[1]!==undefined?'2. '+ad(ids[1]):'')+'</div></td>';
+      cal += '<td'+(isTatilGunu(y,m,g)?' class="tt"':'')+'><div class="dn">'+g+'</div>'+ids.map(id=>'<div class="ec">'+ad(id)+'</div>').join("")+'</td>';
       hucre++;
     }
     while (hucre%7!==0){ cal += '<td class="bos"></td>'; hucre++; }
