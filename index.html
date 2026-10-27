@@ -272,7 +272,9 @@
   .dr-cell.drag-on { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--accent-soft); }
   .dr-gun { font-size: 13px; font-weight: 600; color: var(--ink); }
   .dr-gun small { font-weight: 500; color: var(--muted); font-size: 10.5px; margin-left: 5px; }
+  .dr-cell.ben-R { background: var(--kR-bg); border-color: transparent; } .dr-cell.ben-YI { background: var(--kYI-bg); border-color: transparent; } .dr-cell.ben-NI { background: var(--kNI-bg); border-color: transparent; }
   .dr-ben { font-size: 11.5px; font-weight: 700; }
+  .dr-cell.ben-R .dr-ben { color: var(--kR-fg); } .dr-cell.ben-YI .dr-ben { color: var(--kYI-fg); } .dr-cell.ben-NI .dr-ben { color: var(--kNI-fg); }
   .dr-gorev { font-size: 11px; font-weight: 600; color: var(--accent-ink); }
   .dr-plan { font-size: 11px; color: var(--muted); font-style: italic; }
   .dr-rozet { display: inline-block; min-width: 18px; text-align: center; border-radius: 4px; font-weight: 700; }
@@ -6484,7 +6486,6 @@
       const dimS = daysInMonth(y,m), hz = ayar('hazSaat');
       sch.days.forEach(d=>{
         const dw = jsDowToMonFirst(new Date(y,m,d.day).getDay()), fm = computeFazlaMesaiForDay(y,m,d.day,dimS);
-        d.assigned.forEach(p=>{ if (r[p.id]) return; });
         d.assigned.filter(p=>!state.staff.some(s=>s.id===p.id)).forEach(p=>{ const x = r[p.id] || (r[p.id] = {fm:0,nobet:0,hi:0,cu:0,cmt:0,paz:0,thu:0,prep:0,ni:0,yi:0,rd:0,rt:0,gunler:[]}); x.fm += fm; x.nobet++; if (dw===5) x.cmt++; else if (dw===6) x.paz++; else if (dw===4) x.cu++; else x.hi++; if (dw===3) x.thu++; x.gunler.push({gun:d.day, dw, tip:"N"}); });
         (d.prep||[]).filter(p=>!state.staff.some(s=>s.id===p.id)).forEach(p=>{ const x = r[p.id] || (r[p.id] = {fm:0,nobet:0,hi:0,cu:0,cmt:0,paz:0,thu:0,prep:0,ni:0,yi:0,rd:0,rt:0,gunler:[]}); x.fm += hz; x.prep++; x.gunler.push({gun:d.day, dw, tip:"H"}); });
       });
@@ -7415,7 +7416,6 @@
     {k:"hsTercih", t:"Ayda tercih edilen hafta sonu nöbeti", d:"Kişi başı ayda Cumartesi ve Pazar nöbetlerinin toplamı için hedef. Hafta sonu nöbet yeri kişi sayısından fazlaysa aşılabilir.", tip:"sec", sec:[[1,"1"],[2,"2"],[3,"3"]]},
     {k:"hsUst", t:"Ayda en fazla hafta sonu nöbeti", d:"Kesin üst sınır. Bu sayıyı aşmamak için çizelge çok sert zorlanır; ancak personel gerçekten yetmiyorsa uyarı verilir. Tercih edilenden küçük olamaz.", tip:"sec", sec:[[1,"1"],[2,"2"],[3,"3"],[4,"4"]]},
     {k:"cumaEsles", t:"Cuma + hafta sonu eşleşmesini tercih et", d:"Hafta sonu nöbeti olan kişiye aynı ay bir Cuma nöbeti de yazılmaya çalışılır (farklı haftalarda, çünkü ardışık gün yazılmaz).", tip:"onay"},
-    {grup:"Destek personeli"},
     {grup:"Rapor (Excel ve PDF)"},
     {k:"kurumAdi", t:"Kurum adı", d:"Raporların başlığında görünür. Boş bırakabilirsin.", tip:"metin"},
     {grup:"Destek personeli"},
