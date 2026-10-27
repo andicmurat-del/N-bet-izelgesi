@@ -2687,12 +2687,13 @@
   // Arama, aşağıdaki cezaların toplamını en aza indirir. Büyük ağırlık = yüksek öncelik. Bir kuralın birimi
   // (1 saat, 1 nöbet, 1 kişi…) başına verilen cezadır; ssIx ile kullanılanlar kare sapma toplamıyla çarpılır.
   //  1. UYARI: uyarı çıkaran her durum. Öncelik her zaman uyarısız çizelgedir; diğer tüm cezaların toplamından büyüktür.
-  //  2. Kesin kurallar (KESIN ve katları): uyarı düzeyine ek olarak ihlalin büyüklüğünü ayırt eder.
-  //  3. Güçlü tercihler (yüz binler): ancak başka çare yoksa esner.
-  //  4. Yıllık ve aylık eşitlik hedefleri (binler): adalet; birbirleriyle dengelenir.
-  //  5. İnce ayar (onlar, birler): eşitlik bozulmadan karşılanan tercihler.
+  //  2. Kesin kurallar (yüz binler ve üzeri): uyarı düzeyine ek olarak ihlalin büyüklüğünü ayırt eder.
+  //  3. Güçlü tercihler (on binler, yüz binler): ancak başka çare yoksa esner.
+  //  4. Yıllık eşitlik ve aylık düzen (binler, yüzler): adalet; birbirleriyle dengelenir.
+  //  5. Aylık denge ve ince ayar (onlar, birler): eşitlik bozulmadan karşılanan tercihler.
+  // Günlük tercihler (thuHs, cuPaz, istiyor, araGun) gunTercihCarpani (3) ile çarpılır; etkin değerleri yanlarında yazılı.
   // Bir değeri değiştirmeden önce: testler (npm test) senaryolarda hata sayısının artmadığını denetler.
-  const KESIN_AGIRLIK = 2e6;
+  const KESIN_AGIRLIK = 2e6, GUNYIL_AGIRLIK = 1.5e6;
   const AGIRLIK = Object.freeze({
     // 1. uyarı
     UYARI: 1e11,
@@ -2703,8 +2704,8 @@
     hzFarkSaatOncelik: 300000,               // hazırlama farkı 1'i aşınca, Ayarlar'da "fazla mesai saati" öncelikliyse
     destekSayi: KESIN_AGIRLIK*40,            // destek personeli ayda tam ayardaki sayı kadar hazırlama alır (her fark için)
     tekOnce: KESIN_AGIRLIK*10,               // hazırlama önce teknikerlere: eczacının (yıllık) hazırlaması teknikerinkini geçmez
-    resmiYilToplam: 2*1.5e6,                 // yıllık resmi tatil görevi (nöbet + hazırlama) farkı 1'i aşınca
-    gunYil: 1.5e6,                           // yıllık Perşembe / Cuma / Cumartesi / Pazar / resmi tatil nöbeti farkı 1'i aşınca
+    resmiYilToplam: 2*GUNYIL_AGIRLIK,        // yıllık resmi tatil görevi (nöbet + hazırlama) farkı 1'i aşınca
+    gunYil: GUNYIL_AGIRLIK,                  // yıllık Perşembe / Cuma / Cumartesi / Pazar / resmi tatil nöbeti farkı 1'i aşınca
     hsKural: 500000,                         // ayda en fazla 1 Cumartesi, 1 Pazar; Cuma + Cumartesi + Pazar birlikte olmaz
     // 3. güçlü tercihler
     prepUst: 400000,                         // eczacı / tekniker ayda en fazla 2 hazırlama
@@ -2712,14 +2713,14 @@
     hsEnAz1: 150000,                         // ayda en az 1 Cumartesi/Pazar nöbeti (uygun gün varsa)
     nobetFark: 100000,                       // aylık nöbet sayısı farkı 1'i aşınca
     hsUst: 80000,                            // ayda Cumartesi/Pazar nöbeti ayardaki üst sınırı aşınca
-    thuHs: 20000,                            // Perşembe nöbeti tutana aynı hafta sonu nöbet
-    // 4. eşitlik hedefleri
+    thuHs: 20000,                            // Perşembe nöbeti tutana aynı hafta sonu nöbet (etkin: ×3 = 60000)
+    // 4. yıllık eşitlik ve aylık düzen
+    cuPaz: 2000,                             // Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması (etkin: ×3 = 6000)
     thuFazla: 4000,                          // ayda Perşembe nöbeti ayardaki sınırı aşınca
     hsYil: 2500,                             // yıllık Cumartesi/Pazar nöbeti dengesi (kare sapma)
     nYil: 2000,                              // yıllık nöbet sayısı dengesi (kare sapma)
     prpYil: 2000,                            // yıllık hazırlama dengesi, herkes birlikte (kare sapma)
     prpGrup: 2000,                           // yıllık hazırlama dengesi, eczacılar ve teknikerler kendi içinde (kare sapma)
-    cuPaz: 2000,                             // Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması
     prp2: 1500,                              // ayda 1 hazırlama hedefi: 2. hazırlama
     cuYil: 1500,                             // yıllık Cuma nöbeti dengesi (kare sapma)
     peYil: 1200,                             // yıllık Perşembe nöbeti dengesi (kare sapma)
@@ -2731,13 +2732,13 @@
     cumaFazla: 300,                          // ayda 2. Cuma nöbeti
     devirCumartesi: 250,                     // önceki ay Cumartesi tutana bu ay yine Cumartesi
     cumaTek: 200,                            // Cuma nöbeti var, hafta sonu nöbeti yok (Cuma eşleşmesi açıksa)
-    // 5. ince ayar
+    // 5. aylık denge ve ince ayar
     fmYil: 80,                               // yıllık fazla mesai saati dengesi (kare sapma)
     nobetAy: 60,                             // aylık nöbet sayısı dengesi (kare sapma)
     destekYil: 25,                           // destek personeli yıllık hazırlama dengesi (kare sapma)
     haftaSonuIs: 20,                         // aylık hafta sonu nöbeti + hazırlama sayısı dengesi (kare sapma)
-    istiyor: 5,                              // "istiyor" işaretli güne nöbet (ödül)
-    araGun: 1,                               // iki nöbet arası ayardaki en az günden kısa
+    istiyor: 5,                              // "istiyor" işaretli güne nöbet (ödül; etkin: ×3 = 15)
+    araGun: 1,                               // iki nöbet arası ayardaki en az günden kısa (etkin: ×3 = 3)
     gunTercihCarpani: 3,                     // günlük tercih toplamının (thuHs, cuPaz, istiyor, araGun) çarpanı
   });
   // fazla mesai kuralına giren kişiler: ayın tamamında çalışan eczacı, tekniker ve dışarıdan gelen eczacı
@@ -3169,9 +3170,9 @@
       ids.forEach((id,ix)=>{ sira[id] = ix; });
     })();
     const resmiDv = resmiDevir(y, m);   // aynı yılın önceki aylarından resmi tatil nöbeti dengesi
-    const hsDv = hsDevir(y, m);
-    const cuDv = cuDevir(y, m);
-    const peDv = pzrDevir(y, m);        // aynı yılın önceki aylarından Perşembe nöbeti dengesi         // aynı yılın önceki aylarından Cuma nöbeti dengesi
+    const hsDv = hsDevir(y, m);         // aynı yılın önceki aylarından Cumartesi/Pazar nöbeti dengesi
+    const cuDv = cuDevir(y, m);         // aynı yılın önceki aylarından Cuma nöbeti dengesi
+    const peDv = pzrDevir(y, m);        // aynı yılın önceki aylarından Perşembe nöbeti dengesi
     const cuCount = {};
     const cmtDv = cmtDevir(y, m), pazDv = pazDevir(y, m);   // aynı yılın önceki aylarından Cumartesi / Pazar dengesi
     const cmtCount = {}, pazCount = {}, cumaGunCount = {};   // cumaGunCount: bu ay tutulan (gerçek) Cuma nöbeti
@@ -3181,7 +3182,7 @@
     function hsKalan(id, d){ const k = id+"-"+d; if (hsKalanOnb[k]!==undefined) return hsKalanOnb[k];
       let n = 0; const son = new Date(y, m+1, 0).getDate();
       for (let g=d; g<=son; g++){ const w = dowOfDay(g); if ((w===5||w===6) && !kesinYasak(id,y,m,g)) n++; }
-      return (hsKalanOnb[k] = n); }         // aynı yılın önceki aylarından Cumartesi/Pazar nöbeti dengesi
+      return (hsKalanOnb[k] = n); }
     const resmiCount = {};              // id -> bu ay (şimdiye kadar) resmi tatil nöbeti
     const dutyCount = {}; // id -> toplam nöbet
     const totalFM = {};   // id -> o ana kadar birikmiş fazla mesai (adil dağılım için)
@@ -3459,21 +3460,13 @@
     const yb0 = yilGunSayilari(y, m, null);
     const bPe = new Float64Array(NH), bCu = new Float64Array(NH), bCmt = new Float64Array(NH), bPaz = new Float64Array(NH), bRt = new Float64Array(NH);
     tumHavuz.forEach((s,ix)=>{ const o = yb0[s.id]; if (!o) return; bPe[ix] = o.pe; bCu[ix] = o.cu; bCmt[ix] = o.cmt; bPaz[ix] = o.paz; bRt[ix] = o.rt; });
-    const W_HSYIL = AGIRLIK.hsYil;
-    const W_CUYIL = AGIRLIK.cuYil;  // yıllık Cuma nöbeti dengesi
-    const W_PEYIL = AGIRLIK.peYil;  // yıllık Perşembe nöbeti dengesi
-    // hazırlama ayrıca her grubun kendi içinde dengelenir (eczacılar kendi arasında, teknikerler kendi arasında);
-    // gruplar arası denge yıllık W_PRPYIL ile sağlanır (yıl sonunda herkese eşit hazırlama)
-    const W_PRPGRUP = AGIRLIK.prpGrup;   // yıllık: teknikerler kendi arasında, eczacılar kendi arasında eşit hazırlama
-    const A_PRP2 = AGIRLIK.prp2;   // ayda 1 hazırlama hedefi: 2. hazırlamanın cezası (yer 1'er kişiyle dolmuyorsa yazılır)
-    const W_PRPYIL = AGIRLIK.prpYil;  // yıllık, gruplar arası: hazırlama yıl sonunda herkese eşit (eczacı / tekniker ayrımı olmadan)
+    // hazırlama ayrıca her grubun kendi içinde dengelenir (eczacılar kendi arasında, teknikerler kendi arasında: prpGrup);
+    // gruplar arası denge yıllık prpYil ile sağlanır (yıl sonunda herkese eşit hazırlama)
     const offPe = new Float64Array(NH), hThuEf = new Float64Array(NH);
     const cuGunDizi = days.map(dy=>cumaTipiMi(y,m,dy.day));
     const offCu = new Float64Array(NH), hCu = new Float64Array(NH), hCuEf = new Float64Array(NH);
-    const W_NYIL = AGIRLIK.nYil;   // yıllık nöbet sayısı dengesi: nöbet sayıları eşit olunca hazırlama ve fazla mesai de birlikte eşitlenir
-    const W_CPYIL = AGIRLIK.cpYil;   // yıllık Cumartesi ve Pazar dengesi (ayrı ayrı)
-    const offCmt = new Float64Array(NH), offPaz = new Float64Array(NH), hSatEf = new Float64Array(NH), hSunEf = new Float64Array(NH);     // yıllık nöbet sayısı dengesi (fazla mesaiden sonra ikinci hedef)
-    const offN = new Float64Array(NH), hCntEf = new Float64Array(NH);  // yıllık hafta sonu dengesi ağırlığı (yüksek öncelik)
+    const offCmt = new Float64Array(NH), offPaz = new Float64Array(NH), hSatEf = new Float64Array(NH), hSunEf = new Float64Array(NH);     // yıllık Cumartesi ve Pazar dengesi için önceki aylardan gelen sayılar (cpYil)
+    const offN = new Float64Array(NH), hCntEf = new Float64Array(NH);  // yıllık nöbet sayısı dengesi için önceki aylardan gelen sayılar (nYil)
     const offFm = new Float64Array(NH), offPrp = new Float64Array(NH), offRc = new Float64Array(NH), offRcH = new Float64Array(NH), offHs = new Float64Array(NH), hHsEf = new Float64Array(NH);
     tumHavuz.forEach((s,ix)=>{ offFm[ix] = devir.off[s.id]||0; offPrp[ix] = devir.prepOff[s.id]||0; offRc[ix] = resmiDv.off[s.id]||0; offRcH[ix] = resmiDv.offH[s.id]||0; offHs[ix] = hsDv[s.id]||0; offCu[ix] = cuDv[s.id]||0; offN[ix] = nDv[s.id]||0; offCmt[ix] = cmtDv[s.id]||0; offPaz[ix] = pazDv[s.id]||0; offPe[ix] = peDv[s.id]||0; });
     // ayda en az 1 Cumartesi/Pazar nöbeti: yalnız o ay en az bir hafta sonu günü uygun olan kişiler için
@@ -3488,7 +3481,6 @@
     const UYARI = AGIRLIK.UYARI;
     // saat ile hazırlama çakışırsa öncelik (Ayarlar): 1 = hazırlama eşitliği (fark en fazla 1, saat esner), 2 = fazla mesai saati
     const W_HZFARK = Number(ayar('cakismaOncelik'))===2 ? AGIRLIK.hzFarkSaatOncelik : AGIRLIK.hzFarkHazirlamaOncelik;
-    const W_TEKONCE = AGIRLIK.tekOnce;   // hazırlama önce teknikerlere: bir eczacının hazırlaması bir teknikerinkinden fazla olmaz
     const W_HS_KURAL = AGIRLIK.hsKural;    // hafta sonu kuralı (1 Cmt, 1 Paz, Cu+Cmt+Paz yok); ihlali uyarı çıkarır (UYARI), bu ağırlık yalnız ihlalin büyüklüğünü ayırt eder
     const ixEczPrep = eczacilar.filter(s=>hazirlamaRol(s.role)).map(s=>hIx[s.id]), ixTekPrep = teknisyenler.filter(s=>hazirlamaRol(s.role)).map(s=>hIx[s.id]);
     const pvThu = [], pvSat = [], pvSun = [];
@@ -3531,7 +3523,7 @@
     }
     // i. günün yumuşak ceza katkısı (o gün ve 2-3 gün sonrasındaki nöbetlere bakar)
     // ağırlıklar ve öncelik sırası: AGIRLIK tablosu (thuHs, cuPaz, istiyor, araGun; toplam gunTercihCarpani ile çarpılır)
-    const A_THUHS_C = AGIRLIK.thuHs, A_CUPAZ_C = AGIRLIK.cuPaz;
+    const A_THUHS_C = AGIRLIK.thuHs, A_CUPAZ_C = AGIRLIK.cuPaz, A_ARAGUN = AGIRLIK.araGun;
     function softGun(i){
       const as = days[i].assigned, pg = prefGun[i], dow = gunDow[i]; let sf = 0;
       for (let q=0;q<as.length;q++){
@@ -3539,10 +3531,10 @@
         if (hIx[pid]===undefined) continue;
         const pr = pg[pid];
         if (pr==='want') sf-=AGIRLIK.istiyor;    // "istiyor": düşük öncelik — eşit/adil dağıtımı bozmadan, yalnız eşitlik varken karşılanır
-        if (A_MINARA>=3 && i+2<GUN_SAY && gundeVar(i+2, pid)) sf+=AGIRLIK.araGun;
-        if (A_MINARA>=4 && i+3<GUN_SAY && gundeVar(i+3, pid)) sf+=AGIRLIK.araGun;
+        if (A_MINARA>=3 && i+2<GUN_SAY && gundeVar(i+2, pid)) sf+=A_ARAGUN;
+        if (A_MINARA>=4 && i+3<GUN_SAY && gundeVar(i+3, pid)) sf+=A_ARAGUN;
         // ay başı: önceki ayın son günlerindeki (gerçekte tutulan) nöbetle en az gün farkı
-        if (i < A_MINARA) for (let k=1; k<=4; k++){ const ara = i+k; if (ara>=2 && ara<A_MINARA && oncekiSonGunler[k].indexOf(pid)>=0) sf+=AGIRLIK.araGun; }
+        if (i < A_MINARA) for (let k=1; k<=4; k++){ const ara = i+k; if (ara>=2 && ara<A_MINARA && oncekiSonGunler[k].indexOf(pid)>=0) sf+=A_ARAGUN; }
         if (dow===3 && A_THUHS){
           // Perşembe nöbeti tutana aynı hafta sonu nöbet yazılmaz (güçlü tercih; personel gerçekten yetmezse esner)
           if (i+2<GUN_SAY && gundeVar(i+2, pid)) sf+=A_THUHS_C;
@@ -3601,7 +3593,7 @@
       // hazırlama önce teknikerlere: her teknikere 1, sonra eczacılara; yeni tur yine teknikerden. Sıra yıl boyunca
       // sürer (önceki aylar dahil): her ay baştan başlasaydı ay içinde artan hazırlama hep teknikerlere kalır, yılda birikirdi
       { let mxE = -1e9, mnT = 1e9; for (let q=0;q<ixPrepAdil.length;q++){ const ix = ixPrepAdil[q], v = hPrpEf[ix]; if (eczIx[ix]){ if (v>mxE) mxE = v; } else if (v<mnT) mnT = v; }
-        if (mxE > -1e9 && mnT < 1e9 && mxE > mnT + 1e-6) hzAdil += W_TEKONCE*(mxE-mnT); }
+        if (mxE > -1e9 && mnT < 1e9 && mxE > mnT + 1e-6) hzAdil += AGIRLIK.tekOnce*(mxE-mnT); }
       // nöbet sayısı: kişiler arasında fark mümkünse en fazla 1, en fazla 2
       if (ixFmKural.length > 1){ let mx = -1, mn = 1e9; for (let q=0;q<ixFmKural.length;q++){ const v = hCnt[ixFmKural[q]]; if (v>mx) mx = v; if (v<mn) mn = v; }
         if (mx-mn > 1) hzAdil += AGIRLIK.nobetFark*(mx-mn-1); if (mx-mn > 2){ hzAdil += KESIN*(mx-mn-2); uy++; } }
@@ -3637,13 +3629,13 @@
         if (cm > 1) hsPen += AGIRLIK.cumaFazla*(cm-1);
         // ayda en az 1 Cumartesi/Pazar nöbeti (uygun hafta sonu günü varsa)
         if (hHs[ix] === 0 && hsMusait[ix]){ hsPen += AGIRLIK.hsEnAz1; hsSifir++; }
-        // Cumartesi/Pazar NÖBETİ ayda 3'e çıkmasın (hazırlama sayılmaz)
+        // Cumartesi/Pazar NÖBETİ Ayarlar'daki hafta sonu üst sınırını (varsayılan 2) aşmasın (hazırlama sayılmaz)
         if (hHs[ix] > A_HSUST){ hsPen += AGIRLIK.hsUst*(hHs[ix]-A_HSUST); uy += hHs[ix]-A_HSUST; }
         if (hThu[ix]>A_MAXTHU) thuFazla += hThu[ix]-A_MAXTHU;
         // eczacı / tekniker: ayda en fazla 2 hazırlama (çok güçlü tercih; yalnız başka çare yoksa aşılır)
         if (hPrp[ix] > 2){ hsPen += AGIRLIK.prepUst*(hPrp[ix]-2); uy += hPrp[ix]-2; }
         // ayda 1 hazırlama hedef: 2. hazırlama yalnız yerler 1'er kişiyle dolmuyorsa
-        if (hPrp[ix] > 1) hsPen += A_PRP2*(hPrp[ix]-1);
+        if (hPrp[ix] > 1) hsPen += AGIRLIK.prp2*(hPrp[ix]-1);
         if (dv){
           if (pvThu[q]===0 && hThu[ix]===0) devirPen += AGIRLIK.devirPersembe;
           if (pvThu[q]>0 && hThu[ix]>0) devirPen += AGIRLIK.devirPersembe;
@@ -3664,20 +3656,20 @@
           if (mx-mn > 1+1e-6) resmiPen += AGIRLIK.resmiYilToplam*(mx-mn-1 + yilBant(v)); }
       }
       for (let ix=0; ix<NH; ix++) hHsEf[ix] = hHs[ix] + offHs[ix];
-      const hsYilPen = W_HSYIL*ssIx(hHsEf, ixStaff);
+      const hsYilPen = AGIRLIK.hsYil*ssIx(hHsEf, ixStaff);
       for (let ix=0; ix<NH; ix++) hCuEf[ix] = hCu[ix] + offCu[ix];
-      const cuYilPen = W_CUYIL*ssIx(hCuEf, ixStaff);
+      const cuYilPen = AGIRLIK.cuYil*ssIx(hCuEf, ixStaff);
       for (let ix=0; ix<NH; ix++) hThuEf[ix] = hThu[ix] + offPe[ix];
-      const peYilPen = W_PEYIL*ssIx(hThuEf, ixStaff);
+      const peYilPen = AGIRLIK.peYil*ssIx(hThuEf, ixStaff);
       for (let ix=0; ix<NH; ix++) hCntEf[ix] = hCnt[ix] + offN[ix];
-      const nYilPen = W_NYIL*ssIx(hCntEf, ixStaff);
+      const nYilPen = AGIRLIK.nYil*ssIx(hCntEf, ixStaff);
       for (let ix=0; ix<NH; ix++){ hSatEf[ix] = hSat[ix] + offCmt[ix]; hSunEf[ix] = hSun[ix] + offPaz[ix]; }
-      const cpYilPen = W_CPYIL*(ssIx(hSatEf, ixStaff) + ssIx(hSunEf, ixStaff));
+      const cpYilPen = AGIRLIK.cpYil*(ssIx(hSatEf, ixStaff) + ssIx(hSunEf, ixStaff));
       let gunYilPen = 0;
       if (ixFmKural.length > 1){
         gunYilPen = yilCeza(bPe, hThu) + yilCeza(bCu, hCum) + yilCeza(bCmt, hSat) + yilCeza(bPaz, hSun) + (resmiGunVar ? yilCeza(bRt, hRc) : 0);
       }
-      return UYARI*(uy + hPrAv) + kesinPen + zPen + AGIRLIK.fmYil*ssIx(hFmEf, ixStaff) /* fazla mesai (saat) eşitliği: yıllık — her ay 8 saat kuralının yanında yıl toplamı da eşite yakın */ + hsYilPen + cuYilPen + peYilPen + nYilPen + cpYilPen + gunYilPen + devirPen + AGIRLIK.nobetAy*ssIx(hCnt, ixStaff) + AGIRLIK.haftaSonuIs*ssIx(hWk, ixStaff) + W_PRPYIL*ssIx(hPrpEf, ixPrep) + W_PRPGRUP*(ssIx(hPrpEf, ixEczPrep) + ssIx(hPrpEf, ixTekPrep)) + (destekVar ? AGIRLIK.destekYil*ssIx(hPrpEf, ixDestek) : 0) + destekFazla + hzAdil + hsPen + AGIRLIK.gunTercihCarpani*soft + AGIRLIK.thuFazla*thuFazla + resmiPen;
+      return UYARI*(uy + hPrAv) + kesinPen + zPen + AGIRLIK.fmYil*ssIx(hFmEf, ixStaff) /* fazla mesai (saat) eşitliği: yıllık — her ay 8 saat kuralının yanında yıl toplamı da eşite yakın */ + hsYilPen + cuYilPen + peYilPen + nYilPen + cpYilPen + gunYilPen + devirPen + AGIRLIK.nobetAy*ssIx(hCnt, ixStaff) + AGIRLIK.haftaSonuIs*ssIx(hWk, ixStaff) + AGIRLIK.prpYil*ssIx(hPrpEf, ixPrep) + AGIRLIK.prpGrup*(ssIx(hPrpEf, ixEczPrep) + ssIx(hPrpEf, ixTekPrep)) + (destekVar ? AGIRLIK.destekYil*ssIx(hPrpEf, ixDestek) : 0) + destekFazla + hzAdil + hsPen + AGIRLIK.gunTercihCarpani*soft + AGIRLIK.thuFazla*thuFazla + resmiPen;
     }
     // tam hesap: tüm günler baştan sayılır
     function hesaplaJ(){

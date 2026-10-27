@@ -34,34 +34,61 @@ const yeni = {};
 test.before(async()=>{ tarayici = await chromium.launch(); });
 test.after(async()=>{
   if (tarayici) await tarayici.close();
-  if (GUNCELLE) fs.writeFileSync(BEKLENEN, JSON.stringify(yeni, null, 2) + "\n");
+  if (!GUNCELLE) return;
+  // yalnız bütün senaryolar başarıyla çalıştıysa yaz: eksik ya da hatalı bir çalıştırma kaydı bozmasın
+  const eksik = senaryolar.filter(s=>!yeni[s.ad]).map(s=>s.ad);
+  if (eksik.length) console.error("beklenen.json YAZILMADI; çalışmayan ya da hata veren senaryolar: " + eksik.join(", "));
+  else fs.writeFileSync(BEKLENEN, JSON.stringify(yeni, null, 2) + "\n");
 });
 
 for (const sen of senaryolar){
-  test(sen.ad + " (" + sen.aciklama + ")", async()=>{
-    const sonuc = (await senaryoCalistir(tarayici, sen)).map(kayit);
-    yeni[sen.ad] = sonuc;
+  test(sen.ad + " (" + sen.aciklama + ")", async(t)=>{
+    const ham = await senaryoCalistir(tarayici, sen);
+    const sonuc = ham.map(kayit);
 
+    if (sen.kontrol){ const sorun = sen.kontrol(ham); assert.strictEqual(sorun, null, sorun); }
     if (sen.temizBeklenir){
-      sonuc.forEach(a=>assert.deepStrictEqual(a.hatalar, [], AY[a.ay] + ": yeterli kadroda hata düzeyinde uyarı çıktı"));
+      sonuc.forEach(a=>{
+        assert.deepStrictEqual(a.hatalar, [], AY[a.ay] + ": yeterli kadroda hata düzeyinde uyarı çıktı");
+        assert.ok(a.nobetFarki <= 2, AY[a.ay] + ": nöbet sayısı farkı " + a.nobetFarki + " (en fazla 2)");
+        assert.ok(a.hazirlamaFarki <= 1, AY[a.ay] + ": hazırlama farkı " + a.hazirlamaFarki + " (en fazla 1)");
+      });
     }
-    if (GUNCELLE) return;
+    if (GUNCELLE){ yeni[sen.ad] = sonuc; return; }
 
     const eski = beklenen[sen.ad];
     assert.ok(eski, "beklenen.json'da bu senaryo yok: GUNCELLE=1 npm test ile ekleyin");
     assert.strictEqual(sonuc.length, eski.length, "ay sayısı değişti: GUNCELLE=1 npm test ile yenileyin");
 
+    const farkliAy = sonuc.filter((a,i)=>a.imza !== eski[i].imza).map(a=>AY[a.ay]);
     if (SIKI){
-      sonuc.forEach((a,i)=>assert.strictEqual(a.imza, eski[i].imza, AY[a.ay] + ": çizelge kayıtlı sonuçtan farklı"));
+      assert.deepStrictEqual(farkliAy, [], "çizelge kayıtlı sonuçtan farklı: " + farkliAy.join(", "));
       return;
     }
-    // Uyarı kaçınılmaz senaryolarda ağırlık değişiklikleri çizelgeyi aylara göre farklı yönlere oynatabilir;
-    // bu yüzden senaryonun toplamına bakılır: hata düzeyinde uyarı ve fazla mesai aşımı artmamalı.
-    const topla = (dizi, f)=>dizi.reduce((t,a)=>t+f(a), 0);
-    const hataSay = a=>a.hatalar.length, fmAsim = a=>a.fazlaMesaiFarki ? a.fazlaMesaiFarki - 8 : 0;
-    const ozet = dizi=>dizi.map(a=>AY[a.ay]+": "+(a.hatalar.join(", ")||"hata yok")+(a.fazlaMesaiFarki ? " (fazla mesai farkı "+a.fazlaMesaiFarki+" sa)" : "")).join("\n  ");
+    if (farkliAy.length) t.diagnostic("davranış değişti (" + farkliAy.join(", ") + "): çizelge kayıtlıdan farklı, kurallar aşağıda denetleniyor");
+
+    const ozet = dizi=>dizi.map(a=>AY[a.ay]+": "+(a.hatalar.join(", ")||"hata yok")+(a.fazlaMesaiFarki ? " (fazla mesai farkı "+a.fazlaMesaiFarki+" sa)" : "")+", nöbet farkı "+a.nobetFarki+", hazırlama farkı "+a.hazirlamaFarki).join("\n  ");
     const mesaj = "\n  önce:\n  " + ozet(eski) + "\n  şimdi:\n  " + ozet(sonuc) + "\n  Değişiklik bilerek yapıldıysa: GUNCELLE=1 npm test";
-    assert.ok(topla(sonuc, hataSay) <= topla(eski, hataSay), "hata düzeyinde uyarı sayısı arttı" + mesaj);
-    assert.ok(topla(sonuc, fmAsim) <= topla(eski, fmAsim), "fazla mesai kesin kural aşımı arttı" + mesaj);
+
+    // her ay: kayıtta uyarısı olan bir ayda hiç uyarı okunamıyorsa uyarı alanı değişmiş olabilir
+    sonuc.forEach((a,i)=>{
+      const once = eski[i].hatalar.length + eski[i].uyarilar.length, simdi = a.hatalar.length + a.uyarilar.length;
+      assert.ok(!(once > 0 && simdi === 0), AY[a.ay] + ": kayıtta " + once + " uyarı vardı, şimdi hiç uyarı okunmadı (uyarı alanı değişmiş olabilir; gerçekten düzeldiyse GUNCELLE=1 npm test)");
+    });
+    // daha önce bu senaryoda hiç görülmemiş bir hata türü
+    const eskiTurler = new Set(eski.flatMap(a=>a.hatalar));
+    const yeniTur = [...new Set(sonuc.flatMap(a=>a.hatalar))].filter(h=>!eskiTurler.has(h));
+    assert.deepStrictEqual(yeniTur, [], "yeni hata türü: " + yeniTur.join(", ") + mesaj);
+
+    // Uyarı kaçınılmaz senaryolarda ağırlık değişiklikleri çizelgeyi aylara göre farklı yönlere oynatabilir;
+    // bu yüzden sayılar senaryonun toplamında karşılaştırılır: hiçbiri artmamalı.
+    const topla = f=>dizi=>dizi.reduce((t,a)=>t+f(a), 0);
+    const olcutler = [
+      ["hata düzeyinde uyarı sayısı", topla(a=>a.hatalar.length)],
+      ["fazla mesai kesin kural aşımı (saat)", topla(a=>a.fazlaMesaiFarki ? a.fazlaMesaiFarki - 8 : 0)],
+      ["nöbet sayısı farkı", topla(a=>a.nobetFarki)],
+      ["hazırlama farkı", topla(a=>a.hazirlamaFarki)],
+    ];
+    olcutler.forEach(([ad, f])=>assert.ok(f(sonuc) <= f(eski), ad + " arttı (" + f(eski) + " → " + f(sonuc) + ")" + mesaj));
   });
 }
