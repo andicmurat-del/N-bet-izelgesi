@@ -32,6 +32,9 @@ function fark(kisi, alan, adlar){
 async function senaryoCalistir(browser, sen, htmlYolu){
   const page = await browser.newPage();
   page.on("dialog", d=>d.accept());
+  // Arama süreyle de sınırlı (birkaç saniye); hızlı ve yavaş makinede farklı sonuç çıkmasın diye saat
+  // durdurulur, arama yalnız deneme sayısı sınırıyla biter. Böylece sonuç her makinede aynıdır.
+  await page.addInitScript(()=>{ const t = Date.now(); Date.now = ()=>t; });
   try {
     await page.goto("file://" + (htmlYolu || HTML));
     let S = {staff: sen.staff, prefs: sen.prefs || {}, year: sen.yil, month: sen.aylar[0], settings: sen.settings || {}};
