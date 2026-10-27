@@ -3409,11 +3409,11 @@
     // gruplar arası fark (eczacı daha çok nöbet, tekniker daha çok hazırlama) fazla mesai eşitliği için korunur
     const W_PRPGRUP = 2000;   // yıllık: teknikerler kendi arasında, eczacılar kendi arasında eşit hazırlama
     const A_PRP2 = 1500;   // ayda 1 hazırlama hedefi: 2. hazırlamanın cezası (yer 1'er kişiyle dolmuyorsa yazılır)
-    const W_PRPYIL = 25;  // yıllık, gruplar arası (teknikerler doğal olarak daha çok hazırlama alır; yalnız hafif)
+    const W_PRPYIL = 2000;  // yıllık, gruplar arası: hazırlama yıl sonunda herkese eşit (eczacı / tekniker ayrımı olmadan)
     const offPe = new Float64Array(NH), hThuEf = new Float64Array(NH);
     const cuGunDizi = days.map(dy=>cumaTipiMi(y,m,dy.day));
     const offCu = new Float64Array(NH), hCu = new Float64Array(NH), hCuEf = new Float64Array(NH);
-    const W_NYIL = 120;
+    const W_NYIL = 2000;   // yıllık nöbet sayısı dengesi: nöbet sayıları eşit olunca hazırlama ve fazla mesai de birlikte eşitlenir
     const W_CPYIL = 800;   // yıllık Cumartesi ve Pazar dengesi (ayrı ayrı)
     const offCmt = new Float64Array(NH), offPaz = new Float64Array(NH), hSatEf = new Float64Array(NH), hSunEf = new Float64Array(NH);     // yıllık nöbet sayısı dengesi (fazla mesaiden sonra ikinci hedef)
     const offN = new Float64Array(NH), hCntEf = new Float64Array(NH);  // yıllık hafta sonu dengesi ağırlığı (yüksek öncelik)
@@ -3515,7 +3515,19 @@
     // G grubundaki sayaç değerleri arasındaki fark 1'i aşıyorsa ceza
     function grupFarkCeza(o, G, w){ if (G.length < 2) return 0; let mx = -1, mn = 1e9; for (let q=0;q<G.length;q++){ const v = o[G[q]]; if (v>mx) mx = v; if (v<mn) mn = v; } return mx-mn > 1 ? w*(mx-mn-1) : 0; }
     function yilFark(b, h){ let mx = -1e9, mn = 1e9; for (let q=0;q<ixFmKural.length;q++){ const ix = ixFmKural[q], v = b[ix] + h[ix]; if (v>mx) mx = v; if (v<mn) mn = v; } return mx-mn; }
-    function yilEk(f){ return f > 1 ? UYARI + W_GUNYIL*(f-1) : 0; }
+    // fark 1'i aşınca: uyarı + farkın büyüklüğü + en iyi 1 genişliğindeki aralığın dışında kalan toplam sapma
+    // (yalnız en çok – en az farkına bakılsaydı uçtaki kişilerden birini düzelten adım ödüllenmez, arama takılırdı)
+    function yilBant(v){ const n = v.length; let enAz = 1e18;
+      for (let q=0;q<n;q++) for (let k=0;k<2;k++){ const L = v[q]-k; let t = 0;
+        for (let r=0;r<n;r++){ const x = v[r]; if (x<L) t += L-x; else if (x>L+1) t += x-L-1; } if (t<enAz) enAz = t; }
+      return enAz; }
+    const yilTmp = new Float64Array(NH);
+    function yilCeza(b, h){
+      const n = ixFmKural.length; if (n < 2) return 0;
+      let mx = -1e9, mn = 1e9; const v = [];
+      for (let q=0;q<n;q++){ const ix = ixFmKural[q], x = b[ix] + h[ix]; v.push(x); if (x>mx) mx = x; if (x<mn) mn = x; }
+      return mx-mn > 1+1e-9 ? UYARI + W_GUNYIL*(mx-mn-1) + W_GUNYIL*yilBant(v) : 0;
+    }
     // ayda en az 1 hafta sonu: Cumartesi/Pazar nöbet yeri uygun kişi sayısından azsa bu kadar kişinin 0 kalması kaçınılmazdır (uyarı sayılmaz)
     const HS_SIFIR_IZIN = Math.max(0, hsMusait.reduce((t,v)=>t+v, 0) - 2*gunDow.filter(dw=>dw===5 || dw===6).length);
     // destek personelinin hazırlama sayısı ayardakinden farklıysa yalnız tatil günleri yetiyorsa uyarı çıkar
@@ -3532,9 +3544,10 @@
       // eczacı + tekniker hazırlama sayıları arasında fark en fazla 1 (biri 0, biri 2 olmaz); öncelik Ayarlar'daki seçime göre
       hzAdil += grupFarkCeza(hPrp, ixEczPrep, 300000); hzAdil += grupFarkCeza(hPrp, ixTekPrep, 300000);
       { const c = grupFarkCeza(hPrp, ixPrepAdil, W_HZFARK); if (c > 0){ hzAdil += c; uy++; } }
-      // hazırlama önce teknikerlere: her teknikere 1, sonra eczacılara; yeni tur yine teknikerden
-      { let mxE = -1, mnT = 1e9; for (let q=0;q<ixPrepAdil.length;q++){ const ix = ixPrepAdil[q], v = hPrp[ix]; if (eczIx[ix]){ if (v>mxE) mxE = v; } else if (v<mnT) mnT = v; }
-        if (mxE >= 0 && mnT < 1e9 && mxE > mnT) hzAdil += W_TEKONCE*(mxE-mnT); }
+      // hazırlama önce teknikerlere: her teknikere 1, sonra eczacılara; yeni tur yine teknikerden. Sıra yıl boyunca
+      // sürer (önceki aylar dahil): her ay baştan başlasaydı ay içinde artan hazırlama hep teknikerlere kalır, yılda birikirdi
+      { let mxE = -1e9, mnT = 1e9; for (let q=0;q<ixPrepAdil.length;q++){ const ix = ixPrepAdil[q], v = hPrpEf[ix]; if (eczIx[ix]){ if (v>mxE) mxE = v; } else if (v<mnT) mnT = v; }
+        if (mxE > -1e9 && mnT < 1e9 && mxE > mnT + 1e-6) hzAdil += W_TEKONCE*(mxE-mnT); }
       // nöbet sayısı: kişiler arasında fark mümkünse en fazla 1, en fazla 2
       if (ixFmKural.length > 1){ let mx = -1, mn = 1e9; for (let q=0;q<ixFmKural.length;q++){ const v = hCnt[ixFmKural[q]]; if (v>mx) mx = v; if (v<mn) mn = v; }
         if (mx-mn > 1) hzAdil += 100000*(mx-mn-1); if (mx-mn > 2){ hzAdil += KESIN*(mx-mn-2); uy++; } }
@@ -3591,6 +3604,10 @@
       if (resmiGunVar){
         for (let ix=0; ix<NH; ix++){ hRcEf[ix] = hRc[ix] + offRc[ix]; hRcHEf[ix] = hRcH[ix] + offRcH[ix]; }
         resmiPen = 800*ssIx(hRcEf, ixStaff) + 800*ssIx(hRcHEf, ixPrep) + (destekVar ? 800*ssIx(hRcHEf, ixDestek) : 0);
+        // yıllık toplam resmi tatil görevi (nöbet + hazırlama) kişiler arasında en fazla 1 fark (resmi tatil yılda az: açılan fark sonradan kapanmaz)
+        { let mx = -1e9, mn = 1e9; const v = [];
+          for (let q=0;q<ixPrep.length;q++){ const ix = ixPrep[q], x = hRcEf[ix] + hRcHEf[ix]; v.push(x); if (x>mx) mx = x; if (x<mn) mn = x; }
+          if (mx-mn > 1+1e-6) resmiPen += 2*W_GUNYIL*(mx-mn-1 + yilBant(v)); }
       }
       for (let ix=0; ix<NH; ix++) hHsEf[ix] = hHs[ix] + offHs[ix];
       const hsYilPen = W_HSYIL*ssIx(hHsEf, ixStaff);
@@ -3604,8 +3621,7 @@
       const cpYilPen = W_CPYIL*(ssIx(hSatEf, ixStaff) + ssIx(hSunEf, ixStaff));
       let gunYilPen = 0;
       if (ixFmKural.length > 1){
-        const fark = yilFark, ek = yilEk;
-        gunYilPen = ek(fark(bPe, hThu)) + ek(fark(bCu, hCum)) + ek(fark(bCmt, hSat)) + ek(fark(bPaz, hSun)) + (resmiGunVar ? ek(fark(bRt, hRc)) : 0);
+        gunYilPen = yilCeza(bPe, hThu) + yilCeza(bCu, hCum) + yilCeza(bCmt, hSat) + yilCeza(bPaz, hSun) + (resmiGunVar ? yilCeza(bRt, hRc) : 0);
       }
       return UYARI*(uy + hPrAv) + kesinPen + zPen + 80*ssIx(hFmEf, ixStaff) /* fazla mesai (saat) eşitliği: yıllık — her ay 8 saat kuralının yanında yıl toplamı da eşite yakın */ + hsYilPen + cuYilPen + peYilPen + nYilPen + cpYilPen + gunYilPen + devirPen + 60*ssIx(hCnt, ixStaff) + 20*ssIx(hWk, ixStaff) + W_PRPYIL*ssIx(hPrpEf, ixPrep) + W_PRPGRUP*(ssIx(hPrpEf, ixEczPrep) + ssIx(hPrpEf, ixTekPrep)) + (destekVar ? 25*ssIx(hPrpEf, ixDestek) : 0) + destekFazla + hzAdil + hsPen + 3*soft + 4000*thuFazla + resmiPen;
     }
