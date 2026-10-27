@@ -1640,10 +1640,95 @@
   .gl-kural ul { margin: 6px 0 4px; padding-left: 18px; }
   .gl-kural li { margin: 2px 0; }
   .gl-kural small { color: var(--muted); }
+  .gl-kural.c-dikkat { background: var(--amber-soft); border-color: color-mix(in srgb, var(--amber) 75%, var(--border)); }
+  .gl-kural.c-dikkat b { color: var(--amber); }
   /* kural dışı (kırmızı) gün: hafta sonu / resmi tatil renginin altında kalmasın */
   .sched-cell.conflict, .sched-cell.conflict.tatil, .sched-cell.conflict.weekend, .sched-cell.conflict.bugun { background: var(--danger-soft) !important; border-color: var(--danger) !important; }
   .sched-cell.conflict:not(.vurgu) { box-shadow: inset 0 0 0 1px var(--danger) !important; }
   .sched-cell.conflict .daynum::after { content: "!"; display: inline-grid; place-items: center; width: 15px; height: 15px; margin-left: 5px; border-radius: 50%; background: var(--danger); color: #fff; font-size: 10.5px; font-weight: 700; line-height: 1; vertical-align: 1px; }
+  /* ---------- ana düğme: dolu koyu mavi + beyaz yazı ----------
+     Açık mavi dolgu sayfa zemininden yalnızca 1,9:1 ayrışıyordu (pasif gibi görünüyordu); yeni dolgu
+     zemine karşı 5,2:1, yazıya karşı 5,7:1. Koyu temada eski dolgu zaten belirgin, aynen kalır. */
+  :root { --btn-ana: #1C6BA6; --btn-ana-2: #155785; --btn-ana-yazi: #FFFFFF; }
+  :root[data-theme="dark"] { --btn-ana: var(--dolgu); --btn-ana-2: var(--dolgu-2); --btn-ana-yazi: var(--accent-on); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --btn-ana: var(--dolgu); --btn-ana-2: var(--dolgu-2); --btn-ana-yazi: var(--accent-on); } }
+  button.primary { background: var(--btn-ana) !important; color: var(--btn-ana-yazi) !important; border: 1px solid var(--btn-ana) !important; }
+  button.primary:hover:not(:disabled) { background: var(--btn-ana-2) !important; border-color: var(--btn-ana-2) !important; }
+  button.primary:disabled { opacity: .5; }
+
+  /* ---------- uyarılı günler: iki kademe ----------
+     kritik (kapsama, dinlenme, izin, eş durumu): kırmızı çerçeve, hafif kırmızı zemin
+     dikkat (denge kuralı esnetildi / istemiyor tercihi): yalnızca amber çerçeve, zemin günün kendi rengi */
+  .sched-cell.conflict.c-kritik, .sched-cell.conflict.c-kritik.tatil, .sched-cell.conflict.c-kritik.weekend, .sched-cell.conflict.c-kritik.bugun {
+    background: color-mix(in srgb, var(--danger) 7%, var(--surface)) !important; border-color: var(--danger) !important; }
+  .sched-cell.conflict.c-dikkat { background: var(--surface) !important; border-color: color-mix(in srgb, var(--amber) 75%, var(--border)) !important; }
+  .sched-cell.conflict.c-dikkat.tatil, .sched-cell.conflict.c-dikkat.weekend { background: color-mix(in srgb, var(--tatil-soft) 85%, var(--surface)) !important; }
+  .sched-cell.conflict.c-dikkat:not(.vurgu) { box-shadow: none !important; }
+  .sched-cell.conflict.c-dikkat.bugun:not(.vurgu) { box-shadow: inset 0 0 0 1px var(--accent) !important; border-color: var(--accent) !important; }
+  .sched-cell.conflict.c-dikkat .daynum::after { background: var(--amber); }
+  :root[data-theme="dark"] .sched-cell.conflict .daynum::after { color: #131E29; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sched-cell.conflict .daynum::after { color: #131E29; } }
+
+  /* ---------- kişi renkleri (renk körlüğüne göre sınanmış 6 renk; 7. kişiden sonrası gri) ---------- */
+  :root { --kr-0: #95A3B1; --kr-1: #2A78D6; --kr-2: #EB6834; --kr-3: #1BAF7A; --kr-4: #6250D6; --kr-5: #E87BA4; --kr-6: #008300; }
+  :root[data-theme="dark"] { --kr-0: #6E7E8E; --kr-1: #3987E5; --kr-2: #D95926; --kr-3: #199E70; --kr-4: #9085E9; --kr-5: #D55181; --kr-6: #008300; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --kr-0: #6E7E8E; --kr-1: #3987E5; --kr-2: #D95926; --kr-3: #199E70; --kr-4: #9085E9; --kr-5: #D55181; --kr-6: #008300; } }
+  [data-renk="1"] { --kr: var(--kr-1); } [data-renk="2"] { --kr: var(--kr-2); } [data-renk="3"] { --kr: var(--kr-3); }
+  [data-renk="4"] { --kr: var(--kr-4); } [data-renk="5"] { --kr: var(--kr-5); } [data-renk="6"] { --kr: var(--kr-6); }
+  .sched-cell .who:not(.prep)::before { width: 7px; height: 7px; margin-right: 6px; vertical-align: 0; background: var(--kr, var(--kr-0)); }
+  .sched-cell .who.tek::before { border-radius: 1.5px; }
+  .sched-cell .who.nob::before { background: transparent; box-shadow: inset 0 0 0 2px var(--kr, var(--kr-0)); }
+  i.kr { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 0; background: var(--kr, var(--kr-0)); font-style: normal; }
+  i.kr.kare { border-radius: 1.5px; }
+  [data-renk="0"] { --kr: var(--kr-0); }
+  /* personel listesinde de aynı renk ve biçim: eczacı yuvarlak, tekniker / destek kare, dışarıdan gelen halka */
+  ul.staff-list li[data-renk]::before { width: 9px; height: 9px; background: var(--kr) !important; border: none !important; }
+  #teknisyen-list li[data-renk]::before, #destek-list li[data-renk]::before { border-radius: 2px; }
+  #nobetci-list li[data-renk]::before { background: transparent !important; box-shadow: inset 0 0 0 2px var(--kr); }
+  i.kr.halka { background: transparent; box-shadow: inset 0 0 0 2px var(--kr, var(--kr-0)); }
+
+  /* ---------- takvim açıklaması ---------- */
+  .cz-aciklama { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-top: 14px; font-size: 12px; color: var(--muted); }
+  .cz-aciklama:empty { display: none; }
+  .cz-aciklama > span { display: inline-flex; align-items: center; white-space: nowrap; }
+  .cz-aciklama .ac-ecz { font-weight: 600; color: var(--ecz-ink); }
+  .cz-aciklama .ac-h { font-weight: 600; margin-right: 5px; }
+  .cz-aciklama .ac-not { white-space: normal; }
+  .cz-aciklama .ac-uy { font-weight: 600; color: var(--ink-soft); }
+  .cz-aciklama .ac-uy i { display: inline-grid; place-items: center; width: 15px; height: 15px; margin-right: 6px; border-radius: 50%; color: #fff; font-size: 10.5px; font-weight: 700; font-style: normal; line-height: 1; }
+  .cz-aciklama .ac-uy.c-kritik i { background: var(--danger); }
+  .cz-aciklama .ac-uy.c-dikkat i { background: var(--amber); }
+  :root[data-theme="dark"] .cz-aciklama .ac-uy i { color: #131E29; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cz-aciklama .ac-uy i { color: #131E29; } }
+  #generate-section.isaret-tatil .cz-aciklama, #generate-section.isaret-tercih .cz-aciklama { display: none; }
+
+  /* ---------- telefonda ajanda görünümü ----------
+     7 sütunlu takvim 640px altında sığmıyordu; günler alt alta kart olur, hafta başlıkları yapışkan */
+  .hafta-bas, .sched-cell .gun-ad, .sched-cell .neden-kisa { display: none; }
+  @media (max-width: 640px) {
+    #generate-section:not(.isaret-tatil):not(.isaret-tercih) .takvim-alan { overflow: visible; }
+    #sched-dow-row { display: none !important; }
+    #generate-section .overflow-x > #sched-grid, #sched-grid { min-width: 0 !important; }
+    #generate-section:not(.isaret-tatil):not(.isaret-tercih) .overflow-x > #sched-grid { display: flex; flex-direction: column; gap: 6px; }
+    #sched-grid .sched-cell.empty { display: none; }
+    #sched-grid .hafta-bas { display: block; position: sticky; top: 0; z-index: 2; margin: 10px 0 0; padding: 8px 2px 6px;
+      background: var(--surface); font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
+    #sched-grid .hafta-bas:first-child, #sched-grid .sched-cell.empty + .hafta-bas { margin-top: 0; padding-top: 0; }
+    #sched-grid .sched-cell { display: grid; grid-template-columns: 50px minmax(0, 1fr); column-gap: 12px; align-items: start;
+      min-height: 0; padding: 10px 12px; scroll-margin-top: 8px; }
+    #sched-grid .sched-cell > :not(.gun-bas):not(.edit-mark):not(.dg-mark) { grid-column: 2; }
+    #sched-grid .sched-cell .gun-bas { grid-column: 1; grid-row: 1 / span 4; }
+    #sched-grid .sched-cell .daynum { font-size: 17px; margin: 0; line-height: 1.25; }
+    #sched-grid .sched-cell.bugun .daynum { height: 24px; }
+    #sched-grid .sched-cell .gun-ad { display: block; margin-top: 1px; font-size: 11.5px; color: var(--muted); }
+    #sched-grid .sched-cell.tatil .gun-ad { color: var(--tatil); }
+    #sched-grid .sched-cell .kisiler { display: flex; flex-wrap: wrap; gap: 1px 14px; padding-top: 2px; }
+    #sched-grid .sched-cell .who { font-size: 13px; }
+    #sched-grid .sched-cell .who.prep { flex-basis: 100%; font-size: 12.5px; }
+    #sched-grid .sched-cell .neden-kisa { display: block; flex-basis: 100%; margin-top: 4px; font-size: 12px; font-weight: 600; }
+    #sched-grid .sched-cell .neden-kisa.c-kritik { color: var(--danger); }
+    #sched-grid .sched-cell .neden-kisa.c-dikkat { color: var(--amber); }
+  }
   .sv-kisi li.zor::after, .sv-kisi li.yb.zor::after { content: "Z"; display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 4px; background: var(--danger-soft); color: var(--danger); font-style: normal; }
 </style>
 </head>
@@ -1769,6 +1854,7 @@
     <div class="overflow-x takvim-alan">
       <div class="cal-grid" id="sched-dow-row"></div>
       <div class="sched-grid" id="sched-grid"></div>
+      <div class="cz-aciklama" id="cz-aciklama"></div>
       <div class="cal-grid isaret-grid" id="cal-dow-row"></div>
       <div class="cal-grid isaret-grid" id="cal-grid"></div>
       <div class="cal-grid isaret-grid" id="pref-dow-row"></div>
@@ -2427,6 +2513,7 @@
   function renderStaff(){
     const aranan = !!(document.getElementById("staff-search") && document.getElementById("staff-search").value.trim()); let toplamEslesen = 0;
     const gruplar = [["eczaci","eczaci-list","eczaci-count","Henüz eczacı eklenmedi"],["teknisyen","teknisyen-list","teknisyen-count","Henüz teknikeri eklenmedi"],["destek","destek-list","destek-count","Henüz destek personeli eklenmedi"],["nobetci","nobetci-list","nobetci-count","Henüz dışarıdan gelen eczacı eklenmedi"],["servis","servis-list","servis-count","Henüz eklenmedi"]];
+    const renk = kisiRenkleri(state.year, state.month);   // takvimdeki kişi rengi (seçili ay)
     gruplar.forEach(([rol, listId, cntId, bos])=>{
       const ul = document.getElementById(listId); if (!ul) return;
       const tum = state.staff.filter(s=>s.role===rol && !listedeAyrilmisMi(s)).sort((a,b)=>a.name.localeCompare(b.name,"tr"));
@@ -2437,6 +2524,7 @@
       if (!kisiler.length){ ul.innerHTML = '<li class="empty-note" style="border:none;background:none;">'+(tum.length ? 'Eşleşen kişi yok' : bos)+'</li>'; return; }
       kisiler.forEach(s=>{
         const li = document.createElement("li");
+        if (rol!=="servis") li.dataset.renk = renk[s.id] || 0;
         li.innerHTML = '<span class="kisi-ad">'+escapeHtml(s.name)+'</span>';
         const meta = personelMeta(s);
         const kutu = document.createElement("span"); kutu.className = "li-btn li-menu-kutu";
@@ -4249,6 +4337,7 @@
     if (!state.schedule || state.schedule.year!==state.year || state.schedule.month!==state.month){
       document.getElementById("sched-dow-row").innerHTML = "";
       document.getElementById("sched-grid").innerHTML = "";
+      document.getElementById("cz-aciklama").innerHTML = "";
       const ek = document.getElementById("eski-uyari"); if (ek) ek.innerHTML = "";
       return;
     }
@@ -4270,26 +4359,46 @@
     const pzGun = gun=>{ const N = [], Hz = []; PG.satirlar.forEach(r=>{ const c = r.cells[gun-1]; if (!c) return; if (c.kod==="N" && !c.acil) N.push(r.s.id); else if (c.kod==="H") Hz.push(r.s.id); }); return {N, Hz}; };
     const ayniKume = (a,b)=> a.length===b.length && a.every(x=>b.indexOf(x)>=0);
     const kisiAd = id=>{ const q = state.staff.find(x=>x.id===id); return q ? q.name : "?"; };
+    const renk = kisiRenkleri(y, m);
+    const renkAt = id=> renk[id] ? ' data-renk="'+renk[id]+'"' : '';
+    let kritikGun = 0, dikkatGun = 0;
     state.schedule.days.forEach(day=>{
+      const dw = jsDowToMonFirst(new Date(y,m,day.day).getDay());
+      // telefonda ajanda görünümünde her haftanın başında yapışkan başlık (masaüstünde gizli)
+      if (day.day===1 || dw===0){
+        const son = Math.min(day.day + 6 - dw, state.schedule.days.length);
+        const hb = document.createElement("div"); hb.className = "hafta-bas";
+        hb.textContent = (son>day.day ? day.day+"–"+son : day.day)+" "+AYLAR[m];
+        grid.appendChild(hb);
+      }
       const cell = document.createElement("div");
       cell.className = "sched-cell"; cell.dataset.gun = day.day;
       if (day.tatil) cell.classList.add("tatil");
-      if (day.conflict){ cell.classList.add("conflict"); if (day.kuralNotu) cell.title = "Neden işaretli:\n• " + day.kuralNotu.join("\n• "); }
+      let sev = "";
+      if (day.conflict){
+        sev = gunUyariSeviyesi(day.kuralNotu);
+        if (sev==="kritik") kritikGun++; else dikkatGun++;
+        cell.classList.add("conflict", "c-"+sev);
+        if (day.kuralNotu) cell.title = (sev==="kritik" ? "Kritik" : "Dikkat")+" — neden işaretli:\n• " + day.kuralNotu.join("\n• ");
+      }
       if (day.locked) cell.classList.add("manual-edit");
       if (bugunMu(y, m, day.day)){ cell.classList.add("bugun"); cell.setAttribute("aria-current", "date"); }
       if (vurguId) cell.classList.add(day.assigned.concat(day.prep||[]).some(p=>p.id===vurguId) ? "vurgu" : "soluk");
-      let html = '<div class="daynum">'+day.day+'</div>';
+      let html = '<div class="gun-bas"><div class="daynum">'+day.day+'</div><div class="gun-ad">'+GUN_ADI_UZUN[dw]+'</div></div><div class="kisiler">';
       eczOnce(day.assigned).forEach(p=>{
         const cls = (eczaciMi(p.role) ? "who ecz" : "who tek") + (p.role==="nobetci" ? " nob" : "") + (vurguId && p.id===vurguId ? " ben" : "");
         const kisayad = p.name.length>14 ? p.name.slice(0,13)+"…" : p.name;
-        html += '<span class="'+cls+'">'+escapeHtml(kisayad)+'</span>';
+        html += '<span class="'+cls+'"'+renkAt(p.id)+'>'+escapeHtml(kisayad)+'</span>';
       });
       if (day.prep && day.prep.length){
         day.prep.forEach((pp,i)=>{
           const a = escapeHtml(pp.name.length>14 ? pp.name.slice(0,13)+'…' : pp.name);
-          html += '<span class="who prep'+(i ? ' prep2' : '')+'"><b class="hn">H'+(i+1)+':</b> '+(vurguId && pp.id===vurguId ? '<span class="ben">'+a+'</span>' : a)+'</span>';
+          const nokta = '<i class="kr'+(pp.role==="nobetci" ? ' halka' : (eczaciMi(pp.role) ? '' : ' kare'))+'"'+renkAt(pp.id)+' aria-hidden="true"></i>';
+          html += '<span class="who prep'+(i ? ' prep2' : '')+'"><b class="hn">H'+(i+1)+':</b> '+nokta+(vurguId && pp.id===vurguId ? '<span class="ben">'+a+'</span>' : a)+'</span>';
         });
       }
+      if (sev && day.kuralNotu) html += '<div class="neden-kisa c-'+sev+'">'+escapeHtml(kisaNeden(day.kuralNotu))+'</div>';
+      html += '</div>';
       if (day.locked) html += '<div class="edit-mark">✎</div>';
       const dgL = (state.degisimler||[]).filter(z=>z.y===y && z.m===m && z.gun===day.day);
       const ipucu = [];
@@ -4331,6 +4440,7 @@
       grid.appendChild(cell);
     });
     const gunler = state.schedule.days;
+    if (gunler.some(d=>d.assigned.length)) aciklamaCiz(kritikGun, dikkatGun, gunler.some(d=>d.prep && d.prep.length)); else document.getElementById("cz-aciklama").innerHTML = "";
     eskiKayitUyarisi(gunler, y, m);
     renderOnayBar(); uyariRozetiGuncelle();
     const sumEl = document.getElementById("sched-summary");
@@ -4349,6 +4459,60 @@
     vurguBilgiYaz(vurguId);
     onizlemeYenile(); denemeleriCiz();
     renderAcil(); renderListe();
+  }
+
+  // ---------- kişi renkleri ----------
+  // Takvimde her kişinin adının önünde sabit renkli bir işaret: eczacılar yuvarlak, teknikerler kare.
+  // Her grupta, o ay çalışan kişilere personel listesindeki sırayla 6 renk verilir (renk körlüğüne göre
+  // sınanmış sıra); 7. ve sonraki kişiler gri kalır (renk tekrarlanmaz, ad her zaman yanında yazılıdır).
+  // Kırmızı ve sarı, uyarı renkleriyle karışmasın diye kullanılmaz.
+  const KISI_RENK_SAYISI = 6;
+  function kisiRenkleri(y, m){
+    const r = {}, sayac = {ecz:0, tek:0};
+    state.staff.forEach(s=>{
+      if (s.role==="servis" || !aktifAydaMi(s, y, m)) return;
+      const g = eczaciMi(s.role) ? "ecz" : "tek";
+      sayac[g]++;
+      if (sayac[g] <= KISI_RENK_SAYISI) r[s.id] = sayac[g];
+    });
+    return r;
+  }
+  // Uyarılı günün önemi: kapsama, dinlenme, izin ve eş durumu ihlalleri "kritik"; yalnızca denge
+  // kuralları esnetildiyse ya da "istemiyor" tercihi karşılanamadıysa "dikkat"
+  const DIKKAT_NOTU = /hafta sonu kuralı|hafta sonu nöbetini tutuyor|hazırlama görevini alıyor|istemiyor olarak işaretli|Perşembe nöbetçisi|fazla mesai farkı/i;
+  function gunUyariSeviyesi(notlar){ return (notlar && notlar.length && notlar.every(t=>DIKKAT_NOTU.test(t))) ? "dikkat" : "kritik"; }
+  // ajanda görünümünde gün kartının altındaki tek satırlık neden
+  const NEDEN_KISA = [[/boş yer/i, "Nöbetçi eksik"], [/hazırlama yeri boş/i, "Hazırlama eksik"], [/eczacı yok/i, "Eczacı yok"],
+    [/ertesi gün izinli|komşu gün|art arda|5 gün içinde/i, "Dinlenme kuralı"], [/izinli|izin arasında|yıllık izninin|kullanıyor/i, "İzinli kişi yazılmış"],
+    [/eş durumu/i, "Eş durumu"], [/çalışmıyor/i, "Çalışma dönemi dışında"], [/Perşembe/i, "Perşembe kuralı"], [/hafta sonu/i, "Hafta sonu kuralı esnetildi"],
+    [/hazırlama görevini/i, "Hazırlama sınırı aşıldı"], [/istemiyor/i, "İstemiyor tercihi"], [/fazla mesai/i, "Fazla mesai farkı"]];
+  function kisaNeden(notlar){
+    const kritikOnce = notlar.slice().sort((a,b)=>(DIKKAT_NOTU.test(a)?1:0)-(DIKKAT_NOTU.test(b)?1:0));
+    const etiketler = [];
+    kritikOnce.forEach(t=>{ const e = NEDEN_KISA.find(x=>x[0].test(t)); const ad = e ? e[1] : "Kural dışı"; if (etiketler.indexOf(ad)<0) etiketler.push(ad); });
+    return etiketler.slice(0,2).join(" · ") + (etiketler.length>2 ? " +"+(etiketler.length-2) : "");
+  }
+  // takvimin altındaki açıklama: işaretlerin anlamı ve uyarılı gün sayıları
+  function aciklamaCiz(kritik, dikkat, hazVar){
+    const el = document.getElementById("cz-aciklama"); if (!el) return;
+    const ikiRol = state.staff.some(s=>eczaciMi(s.role)) && state.staff.some(s=>s.role==="teknisyen");
+    const p = [];
+    p.push('<span><i class="kr"></i><b class="ac-ecz">Eczacı</b></span>');
+    if (ikiRol) p.push('<span><i class="kr kare"></i>Tekniker</span>');
+    if (state.staff.some(s=>s.role==="nobetci")) p.push('<span><i class="kr halka"></i>Dışarıdan eczacı</span>');
+    if (hazVar) p.push('<span><b class="ac-h">H1 / H2</b>Hazırlama</span>');
+    p.push('<span class="ac-not">Renk kişiyi gösterir; her kişinin rengi ay boyunca aynıdır.</span>');
+    if (kritik) p.push('<span class="ac-uy c-kritik"><i aria-hidden="true">!</i>Kritik: '+kritik+' gün</span>');
+    if (dikkat) p.push('<span class="ac-uy c-dikkat"><i aria-hidden="true">!</i>Dikkat: '+dikkat+' gün</span>');
+    el.innerHTML = p.join("");
+  }
+  // telefonda ajanda görünümü: bu ay açıksa bugünün kartına kaydırır
+  function bugunuGoster(){
+    if (!window.matchMedia || !window.matchMedia("(max-width: 640px)").matches) return;
+    if (aktifGorunum!=="cizelge" || cizelgeTipi!=="gunluk") return;
+    const c = document.querySelector("#sched-grid .sched-cell.bugun"); if (!c) return;
+    const hb = c.previousElementSibling && c.previousElementSibling.classList.contains("hafta-bas") ? c.previousElementSibling : c;
+    requestAnimationFrame(()=> hb.scrollIntoView({block:"start"}));
   }
 
   function bugunMu(y, m, d){ const n = new Date(); return n.getFullYear()===y && n.getMonth()===m && n.getDate()===d; }
@@ -5719,6 +5883,7 @@
     if (ad==="ayarlar") renderStaff();
     try { history.replaceState(null, "", "#"+(ad==="ayarlar" ? ayarSekme : ad)); } catch(e){}
     window.scrollTo(0,0);
+    if (ad==="cizelge") bugunuGoster();
     if (istenen==="gunluk") gunPanelAc(gunlukTarih);
   }
   // ---------- ayarlar: personel / kurallar / kurum ve yedek ----------
@@ -6775,7 +6940,7 @@
     if (scGun && scGun.assigned.length){
       if (state.schedule && state.schedule.year===T.y && state.schedule.month===T.m) gunUyarilariniYenile(state.schedule);
       const notlar = scGun.conflict && scGun.kuralNotu ? scGun.kuralNotu : null;
-      if (notlar && notlar.length) h += '<div class="gl-kural" role="note"><b>Bu gün kırmızı işaretli; sebebi:</b><ul>'+notlar.map(t=>'<li>'+escapeHtml(t)+'</li>').join("")+'</ul>'+(state.schedule && state.schedule.year===T.y && state.schedule.month===T.m ? '<small>Değiştirmek için <b>Düzenle</b>’ye dokun.</small>' : '')+'</div>';
+      if (notlar && notlar.length) { const sv = gunUyariSeviyesi(notlar); h += '<div class="gl-kural c-'+sv+'" role="note"><b>'+(sv==="kritik" ? "Kritik: bu gün kırmızı işaretli; sebebi:" : "Dikkat: bu günde denge kuralı esnetildi; sebebi:")+'</b><ul>'+notlar.map(t=>'<li>'+escapeHtml(t)+'</li>').join("")+'</ul>'+(state.schedule && state.schedule.year===T.y && state.schedule.month===T.m ? '<small>Değiştirmek için <b>Düzenle</b>’ye dokun.</small>' : '')+'</div>'; }
     }
     h += '<div class="gl-kolonlar">'+kolon("onay",L.tatil ? "Onaycı" : "Eczacılar",L.onay,"Bu gün onay görevinde kimse yok")+kolon("haz",L.tatil ? "Hazırlamacı" : "Eczane Teknikerleri",L.haz,"Bu gün hazırlama görevinde kimse yok")+(L.gel.length ? kolon("gel","Dışarıdan nöbete gelen eczacılar",L.gel,"Bu gün dışarıdan nöbete gelen eczacı yok") : "")+(destekGoster ? kolon("dst","Destek personeli",L.dst,"Bu gün destek personeli yok") : "")+'</div>';
     if (L.yok.length) h += '<details class="gl-yok"><summary>Listede olmayanlar ('+L.yok.length+' kişi: izinli, raporlu, nöbet ertesi)</summary><ul>'+L.yok.map(x=>'<li>'+escapeHtml(x.s.name)+' ('+roleLabel(x.s.role)+'): '+x.neden+'</li>').join("")+'</ul></details>';
