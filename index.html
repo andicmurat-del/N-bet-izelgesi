@@ -1637,6 +1637,69 @@
     .cz-durum { min-height: 0; }
   }
   .sv-kisi li.zor::after, .sv-kisi li.yb.zor::after { content: "Z"; display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 4px; background: var(--danger-soft); color: var(--danger); font-style: normal; }
+  /* =====================================================================
+     DÜZEN C — koyu simge menü (bilgisayar: solda, telefon: altta) ve çizelgede
+     kişi paneli (geniş ekranda sağda, dar ekranda takvimin üstünde şerit)
+     ===================================================================== */
+  :root { --ray: #15212D; --ray-ink: #AFC0D0; --ray-on: #2A3D53; }
+  :root[data-theme="dark"] { --ray: #070D13; --ray-ink: #8FA0B1; --ray-on: #1B2C3E; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ray: #070D13; --ray-ink: #8FA0B1; --ray-on: #1B2C3E; } }
+  .side { background: var(--ray); border-color: transparent; }
+  .side nav button { color: var(--ray-ink); }
+  .side nav button:hover { background: color-mix(in srgb, #fff 8%, transparent); color: #fff; }
+  .side nav button.active, .side nav button.active svg { background: var(--ray-on); color: #fff; box-shadow: none; }
+  .side nav button.active svg { background: none; }
+  @media (min-width: 901px) {
+    .app { grid-template-columns: 80px minmax(0, 1fr); max-width: none; }
+    .main { width: 100%; max-width: 1500px; justify-self: center; }
+    .side { padding: 18px 8px; align-items: center; border-right: none; box-shadow: none; }
+    .brand { margin: 0 0 18px; padding: 0; justify-content: center; }
+    .brand-metin { display: none; }
+    .side nav { width: 100%; gap: 4px; }
+    .side nav button { flex-direction: column; gap: 5px; padding: 10px 2px; font-size: 10.5px; font-weight: 500; text-align: center; justify-content: center; line-height: 1.15; border-radius: 10px; }
+    .side nav button svg { width: 21px; height: 21px; }
+    .side nav button.active { font-weight: 600; }
+    .side nav .uzun { display: none; } .side nav .kisa { display: inline; }
+  }
+  @media (max-width: 900px) {
+    .side { background: var(--ray); border-top: none; box-shadow: 0 -1px 0 color-mix(in srgb, #000 30%, transparent); }
+    .side nav button.active { background: var(--ray-on); color: #fff; }
+  }
+  /* kişi paneli */
+  #vurgu-bar, #vurgu-bilgi { display: none !important; }
+  .kisi-panel[hidden], #generate-section.isaret-tatil .kisi-panel, #generate-section.isaret-tercih .kisi-panel { display: none !important; }
+  .kp-bas { font-size: 14px; font-weight: 600; }
+  .kp-ipucu { font-size: 11.5px; color: var(--muted); margin: 2px 0 8px; line-height: 1.4; }
+  .kp-liste { display: flex; flex-direction: column; gap: 2px; }
+  .kp-grup { font-size: 11.5px; font-weight: 600; color: var(--muted); margin: 10px 10px 2px; }
+  .kp-grup:first-child { margin-top: 2px; }
+  .kisi-panel .kp-kisi { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 4px 9px; width: 100%; padding: 7px 10px; border-radius: 10px;
+    border: 1px solid transparent; background: transparent; color: var(--ink); text-align: left; font-weight: 400; box-shadow: none; }
+  .kisi-panel .kp-kisi:hover { background: var(--bg); }
+  .kisi-panel .kp-kisi.on { background: var(--vg-zemin); border-color: var(--vg-kenar); }
+  .kp-kisi i.kr { margin: 0; width: 9px; height: 9px; }
+  .kp-ad { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kp-say { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .kp-bar { grid-column: 2 / 4; height: 5px; border-radius: 9px; background: var(--border-soft); overflow: hidden; }
+  .kp-bar u { display: block; height: 100%; border-radius: 9px; background: var(--kr, var(--kr-0)); }
+  .kp-ozet { display: flex; flex-direction: column; gap: 2px; margin-top: 12px; padding: 12px 10px 0; border-top: 1px solid var(--border-soft); font-size: 12.5px; color: var(--ink-soft); }
+  .kp-ozet b { color: var(--ink); }
+  .kp-ozet button { align-self: flex-start; margin-top: 8px; }
+  @media (min-width: 1180px) {
+    #generate-section:not(.isaret-tatil):not(.isaret-tercih) .cz-govde.panelli { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 22px; align-items: start; }
+    .kisi-panel { position: sticky; top: 70px; padding-left: 18px; border-left: 1px solid var(--border-soft); }
+  }
+  @media (max-width: 1179px) {
+    .cz-govde { display: flex; flex-direction: column; }
+    .kisi-panel { order: -1; margin: 0 0 12px; min-width: 0; }
+    .kp-bas, .kp-ipucu, .kp-grup { display: none; }
+    .kp-liste { flex-direction: row; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 1px; }
+    .kp-liste::-webkit-scrollbar { display: none; }
+    .kisi-panel .kp-kisi { display: inline-flex; flex: none; width: auto; gap: 7px; padding: 6px 12px; border-radius: 999px; border-color: var(--border); background: var(--surface); }
+    .kp-bar { display: none; }
+    .kp-ozet { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 8px; padding: 0 2px; border: 0; }
+    .kp-ozet button { margin: 0 0 0 auto; }
+  }
 </style>
 </head>
 <body>
@@ -1801,6 +1864,7 @@
     <details class="cekmece" id="uyari-cekmece"><summary>Uyarılar</summary><div id="warnings"></div></details>
     <details class="cekmece" id="onizleme"><summary>Dağılım önizlemesi</summary><div class="rules-body" id="onizleme-icerik"></div></details>
     <details class="cekmece" id="denemeler-kutu"><summary>Önceki denemeler</summary><div class="rules-body" id="deneme-icerik"></div></details>
+    <div class="cz-govde">
     <div class="overflow-x takvim-alan">
       <div class="cal-grid" id="sched-dow-row"></div>
       <div class="sched-grid" id="sched-grid"></div>
@@ -1809,6 +1873,8 @@
       <div class="cal-grid isaret-grid" id="cal-grid"></div>
       <div class="cal-grid isaret-grid" id="pref-dow-row"></div>
       <div class="cal-grid isaret-grid" id="pref-grid"></div>
+    </div>
+    <aside class="kisi-panel" id="kisi-panel" aria-label="Kişiler" hidden></aside>
     </div>
     <div class="gizli-ay" hidden><button type="button" id="prev-month" tabindex="-1">‹</button><div id="month-label"></div><button type="button" id="next-month" tabindex="-1">›</button><p id="cal-ozet"></p></div>
   </section>
@@ -4375,7 +4441,7 @@
         (pzFarkSay ? '<span class="sf-fark" title="Puantajda elle değiştirilmiş ve çizelgeden farklı kalan günler">≠ '+pzFarkSay+'</span>' : '') : '';
     }
     const bos = document.getElementById("cz-bos"); if (bos) bos.hidden = state.staff.length > 0;
-    vurguBilgiYaz(vurguId);
+    vurguBilgiYaz(vurguId); kisiPaneliCiz(vurguId);
     onizlemeYenile(); denemeleriCiz();
     renderAcil(); renderListe();
   }
@@ -4420,7 +4486,6 @@
     if (ikiRol) p.push('<span><i class="kr kare"></i>Tekniker</span>');
     if (state.staff.some(s=>s.role==="nobetci")) p.push('<span><i class="kr halka"></i>Dışarıdan eczacı</span>');
     if (hazVar) p.push('<span><b class="ac-h">H1 / H2</b>Hazırlama</span>');
-    p.push('<span class="ac-not">Renk kişiyi gösterir; her kişinin rengi ay boyunca aynıdır.</span>');
     if (kritik) p.push('<span class="ac-uy c-kritik"><i aria-hidden="true">!</i>Kritik: '+kritik+' gün</span>');
     if (dikkat) p.push('<span class="ac-uy c-dikkat"><i aria-hidden="true">!</i>Dikkat: '+dikkat+' gün</span>');
     el.innerHTML = p.join("");
@@ -4455,6 +4520,38 @@
     let n = 0, h = 0, fm = 0; const hz = ayar('hazSaat');
     state.schedule.days.forEach(d=>{ if (d.assigned.some(p=>p.id===id)){ n++; fm += d.fazlaMesai; } if ((d.prep||[]).some(p=>p.id===id)){ h++; fm += hz; } });
     el.innerHTML = '<span class="vb-ad">'+escapeHtml(st.name)+'</span><span class="vb-chip"><b>'+n+'</b> nöbet</span> <span class="vb-chip"><b>'+h+'</b> hazırlama</span> <span class="vb-chip"><b>'+fm+'</b> saat fazla mesai</span> <span class="vb-not">çizelgeye göre</span>';
+  }
+
+  // ---------- kişi paneli: renkler, bu ayki nöbet sayısı ve fazla mesai; tıklayınca takvimde vurgular ----------
+  function kisiPaneliCiz(id){
+    const el = document.getElementById("kisi-panel"); if (!el) return;
+    const sc = state.schedule, y = state.year, m = state.month;
+    const bos = !sc || sc.year!==y || sc.month!==m || !sc.days.some(d=>d.assigned.length);
+    el.hidden = bos; el.parentElement.classList.toggle("panelli", !bos);
+    if (bos){ el.innerHTML = ""; return; }
+    const renk = kisiRenkleri(y, m), hz = ayar('hazSaat'), say = {};
+    const kisiler = state.staff.filter(s=>(nobetciRol(s.role) || s.role==="destek") && aktifAydaMi(s,y,m)).sort((a,b)=>a.name.localeCompare(b.name,"tr") || a.id-b.id);
+    kisiler.forEach(s=>{ say[s.id] = {n:0, h:0, fm:0}; });
+    sc.days.forEach(d=>{
+      d.assigned.forEach(p=>{ const x = say[p.id]; if (x){ x.n++; x.fm += d.fazlaMesai||0; } });
+      (d.prep||[]).forEach(p=>{ const x = say[p.id]; if (x){ x.h++; x.fm += hz; } });
+    });
+    const enCok = Math.max(1, ...kisiler.map(s=>say[s.id].fm));
+    const sekil = s=> s.role==="nobetci" ? "kr halka" : (eczaciMi(s.role) ? "kr" : "kr kare");
+    const satir = s=>{ const x = say[s.id], on = s.id===id;
+      return '<button type="button" class="kp-kisi'+(on ? ' on' : '')+'" data-kp="'+s.id+'"'+(renk[s.id] ? ' data-renk="'+renk[s.id]+'"' : '')+' aria-pressed="'+(on ? 'true' : 'false')+'" title="'+escapeHtml(s.name)+': '+x.n+' nöbet, '+x.h+' hazırlama, '+x.fm+' saat fazla mesai">'+
+        '<i class="'+sekil(s)+'"></i><span class="kp-ad">'+escapeHtml(s.name)+'</span><span class="kp-say">'+x.n+(x.h ? ' + '+x.h+'H' : '')+'</span>'+
+        '<span class="kp-bar" aria-hidden="true"><u style="width:'+Math.round(x.fm/enCok*100)+'%"></u></span></button>'; };
+    const gruplar = [["Eczacılar", s=>eczaciMi(s.role)], ["Teknikerler", s=>s.role==="teknisyen"], ["Destek personeli", s=>s.role==="destek"]];
+    let h = '<div class="kp-bas">Kişiler</div><div class="kp-ipucu">Tıkla: takvimde vurgula · sayı: nöbet + hazırlama · çubuk: fazla mesai</div><div class="kp-liste">';
+    gruplar.forEach(([ad, f])=>{ const L = kisiler.filter(f); if (L.length) h += '<div class="kp-grup">'+ad+'</div>'+L.map(satir).join(""); });
+    h += '</div>';
+    const st = id ? kisiler.find(s=>s.id===id) : null;
+    if (st){
+      const x = say[st.id], ekip = kisiler.filter(s=>nobetciRol(s.role)), ort = ekip.length ? Math.round(ekip.reduce((t,s)=>t+say[s.id].fm, 0)/ekip.length) : 0;
+      h += '<div class="kp-ozet"><b>'+escapeHtml(st.name)+'</b><span>'+x.n+' nöbet, '+x.h+' hazırlama</span><span>'+x.fm+' saat fazla mesai'+(nobetciRol(st.role) ? ' (ekip ort. '+ort+')' : '')+'</span><button type="button" class="ghost small" data-kp-temizle>Vurgulamayı kaldır</button></div>';
+    }
+    el.innerHTML = h;
   }
 
   // ---------- dağılım önizlemesi ----------
@@ -7607,6 +7704,13 @@
   document.getElementById("duvar-pdf-btn").addEventListener("click", duvarYazdir);
   document.getElementById("gl-ay-pdf").addEventListener("click", gunlukAyYazdir);
   document.getElementById("vurgu-kisi").addEventListener("change", ()=>{ renderSchedule(); });
+  document.getElementById("kisi-panel").addEventListener("click", (e)=>{
+    const v = document.getElementById("vurgu-kisi");
+    if (e.target.closest("[data-kp-temizle]")){ v.value = ""; renderSchedule(); return; }
+    const b = e.target.closest("[data-kp]"); if (!b) return;
+    v.value = v.value===b.dataset.kp ? "" : b.dataset.kp; renderSchedule();
+    const yeni = document.querySelector('#kisi-panel [data-kp="'+b.dataset.kp+'"]'); if (yeni) yeni.focus({preventScroll:true});
+  });
   document.getElementById("vurgu-temizle").addEventListener("click", ()=>{ const v = document.getElementById("vurgu-kisi"); v.value = ""; renderSchedule(); v.focus(); });
   document.getElementById("onizleme").addEventListener("toggle", onizlemeYenile);
   document.getElementById("deneme-icerik").addEventListener("click", (e)=>{
