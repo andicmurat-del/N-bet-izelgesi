@@ -170,7 +170,6 @@
   .cal-cell.weekend { border-color: var(--tatil); color: var(--tatil); }
 
   .cal-cell.manual-tatil { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
-  .cal-cell.bayram .tag { font-weight: 700; }
   .uyg-liste { margin: 8px 0 12px; padding-left: 20px; display: grid; gap: 6px; line-height: 1.45; }
   .cal-cell.arife, .cal-cell.arife:hover { background: var(--arife-soft); border-color: var(--arife); color: var(--arife); }
   .cal-cell.pref-want { background: var(--want-soft); border-color: var(--want); color: var(--want); }
@@ -2092,7 +2091,6 @@
       puantaj: {},       // "YYYY-M": { kişiId: { gün: kod } } elle puantaj değişiklikleri
       acil: {},          // "YYYY-M": { gün: [kişiId, kişiId] } acil eczane nöbetleri
       arife: {},         // "YYYY-M-D": true  arife (yarım gün mesai)
-      bayram: {},        // "YYYY-M-D": "ramazan" | "kurban"  bayram günü (resmi tatil; nöbeti o bayramın grubu tutar)
       onaylar: {},       // "YYYY-M": {zaman, kim, not}  onaylanmış (kilitli) aylar
       onayKaydi: {},     // "YYYY-M": [{zaman, tip, kim, metin}]
       talepler: [],      // nöbet değişim talepleri
@@ -2268,9 +2266,9 @@
     const now = new Date();
     o.year = (Number.isInteger(o.year) && o.year>=2000 && o.year<=2100) ? o.year : now.getFullYear();
     o.month = (Number.isInteger(o.month) && o.month>=0 && o.month<=11) ? o.month : now.getMonth();
-    ["manualTatil","resmiTatil","resmiYuklu","prefs","history","settings","puantaj","acil","schedules","denemeler","arife","bayram","onaylar","onayKaydi"].forEach(k=>{ o[k] = nesne(o[k]); });
-    Object.keys(o.bayram).forEach(k=>{ if (o.bayram[k]!=="ramazan" && o.bayram[k]!=="kurban") delete o.bayram[k]; });
-    o.staff.forEach(x=>{ if (x.bayramGrubu!=="ramazan" && x.bayramGrubu!=="kurban") delete x.bayramGrubu; });
+    ["manualTatil","resmiTatil","resmiYuklu","prefs","history","settings","puantaj","acil","schedules","denemeler","arife","onaylar","onayKaydi"].forEach(k=>{ o[k] = nesne(o[k]); });
+    // bayram grupları özelliği kaldırıldı: eski kayıtlardaki bayram günleri resmi tatil olarak kalır (manualTatil)
+    delete o.bayram; o.staff.forEach(x=>{ delete x.bayramGrubu; });
     Object.keys(o.onaylar).forEach(k=>{ const v = o.onaylar[k]; if (!v || typeof v!=="object" || typeof v.zaman!=="number") delete o.onaylar[k]; });
     Object.keys(o.onayKaydi).forEach(k=>{ const v = o.onayKaydi[k]; if (!Array.isArray(v)) delete o.onayKaydi[k]; else o.onayKaydi[k] = v.filter(x=>x && typeof x==="object" && typeof x.zaman==="number").slice(-200); });
     if (typeof o.kurumLogo !== "string" || !/^data:image\//.test(o.kurumLogo) || o.kurumLogo.length > 700000) delete o.kurumLogo;
@@ -2341,13 +2339,6 @@
   function dateKey(y,m,d){ return y+"-"+m+"-"+d; }
   // Resmi tatil: takvimde elle işaretlenen gün (hafta içi ya da hafta sonu)
   function isManualTatil(y,m,d){ return !!state.manualTatil[dateKey(y,m,d)]; }
-  // Bayram grupları: Ramazan Bayramı günlerinde "Ramazan grubu", Kurban Bayramı günlerinde "Kurban grubu" nöbet ve hazırlama tutar;
-  // diğer grup o bayramda uzun tatil yapar. Bayram günlerindeki görevler eşitlik hesaplarına (aylık ve yıllık) katılmaz.
-  const BAYRAM_AD = {ramazan:"Ramazan Bayramı", kurban:"Kurban Bayramı"}, GRUP_AD = {ramazan:"Ramazan grubu", kurban:"Kurban grubu"};
-  function bayramTuru(y,m,d){ const v = state.bayram && state.bayram[dateKey(y,m,d)]; return (v==="ramazan" || v==="kurban") ? v : ""; }
-  function bayramYasak(id,y,m,d){ const t = bayramTuru(y,m,d); if (!t) return false; const st = state.staff.find(x=>x.id===id); return !!(st && st.bayramGrubu && st.bayramGrubu!==t); }
-  function kesinYasakDis(id,y,m,d){ return kesinYasak(id,y,m,d); }
-  function bayramsizGunler(y,m,days){ return days.filter(g=>g && !bayramTuru(y,m,g.day)); }
 
   // ---- personelin çalışma dönemi (işe başlama / ayrılış tarihi) ----
   function isoNo(t){ if (!t) return null; const p = String(t).split("-"); return Number(p[0])*10000 + Number(p[1])*100 + Number(p[2]); }
@@ -2535,7 +2526,6 @@
     const tr = t=>{ const p = String(t).split("-"); return p.length===3 ? p[2]+"."+p[1]+"."+p[0] : t; };
     if (s.baslangic) par.push("başlangıç "+tr(s.baslangic));
     if (s.bitis) par.push("ayrılış "+tr(s.bitis));
-    if (s.bayramGrubu) par.push(GRUP_AD[s.bayramGrubu]);
     return par.join(" · ");
   }
   function menuKapat(){ document.querySelectorAll(".li-menu-kutu.acik").forEach(k=>{ k.classList.remove("acik"); const b = k.querySelector(".li-menu-ac"); if (b) b.setAttribute("aria-expanded", "false"); }); }
@@ -2596,11 +2586,7 @@
       const yeniden = !!(document.getElementById("pdz-yeni") && document.getElementById("pdz-yeni").checked);
       if (!ad){ alert("Ad boş olamaz."); return; }
       const adDegisti = ad !== s.name, rolDegisti = yeniRol !== s.role;
-      // bayram grubu alanı formda yoksa (şu an arayüzde gösterilmiyor) kişinin kayıtlı grubu korunur
-      const grupAlani = document.getElementById("pdz-bayram");
-      const yeniGrup = grupAlani ? grupAlani.value : (s.bayramGrubu || ""), grupDegisti = yeniGrup !== (s.bayramGrubu || "");
-      if (grupDegisti){ if (yeniGrup) s.bayramGrubu = yeniGrup; else delete s.bayramGrubu; }
-      if (!adDegisti && !rolDegisti){ if (grupDegisti){ saveState(); tumunuYenile(); } pzModalKapat(); return; }
+      if (!adDegisti && !rolDegisti){ pzModalKapat(); return; }
       if (adDegisti && state.staff.some(x=>x.id!==id && x.name===ad && !x.bitis) && !await onayla(ad+" adında başka bir kişi zaten listede. Yine de değiştirilsin mi?")) return;
       s.name = ad; s.role = yeniRol;
       const guncelle = sc=>{ ((sc||{}).days||[]).forEach(d=>{ (d.assigned||[]).concat(d.prep||[]).forEach(o=>{ if (o && o.id===id){ o.name = ad; o.role = yeniRol; } }); }); };
@@ -2675,14 +2661,14 @@
     days.forEach(g=>{ (g.assigned||[]).forEach(p=>{ t[p.id] = (t[p.id]||0) + (g.fazlaMesai||0); }); (g.prep||[]).forEach(p=>{ t[p.id] = (t[p.id]||0) + hz; }); });
     return t; }
   function fmFarkBilgisi(y, m, days){
-    const t = ayFmTablosu(bayramsizGunler(y, m, days)), k = fmKuralKisileri(y,m); if (k.length < 2) return {fark:0, kisiler:k, t};
+    const t = ayFmTablosu(days), k = fmKuralKisileri(y,m); if (k.length < 2) return {fark:0, kisiler:k, t};
     let enAz = k[0], enCok = k[0];
     k.forEach(s=>{ if ((t[s.id]||0) < (t[enAz.id]||0)) enAz = s; if ((t[s.id]||0) > (t[enCok.id]||0)) enCok = s; });
     return {fark:(t[enCok.id]||0)-(t[enAz.id]||0), enAz, enCok, t, kisiler:k};
   }
   // kişinin ay içindeki Cuma / Cumartesi / Pazar nöbet sayıları
   function hsSayilari(y, m, days, id){ const r = {cu:0, cmt:0, paz:0};
-    bayramsizGunler(y, m, days).forEach(g=>{ if (!(g.assigned||[]).some(p=>p.id===id)) return; const w = jsDowToMonFirst(new Date(y,m,g.day).getDay());
+    days.forEach(g=>{ if (!(g.assigned||[]).some(p=>p.id===id)) return; const w = jsDowToMonFirst(new Date(y,m,g.day).getDay());
       if (w===4) r.cu++; else if (w===5) r.cmt++; else if (w===6) r.paz++; });
     return r; }
   function hsKuralIhlali(r){ const o = [];
@@ -2729,34 +2715,27 @@
       empty.className = "cal-cell empty";
       grid.appendChild(empty);
     }
-    const isaretli = [], arifeler = [], bayramlar = [];
+    const isaretli = [], arifeler = [];
     for (let d=1; d<=dim; d++){
       const cell = document.createElement("div");
       cell.className = "cal-cell"; cell.dataset.gun = d;
-      const weekend = isWeekend(y,m,d), resmi = isManualTatil(y,m,d), arife = !resmi && !weekend && isArife(y,m,d), bay = resmi ? bayramTuru(y,m,d) : "";
+      const weekend = isWeekend(y,m,d), resmi = isManualTatil(y,m,d), arife = !resmi && !weekend && isArife(y,m,d);
       if (weekend) cell.classList.add("weekend");
       if (resmi){ cell.classList.add("manual-tatil"); isaretli.push(d); }
       if (arife){ cell.classList.add("arife"); arifeler.push(d); }
-      if (bay){ cell.classList.add("bayram"); bayramlar.push(d+" ("+(bay==="ramazan" ? "Ramazan" : "Kurban")+")"); }
-      cell.innerHTML = '<div>'+d+'</div>' + (resmi ? '<div class="tag">'+(bay ? (bay==="ramazan" ? "Ramazan" : "Kurban") : "resmi")+'</div>' : (arife ? '<div class="tag">arife</div>' : (weekend ? '<div class="tag">h.sonu</div>' : '')));
-      cell.title = (calArac==="ramazan" || calArac==="kurban")
-        ? (bay===calArac ? BAYRAM_AD[calArac]+" işaretini kaldırmak için tıkla" : BAYRAM_AD[calArac]+" günü olarak işaretlemek için tıkla (resmi tatil sayılır; nöbeti "+GRUP_AD[calArac]+" tutar)")
-        : calArac==="arife"
+      cell.innerHTML = '<div>'+d+'</div>' + (resmi ? '<div class="tag">resmi</div>' : (arife ? '<div class="tag">arife</div>' : (weekend ? '<div class="tag">h.sonu</div>' : '')));
+      cell.title = calArac==="arife"
         ? (weekend ? "Hafta sonu: arife işareti yalnızca hafta içi günlere konur" : (arife ? "Arife işaretini kaldırmak için tıkla" : "Arife (yarım gün) olarak işaretlemek için tıkla"))
         : (resmi ? "Resmi tatil işaretini kaldırmak için tıkla" : (weekend ? "Hafta sonu. Resmi tatil olarak işaretlemek için tıkla" : "Resmi tatil olarak işaretlemek için tıkla"));
       cell.addEventListener("click", ()=>{
         if (kilitliyse(y, m)) return;
         const key = dateKey(y,m,d);
-        if (!state.bayram) state.bayram = {};
-        if (calArac==="ramazan" || calArac==="kurban"){
-          if (state.bayram[key]===calArac){ delete state.bayram[key]; delete state.manualTatil[key]; }
-          else { state.bayram[key] = calArac; state.manualTatil[key] = true; delete state.arife[key]; }
-        } else if (calArac==="arife"){
+        if (calArac==="arife"){
           if (weekend){ bildirim("Arife işareti yalnızca hafta içi günlere konur; hafta sonu zaten mesai dışı."); return; }
           if (state.arife[key]) delete state.arife[key];
-          else { state.arife[key] = true; delete state.manualTatil[key]; delete state.bayram[key]; }
+          else { state.arife[key] = true; delete state.manualTatil[key]; }
         } else {
-          if (state.manualTatil[key]){ delete state.manualTatil[key]; delete state.bayram[key]; }
+          if (state.manualTatil[key]) delete state.manualTatil[key];
           else { state.manualTatil[key] = true; delete state.arife[key]; }
         }
         if (state.schedule && state.schedule.year===y && state.schedule.month===m) fmYenile(state.schedule);
@@ -2767,8 +2746,7 @@
     }
     const oz = document.getElementById("cal-ozet");
     if (oz) oz.textContent = (isaretli.length ? "Bu ay işaretli resmi tatil: "+isaretli.length+" gün ("+isaretli.join(", ")+")." : "Bu ay işaretli resmi tatil günü yok.") +
-      (arifeler.length ? " Arife (yarım gün): "+arifeler.length+" gün ("+arifeler.join(", ")+")." : "") +
-      (bayramlar.length ? " Bayram: "+bayramlar.join(", ")+"." : "");
+      (arifeler.length ? " Arife (yarım gün): "+arifeler.length+" gün ("+arifeler.join(", ")+")." : "");
   }
 
   // ---------- resmi tatil dengesi ----------
@@ -2809,14 +2787,14 @@
   // curDays verilirse m. ayın günleri de eklenir). Kural: herkes birini almadan kimse ikincisini almasın (fark en fazla 1).
   const YIL_GUN_TIP = [["pe","Perşembe"],["cu","Cuma"],["cmt","Cumartesi"],["paz","Pazar"],["rt","Resmi tatil"]];
   // Dönüş: kişi başı {pe, cu, cmt, paz, rt} = ekip ortalamasına göre fark (yalnız kişinin çalıştığı aylar; yeni başlayan
-  // personel önceki aylar için borçlu sayılmaz) ve ham sayılar (ham). Bayram günleri sayılmaz (bayram grupları ayrı).
+  // personel önceki aylar için borçlu sayılmaz) ve ham sayılar (ham).
   function yilGunSayilari(y, m, curDays){
     const r = {}, T = ["pe","cu","cmt","paz","rt"];
     const kayit = id=> r[id] || (r[id] = {pe:0, cu:0, cmt:0, paz:0, rt:0, ham:{pe:0, cu:0, cmt:0, paz:0, rt:0}});
     const ay = (mm, gunler)=>{
       const hv = state.staff.filter(s=>(eczaciMi(s.role) || s.role==="teknisyen") && aktifAydaMi(s,y,mm)); if (!hv.length) return;
       const c = {}; hv.forEach(s=>{ c[s.id] = {pe:0, cu:0, cmt:0, paz:0, rt:0}; });
-      gunler.forEach(d=>{ if (!d || bayramTuru(y, mm, d.day)) return; const dw = new Date(y, mm, d.day).getDay(), rt = isManualTatil(y, mm, d.day);
+      gunler.forEach(d=>{ if (!d) return; const dw = new Date(y, mm, d.day).getDay(), rt = isManualTatil(y, mm, d.day);
         (d.assigned||[]).forEach(p=>{ const o = c[p.id]; if (!o) return; if (dw===4) o.pe++; else if (dw===5) o.cu++; else if (dw===6) o.cmt++; else if (dw===0) o.paz++; if (rt) o.rt++; }); });
       T.forEach(t=>{ const ort = hv.reduce((a,s)=>a+c[s.id][t], 0)/hv.length; hv.forEach(s=>{ const o = kayit(s.id); o[t] += c[s.id][t] - ort; o.ham[t] += c[s.id][t]; }); });
     };
@@ -2832,7 +2810,7 @@
       const sc = state.schedules[y+"-"+mm]; if (!sc || !Array.isArray(sc.days)) continue;
       const hv = state.staff.filter(s=>(eczaciMi(s.role) || s.role==="teknisyen") && aktifAydaMi(s,y,mm)); if (!hv.length) continue;
       const c = {}; hv.forEach(s=>{ c[s.id] = 0; });
-      sc.days.forEach(d=>{ if (bayramTuru(y, mm, d.day)) return; (d.assigned||[]).forEach(p=>{ if (c[p.id]!==undefined) c[p.id]++; }); });
+      sc.days.forEach(d=>{ (d.assigned||[]).forEach(p=>{ if (c[p.id]!==undefined) c[p.id]++; }); });
       const ort = hv.reduce((t,s)=>t+c[s.id], 0) / hv.length;
       hv.forEach(s=>{ off[s.id] = (off[s.id]||0) + c[s.id] - ort; });
     }
@@ -2842,7 +2820,7 @@
     const off = {};
     for (let mm=0; mm<m; mm++){
       const sc = state.schedules[y+"-"+mm]; if (!sc || !Array.isArray(sc.days)) continue;
-      const hsGun = sc.days.filter(d=>d && tipMi(y,mm,d.day) && !bayramTuru(y,mm,d.day));
+      const hsGun = sc.days.filter(d=>d && tipMi(y,mm,d.day));
       if (!hsGun.length) continue;
       [state.staff.filter(s=>(eczaciMi(s.role) || s.role==="teknisyen") && aktifAydaMi(s,y,mm))].forEach(hv=>{
         if (!hv.length) return;
@@ -2862,7 +2840,7 @@
     const off = {}, say = {}, offH = {}, sayH = {};
     for (let mm=0; mm<m; mm++){
       const sc = state.schedules[y+"-"+mm]; if (!sc || !Array.isArray(sc.days)) continue;
-      const rg = sc.days.filter(d=>d && isManualTatil(y,mm,d.day) && !bayramTuru(y,mm,d.day)); if (!rg.length) continue;
+      const rg = sc.days.filter(d=>d && isManualTatil(y,mm,d.day)); if (!rg.length) continue;
       const cN = {}, cH = {};
       rg.forEach(d=>{ (d.assigned||[]).forEach(p=>{ cN[p.id] = (cN[p.id]||0) + 1; }); (d.prep||[]).forEach(p=>{ cH[p.id] = (cH[p.id]||0) + 1; }); });
       // her havuz kendi içinde: nöbetçiler (nöbet), eczacı/tekniker (hazırlama), destek personeli (hazırlama)
@@ -2977,7 +2955,6 @@
     const r = {};
     const dimS = daysInMonth(sch.year, sch.month);
     sch.days.forEach(d=>{
-      if (bayramTuru(sch.year, sch.month, d.day)) return;   // bayram görevleri eşitlik hesabına katılmaz
       const fmGun = computeFazlaMesaiForDay(sch.year, sch.month, d.day, dimS);
       const dw = jsDowToMonFirst(new Date(sch.year, sch.month, d.day).getDay());
       d.assigned.forEach(p=>{
@@ -3078,8 +3055,6 @@
   }
 
   function generateSchedule(varyasyon){
-    // bayram günlerinde yalnız o bayramın grubu yazılır (grubu seçilmemiş kişiler iki bayramda da yazılabilir)
-    const kesinYasak = (id,yy,mm,dd)=> kesinYasakDis(id,yy,mm,dd) || bayramYasak(id,yy,mm,dd);
     if (kilitliyse(state.year, state.month)) return;
     const vary = (typeof varyasyon === "number") ? varyasyon : 0;
     const y = state.year, m = state.month;
@@ -3146,8 +3121,6 @@
     function sonGunEngel(id, d){ return !sonGunEngelBos && !!sonGunEngelSet[id+"-"+d]; }
     function pickCandidates(y,m,d, pool, restingIds){
       let notOnLeave = pool.filter(s=> !kesinYasak(s.id,y,m,d) && !sonGunEngel(s.id,d));
-      // bayram grubunda uygun kimse kalmadıysa (gün boş kalmasın) diğer gruptan yazılır; uyarıda gösterilir
-      if (!notOnLeave.length && bayramTuru(y,m,d)) notOnLeave = pool.filter(s=> !kesinYasakDis(s.id,y,m,d) && !sonGunEngel(s.id,d));
       // kesin kural: ayda en fazla 1 Cumartesi, 1 Pazar; Cuma + Cumartesi + Pazar üçü birden olmaz
       { const dw = dowOfDay(d), uy = notOnLeave.filter(s=>{ const cu = cumaGunCount[s.id]||0, ct = cmtCount[s.id]||0, pz = pazCount[s.id]||0;
           if (dw===5) return ct===0 && !(cu>0 && pz>0);
@@ -3372,8 +3345,7 @@
     // eş durumu: "istiyor" işaretli güne o kişi kesin nöbetçi yazılır
     const zorunluGun = days.map(dy=> staffList.filter(s=>getPref(s.id,y,m,dy.day)==="esVar" && aktifGunMu(s,y,m,dy.day)).map(s=>s.id));
     function zorunluMu(id, i){ return zorunluGun[i].indexOf(id) >= 0; }
-    const resmiGunDizi = days.map(dy=>isManualTatil(y,m,dy.day) && !bayramTuru(y,m,dy.day)), resmiGunVar = resmiGunDizi.some(Boolean);
-    const bayramDizi = days.map(dy=>bayramTuru(y,m,dy.day)), bayramVar = bayramDizi.some(Boolean);
+    const resmiGunDizi = days.map(dy=>isManualTatil(y,m,dy.day)), resmiGunVar = resmiGunDizi.some(Boolean);
     // --- hız: arama boyunca değişmeyen değerler bir kez hesaplanır (sonuç aynı kalır) ---
     const A_MINARA = ayar('minAra'), A_THUHS = ayar('thuHaftaSonu'),
           A_CUMA = ayar('cumaEsles'), A_HSUST = ayar('hsUst'), A_MAXTHU = ayar('maxThu');
@@ -3396,13 +3368,6 @@
     const ixStaff = staffList.map(s=>hIx[s.id]), ixPrep = prepAday.map(s=>hIx[s.id]), ixDestek = destekler.map(s=>hIx[s.id]);
     let ixPrepAdil = null;   // bu ay en az bir hazırlama gününde yazılabilen eczacı / tekniker
     const eczIx = new Uint8Array(NH); tumHavuz.forEach((s,ix)=>{ if (eczaciMi(s.role)) eczIx[ix] = 1; });
-    // bayram grupları (bu ayki bayram türlerine göre): nöbetçi/eczacı-tekniker ve destek ayrı
-    const ixBayGrup = [];
-    [...new Set(days.map(dy=>bayramTuru(y,m,dy.day)).filter(Boolean))].forEach(t=>{
-      const uye = tumHavuz.filter(s=> (!s.bayramGrubu || s.bayramGrubu===t) && days.some(dy=> bayramTuru(y,m,dy.day)===t && !kesinYasak(s.id,y,m,dy.day)));
-      ixBayGrup.push(uye.filter(s=>s.role!=="destek").map(s=>hIx[s.id]).filter(ix=>ix!==undefined));
-      ixBayGrup.push(uye.filter(s=>s.role==="destek").map(s=>hIx[s.id]).filter(ix=>ix!==undefined));
-    });
     // yıl içinde birikmiş gün türü sayıları (önceki aylar, ham): Perşembe, Cuma, Cumartesi, Pazar, resmi tatil
     const W_GUNYIL = 1.5e6;   // herkes birini almadan kimse ikincisini almasın (aylık 8 saatten sonra, yıllık saatten ve hafta sonu kuralından önce)
     const yb0 = yilGunSayilari(y, m, null);
@@ -3453,11 +3418,6 @@
     const gunFm = days.map(dy=>dy.fazlaMesai);
     // bir günün nöbetçi + hazırlama katkısını sayaçlara ekler (sg=1) ya da çıkarır (sg=-1)
     function katki(i, as, pl, sg){
-      if (bayramDizi[i]){   // bayram günü: yalnız bayram görev sayacı (grup içi eşitlik); diğer eşitlik sayaçlarına katılmaz
-        for (let q=0;q<as.length;q++){ const ix = hIx[as[q].id]; if (ix!==undefined) hBay[ix]+=sg; }
-        if (pl) for (let q=0;q<pl.length;q++){ const ix = hIx[pl[q].id]; if (ix!==undefined) hBay[ix]+=sg; }
-        return;
-      }
       const dow = gunDow[i], resmi = resmiGunDizi[i], fmGun = sg*gunFm[i];
       const hs = (dow===5||dow===6);
       for (let q=0;q<as.length;q++){
@@ -3515,8 +3475,7 @@
     }
     function zGun(i){ const zg = zorunluGun[i]; let z = 0; for (let q=0;q<zg.length;q++){ if (!gundeVar(i, zg[q])) z += 200000; } return z; }
     let hPrAv = 0;   // "istemiyor" işaretli güne yazılan hazırlama sayısı
-    const hBay = new Float64Array(NH);
-    function sayaclariSifirla(){ hPrAv = 0; hBay.fill(0); hFm.fill(0); hCnt.fill(0); hWk.fill(0); hThu.fill(0); hPrp.fill(0); hSat.fill(0); hSun.fill(0); hCum.fill(0); hRc.fill(0); hRcH.fill(0); hHs.fill(0); hCu.fill(0); }
+    function sayaclariSifirla(){ hPrAv = 0; hFm.fill(0); hCnt.fill(0); hWk.fill(0); hThu.fill(0); hPrp.fill(0); hSat.fill(0); hSun.fill(0); hCum.fill(0); hRc.fill(0); hRcH.fill(0); hHs.fill(0); hCu.fill(0); }
     // ozetJ her aday hamlede çağrılır: yardımcılar dışarıda tanımlıdır (her çağrıda yeni dizi/fonksiyon oluşmasın)
     // G grubundaki sayaç değerleri arasındaki fark 1'i aşıyorsa ceza
     function grupFarkCeza(o, G, w){ if (G.length < 2) return 0; let mx = -1, mn = 1e9; for (let q=0;q<G.length;q++){ const v = o[G[q]]; if (v>mx) mx = v; if (v<mn) mn = v; } return mx-mn > 1 ? w*(mx-mn-1) : 0; }
@@ -3538,8 +3497,6 @@
       // nöbet sayısı: kişiler arasında fark mümkünse en fazla 1, en fazla 2
       if (ixFmKural.length > 1){ let mx = -1, mn = 1e9; for (let q=0;q<ixFmKural.length;q++){ const v = hCnt[ixFmKural[q]]; if (v>mx) mx = v; if (v<mn) mn = v; }
         if (mx-mn > 1) hzAdil += 100000*(mx-mn-1); if (mx-mn > 2) hzAdil += KESIN*(mx-mn-2); }
-      // bayram: grup içinde bayram görevi (nöbet + hazırlama) sayıları eşit; destek kendi arasında
-      if (bayramVar) for (let g=0; g<ixBayGrup.length; g++) hzAdil += grupFarkCeza(hBay, ixBayGrup[g], 300000);
       if (destekVar) for (let q=0;q<ixDestek.length;q++){ const v = hPrp[ixDestek[q]]; destekFazla += KESIN*40*Math.abs(v-DESTEK_AYLIK); }   // KESİN: destek personeli ayda tam ayardaki sayı kadar hazırlama alır
       // hafta sonu düzeni: kişi başı ayda en fazla 1 Cumartesi/Pazar nöbeti (ne ikisi birden, ne
       // 2 Cumartesi, ne 2 Pazar); mümkünse Cuma + Cumartesi ya da Cuma + Pazar eşleşmesi
@@ -4145,22 +4102,17 @@
       staffList.forEach(s=>{ const ih = hsKuralIhlali(hsSayilari(y, m, days, s.id)); if (ih.length) hsI.push(s.name+" ("+ih.join(", ")+")"); });
       if (hsI.length) warnings.push("Hafta sonu kuralı esnetildi (ayda en fazla 1 Cumartesi, 1 Pazar; Cuma + Cumartesi + Pazar birlikte olmaz): "+hsI.join("; ")+". Eşitlik kuralları (hazırlama, fazla mesai, nöbet sayısı) önce geldiği için ya da personel/izin durumu nedeniyle; ilgili günleri elle düzenleyebilirsin.");
       { const hz = {}; prepAday.forEach(s=>{ hz[s.id] = 0; });
-        bayramsizGunler(y, m, days).forEach(dd=>(dd.prep||[]).forEach(p=>{ if (hz[p.id]!==undefined) hz[p.id]++; }));
-        const L = prepAday.filter(s=> bayramsizGunler(y, m, days).some(dy=> dy.tatil && !kesinYasak(s.id, y, m, dy.day)));
+        days.forEach(dd=>(dd.prep||[]).forEach(p=>{ if (hz[p.id]!==undefined) hz[p.id]++; }));
+        const L = prepAday.filter(s=> days.some(dy=> dy.tatil && !kesinYasak(s.id, y, m, dy.day)));
         if (L.length > 1){ const v = L.map(s=>hz[s.id]), mx = Math.max.apply(null, v), mn = Math.min.apply(null, v);
           if (mx-mn > 1) warnings.push("Hazırlama farkı sağlanamadı: hazırlama sayıları arasındaki fark "+(mx-mn)+" (en fazla 1). En çok: "+L.filter(s=>hz[s.id]===mx).map(s=>s.name+" ("+mx+")").join(", ")+"; en az: "+L.filter(s=>hz[s.id]===mn).map(s=>s.name+" ("+mn+")").join(", ")+". "+(Number(ayar('cakismaOncelik'))===2 ? "Ayarlar'da çakışmada öncelik fazla mesai saati seçili." : "Personel/izin durumu nedeniyle.")); } }
       { const kk = fmKuralKisileri(y, m), ys = yilGunSayilari(y, m, days), sat = [];
         const dv = (s,k)=> (ys[s.id]||{})[k]||0, hm = (s,k)=> ((ys[s.id]||{}).ham||{})[k]||0;
         if (kk.length > 1) YIL_GUN_TIP.forEach(([k, ad])=>{ const v = kk.map(s=>dv(s,k)), mx = Math.max.apply(null, v), mn = Math.min.apply(null, v);
           if (mx-mn > 1+1e-9) sat.push(ad+" (en çok: "+kk.filter(s=>dv(s,k) > mx-0.5).map(s=>s.name+" "+hm(s,k)).join(", ")+"; en az: "+kk.filter(s=>dv(s,k) < mn+0.5).map(s=>s.name+" "+hm(s,k)).join(", ")+")"); });
-        if (sat.length) warnings.push("Yıllık gün dağılımında fark 1'i aşıyor ("+y+" başından bu aya kadar; sonradan başlayan personel yalnız çalıştığı aylara göre karşılaştırılır, bayram günleri sayılmaz): "+sat.join("; ")+". Önceki aylardan gelen fark sonraki aylarda kapatılır; fazla mesai ya da hazırlama kuralları bu ay izin vermedi."); }
-      if (bayramVar){ const dis = [], gsz = [];
-        days.forEach(dd=>{ const t = bayramTuru(y,m,dd.day); if (!t) return; dd.assigned.concat(dd.prep||[]).forEach(p=>{ if (bayramYasak(p.id,y,m,dd.day)) dis.push(dd.day+" "+AYLAR[m]+" "+p.name); }); });
-        state.staff.filter(s=>(nobetciRol(s.role) || s.role==="destek") && aktifAydaMi(s,y,m) && !s.bayramGrubu).forEach(s=>gsz.push(s.name));
-        if (dis.length) warnings.push("Bayram grubu: grupta uygun kişi yetmediği için diğer gruptan yazıldı: "+dis.join(", ")+".");
-        if (gsz.length) warnings.push("Bayram grubu seçilmemiş kişiler (iki bayramda da yazılabilir): "+gsz.join(", ")+". Ayarlar > Personel > Düzenle'den grup seçebilirsin."); }
+        if (sat.length) warnings.push("Yıllık gün dağılımında fark 1'i aşıyor ("+y+" başından bu aya kadar; sonradan başlayan personel yalnız çalıştığı aylara göre karşılaştırılır): "+sat.join("; ")+". Önceki aylardan gelen fark sonraki aylarda kapatılır; fazla mesai ya da hazırlama kuralları bu ay izin vermedi."); }
       { const kk = fmKuralKisileri(y, m), nc = {}; kk.forEach(s=>{ nc[s.id] = 0; });
-        bayramsizGunler(y, m, days).forEach(dd=>dd.assigned.forEach(p=>{ if (nc[p.id]!==undefined) nc[p.id]++; }));
+        days.forEach(dd=>dd.assigned.forEach(p=>{ if (nc[p.id]!==undefined) nc[p.id]++; }));
         if (kk.length > 1){ const v = kk.map(s=>nc[s.id]), mx = Math.max.apply(null, v), mn = Math.min.apply(null, v);
           if (mx-mn > 2) warnings.push("Nöbet sayısı farkı sağlanamadı: kişiler arasındaki fark "+(mx-mn)+" (en fazla 2). En çok: "+kk.filter(s=>nc[s.id]===mx).map(s=>s.name+" ("+mx+")").join(", ")+"; en az: "+kk.filter(s=>nc[s.id]===mn).map(s=>s.name+" ("+mn+")").join(", ")+"."); } }
       const fb = fmFarkBilgisi(y, m, days);
@@ -4178,10 +4130,10 @@
       warnings.push("Şu günler için yeterli hazırlama personeli bulunamadı: " + eksikPrep.join(", ") + "." + (destekVar ? "" : ""));
     }
     if (destekVar){
-      const tatilGunSayisi = bayramsizGunler(y, m, days).filter(dd=>dd.tatil).length;
+      const tatilGunSayisi = days.filter(dd=>dd.tatil).length;
       const gerekli = destekler.length * DESTEK_AYLIK;
       const sayac = {}; destekler.forEach(s=>{ sayac[s.id]=0; });
-      bayramsizGunler(y, m, days).forEach(dd=>dd.prep.forEach(pp=>{ if (sayac[pp.id]!==undefined) sayac[pp.id]++; }));
+      days.forEach(dd=>dd.prep.forEach(pp=>{ if (sayac[pp.id]!==undefined) sayac[pp.id]++; }));
       const farkli = destekler.filter(s=>sayac[s.id]!==DESTEK_AYLIK).map(s=>s.name+" ("+sayac[s.id]+")");
       if (tatilGunSayisi < gerekli){
         warnings.push("Bu ay "+tatilGunSayisi+" tatil günü var; "+destekler.length+" destek personeline ayda kesin "+DESTEK_AYLIK+"'şer görev için "+gerekli+" gün gerekiyor. Destek personeli sayısını azaltırsan ya da tatil günü sayısı artarsa hepsi "+DESTEK_AYLIK+" görev alır.");
@@ -4245,7 +4197,7 @@
     const t = String(w);
     const seviye = /(dolduruldu|normaldir)\.?$/.test(t) ? "bilgi"
       : /(korunamadı|bulunamadı|karşılanamadı|yetersiz\.|gerekiyor|eczacı yok|eksik kişi|eksik tatil|yeri eksik|sağlanamadı)/i.test(t) ? "hata" : "uyari";
-    const B = [[/^Yıllık gün dağılımı/, "Yıllık gün dağılımı"], [/^Hazırlama farkı/, "Hazırlama farkı"], [/^Nöbet sayısı farkı/, "Nöbet sayısı farkı"], [/^Hafta sonu kuralı/, "Hafta sonu kuralı"], [/^Bayram grubu/, "Bayram grubu"], [/^KESİN KURAL sağlanamadı: fazla mesai/, "Fazla mesai farkı"], [/KESİN KURAL/i, "Kesin kural"], [/dinlenme kuralı/i, "Zorunlu atama yapılan günler"], [/kural dışı atama/i, "Kural dışı atama"], [/hazırlama (personeli bulunamadı|yeri eksik)/i, "Eksik hazırlama"],
+    const B = [[/^Yıllık gün dağılımı/, "Yıllık gün dağılımı"], [/^Hazırlama farkı/, "Hazırlama farkı"], [/^Nöbet sayısı farkı/, "Nöbet sayısı farkı"], [/^Hafta sonu kuralı/, "Hafta sonu kuralı"], [/^KESİN KURAL sağlanamadı: fazla mesai/, "Fazla mesai farkı"], [/KESİN KURAL/i, "Kesin kural"], [/dinlenme kuralı/i, "Zorunlu atama yapılan günler"], [/kural dışı atama/i, "Kural dışı atama"], [/hazırlama (personeli bulunamadı|yeri eksik)/i, "Eksik hazırlama"],
       [/3 ya da daha fazla Cumartesi/i, "3 ya da daha fazla hafta sonu nöbeti"], [/Hafta sonu .*aşan/i, "Hafta sonu sınırı aşıldı"], [/eş durumu/i, "Eş durumu"],
       [/Perşembe/i, "Perşembe nöbeti sınırı"], [/destek personeli ayda/i, "Destek personeli yetmiyor"], [/Eczacı sayısı/i, "Eczacı sayısı az"],
       [/En az 2 eczacı/i, "Eczacı yetersiz"], [/personel sayısı/i, "Personel yetersiz"], [/sonraki ay/i, "Ay geçişi"]];
@@ -5499,7 +5451,6 @@
       }
       const pr0 = getPref(p.id, y, m, day.day);
       const dk0 = pzDurumKodu(p.id, y, m, day.day);
-      if (bayramYasak(p.id, y, m, day.day)) ekle("uyari", p.name+" "+GRUP_AD[state.staff.find(x=>x.id===p.id).bayramGrubu]+"nda; "+BAYRAM_AD[bayramTuru(y,m,day.day)]+" nöbetini "+GRUP_AD[bayramTuru(y,m,day.day)]+" tutar (elle yazılabilir).");
       if (dk0) ekle("hata", p.name+" bu gün "+DURUM_AD[dk0].toLowerCase()+" kullanıyor (puantajda kayıtlı).");
       else if (pr0==="izinli") ekle("hata", p.name+" bu gün izinli olarak işaretli.");
       else if (izinArasiMi(p.id, y, m, day.day)) ekle("hata", p.name+" bu gün izin arasında (iki izin günü arasındaki tatil).");
@@ -5508,9 +5459,8 @@
       if (pr0==="esYok") ekle("hata", p.name+" için eş durumu: bu güne yazılmaması gerekiyor.");
       if (pr0==="avoid") ekle("uyari", p.name+" bu gün nöbet istemiyor.");
       let thu = 0, hs = 0;
-      const bayBu = !!bayramTuru(y,m,day.day);   // bayram günleri aylık sayılara katılmaz
-      days.forEach((gg,i)=>{ if (i===idx || bayramTuru(y,m,gg.day)) return; if (gg.assigned.some(q=>q.id===p.id)){ const w = jsDowToMonFirst(new Date(y,m,gg.day).getDay()); if (w===3) thu++; if (w===5||w===6) hs++; } });
-      if (dw===3 && !bayBu){ thu++; if (thu > ayar('maxThu')) ekle("uyari", p.name+" bu ay "+thu+". Perşembe nöbetini tutuyor (sınır "+(ayar('maxThu')>=99?"yok":ayar('maxThu'))+")."); }
+      days.forEach((gg,i)=>{ if (i===idx) return; if (gg.assigned.some(q=>q.id===p.id)){ const w = jsDowToMonFirst(new Date(y,m,gg.day).getDay()); if (w===3) thu++; if (w===5||w===6) hs++; } });
+      if (dw===3){ thu++; if (thu > ayar('maxThu')) ekle("uyari", p.name+" bu ay "+thu+". Perşembe nöbetini tutuyor (sınır "+(ayar('maxThu')>=99?"yok":ayar('maxThu'))+")."); }
       // Perşembe nöbeti ↔ aynı hafta sonu: hazırlama kesin yasak, nöbet önerilmez
       if (dw===3 && ayar('thuHaftaSonu')) [2,3].forEach(k=>{ const gg = days[idx+k]; if (!gg) return;
         if ((gg.prep||[]).some(q=>q.id===p.id)) ekle("hata", p.name+" Perşembe nöbetçisi, ama aynı hafta sonu "+gg.day+". gün hazırlama görevinde.");
@@ -5519,7 +5469,7 @@
         if (gg && (gg.prep||[]).some(q=>q.id===p.id)) ekle("uyari", p.name+" Cuma nöbetçisi; aynı hafta Pazar ("+gg.day+". gün) hazırlama görevinde."); }
       if (dw===6){ const gg = days[idx-2]; if (gg && gg.assigned.some(q=>q.id===p.id)) ekle("uyari", p.name+" aynı haftanın Cuma günü ("+gg.day+". gün) nöbetçi; Cuma ve Pazar aynı kişiye yazılmamalı."); }
       if ((dw===5 || dw===6) && ayar('thuHaftaSonu')){ const gg = days[idx-(dw===5?2:3)]; if (gg && gg.assigned.some(q=>q.id===p.id)) ekle("uyari", p.name+" aynı haftanın Perşembe günü ("+gg.day+". gün) nöbetçi."); }
-      if ((dw===5 || dw===6) && !bayBu){
+      if (dw===5 || dw===6){
         hs++;
         if (hs > ayar('hsUst')) ekle("hata", p.name+" bu ay "+hs+". hafta sonu nöbetini tutuyor (en fazla "+ayar('hsUst')+").");
       }
@@ -5531,7 +5481,6 @@
     });
     pr.forEach(p=>{
       if (nb.some(q=>q.id===p.id)) ekle("hata", p.name+" hem nöbetçi hem hazırlama olamaz.");
-      if (bayramYasak(p.id, y, m, day.day)) ekle("uyari", p.name+" diğer bayram grubunda; bu bayramın hazırlamasını "+GRUP_AD[bayramTuru(y,m,day.day)]+" yapar (elle yazılabilir).");
       for (let k=-1; k<=1; k++){
         const gg = g(k); if (!gg || k===0) continue;
         if (gg.assigned.some(q=>q.id===p.id)) ekle("hata", p.name+" hazırlama, ama "+gl(gg)+" nöbetçi.");
@@ -5542,24 +5491,23 @@
       if (dw===6){ const gg = days[idx-2]; if (gg && gg.assigned.some(q=>q.id===p.id)) ekle("uyari", p.name+" aynı haftanın Cuma günü ("+gg.day+". gün) nöbetçi; Pazar hazırlaması yazılmamalı."); }
       if ((dw===5 || dw===6) && ayar('thuHaftaSonu')){ const gg = days[idx-(dw===5?2:3)]; if (gg && gg.assigned.some(q=>q.id===p.id)) ekle("hata", p.name+" aynı haftanın Perşembe günü ("+gg.day+". gün) nöbetçi; hafta sonu hazırlama yazılmaz."); }
       if (getPref(p.id, y, m, day.day)==="esYok") ekle("hata", p.name+" için eş durumu: bu güne yazılmaması gerekiyor.");
-      if (p.role!=="destek" && !bayramTuru(y,m,day.day)){
-        let say = 1; days.forEach((gg,i)=>{ if (i!==idx && !bayramTuru(y,m,gg.day) && (gg.prep||[]).some(q=>q.id===p.id)) say++; });
+      if (p.role!=="destek"){
+        let say = 1; days.forEach((gg,i)=>{ if (i!==idx && (gg.prep||[]).some(q=>q.id===p.id)) say++; });
         if (say > 2) ekle("hata", p.name+" bu ay "+say+". hazırlama görevini alıyor (ayda en fazla 2).");
       }
-      if (p.role==="destek" && !bayramTuru(y,m,day.day)){
-        let say = 1; days.forEach((gg,i)=>{ if (i!==idx && !bayramTuru(y,m,gg.day) && (gg.prep||[]).some(q=>q.id===p.id)) say++; });
+      if (p.role==="destek"){
+        let say = 1; days.forEach((gg,i)=>{ if (i!==idx && (gg.prep||[]).some(q=>q.id===p.id)) say++; });
         if (say > ayar('destekAylik')) ekle("uyari", p.name+" bu ay "+say+". hazırlama görevini alıyor (destek personeli için "+ayar('destekAylik')+")."); 
       }
     });
     // fazla mesai etkisi
     const top = {}; state.staff.forEach(s=>{ top[s.id] = 0; });
-    const bayramGunu = !!bayramTuru(y, m, day.day);
     days.forEach((gg,i)=>{
-      if (i===idx || bayramTuru(y, m, gg.day)) return;
+      if (i===idx) return;
       gg.assigned.forEach(p=>{ if (top[p.id]!==undefined) top[p.id] += gg.fazlaMesai; });
       (gg.prep||[]).forEach(p=>{ if (top[p.id]!==undefined) top[p.id] += hz; });
     });
-    if (!bayramGunu){ nb.forEach(p=>{ top[p.id] += day.fazlaMesai; }); pr.forEach(p=>{ top[p.id] += hz; }); }
+    nb.forEach(p=>{ top[p.id] += day.fazlaMesai; }); pr.forEach(p=>{ top[p.id] += hz; });
     const duty = state.staff.filter(s=>nobetciRol(s.role));
     const ort = duty.length ? duty.reduce((a,s)=>a+top[s.id],0)/duty.length : 0;
     if (opts && opts.fm){ const kk = fmKuralKisileri(y, m);
@@ -5683,9 +5631,8 @@
     const y = sch.year, m = sch.month, days = sch.days, idx = day.day-1;
     const dw = jsDowToMonFirst(new Date(y,m,day.day).getDay()), hafsonu = (dw===5 || dw===6);
     const adaylar = state.staff.filter(s=>(eczaciMi(s.role) || s.role==="teknisyen") && aktifAydaMi(s,y,m));
-    const bayT = bayramTuru(y,m,day.day);
     // yıl içinde bu gün türünden (Perşembe / Cuma / Cumartesi / Pazar / resmi tatil) tutulan nöbet: ekip ortalamasına göre fark (bu gün hariç)
-    const tipK = bayT ? "" : (isManualTatil(y,m,day.day) ? "rt" : ({3:"pe",4:"cu",5:"cmt",6:"paz"})[dw] || "");
+    const tipK = isManualTatil(y,m,day.day) ? "rt" : (({3:"pe",4:"cu",5:"cmt",6:"paz"})[dw] || "");
     const tipAd = {pe:"Perşembe", cu:"Cuma", cmt:"Cumartesi", paz:"Pazar", rt:"resmi tatil"}[tipK] || "";
     const yilSay = tipK ? yilGunSayilari(y, m, days.filter((g,i)=>i!==idx)) : {};
     const hsAy = id=> hsSayilari(y, m, days.filter((g,i)=>i!==idx), id);
@@ -5705,13 +5652,12 @@
       if (!aktifGunMu(s,y,m,day.day)) engel.push("bu tarihte çalışmıyor");
       if (pr==="izinli") engel.push("izinli"); else if (izinArasiMi(s.id,y,m,day.day)) engel.push("izin arasında");
       if (pr==="esYok") engel.push("eş durumu: bu güne yazılmaz");
-      if (bayT && bayramYasak(s.id,y,m,day.day)) engel.push(GRUP_AD[s.bayramGrubu]+"nda; bu bayramda tatilde");
       const once = days[idx-1], sonra = days[idx+1];
       if (once && once.assigned.some(p=>p.id===s.id)) engel.push("önceki gün ("+once.day+") nöbetçi");
       if (!once){ const pm = prevMonthOf(y,m), g = gercekGorev(pm.y, pm.m, daysInMonth(pm.y, pm.m)); if (g.N.indexOf(s.id)>=0) engel.push("önceki ayın son günü nöbetçi"); else if (g.H.indexOf(s.id)>=0) engel.push("önceki ayın son günü hazırlamada"); }
       if (sonra && sonra.assigned.some(p=>p.id===s.id)) engel.push("ertesi gün ("+sonra.day+") nöbetçi");
       if (!sonra){ const nm = m===11 ? {y:y+1, m:0} : {y, m:m+1}; if (state.schedules[nm.y+"-"+nm.m] && gercekGorev(nm.y, nm.m, 1).N.indexOf(s.id)>=0) engel.push("sonraki ayın 1. günü nöbetçi"); }
-      if (!bayT && (dw===4 || dw===5 || dw===6)){ const h = hsAy(s.id);
+      if (dw===4 || dw===5 || dw===6){ const h = hsAy(s.id);
         if (dw===5 && h.cmt>=1) not.push("bu ay Cumartesi nöbeti var (ayda 1)");
         if (dw===6 && h.paz>=1) not.push("bu ay Pazar nöbeti var (ayda 1)");
         if ((dw===4 && h.cmt && h.paz) || (dw===5 && h.cu && h.paz) || (dw===6 && h.cu && h.cmt)) not.push("bu ay Cuma + Cumartesi + Pazar üçü birden olurdu"); }
@@ -5746,7 +5692,6 @@
       if (ortUygun===null && !day.locked) a.push("bu gün için başka uygun aday yoktu");
       if (tipK && uygun.length && !day.locked){ const ortT = uygun.reduce((t,q)=>t+q.yt,0)/uygun.length;
         if (r.yt < ortT - 0.5) a.push("yıl içinde "+tipAd+" nöbeti uygun adaylardan az ("+r.yh+")"); }
-      if (bayT) a.push(GRUP_AD[bayT]+" (bayram görevleri eşitlik hesabına katılmaz)");
       return a.concat(r.not);
     };
     let h = '<p class="neden-ozet">'+ozet+'</p>';
@@ -5865,7 +5810,7 @@
     if (cizelgeTipi!=="gunluk") cizelgeTipiAyarla("gunluk");
     gunPanelKapat();
     isaretModu = mod || isaretSon; isaretSon = isaretModu;
-    if (isaretModu==="resmi" || isaretModu==="arife" || isaretModu==="ramazan" || isaretModu==="kurban"){ calArac = isaretModu; renderCalendar(); }
+    if (isaretModu==="resmi" || isaretModu==="arife"){ calArac = isaretModu; renderCalendar(); }
     else { renderPrefSelect(); renderPrefCalendar(); }
     const gs = document.getElementById("generate-section");
     gs.classList.toggle("isaret-tatil", isaretModu!=="tercih"); gs.classList.toggle("isaret-tercih", isaretModu==="tercih");
@@ -6424,43 +6369,28 @@
   }
 
   // ---------- oluşturmadan önce uygunluk kontrolü ----------
-  // İzin, eş durumu, bayram grubu gibi işaretlerle bu ay kuralların tutup tutmayacağını kabaca tahmin eder (yalnız açık sorunları bildirir).
+  // İzin, eş durumu gibi işaretlerle bu ay kuralların tutup tutmayacağını kabaca tahmin eder (yalnız açık sorunları bildirir).
   // Yıllık izin puantajda mesai sayıldığından kişinin fazla mesai hedefi düşmez; izinli günlere yalnız nöbet yazılamaz.
   function uygunlukSorunlari(y, m){
     const out = [], dim = daysInMonth(y, m), hz = ayar('hazSaat'), A = Math.max(2, Number(ayar('minAra'))||3);
     const sch = state.schedules[y+"-"+m];
     const kilitli = d=> !!(sch && sch.days && sch.days[d-1] && sch.days[d-1].locked);
     const nob = state.staff.filter(s=>nobetciRol(s.role) && aktifAydaMi(s,y,m));
-    const uygun = (s,d)=> aktifGunMu(s,y,m,d) && !kesinYasak(s.id,y,m,d) && !bayramYasak(s.id,y,m,d);
+    const uygun = (s,d)=> aktifGunMu(s,y,m,d) && !kesinYasak(s.id,y,m,d);
     const ad = d=> d+" "+AYLAR[m];
     // 1) günlük: eczacı ve 2 nöbetçi
-    const eczYok = [], kisiYok = [], bayEczYok = [];
+    const eczYok = [], kisiYok = [];
     for (let d=1; d<=dim; d++){ if (kilitli(d)) continue;
       const u = nob.filter(s=>uygun(s,d)), ue = u.filter(s=>eczaciMi(s.role));
-      if (!ue.length) (bayramTuru(y,m,d) ? bayEczYok : eczYok).push(ad(d));
+      if (!ue.length) eczYok.push(ad(d));
       else if (u.length < 2) kisiYok.push(ad(d)); }
     if (eczYok.length) out.push("Uygun eczacı olmayan gün: "+eczYok.join(", ")+". Bu günler eczacısız kalır ya da izin/eş durumu işareti çiğnenir.");
     if (kisiYok.length) out.push("İki nöbetçi için uygun kişi olmayan gün: "+kisiYok.join(", ")+".");
-    if (bayEczYok.length) out.push("Bayram grubunda uygun eczacı olmayan gün: "+bayEczYok.join(", ")+". Diğer gruptan yazılır.");
-    // 2) bayram grubu seçilmemiş kişiler
-    if (Object.keys(state.bayram||{}).some(k=>k.indexOf(y+"-"+m+"-")===0)){
-      const g = state.staff.filter(s=>(nobetciRol(s.role) || s.role==="destek") && aktifAydaMi(s,y,m) && !s.bayramGrubu).map(s=>s.name);
-      if (g.length) out.push("Bu ay bayram var; bayram grubu seçilmemiş kişiler: "+g.join(", ")+". Bu kişiler iki bayramda da yazılabilir.");
-    }
-    // 2b) bayram grubu yeterli mi: her bayram günü 2 nöbet + 2 hazırlama; art arda gün yazılmadığından kişi başı en fazla yaklaşık gün/2 görev
-    ["ramazan","kurban"].forEach(t=>{
-      const G = []; for (let d=1; d<=dim; d++) if (bayramTuru(y,m,d)===t) G.push(d); if (!G.length) return;
-      const uye = state.staff.filter(s=>(nobetciRol(s.role) || s.role==="destek") && aktifAydaMi(s,y,m) && (!s.bayramGrubu || s.bayramGrubu===t));
-      const kap = uye.reduce((a,s)=>a + Math.ceil(G.filter(d=>uygun(s,d)).length/2), 0), gerek = G.length*4;
-      // bayramdan önceki / sonraki günlerin görevleri ve 5 günde 3 nöbet kuralı tam sığdırmayı engeller: yaklaşık %25 pay bırakılır
-      const hedef = Math.ceil(gerek*1.25);
-      if (kap < hedef) out.push(BAYRAM_AD[t]+" ("+G.length+" gün, "+gerek+" görev): "+GRUP_AD[t]+"nda "+uye.length+" kişi var; art arda gün yazılamadığından görevler sıkışır. Gruba yaklaşık "+Math.ceil((hedef-kap)/Math.ceil(G.length/2))+" kişi daha eklemek gerekir; yoksa dinlenme kuralı esner ya da hazırlama yeri boş kalır.");
-    });
     // 3) fazla mesai: izin / eş durumu işaretleri nedeniyle 8 saat kuralı tutmayacak kişiler (kaba üst sınır)
     const kk = fmKuralKisileri(y, m); if (kk.length < 2) return out;
     const gun = []; let havuz = 0, tatilN = 0, nGun = 0;
-    for (let d=1; d<=dim; d++){ const b = !!bayramTuru(y,m,d), fm = computeFazlaMesaiForDay(y,m,d,dim), t = isTatilGunu(y,m,d);
-      gun.push({d, b, fm, t, dw: jsDowToMonFirst(new Date(y,m,d).getDay())}); if (b) continue; havuz += 2*fm; nGun++; if (t) tatilN++; }
+    for (let d=1; d<=dim; d++){ const fm = computeFazlaMesaiForDay(y,m,d,dim), t = isTatilGunu(y,m,d);
+      gun.push({d, fm, t, dw: jsDowToMonFirst(new Date(y,m,d).getDay())}); havuz += 2*fm; nGun++; if (t) tatilN++; }
     const destekS = state.staff.filter(s=>s.role==="destek" && aktifAydaMi(s,y,m)).length, hzYer = Math.max(0, 2*tatilN - destekS*ayar('destekAylik'));
     havuz += hzYer*hz;
     const ort = havuz / Math.max(1, nob.length), cMax = Math.ceil(2*nGun / Math.max(1, nob.length)) + 2;
@@ -6471,7 +6401,7 @@
         if (i >= dim) return 0;
         const key = i*1000 + sa*500 + su*250 + c*10 + pc; if (memo.has(key)) return memo.get(key);
         let best = f(i+1, sa, su, c, pc); const g = gun[i];
-        if (!g.b && uygun(s, g.d)){
+        if (uygun(s, g.d)){
           if (c < cMax && !(g.dw===5 && sa) && !(g.dw===6 && su)) best = Math.max(best, g.fm + f(i+A, sa || (g.dw===5?1:0), su || (g.dw===6?1:0), c+1, pc));
           if (hzOk && g.t && pc < 2) best = Math.max(best, hz + f(i+2, sa, su, c, pc+1));
         }
@@ -6488,7 +6418,7 @@
     if (ayOnayi(y, m)){ isle(); return; }
     let L = []; try { L = uygunlukSorunlari(y, m); } catch(e){ console.warn("uygunluk kontrolü", e); }
     if (!L.length){ isle(); return; }
-    pzModalAc('<h3>'+AYLAR[m]+' '+y+': oluşturmadan önce</h3><p class="hint" style="margin-top:0">İşaretlenen izin, eş durumu ve bayram gruplarına göre bu ay bazı kurallar tutmayabilir (tahmin):</p>'+
+    pzModalAc('<h3>'+AYLAR[m]+' '+y+': oluşturmadan önce</h3><p class="hint" style="margin-top:0">İşaretlenen izin ve eş durumuna göre bu ay bazı kurallar tutmayabilir (tahmin):</p>'+
       '<ul class="uyg-liste">'+L.map(t=>'<li>'+escapeHtml(t)+'</li>').join("")+'</ul>'+
       '<div class="actions-row"><button class="primary" id="uyg-devam">Yine de oluştur</button><button class="ghost" id="uyg-vazgec">Vazgeç</button></div>');
     document.getElementById("uyg-vazgec").onclick = pzModalKapat;
