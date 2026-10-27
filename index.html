@@ -3406,7 +3406,7 @@
     const W_CUYIL = 1500;  // yıllık Cuma nöbeti dengesi
     const W_PEYIL = 1200;  // yıllık Perşembe nöbeti dengesi
     // hazırlama ayrıca her grubun kendi içinde dengelenir (eczacılar kendi arasında, teknikerler kendi arasında);
-    // gruplar arası fark (eczacı daha çok nöbet, tekniker daha çok hazırlama) fazla mesai eşitliği için korunur
+    // gruplar arası denge yıllık W_PRPYIL ile sağlanır (yıl sonunda herkese eşit hazırlama)
     const W_PRPGRUP = 2000;   // yıllık: teknikerler kendi arasında, eczacılar kendi arasında eşit hazırlama
     const A_PRP2 = 1500;   // ayda 1 hazırlama hedefi: 2. hazırlamanın cezası (yer 1'er kişiyle dolmuyorsa yazılır)
     const W_PRPYIL = 2000;  // yıllık, gruplar arası: hazırlama yıl sonunda herkese eşit (eczacı / tekniker ayrımı olmadan)
@@ -3514,14 +3514,12 @@
     // ozetJ her aday hamlede çağrılır: yardımcılar dışarıda tanımlıdır (her çağrıda yeni dizi/fonksiyon oluşmasın)
     // G grubundaki sayaç değerleri arasındaki fark 1'i aşıyorsa ceza
     function grupFarkCeza(o, G, w){ if (G.length < 2) return 0; let mx = -1, mn = 1e9; for (let q=0;q<G.length;q++){ const v = o[G[q]]; if (v>mx) mx = v; if (v<mn) mn = v; } return mx-mn > 1 ? w*(mx-mn-1) : 0; }
-    function yilFark(b, h){ let mx = -1e9, mn = 1e9; for (let q=0;q<ixFmKural.length;q++){ const ix = ixFmKural[q], v = b[ix] + h[ix]; if (v>mx) mx = v; if (v<mn) mn = v; } return mx-mn; }
     // fark 1'i aşınca: uyarı + farkın büyüklüğü + en iyi 1 genişliğindeki aralığın dışında kalan toplam sapma
     // (yalnız en çok – en az farkına bakılsaydı uçtaki kişilerden birini düzelten adım ödüllenmez, arama takılırdı)
     function yilBant(v){ const n = v.length; let enAz = 1e18;
       for (let q=0;q<n;q++) for (let k=0;k<2;k++){ const L = v[q]-k; let t = 0;
         for (let r=0;r<n;r++){ const x = v[r]; if (x<L) t += L-x; else if (x>L+1) t += x-L-1; } if (t<enAz) enAz = t; }
       return enAz; }
-    const yilTmp = new Float64Array(NH);
     function yilCeza(b, h){
       const n = ixFmKural.length; if (n < 2) return 0;
       let mx = -1e9, mn = 1e9; const v = [];
