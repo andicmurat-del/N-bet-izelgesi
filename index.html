@@ -379,7 +379,7 @@
   /* acil eczane */
   .ac-cell.tt { border-color: var(--tatil); }
   .ac-cell .k { display: block; color: var(--ink); font-weight: 500; }
-  .ac-cell .k.bos2 { color: var(--muted); font-weight: 400; }
+  .ac-cell .k.bos2 { color: var(--muted); font-weight: 400; font-style: italic; }
   .ac-cell.dolu { box-shadow: inset 0 0 0 1.5px var(--accent); }
   /* günlük çalışma listesi */
 
@@ -6952,7 +6952,7 @@
       // telefonda ajanda görünümü için hafta başlığı ve gün adı (masaüstünde gizli)
       if (g===1 || dw===0){ const son = Math.min(g + 6 - dw, dim); h += '<div class="hafta-bas">'+(son>g ? g+"–"+son : g)+' '+AYLAR[m]+'</div>'; }
       h += '<div class="ac-cell'+(isTatilGunu(y,m,g)?' tt':'')+(ids.length?' dolu':'')+(bugunMu(y,m,g)?' bugun':'')+'" data-gun="'+g+'"><div class="gun-bas"><div class="dn">'+g+'</div><div class="gun-ad">'+GUN_ADI_UZUN[dw]+'</div></div><div class="kisiler">'+
-        [0,1].map(i=> ids[i]!==undefined ? '<span class="k">'+(i+1)+'. '+escapeHtml(ad(ids[i]))+'</span>' : '<span class="k bos2">'+(i+1)+'. –</span>').join("")+'</div></div>';
+        (ids.length ? ids.map(id=>'<span class="k">'+escapeHtml(ad(id))+'</span>').join("") : '<span class="k bos2">Nöbetçi yok</span>')+'</div></div>';
     }
     h += '</div></div>';
     // özet
@@ -7048,7 +7048,7 @@
     for (let g=1; g<=dim; g++){
       if (hucre%7===0 && hucre>0) cal += '</tr><tr>';
       const ids = ay[g]||[];
-      cal += '<td'+(isTatilGunu(y,m,g)?' class="tt"':'')+'><div class="dn">'+g+'</div><div class="ec">'+(ids[0]!==undefined?'1. '+ad(ids[0]):'')+'</div><div class="ec">'+(ids[1]!==undefined?'2. '+ad(ids[1]):'')+'</div></td>';
+      cal += '<td'+(isTatilGunu(y,m,g)?' class="tt"':'')+'><div class="dn">'+g+'</div>'+ids.map(id=>'<div class="ec">'+ad(id)+'</div>').join("")+'</td>';
       hucre++;
     }
     while (hucre%7!==0){ cal += '<td class="bos"></td>'; hucre++; }
