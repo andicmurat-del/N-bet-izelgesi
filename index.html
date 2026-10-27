@@ -8080,17 +8080,20 @@
 
     // ---- dağıtım algoritması
     function rngOf(seed){ let t = (seed>>>0) || 1; return ()=>{ t = (t*1664525 + 1013904223)>>>0; return t/4294967296; }; }
-    const W = {S:120, L:220, Y:60, D:6000, R:45, G:100000, Z:400};
+    const W = {S:120, L:220, Y:60, D:6000, R:45, G:100000, Z:400, M:400, MU:30};
     // zor servis: zorluk puanı ZOR_ESIK ve üstü (10 üzerinden). Her gün kişi başı zor servis sayısı en fazla 1 farklı
     // olur (kesin); ay içinde (ve aynı yılın önceki aylarıyla) kişi başı zor servis sayısı eşitlenir.
     const ZOR_ESIK = 7;
+    const YAKIN_GUN = 7;
     const zorMu = s => (s && s.z >= ZOR_ESIK) ? 1 : 0;
     // people: [{id}], svcs: servisler, n: çok günlük gün sayısı, cum: önceki günlerden birikim.
     // Amaç: günlük kurallar (kişi başı servis ve YB sayısı en fazla 1 fark, grup kuralı) kesin;
     // aylık servis-gün, yük ve YB payı, günlük yük dengesi ve servis tekrarı en aza indirilir.
     // Tüm maliyetler kişi başına artımlı tutulur; taşı/takas denemeleri sabit sürede hesaplanır.
     // sabit: {servis adı: kişi sırası} elle atanmış servisler; yerleri değişmez
-    function gunDagit(people, svcs, n, cum, seed, sabit){
+    // onceki: {servis adı: kişi} günün önceki dağıtımı; yeniden hesaplanırken servis o gün hâlâ çalışan
+    // önceki kişisinde kalmayı tercih eder (W.M): eşitlik için gerekenden fazlası yer değiştirmez
+    function gunDagit(people, svcs, n, cum, seed, sabit, onceki, mW){
       sabit = sabit || {};
       const P = people.length, S = svcs.length;
       let GN = 0;
@@ -8106,8 +8109,10 @@
         const a = b.dW + w - fW, c = (b.dL + l - fL)/Ls, e = b.dY + y - fY, dd = (l - fL)/Ls, zz = b.dZ + z - fZ;
         return W.S*a*a + W.L*c*c + W.Y*e*e + W.D*dd*dd + W.Z*zz*zz; };
       // aynı servis aynı kişiye: çalıştığı günlere göre düşen paydan fazlası cezalandırılır
+      const burada = new Set(people.map(p=>p.id));
       const rc = people.map(p=>{ const c = cum[p.id] || {}, rep = c.rep || {}, frep = c.frep || {};
-        return xs.map(x=>{ const d = (rep[x.s.name]||0) - (frep[x.s.name]||0) - 1/P; return W.R*(2*d+1); }); });
+        return xs.map(x=>{ const d = (rep[x.s.name]||0) - (frep[x.s.name]||0) - 1/P, o = onceki ? onceki[x.s.name] : undefined;
+          return W.R*(2*d+1) + (o!==undefined && o!==p.id && burada.has(o) ? mW : 0); }); });
       let best = null, bestJ = Infinity;
       for (let deneme=0; deneme<4; deneme++){
         const rnd = rngOf(seed*7919 + deneme*104729 + 17);
@@ -8240,7 +8245,7 @@
       const dim = daysInMonth(y, m), bugun = bugunNo(), cfg = cfgImza();
       const svcs = SERVICES.filter(s=>s.on);
       // aylar arası denge: aynı yılın önceki aylarındaki kayıtlar birikime eklenir (Ocak'ta sıfırdan başlar)
-      const dv = devirBirikim(y, m), cum = dv.cum; let degisti = false;
+      const dv = devirBirikim(y, m), cum = dv.cum; let degisti = false, ilkDegisen = null;
       teknikerSatirlari(G).forEach(r=>{ R.ad[r.s.id] = r.s.name; });
       for (let d=1; d<=dim; d++){
         if (isTatilGunu(y, m, d)){ if (R.gun[d]){ delete R.gun[d]; degisti = true; } continue; }
@@ -8259,8 +8264,15 @@
           birikimEkle(cum, eski); continue;
         }
         if (!aktif.length || !svcs.length){ if (eski){ delete R.gun[d]; degisti = true; } continue; }
-        const res = gunDagit(aktif.map(id=>({id})), svcs, n, cum, gunNo(y,m,d)*31 + sk*977, sabit);
+        // "Yeniden karıştır" (sk değişti) o günü baştan dağıtır; diğer yeniden hesaplamalarda önceki liste korunmaya çalışılır
+        // değişikliği izleyen YAKIN_GUN gün (yakında yazdırılan / bilinen listeler) sıkı korunur; daha sonraki günler
+        // tekrar dengesini toparlamak için daha serbesttir
+        const onceki = eski && (eski.sk||0)===sk ? eski.a : null;
+        if (ilkDegisen===null) ilkDegisen = d;
+        const mW = ilkDegisen!==null && d - ilkDegisen >= YAKIN_GUN ? W.MU : W.M;
+        const res = gunDagit(aktif.map(id=>({id})), svcs, n, cum, gunNo(y,m,d)*31 + sk*977, sabit, onceki, mW);
         const rec = {k:aktif, n, i:imza, a:{}, w:{}, l:{}, yb:{}, t:{w:res.totW, l:res.totL, y:res.totY}, z:Date.now()};
+        if (sk) rec.sk = sk;
         res.kisi.forEach((p, ix)=>{ const id = aktif[ix]; p.items.forEach(s=>{ rec.a[s.name] = id; }); rec.w[id] = p.w; rec.l[id] = p.l; rec.yb[id] = p.y; });
         if (!eski || JSON.stringify(eski.a)!==JSON.stringify(rec.a) || JSON.stringify(eski.k)!==JSON.stringify(rec.k) || eski.n!==rec.n) degisti = true;
         else rec.z = eski.z;
