@@ -82,7 +82,9 @@
     <span><i class="k k-P">–</i>Çalışma dönemi dışında</span><span><i class="k ov-ornek"></i>Elle değiştirildi</span>
   </p>
 
-  <div class="kart tablo-kap">
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
+
+  <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Puantaj cetveli">
     <table class="cetvel">
       <thead>
         <tr>
@@ -117,7 +119,8 @@
 
   <section class="aylik">
     <h2>Aylık özet</h2>
-    <div class="kart tablo-kap">
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
+    <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Aylık özet">
       <table class="ozet-tablo">
         <thead><tr><th scope="col">Ad soyad</th><th scope="col">Görev</th><th scope="col">Nöbet</th><th scope="col">Perşembe</th><th scope="col">Cuma</th><th scope="col">Cumartesi</th><th scope="col">Pazar</th><th scope="col">Hazırlama</th><th scope="col">Resmi tatil</th><th scope="col">Yıllık izin</th><th scope="col">Rapor</th><th scope="col">Fazla mesai</th></tr></thead>
         <tbody>
@@ -165,7 +168,7 @@
   table { border-collapse: separate; border-spacing: 0; font-size: var(--f-sm); }
   .cetvel th, .cetvel td { border-right: 1px solid var(--cizgi-acik); border-bottom: 1px solid var(--cizgi-acik); padding: 0; text-align: center; white-space: nowrap; }
   .cetvel thead th { position: sticky; top: 0; z-index: 2; background: var(--yuzey-2); font-weight: 600; font-size: var(--f-xs); padding: 4px 0; min-width: 32px; }
-  .cetvel thead th small { display: block; font-weight: 500; color: var(--soluk); }
+  .cetvel thead th small { display: block; font-size: var(--f-xs); font-weight: 500; color: var(--soluk); }
   .cetvel thead th.tatil { background: var(--tatil-zemin); color: var(--tatil); }
   .cetvel thead th.arife { background: var(--arife-zemin); }
   .cetvel .ad { position: sticky; left: 0; z-index: 1; background: var(--yuzey); text-align: left; padding: 0 var(--b3); font-weight: 500; min-width: 170px; }

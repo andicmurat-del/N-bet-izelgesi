@@ -1,6 +1,6 @@
 <script lang="ts">
   // Tek çizgi kalınlığında, 24'lük ızgarada simgeler (yanında yazı olduğunda ekran okuyucudan gizlenir)
-  type Ad = "takvim" | "kisiler" | "izin" | "ayarlar" | "sol" | "sag" | "indir" | "kilit" | "uyari" | "tamam" | "yenile" | "kapat" | "arti" | "sil" | "duzenle" | "yukle" | "karisik" | "tablo";
+  type Ad = "takvim" | "kisiler" | "izin" | "ayarlar" | "sol" | "sag" | "indir" | "kilit" | "uyari" | "tamam" | "yenile" | "kapat" | "arti" | "sil" | "duzenle" | "yukle" | "karisik" | "tablo" | "grafik";
   let { ad, boyut = 18 }: { ad: Ad; boyut?: number } = $props();
 </script>
 
@@ -22,6 +22,7 @@
   {:else if ad === "arti"}<path d="M12 5v14M5 12h14" />
   {:else if ad === "sil"}<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13" />
   {:else if ad === "tablo"}<rect x="3.5" y="4.5" width="17" height="15" rx="2" /><path d="M3.5 9.5h17M3.5 14.5h17M9 4.5v15" />
+  {:else if ad === "grafik"}<path d="M4 20h16" /><rect x="5.5" y="11" width="3" height="6.5" rx="0.8" /><rect x="10.5" y="6" width="3" height="11.5" rx="0.8" /><rect x="15.5" y="13.5" width="3" height="4" rx="0.8" />
   {:else if ad === "duzenle"}<path d="M4 20h4L19 9l-4-4L4 16z" /><path d="m13.5 6.5 4 4" />
   {/if}
 </svg>

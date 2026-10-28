@@ -1767,6 +1767,86 @@ const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağus
     return {y, m, gunler, satirlar, mesaiGun, mesaiS, arifeVar, mesaiToplam, ay: AYLAR[m]+" "+y};
   }
 
+  // ---- yıllık raporlar (index.html 6608, 6611–6644, 6668–6709) ----
+  const AY_KISA = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+  function ayDetayGrid(y, m){
+    const G = puantajGrid(y,m), r = {};
+    G.satirlar.forEach(x=>{ r[x.s.id] = {fm:x.fm, nobet:x.n, hi:x.hi, cu:x.cu, cmt:x.cmt, paz:x.paz, thu:x.thu, prep:x.h, ni:x.ni, yi:x.yi, rd:x.rd, rt:x.rt||0, gunler:x.gunlerN}; });
+    // listeden çıkarılmış kişilerin eski çizelge verisi
+    const sch = state.schedules[y+"-"+m];
+    if (sch){
+      const dimS = daysInMonth(y,m), hz = ayar('hazSaat');
+      sch.days.forEach(d=>{
+        const dw = jsDowToMonFirst(new Date(y,m,d.day).getDay()), fm = computeFazlaMesaiForDay(y,m,d.day,dimS);
+        d.assigned.filter(p=>!state.staff.some(s=>s.id===p.id)).forEach(p=>{ const x = r[p.id] || (r[p.id] = {fm:0,nobet:0,hi:0,cu:0,cmt:0,paz:0,thu:0,prep:0,ni:0,yi:0,rd:0,rt:0,gunler:[]}); x.fm += fm; x.nobet++; if (dw===5) x.cmt++; else if (dw===6) x.paz++; else if (dw===4) x.cu++; else x.hi++; if (dw===3) x.thu++; x.gunler.push({gun:d.day, dw, tip:"N"}); });
+        (d.prep||[]).filter(p=>!state.staff.some(s=>s.id===p.id)).forEach(p=>{ const x = r[p.id] || (r[p.id] = {fm:0,nobet:0,hi:0,cu:0,cmt:0,paz:0,thu:0,prep:0,ni:0,yi:0,rd:0,rt:0,gunler:[]}); x.fm += hz; x.prep++; x.gunler.push({gun:d.day, dw, tip:"H"}); });
+      });
+    }
+    return r;
+  }
+  function yilVerisi(yil){
+    const aylar = [];
+    for (let m=0;m<12;m++){
+      const sch = state.schedules[yil+"-"+m];
+      const veri = (sch && ayVeriVarMi(sch)) || Object.keys(state.puantaj[yil+"-"+m] || {}).length > 0 || Object.keys(state.acil[yil+"-"+m] || {}).length > 0;
+      aylar.push(veri ? {m, sch: sch || null, det: ayDetayGrid(yil, m)} : null);
+    }
+    const kisiler = []; const goruldu = {};
+    state.staff.forEach(s=>{ kisiler.push({id:s.id, name:s.name, role:s.role, aktif:true, ayrildi: !!s.bitis && ayrildiMi(s)}); goruldu[s.id] = true; });
+    aylar.forEach(a=>{ if (!a || !a.sch) return; a.sch.days.forEach(d=>d.assigned.concat(d.prep||[]).forEach(p=>{ if (!goruldu[p.id]){ goruldu[p.id] = true; kisiler.push({id:p.id, name:p.name, role:p.role, aktif:false}); } })); });
+    kisiler.sort((a,b)=> PZ_ROL_SIRA[a.role]-PZ_ROL_SIRA[b.role] || a.id-b.id);
+    return {yil, aylar, kisiler, kayitli: aylar.filter(Boolean).length};
+  }
+  const bosDet = {fm:0, nobet:0, hi:0, cu:0, cmt:0, paz:0, thu:0, prep:0, ni:0, yi:0, rd:0, rt:0, gunler:[]};
+  function kisiYillik(V, id){
+    const t = {fm:0, nobet:0, hi:0, cu:0, cmt:0, paz:0, thu:0, prep:0, ni:0, yi:0, rd:0, rt:0};
+    V.aylar.forEach(a=>{ if (!a) return; const d = a.det[id]; if (!d) return; Object.keys(t).forEach(k=>{ t[k] += (d[k]||0); }); });
+    return t;
+  }
+  // ---- yıllık denge: her nöbetçinin yıl toplamları, çalıştığı ay sayısına göre beklenen paydan farkı ----
+  const DENGE_KOL = [
+    {k:"nobet", t:"Nöbet sayısı"}, {k:"pe", t:"Perşembe"}, {k:"cu", t:"Cuma"}, {k:"cmt", t:"Cumartesi"}, {k:"paz", t:"Pazar"},
+    {k:"prep", t:"Hazırlama"}, {k:"rt", t:"Resmi tatil"}, {k:"fm", t:"Fazla mesai", saat:true}
+  ];
+  // Yıllık denge onaylanan çizelgeden hesaplanır (adalet referansı): puantajdaki gönüllü nöbet değişimleri sayılmaz;
+  // izin/rapor nedeniyle yerine geçmeler çizelgeye işlendiği için sayılır. Fazla mesai = nöbet + hazırlama saatleri (çizelgeye göre).
+  function cizelgeYillik(yil){
+    const t = {}, aylar = [], hz = ayar('hazSaat');
+    const bos = ()=>({nobet:0, cu:0, cmt:0, paz:0, pe:0, rt:0, prep:0, fm:0});
+    for (let mm=0; mm<12; mm++){
+      const sc = state.schedules[yil+"-"+mm]; if (!sc || !Array.isArray(sc.days) || !ayVeriVarMi(sc)) continue;
+      aylar.push(mm); const dim = daysInMonth(yil,mm), kisiAy = {};
+      sc.days.forEach(d=>{
+        const dw = jsDowToMonFirst(new Date(yil,mm,d.day).getDay()), tt = isTatilGunu(yil,mm,d.day), rt = isManualTatil(yil,mm,d.day), fm = computeFazlaMesaiForDay(yil,mm,d.day,dim);
+        (d.assigned||[]).forEach(p=>{ const x = t[p.id] || (t[p.id] = bos()); x.nobet++; x.fm += fm; if (dw===4 && !tt) x.cu++; if (dw===5) x.cmt++; if (dw===6) x.paz++; if (dw===3) x.pe++; if (rt) x.rt++; kisiAy[p.id] = true; });
+        // nöbet sayısı = nöbetler + hazırlama (raporlarda ortak tanım)
+        (d.prep||[]).forEach(p=>{ const x = t[p.id] || (t[p.id] = bos()); x.prep++; x.nobet++; x.fm += hz; kisiAy[p.id] = true; });
+      });
+      Object.keys(kisiAy).forEach(id=>{ (t[id].aylar = t[id].aylar || []).push(mm); });
+    }
+    return {t, aylar, bos};
+  }
+  function dengeVerisi(V){
+    const CZ = cizelgeYillik(V.yil);
+    const kayitliAy = CZ.aylar;
+    const kisiler = V.kisiler.filter(k=>nobetciRol(k.role)).map(k=>{
+      const st = state.staff.find(s=>s.id===k.id), t = CZ.t[k.id] || CZ.bos();
+      const ay = kayitliAy.filter(i=> st ? aktifAydaMi(st, V.yil, i) : (t.aylar||[]).indexOf(i)>=0).length;
+      return {k, t, ay};
+    }).filter(x=>x.ay > 0);
+    const ayTop = kisiler.reduce((a,x)=>a+x.ay, 0);
+    const ort = {};
+    DENGE_KOL.forEach(c=>{ ort[c.k] = ayTop ? kisiler.reduce((a,x)=>a+x.t[c.k], 0) / ayTop : 0; });   // ay başına ortalama
+    const tamAy = kayitliAy.length;
+    kisiler.forEach(x=>{ x.fark = {}; x.bek = {}; DENGE_KOL.forEach(c=>{ x.bek[c.k] = ort[c.k]*x.ay; x.fark[c.k] = x.t[c.k] - x.bek[c.k]; }); x.kismi = x.ay < tamAy; });
+    const hedef = ayar('fmHedef');
+    const sinif = (c, d)=>{ const a = Math.abs(d), s1 = c.saat ? hedef : 1.5, s2 = c.saat ? hedef*2 : 2.5; return a <= s1 ? "" : (a <= s2 ? "d-mid" : "d-bad"); };
+    // yalnız tüm yıl (kayıtlı ayların hepsinde) çalışanlar arasında en çok − en az
+    const tam = kisiler.filter(x=>!x.kismi), aralik = {};
+    DENGE_KOL.forEach(c=>{ const v = tam.map(x=>x.t[c.k]); aralik[c.k] = v.length ? {min:Math.min.apply(null,v), max:Math.max.apply(null,v)} : null; });
+    return {kisiler, ort, tamAy, sinif, aralik, hedef};
+  }
+
   // ---- taşıma katmanı ----
   // eski ensureScheduleDraft'ın karşılığı: ayın kayıtlı taslağı varsa (elle kilitlenmiş günler) o, yoksa boş günler
   function taslakGunler(y, m){
@@ -1830,6 +1910,20 @@ export function puantajHesapla(veri, yil, ay){
   try { return puantajGrid(yil, ay); } finally { state = null; }
 }
 export const PUANTAJ_KODLARI = PZ_KODLAR;
+
+/**
+ * Yılın raporu: ay ay kişi başı puantaj özeti (fazla mesai, nöbet, gün türleri, hazırlama, izin, rapor) ve
+ * yıllık denge (çizelgeye göre; kişinin çalıştığı ay sayısına göre beklenen paydan fark).
+ */
+export function yillikRaporHesapla(veri, yil){
+  state = veriyiHazirla(veri, yil, 0);
+  try {
+    const V = yilVerisi(yil);
+    const D = V.kayitli ? dengeVerisi(V) : null;
+    const toplam = {}; V.kisiler.forEach(k => { toplam[k.id] = kisiYillik(V, k.id); });
+    return { V, D: D && { kisiler: D.kisiler, ort: D.ort, tamAy: D.tamAy, aralik: D.aralik, hedef: D.hedef }, toplam, kolonlar: DENGE_KOL, ayKisa: AY_KISA };
+  } finally { state = null; }
+}
 
 export function uyariSiniflandir(metin){ return uyariSinif(metin); }
 export { AGIRLIK, FM_MAX_FARK, AYAR_VARSAYILAN };

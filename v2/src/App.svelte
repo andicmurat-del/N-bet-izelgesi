@@ -5,6 +5,7 @@
   import Cizelge from "./ui/sayfalar/Cizelge.svelte";
   import Izinler from "./ui/sayfalar/Izinler.svelte";
   import Puantaj from "./ui/sayfalar/Puantaj.svelte";
+  import Raporlar from "./ui/sayfalar/Raporlar.svelte";
   import Kisiler from "./ui/sayfalar/Kisiler.svelte";
   import Ayarlar from "./ui/sayfalar/Ayarlar.svelte";
 
@@ -12,6 +13,7 @@
     { ad: "cizelge", baslik: "Çizelge", ikon: "takvim" },
     { ad: "puantaj", baslik: "Puantaj", ikon: "tablo" },
     { ad: "izinler", baslik: "İzin ve tercihler", kisa: "İzinler", ikon: "izin" },
+    { ad: "raporlar", baslik: "Raporlar", ikon: "grafik" },
     { ad: "kisiler", baslik: "Personel", ikon: "kisiler" },
     { ad: "ayarlar", baslik: "Ayarlar", ikon: "ayarlar" },
   ] as const;
@@ -58,6 +60,7 @@
     {#if sayfa === "cizelge"}<Cizelge {git} />
     {:else if sayfa === "puantaj"}<Puantaj {git} />
     {:else if sayfa === "izinler"}<Izinler {git} />
+    {:else if sayfa === "raporlar"}<Raporlar />
     {:else if sayfa === "kisiler"}<Kisiler />
     {:else}<Ayarlar />{/if}
   </main>
@@ -91,9 +94,9 @@
     .kabuk { grid-template-columns: 1fr; }
     .yan { display: none; }
     main { padding-block: var(--b4) calc(84px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-    .alt { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--yuzey); border-top: 1px solid var(--cizgi);
-      padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
-    .alt button { display: grid; justify-items: center; gap: 2px; min-height: 52px; padding: 0 2px; border: 0; background: transparent; color: var(--soluk); font-size: var(--f-xs); font-weight: 500; border-radius: var(--r); cursor: pointer; }
+    .alt { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--yuzey); border-top: 1px solid var(--cizgi);
+      padding: 6px max(4px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
+    .alt button { display: grid; justify-items: center; gap: 2px; min-height: 52px; min-width: 0; padding: 0 1px; border: 0; background: transparent; color: var(--soluk); font-size: var(--f-xs); font-weight: 500; border-radius: var(--r); cursor: pointer; }
     .alt button.secili { color: var(--vurgu); background: var(--vurgu-zemin); font-weight: 600; }
   }
 </style>
