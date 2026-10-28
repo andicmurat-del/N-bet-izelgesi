@@ -10,13 +10,12 @@ import type { AramaKurulumu } from "./kurulum";
 /** kilitli olmayan günlerde kural esnetildi mi (gün kırmızı görünür) */
 export function gunleriIsaretle(K: AramaKurulumu, kural: Kurallar): void {
   const { B, y, m, days, zorunluGun } = K;
-  const { zorunluMu, komsuda, prepBitisik, ikiDisaridan, tatilGunu } = kural;
+  const { tatilGunu, ihlalSayisi } = kural;
   days.forEach((dy, i) => {
     if (dy.locked) return;
     dy.conflict = zorunluGun[i].some(zid => !dy.assigned.some(p => p.id === zid)) || dy.assigned.length < 2 || (tatilGunu(i) && dy.prep.length < HAZ_SAYISI) ||
-      !dy.assigned.some(p => eczaciMi(p.role)) || ikiDisaridan(dy.assigned, i) ||
-      dy.assigned.some(p => B.tercih(p.id, y, m, dy.day) === "avoid" || B.kesinYasak(p.id, y, m, dy.day) || (!zorunluMu(p.id, i) && komsuda(p.id, i))) ||
-      (dy.prep || []).some(p => B.tercih(p.id, y, m, dy.day) === "avoid" || (p.role !== "destek" && prepBitisik(p.id, i)));
+      ihlalSayisi(i) > 0 ||
+      dy.assigned.some(p => B.tercih(p.id, y, m, dy.day) === "avoid") || (dy.prep || []).some(p => B.tercih(p.id, y, m, dy.day) === "avoid");
   });
 }
 

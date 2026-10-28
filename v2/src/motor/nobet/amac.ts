@@ -17,6 +17,14 @@ function ssIx(o: Float64Array, ix: number[]): number {
   for (let q = 0; q < n; q++) { const z = o[ix[q]] - mean; r += z * z; }
   return r;
 }
+/** ssIx(o + off, ix): önceki aylarla birlikte (etkin) değerlerin kare sapması, ara dizi yazmadan */
+function ssIx2(o: Float64Array, off: Float64Array, ix: number[]): number {
+  const n = ix.length; let t = 0;
+  for (let q = 0; q < n; q++) t += o[ix[q]] + off[ix[q]];
+  const mean = t / n; let r = 0;
+  for (let q = 0; q < n; q++) { const z = o[ix[q]] + off[ix[q]] - mean; r += z * z; }
+  return r;
+}
 /** G grubundaki sayaç değerleri arasındaki fark 1'i aşıyorsa ceza */
 function grupFarkCeza(o: Float64Array, G: number[], w: number): number {
   if (G.length < 2) return 0;
@@ -26,11 +34,32 @@ function grupFarkCeza(o: Float64Array, G: number[], w: number): number {
 }
 /** fark 1'i aşınca: en iyi 1 genişliğindeki aralığın dışında kalan toplam sapma. Yalnız en çok – en az farkına
  *  bakılsaydı uçtaki kişilerden birini düzelten adım ödüllenmez, arama takılırdı. */
-function yilBant(v: number[]): number {
+export function yilBant(v: number[]): number {
   const n = v.length; let enAz = 1e18;
   for (let q = 0; q < n; q++) for (let k = 0; k < 2; k++) {
     const L = v[q] - k; let t = 0;
     for (let r = 0; r < n; r++) { const x = v[r]; if (x < L) t += L - x; else if (x > L + 1) t += x - L - 1; }
+    if (t < enAz) enAz = t;
+  }
+  return enAz;
+}
+
+/** yilBant'ın tam sayı değerler için hızlı karşılığı (yıllık gün sayıları tam sayıdır; toplama sırası sonucu değiştirmez).
+ *  Aday L için t(L) = Σ(L − x, x < L) + Σ(x − L − 1, x > L + 1): sıralı dizide önek toplamlarıyla her aday O(log n).
+ *  v yerinde sıralanır; on: n+1 uzunlukta önek toplamı dizisi (yeniden kullanılır). */
+export function yilBantTam(v: Float64Array, on: Float64Array): number {
+  const n = v.length;
+  for (let i = 1; i < n; i++) { const x = v[i]; let j = i - 1; while (j >= 0 && v[j] > x) { v[j + 1] = v[j]; j--; } v[j + 1] = x; }
+  on[0] = 0; for (let i = 0; i < n; i++) on[i + 1] = on[i] + v[i];
+  let enAz = 1e18;
+  for (let q = 0; q < n; q++) for (let k = 0; k < 2; k++) {
+    const L = v[q] - k;
+    // a: L'den küçüklerin sayısı, u: L+1'den büyük olmayanların sayısı
+    let lo = 0, hi = n; while (lo < hi) { const md = (lo + hi) >> 1; if (v[md] < L) lo = md + 1; else hi = md; }
+    const a = lo;
+    lo = a; hi = n; while (lo < hi) { const md = (lo + hi) >> 1; if (v[md] <= L + 1) lo = md + 1; else hi = md; }
+    const u = lo;
+    const t = L * a - on[a] + (on[n] - on[u] - (L + 1) * (n - u));
     if (t < enAz) enAz = t;
   }
   return enAz;
@@ -43,7 +72,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     oncekiAyPersembe, oncekiAyCuma, ixStaff, ixPrep, ixDestek, ixEczPrep, ixTekPrep, eczIx, ixFmKural, onceki, pv, hsMusait,
     HS_SIFIR_IZIN, destekTamUyari, destekVar, DESTEK_AYLIK, HAZ_SAAT, prepAday, ayar } = K;
   const { sinir, devir } = A;
-  const { gundeVar, tatilGunu, yasak } = kural;
+  const { gundeVar, tatilGunu, yasak, ihlalSayisi } = kural;
   // hazırlama eşitliği: bu ay en az bir hazırlama gününde yazılabilen eczacı / tekniker
   const ixPrepAdil = prepAday.filter(s => days.some((_, i) => tatilGunu(i) && !yasak(s.id, i))).map(s => hIx[s.id]);
 
@@ -51,8 +80,6 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
   const sayac = () => new Float64Array(NH);
   const hFm = sayac(), hCnt = sayac(), hWk = sayac(), hThu = sayac(), hPrp = sayac(), hSat = sayac(), hSun = sayac(), hCum = sayac(),
     hRc = sayac(), hRcH = sayac(), hHs = sayac(), hCu = sayac();
-  // önceki aylarla birlikte (etkin) değerler için çalışma dizileri
-  const hFmEf = sayac(), hPrpEf = sayac(), hRcEf = sayac(), hRcHEf = sayac(), hHsEf = sayac(), hCuEf = sayac(), hThuEf = sayac(), hCntEf = sayac(), hSatEf = sayac(), hSunEf = sayac();
   let hPrAv = 0;   // "istemiyor" işaretli güne yazılan hazırlama sayısı
   function sayaclariSifirla() { hPrAv = 0; for (const a of [hFm, hCnt, hWk, hThu, hPrp, hSat, hSun, hCum, hRc, hRcH, hHs, hCu]) a.fill(0); }
 
@@ -132,17 +159,17 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
   }
 
   // yıllık gün türü (Perşembe, Cuma, Cumartesi, Pazar, resmi tatil): herkes birini almadan kimse ikincisini almasın
+  const yilDizi = new Float64Array(ixFmKural.length), yilOnek = new Float64Array(ixFmKural.length + 1);
   function yilCeza(b: Float64Array, h: Float64Array): number {
     const n = ixFmKural.length; if (n < 2) return 0;
-    let mx = -1e9, mn = 1e9; const v: number[] = [];
-    for (let q = 0; q < n; q++) { const ix = ixFmKural[q], x = b[ix] + h[ix]; v.push(x); if (x > mx) mx = x; if (x < mn) mn = x; }
-    return mx - mn > 1 + 1e-9 ? UYARI + AGIRLIK.gunYil * (mx - mn - 1) + AGIRLIK.gunYil * yilBant(v) : 0;
+    let mx = -1e9, mn = 1e9;
+    for (let q = 0; q < n; q++) { const ix = ixFmKural[q], x = b[ix] + h[ix]; yilDizi[q] = x; if (x > mx) mx = x; if (x < mn) mn = x; }
+    return mx - mn > 1 + 1e-9 ? UYARI + AGIRLIK.gunYil * (mx - mn - 1) + AGIRLIK.gunYil * yilBantTam(yilDizi, yilOnek) : 0;
   }
 
   /** sayaçlardan toplam amaç değeri; soft: günlük tercihler, zPen: günlerin uyarıları */
   function ozetJ(soft: number, zPen: number): number {
     let uy = 0, hsSifir = 0;   // uy: uyarı çıkaran durum sayısı
-    for (let ix = 0; ix < NH; ix++) { hPrpEf[ix] = hPrp[ix] + onceki.prp[ix]; hFmEf[ix] = hFm[ix] + onceki.fm[ix]; }
     let destekFazla = 0;
     // hazırlama adaleti: eczacılar kendi arasında, teknikerler kendi arasında fark en fazla 1
     let hzAdil = 0;
@@ -153,7 +180,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     // sürer (önceki aylar dahil): her ay baştan başlasaydı ay içinde artan hazırlama hep teknikerlere kalır, yılda birikirdi
     {
       let mxE = -1e9, mnT = 1e9;
-      for (let q = 0; q < ixPrepAdil.length; q++) { const ix = ixPrepAdil[q], v = hPrpEf[ix]; if (eczIx[ix]) { if (v > mxE) mxE = v; } else if (v < mnT) mnT = v; }
+      for (let q = 0; q < ixPrepAdil.length; q++) { const ix = ixPrepAdil[q], v = hPrp[ix] + onceki.prp[ix]; if (eczIx[ix]) { if (v > mxE) mxE = v; } else if (v < mnT) mnT = v; }
       if (mxE > -1e9 && mnT < 1e9 && mxE > mnT + 1e-6) hzAdil += AGIRLIK.tekOnce * (mxE - mnT);
     }
     // nöbet sayısı: kişiler arasında fark mümkünse en fazla 1, en fazla 2
@@ -217,33 +244,27 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     // resmi tatil görevleri: nöbet ve hazırlama ayrı ayrı, gün sayısı olarak (saat değil); destek personeli kendi arasında
     let resmiPen = 0;
     if (resmiGunVar) {
-      for (let ix = 0; ix < NH; ix++) { hRcEf[ix] = hRc[ix] + onceki.rc[ix]; hRcHEf[ix] = hRcH[ix] + onceki.rcH[ix]; }
-      resmiPen = AGIRLIK.resmi * ssIx(hRcEf, ixStaff) + AGIRLIK.resmi * ssIx(hRcHEf, ixPrep) + (destekVar ? AGIRLIK.resmi * ssIx(hRcHEf, ixDestek) : 0);
+      resmiPen = AGIRLIK.resmi * ssIx2(hRc, onceki.rc, ixStaff) + AGIRLIK.resmi * ssIx2(hRcH, onceki.rcH, ixPrep) + (destekVar ? AGIRLIK.resmi * ssIx2(hRcH, onceki.rcH, ixDestek) : 0);
       // yıllık toplam resmi tatil görevi (nöbet + hazırlama) kişiler arasında en fazla 1 fark (resmi tatil yılda az: açılan fark sonradan kapanmaz)
       {
         let mx = -1e9, mn = 1e9; const v: number[] = [];
-        for (let q = 0; q < ixPrep.length; q++) { const ix = ixPrep[q], x = hRcEf[ix] + hRcHEf[ix]; v.push(x); if (x > mx) mx = x; if (x < mn) mn = x; }
+        for (let q = 0; q < ixPrep.length; q++) { const ix = ixPrep[q], x = (hRc[ix] + onceki.rc[ix]) + (hRcH[ix] + onceki.rcH[ix]); v.push(x); if (x > mx) mx = x; if (x < mn) mn = x; }
         if (mx - mn > 1 + 1e-6) resmiPen += AGIRLIK.resmiYilToplam * (mx - mn - 1 + yilBant(v));
       }
     }
-    for (let ix = 0; ix < NH; ix++) hHsEf[ix] = hHs[ix] + onceki.hs[ix];
-    const hsYilPen = AGIRLIK.hsYil * ssIx(hHsEf, ixStaff);
-    for (let ix = 0; ix < NH; ix++) hCuEf[ix] = hCu[ix] + onceki.cu[ix];
-    const cuYilPen = AGIRLIK.cuYil * ssIx(hCuEf, ixStaff);
-    for (let ix = 0; ix < NH; ix++) hThuEf[ix] = hThu[ix] + onceki.pe[ix];
-    const peYilPen = AGIRLIK.peYil * ssIx(hThuEf, ixStaff);
-    for (let ix = 0; ix < NH; ix++) hCntEf[ix] = hCnt[ix] + onceki.n[ix];
-    const nYilPen = AGIRLIK.nYil * ssIx(hCntEf, ixStaff);
-    for (let ix = 0; ix < NH; ix++) { hSatEf[ix] = hSat[ix] + onceki.cmt[ix]; hSunEf[ix] = hSun[ix] + onceki.paz[ix]; }
-    const cpYilPen = AGIRLIK.cpYil * (ssIx(hSatEf, ixStaff) + ssIx(hSunEf, ixStaff));
+    const hsYilPen = AGIRLIK.hsYil * ssIx2(hHs, onceki.hs, ixStaff);
+    const cuYilPen = AGIRLIK.cuYil * ssIx2(hCu, onceki.cu, ixStaff);
+    const peYilPen = AGIRLIK.peYil * ssIx2(hThu, onceki.pe, ixStaff);
+    const nYilPen = AGIRLIK.nYil * ssIx2(hCnt, onceki.n, ixStaff);
+    const cpYilPen = AGIRLIK.cpYil * (ssIx2(hSat, onceki.cmt, ixStaff) + ssIx2(hSun, onceki.paz, ixStaff));
     let gunYilPen = 0;
     if (ixFmKural.length > 1) {
       gunYilPen = yilCeza(onceki.bPe, hThu) + yilCeza(onceki.bCu, hCum) + yilCeza(onceki.bCmt, hSat) + yilCeza(onceki.bPaz, hSun) + (resmiGunVar ? yilCeza(onceki.bRt, hRc) : 0);
     }
     // fmYil: fazla mesai (saat) eşitliği yıllık — her ay 8 saat kuralının yanında yıl toplamı da eşite yakın
-    return UYARI * (uy + hPrAv) + kesinPen + zPen + AGIRLIK.fmYil * ssIx(hFmEf, ixStaff) + hsYilPen + cuYilPen + peYilPen + nYilPen + cpYilPen + gunYilPen + devirPen
-      + AGIRLIK.nobetAy * ssIx(hCnt, ixStaff) + AGIRLIK.haftaSonuIs * ssIx(hWk, ixStaff) + AGIRLIK.prpYil * ssIx(hPrpEf, ixPrep)
-      + AGIRLIK.prpGrup * (ssIx(hPrpEf, ixEczPrep) + ssIx(hPrpEf, ixTekPrep)) + (destekVar ? AGIRLIK.destekYil * ssIx(hPrpEf, ixDestek) : 0)
+    return UYARI * (uy + hPrAv) + kesinPen + zPen + AGIRLIK.fmYil * ssIx2(hFm, onceki.fm, ixStaff) + hsYilPen + cuYilPen + peYilPen + nYilPen + cpYilPen + gunYilPen + devirPen
+      + AGIRLIK.nobetAy * ssIx(hCnt, ixStaff) + AGIRLIK.haftaSonuIs * ssIx(hWk, ixStaff) + AGIRLIK.prpYil * ssIx2(hPrp, onceki.prp, ixPrep)
+      + AGIRLIK.prpGrup * (ssIx2(hPrp, onceki.prp, ixEczPrep) + ssIx2(hPrp, onceki.prp, ixTekPrep)) + (destekVar ? AGIRLIK.destekYil * ssIx2(hPrp, onceki.prp, ixDestek) : 0)
       + destekFazla + hzAdil + hsPen + AGIRLIK.gunTercihCarpani * soft + AGIRLIK.thuFazla * thuFazla + resmiPen;
   }
 
@@ -251,7 +272,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
   function hesaplaJ(): number {
     sayaclariSifirla();
     let soft = 0, zPen = 0;
-    for (let i = 0; i < GUN_SAY; i++) { zPen += zGun(i); katki(i, days[i].assigned, days[i].prep, 1); soft += softGun(i); }
+    for (let i = 0; i < GUN_SAY; i++) { zPen += zGun(i) + UYARI * ihlalSayisi(i); katki(i, days[i].assigned, days[i].prep, 1); soft += softGun(i); }
     return ozetJ(soft, zPen);
   }
 
@@ -260,21 +281,23 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
   const tAs: Gorevli[][] = new Array(GUN_SAY), tPr: Gorevli[][] = new Array(GUN_SAY);
   const bSoftGun = new Float64Array(GUN_SAY), bZGun = new Float64Array(GUN_SAY);
   const etkiDamga = new Int32Array(GUN_SAY);
-  let bSoft = 0, bZ = 0, damga = 0;
+  // kesin kural ihlalleri: hamleler yeni ihlal yaratmadığından taban çözümde ihlal yoksa hiç hesaplanmaz
+  const bIhlGun = new Float64Array(GUN_SAY), ihlDamga = new Int32Array(GUN_SAY);
+  let bSoft = 0, bZ = 0, bIhl = 0, damga = 0;
   function tabanKur(): void {
-    sayaclariSifirla(); bSoft = 0; bZ = 0;
+    sayaclariSifirla(); bSoft = 0; bZ = 0; bIhl = 0;
     for (let i = 0; i < GUN_SAY; i++) {
       tAs[i] = days[i].assigned; tPr[i] = days[i].prep;
       katki(i, tAs[i], tPr[i], 1);
-      bSoftGun[i] = softGun(i); bZGun[i] = zGun(i);
-      bSoft += bSoftGun[i]; bZ += bZGun[i];
+      bSoftGun[i] = softGun(i); bZGun[i] = zGun(i); bIhlGun[i] = UYARI * ihlalSayisi(i);
+      bSoft += bSoftGun[i]; bZ += bZGun[i]; bIhl += bIhlGun[i];
     }
   }
   /** taban çözümden i (ve varsa k) gününü değiştiren hamlenin amaç değeri; nobetDegisti: nöbetçiler de değişti */
   function jDelta(i: number, k: number, nobetDegisti: boolean): number {
     katki(i, tAs[i], tPr[i], -1); katki(i, days[i].assigned, days[i].prep, 1);
     if (k >= 0) { katki(k, tAs[k], tPr[k], -1); katki(k, days[k].assigned, days[k].prep, 1); }
-    let soft = bSoft, zPen = bZ;
+    let soft = bSoft, zPen = bZ + bIhl;
     // nöbet değiştiyse: o güne bakan günler (3 gün öncesi; Pazar hazırlaması için 2 gün sonrası) yeniden hesaplanır;
     // yalnız hazırlama değiştiyse: yalnız o günün kendisi
     damga++;
@@ -287,6 +310,12 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
         if (j < 0 || etkiDamga[j] === damga) continue;
         etkiDamga[j] = damga;
         soft += softGun(j) - bSoftGun[j];
+      }
+      // bir günün ihlal sayısı ±4 gündeki görevlere bağlıdır
+      if (bIhl > 0) for (let j = Math.max(0, g - 4); j <= Math.min(g + 4, GUN_SAY - 1); j++) {
+        if (ihlDamga[j] === damga) continue;
+        ihlDamga[j] = damga;
+        zPen += UYARI * ihlalSayisi(j) - bIhlGun[j];
       }
     }
     const r = ozetJ(soft, zPen);
