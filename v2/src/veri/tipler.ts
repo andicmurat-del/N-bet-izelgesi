@@ -49,8 +49,6 @@ export interface Ayarlar {
   cakismaOncelik: 1 | 2;
   /** arife günü normal mesai saati */
   arifeSaat: number;
-  /** nöbet ertesi izni (Nİ) fazla mesainin hangi diliminden düşülür: 1 gündüz (08-20), 2 gece (20-08) */
-  niDusum: 1 | 2;
 }
 
 /** Puantajda elle yazılan gün kodu */

@@ -14,7 +14,7 @@ const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağus
   const AYAR_VARSAYILAN = {nobetSuresi:24, mesai:8, arifeSaat:3, hazSaat:8, fmHedef:8, minAra:3, maxThu:1, hsTercih:1, hsUst:2, cumaEsles:true, thuHaftaSonu:true, destekAylik:2, cakismaOncelik:1, niDusum:1, kurumAdi:"", onaylayan:""};
   // Panelde yalnızca "nöbetler arası en az gün farkı" ve "destek personeli aylık görev" gösterilir;
   // diğer kurallar her zaman varsayılan değerinde çalışır
-  const AYAR_GIZLI = new Set(["nobetSuresi","mesai","hazSaat","fmHedef","maxThu","thuHaftaSonu","hsTercih","hsUst","cumaEsles"]);
+  const AYAR_GIZLI = new Set(["niDusum","nobetSuresi","mesai","hazSaat","fmHedef","maxThu","thuHaftaSonu","hsTercih","hsUst","cumaEsles"]);
   function ayar(k){
     if (AYAR_GIZLI.has(k)) return AYAR_VARSAYILAN[k];
     const v = state.settings ? state.settings[k] : undefined; return (v===undefined || v===null) ? AYAR_VARSAYILAN[k] : v;

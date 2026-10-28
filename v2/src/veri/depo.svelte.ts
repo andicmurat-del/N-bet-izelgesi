@@ -4,7 +4,7 @@ import { ayAnahtari, gunAnahtari, gunSayisi, haftaSonuMu, tercihAnahtari } from 
 
 const ANAHTAR = "nobet-cizelgesi-v2";
 
-export const AYAR_VARSAYILAN: Ayarlar = { minAra: 3, destekAylik: 2, cakismaOncelik: 1, arifeSaat: 3, niDusum: 1 };
+export const AYAR_VARSAYILAN: Ayarlar = { minAra: 3, destekAylik: 2, cakismaOncelik: 1, arifeSaat: 3 };
 
 export function bosVeri(): Veri {
   return {
@@ -53,7 +53,6 @@ export function veriyiDogrula(ham: unknown): Veri {
     destekAylik: sayi(s.destekAylik, 0, 8, AYAR_VARSAYILAN.destekAylik),
     cakismaOncelik: Number(s.cakismaOncelik) === 2 ? 2 : 1,
     arifeSaat: sayi(s.arifeSaat, 0, 8, AYAR_VARSAYILAN.arifeSaat),
-    niDusum: Number(s.niDusum) === 2 ? 2 : 1,
   };
   const kodlar: PuantajKodu[] = ["M", "N", "H", "NI", "YI", "R", "DI", "B"];
   for (const [ayK, kisiler] of Object.entries(nesne(o.puantaj))) {
