@@ -1,9 +1,10 @@
 // 4. adım: bitmiş çizelgenin denetimi. Kural esnetilen günler işaretlenir (conflict) ve kullanıcıya gösterilecek
-// uyarılar yazılır. Uyarı metinleri uyariSinif.ts'deki kalıplarla sınıflandırılır; metni değiştirirken orayı da güncelleyin.
+// uyarılar yazılır. Uyarı metinleri raporlar.ts'deki kalıplarla (uyariSiniflandir) sınıflandırılır; metni değiştirirken orayı da güncelleyin.
 import { aktifGunMu, eczaciMi } from "../baglam";
 import { fmFarkBilgisi, fmKuralKisileri, hsKuralIhlali, hsSayilari, yilGunSayilari } from "../istatistik";
 import { FM_MAX_FARK, HAZ_SAYISI, YIL_GUN_TIP } from "../sabitler";
 import { AYLAR, CUMA, CUMARTESI, haftaGunu, PAZAR } from "../takvim";
+import { kadroYetersizlikNedenleri } from "./kapasite";
 import type { Kurallar } from "./kurallar";
 import type { AramaKurulumu } from "./kurulum";
 
@@ -30,6 +31,11 @@ export function uyarilariYaz(K: AramaKurulumu, kural: Kurallar): string[] {
 
   if (eczacilar.length < 2) {
     warnings.push("En az 2 eczacı gerekiyor; aksi halde dinlenme kuralı garanti edilemez. Şu an " + eczacilar.length + " eczacı var.");
+  }
+  // kadro kesin kurallara yetmiyorsa kırmızı günler kaçınılmazdır: nedeniyle birlikte söylenir
+  const yetersiz = kadroYetersizlikNedenleri(K);
+  if (yetersiz.length) {
+    warnings.push("Bu ay personel kesin kurallara yetmiyor; kurallara tam uyan bir çizelge matematiksel olarak mümkün değil. Nedeni: " + yetersiz.join("; ") + ". Kırmızı günler bundan kaynaklanır; daha fazla personel ya da daha az izin gerekir.");
   }
   // izinden önceki güne mecburen yazılan nöbetler (yumuşak kural esnedi): kullanıcı bilsin
   const izinOncesiAtama: string[] = [];
