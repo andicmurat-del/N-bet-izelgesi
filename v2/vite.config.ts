@@ -6,6 +6,11 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 export default defineConfig({
   plugins: [svelte(), viteSingleFile()],
   worker: { format: "es" },
-  build: { target: "es2022", assetsInlineLimit: 100_000_000 },
+  build: {
+    target: "es2022",
+    assetsInlineLimit: 100_000_000,
+    // jsPDF'in isteğe bağlı eklentileri (HTML'den görüntü, SVG) kullanılmıyor; pakete girmesin
+    rollupOptions: { external: ["html2canvas", "dompurify", "canvg"] },
+  },
   test: { include: ["test/**/*.test.{js,ts}"], testTimeout: 600_000, pool: "threads" },
 });

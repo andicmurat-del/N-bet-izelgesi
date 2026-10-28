@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { depo, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, ornekKadroYukle, tumVeriyiSil, resmiTatilMi } from "../../veri/depo.svelte";
+  import { depo, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, ornekKadroYukle, tumVeriyiSil, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import { arkaPlandaOlustur } from "../../motor/istemci";
   import { uyariSiniflandir } from "../../motor/cizelge.js";
   import { cizelgeKitabi } from "../../disa/cizelgeXlsx";
@@ -62,6 +62,19 @@
       durum = ok ? "Excel dosyası kaydedildi." : "";
     } catch { durum = "Dosya kaydedilemedi."; }
   }
+  let pdfHazirlaniyor = $state(false);
+  async function pdf() {
+    if (!c) return;
+    const y = c.year, m = c.month;
+    pdfHazirlaniyor = true; durum = "";
+    try {
+      const { cizelgePdf } = await import("../../disa/cizelgePdf");
+      const blob = cizelgePdf($state.snapshot(c) as any, $state.snapshot(depo.veri.staff) as any, { kurum: depo.veri.kurum.ad, resmiTatil: d => resmiTatilMi(y, m, d), arife: d => arifeMi(y, m, d) });
+      const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}.pdf`, blob, "application/pdf");
+      durum = ok ? "PDF kaydedildi." : "";
+    } catch { durum = "PDF oluşturulamadı."; }
+    finally { pdfHazirlaniyor = false; }
+  }
   function sil() {
     if (!silOnayi) { silOnayi = true; return; }
     cizelgeSil(depo.yil, depo.ay); silOnayi = false;
@@ -123,7 +136,10 @@
       {:else}
         <button class="dugme" onclick={() => onayiKaldir(depo.yil, depo.ay)}>Onayı kaldır</button>
       {/if}
-      {#if c}<button class="dugme" onclick={excel} disabled={calisiyor}><Ikon ad="indir" />Excel</button>{/if}
+      {#if c}
+        <button class="dugme" onclick={pdf} disabled={calisiyor || pdfHazirlaniyor}><Ikon ad="indir" />{pdfHazirlaniyor ? "Hazırlanıyor…" : "PDF"}</button>
+        <button class="dugme" onclick={excel} disabled={calisiyor}><Ikon ad="indir" />Excel</button>
+      {/if}
       {#if c && !c.onay}<button class="dugme sade tehlike" onclick={sil} disabled={calisiyor}><Ikon ad="sil" />{silOnayi ? "Evet, sil" : "Sil"}</button>{/if}
     </div>
   </div>
