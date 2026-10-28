@@ -1,0 +1,99 @@
+// Uygulamanın kayıtlı verisi. Alan adları motorla (src/motor/cizelge.js) ortaktır; motor bu yapıyı olduğu gibi okur.
+
+export type Rol = "eczaci" | "teknisyen" | "destek" | "nobetci";
+
+export interface Kisi {
+  id: number;
+  name: string;
+  role: Rol;
+  /** işe başlama tarihi, YYYY-AA-GG */
+  baslangic?: string;
+  /** ayrılış tarihi (son çalışma günü), YYYY-AA-GG */
+  bitis?: string;
+}
+
+/** Kişinin bir güne işaretlenen tercihi ya da izni */
+export type Tercih = "izinli" | "want" | "avoid" | "esVar" | "esYok";
+
+export interface Gorevli { id: number; name: string; role: Rol }
+
+export interface Gun {
+  day: number;
+  tatil: boolean;
+  conflict: boolean;
+  fazlaMesai: number;
+  assigned: Gorevli[];
+  prep: Gorevli[];
+  /** elle düzenlendi: yeniden oluşturmada korunur */
+  locked: boolean;
+}
+
+export interface Onay { zaman: number; kim: string }
+
+export interface AyCizelgesi {
+  year: number;
+  month: number;
+  days: Gun[];
+  /** oluşturma sırasında motorun verdiği uyarı metinleri */
+  uyarilar: string[];
+  olusturma: number;
+  onay?: Onay;
+}
+
+export interface Ayarlar {
+  /** iki nöbet arasında önerilen en az gün */
+  minAra: number;
+  /** destek personeli başına aylık hazırlama */
+  destekAylik: number;
+  /** hazırlama eşitliği ile fazla mesai saati çakışırsa öncelik: 1 hazırlama, 2 saat */
+  cakismaOncelik: 1 | 2;
+  /** arife günü normal mesai saati */
+  arifeSaat: number;
+}
+
+export interface Veri {
+  surum: 1;
+  kurum: { ad: string; onaylayan: string };
+  staff: Kisi[];
+  /** "kisiId-yil-ay-gun" (ay 0'dan) → tercih */
+  prefs: Record<string, Tercih>;
+  /** "yil-ay-gun" → resmi tatil */
+  manualTatil: Record<string, true>;
+  /** "yil-ay-gun" → arife (yarım gün) */
+  arife: Record<string, true>;
+  settings: Ayarlar;
+  /** "yil-ay" → ayın çizelgesi */
+  schedules: Record<string, AyCizelgesi>;
+  /** örnek kadroyla deneniyor: ekranda belirtilir, tek düğmeyle silinir */
+  ornek?: true;
+}
+
+export const ROL_AD: Record<Rol, string> = {
+  eczaci: "Eczacı",
+  teknisyen: "Tekniker",
+  destek: "Destek personeli",
+  nobetci: "Dışarıdan nöbetçi eczacı",
+};
+
+export const ROL_ACIKLAMA: Record<Rol, string> = {
+  eczaci: "Nöbet ve hazırlama tutar; her gün en az bir eczacı nöbetçidir.",
+  teknisyen: "Nöbet ve hazırlama tutar.",
+  destek: "Nöbet tutmaz; tatil günlerinde ikinci hazırlama görevini alır.",
+  nobetci: "Kurum dışından nöbete gelen eczacı; eczacı yerine sayılır.",
+};
+
+export const TERCIH_AD: Record<Tercih, string> = {
+  izinli: "İzinli",
+  want: "İstiyor",
+  avoid: "İstemiyor",
+  esVar: "Eş durumu: nöbetçi olsun",
+  esYok: "Eş durumu: nöbetçi olmasın",
+};
+
+export const TERCIH_ACIKLAMA: Record<Tercih, string> = {
+  izinli: "O gün görev yazılmaz; izin arasındaki hafta sonu da izin sayılır.",
+  want: "Eşitlik bozulmuyorsa o güne nöbet yazılır.",
+  avoid: "Mümkünse o güne nöbet yazılmaz; yazılırsa uyarı çıkar.",
+  esVar: "Kişi o gün mutlaka nöbetçi yazılır.",
+  esYok: "Kişi o gün kesinlikle nöbetçi yazılmaz.",
+};
