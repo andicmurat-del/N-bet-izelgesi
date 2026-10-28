@@ -72,13 +72,13 @@
   .neden-ozet { font-size: 12.5px; color: var(--ink-soft); line-height: 1.45; margin: 8px 0; }
   table.neden-t { width: 100%; border-collapse: collapse; font-size: 12.5px; }
   table.neden-t th, table.neden-t td { text-align: left; padding: 5px 6px; border-top: 1px solid var(--border-soft); vertical-align: top; }
-  table.neden-t th { color: var(--muted); font-weight: 600; font-size: 11.5px; }
+  table.neden-t th { color: var(--muted); font-weight: 600; font-size: 12px; }
   table.neden-t td.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   table.neden-t tr.sec td { background: var(--accent-soft); }
   table.neden-t tr.engel td { color: var(--muted); }
   table.neden-t tr.acik td { border-top: none; padding-top: 0; font-size: 12px; color: var(--ink-soft); }
   table.neden-t tr.engel.acik td { color: var(--danger); }
-  .nd-rozet { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+  .nd-rozet { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
 
   .nd-rozet.uygun { background: var(--want-soft); color: var(--want); }
   .nd-rozet.engel { background: var(--danger-soft); color: var(--danger); }
@@ -98,7 +98,7 @@
     .brand { display: none; }
     .side nav { overflow-x: auto; scrollbar-width: none; }
     .side nav { flex-direction: row; width: 100%; }
-    .side nav button { flex-direction: column; gap: 3px; font-size: 10.5px; text-align: center; justify-content: center; line-height: 1.15; }
+    .side nav button { flex-direction: column; gap: 3px; font-size: 12px; text-align: center; justify-content: center; line-height: 1.15; }
 
     #generate-section { scroll-margin-top: -58px; }
 
@@ -182,7 +182,7 @@
 
   .cal-cell.pref-izinli { background: var(--izinli-soft); border-color: var(--izinli); color: var(--izinli); }
   .cal-cell.pref-izinli.izin-arasi { background: color-mix(in srgb, var(--izinli-soft) 55%, var(--surface)); border-style: dashed; }
-  .cal-cell .tag { font-size: 9.5px; margin-top: 1px; }
+  .cal-cell .tag { font-size: 12px; margin-top: 1px; }
   .cal-cell.empty, .sched-cell.empty { visibility: hidden; }
   #cal-dow-row, #cal-grid, #pref-dow-row, #pref-grid { max-width: 600px; }
   #cal-grid .cal-cell, #pref-grid .cal-cell { aspect-ratio: 1.25 / 1; }
@@ -200,7 +200,7 @@
   .sched-summary b { margin-right: 4px; }
   .sched-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
   .sched-cell {
-    position: relative; cursor: pointer; border: 1px solid var(--border); font-size: 11px; background: var(--surface);
+    position: relative; cursor: pointer; border: 1px solid var(--border); font-size: 12px; background: var(--surface);
   }
   .sched-cell.weekend, .sched-cell.tatil { border-color: var(--tatil); }
   .sched-cell.manual-edit { box-shadow: inset 0 0 0 2px var(--accent); }
@@ -212,9 +212,9 @@
   .rp .cal .hz + .hz { margin-top: 0 !important; }
   .sched-cell .dg-mark { position: absolute; top: 4px; right: 22px; font-size: 12px; color: var(--accent); font-weight: 700; }
   .sched-cell.pz-fark { outline: 2px dashed var(--tatil); outline-offset: -3px; }
-  .sched-cell .pzf { font-size: 10px; color: var(--tatil); font-weight: 600; margin-top: 2px; }
-  .sched-cell .dr-not { font-size: 10px; line-height: 1.35; color: var(--muted); margin-top: 3px; }
-  .sched-cell .dr-not span { display: inline-block; min-width: 18px; text-align: center; border-radius: 4px; padding: 0 3px; font-weight: 700; font-size: 9.5px; }
+  .sched-cell .pzf { font-size: 12px; color: var(--tatil); font-weight: 600; margin-top: 2px; }
+  .sched-cell .dr-not { font-size: 12px; line-height: 1.35; color: var(--muted); margin-top: 3px; }
+  .sched-cell .dr-not span { display: inline-block; min-width: 18px; text-align: center; border-radius: 4px; padding: 0 3px; font-weight: 700; font-size: 12px; }
   .dr-R { background: var(--kR-bg); color: var(--kR-fg); } .dr-YI { background: var(--kYI-bg); color: var(--kYI-fg); } .dr-NI { background: var(--kNI-bg); color: var(--kNI-fg); }
   .dr-cakisma { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-top: 8px; }
   .dr-cakisma b { font-weight: 600; }
@@ -235,7 +235,7 @@
   .dg-ok { font-size: 16px; color: var(--muted); margin: 4px 0 4px 10px; }
   .dg-cell { cursor: default; touch-action: auto; min-height: 96px; }
   .dg-isaret { margin-left: 6px; color: var(--accent); font-weight: 700; font-size: 12px; }
-  .dg-chip { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 1px 4px; margin: 0; font-size: 11px; line-height: 1.3; color: var(--ink); cursor: pointer; white-space: normal; overflow-wrap: break-word; word-break: normal; font-family: inherit; }
+  .dg-chip { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 1px 4px; margin: 0; font-size: 12px; line-height: 1.3; color: var(--ink); cursor: pointer; white-space: normal; overflow-wrap: break-word; word-break: normal; font-family: inherit; }
   .dg-chip .dg-bas { display: none; }
   #tip-secici .kisa, #ayar-sekme .kisa { display: none; }
   .dg-chip.n.ecz { color: var(--accent-ink); font-weight: 600; }
@@ -246,7 +246,7 @@
   .dg-chip.sec2 { background: var(--p-lav-2, var(--accent-soft)); border-color: var(--p-lav-ink, var(--accent)); color: var(--p-lav-ink, var(--accent-ink)); }
   @media (max-width: 900px){ .dg-duzen { grid-template-columns: 1fr; } .dg-panel { position: static; } }
   @media (max-width: 640px){
-    .dg-cell { min-height: 70px; padding: 4px 3px; } .dg-chip { font-size: 10.5px; padding: 1px 2px; text-align: center; }
+    .dg-cell { min-height: 70px; padding: 4px 3px; } .dg-chip { font-size: 12px; padding: 1px 2px; text-align: center; }
     .dg-chip .dg-ad, .dg-chip b { display: none; } .dg-chip .dg-bas { display: inline; }
     #tip-secici .uzun { display: none; } #tip-secici .kisa { display: inline; }
     #ayar-sekme .uzun { display: none; } #ayar-sekme .kisa { display: inline; }
@@ -272,22 +272,22 @@
   .dr-cell:hover:not(.bos) { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
   .dr-cell.drag-on { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--accent-soft); }
   .dr-gun { font-size: 13px; font-weight: 600; color: var(--ink); }
-  .dr-gun small { font-weight: 500; color: var(--muted); font-size: 10.5px; margin-left: 5px; }
+  .dr-gun small { font-weight: 500; color: var(--muted); font-size: 12px; margin-left: 5px; }
   .dr-cell.ben-R { background: var(--kR-bg); border-color: transparent; } .dr-cell.ben-YI { background: var(--kYI-bg); border-color: transparent; } .dr-cell.ben-NI { background: var(--kNI-bg); border-color: transparent; }
-  .dr-ben { font-size: 11.5px; font-weight: 700; }
+  .dr-ben { font-size: 12px; font-weight: 700; }
   .dr-cell.ben-R .dr-ben { color: var(--kR-fg); } .dr-cell.ben-YI .dr-ben { color: var(--kYI-fg); } .dr-cell.ben-NI .dr-ben { color: var(--kNI-fg); }
-  .dr-gorev { font-size: 11px; font-weight: 600; color: var(--accent-ink); }
-  .dr-plan { font-size: 11px; color: var(--muted); font-style: italic; }
+  .dr-gorev { font-size: 12px; font-weight: 600; color: var(--accent-ink); }
+  .dr-plan { font-size: 12px; color: var(--muted); font-style: italic; }
   .dr-rozet { display: inline-block; min-width: 18px; text-align: center; border-radius: 4px; font-weight: 700; }
-  .dr-rozet { font-size: 11px; padding: 1px 5px; }
+  .dr-rozet { font-size: 12px; padding: 1px 5px; }
   .dr-lejant i.dr-R, .dr-lejant i.dr-YI, .dr-lejant i.dr-NI { border-color: transparent; }
   .dr-alt { margin-top: 22px; max-width: 760px; }
   @media (max-width: 640px){
     .dr-dow, .dr-grid { gap: 3px; }
     .dr-cell { min-height: 58px; padding: 4px 4px; border-radius: 8px; }
     .dr-gun small, .dr-plan { display: none; }
-    .dr-gorev { font-size: 0; } .dr-gorev::after { content: attr(data-k); font-size: 10px; font-weight: 700; }
-    .dr-ben { font-size: 0; } .dr-ben::after { font-size: 10px; content: "●"; }
+    .dr-gorev { font-size: 0; } .dr-gorev::after { content: attr(data-k); font-size: 12px; font-weight: 700; }
+    .dr-ben { font-size: 0; } .dr-ben::after { font-size: 12px; content: "●"; }
     .dr-kisi-kutu, .dr-kisi-kutu select { width: 100%; min-width: 0; }
   }
   .dr-sekme { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; align-items: start; }
@@ -324,7 +324,7 @@
   table.rt td.cold { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
   table.rt td.top, table.rt th.top { font-weight: 700; color: var(--accent-ink); }
   /* yıllık denge: değer + ekip ortalamasına fark */
-  table.rt-denge td .df { display: block; font-size: 11px; font-weight: 500; color: var(--muted); line-height: 1.2; }
+  table.rt-denge td .df { display: block; font-size: 12px; font-weight: 500; color: var(--muted); line-height: 1.2; }
   table.rt-denge td.d-mid { background: var(--amber-soft); }
   table.rt-denge td.d-bad { background: var(--danger-soft); }
   table.rt-denge td.d-mid .df { color: var(--amber); }
@@ -333,10 +333,10 @@
   .denge-lg { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12px; color: var(--muted); }
   .denge-lg i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; border: 1px solid var(--border); }
   table.rt td.gunler { white-space: normal; text-align: left; min-width: 220px; font-size: 12px; color: var(--ink-soft); }
-  table.rt tr.rol td { background: var(--bg); font-size: 11.5px; color: var(--muted); font-weight: 600; text-align: left; }
+  table.rt tr.rol td { background: var(--bg); font-size: 12px; color: var(--muted); font-weight: 600; text-align: left; }
   .tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: .7; }
 
-  ul.staff-list li .tarih { display: block; font-size: 11px; color: var(--muted); }
+  ul.staff-list li .tarih { display: block; font-size: 12px; color: var(--muted); }
   ul.staff-list li .li-btn { display: inline-flex; gap: 2px; }
   details.ayrilanlar { margin-top: 16px; border: 1px dashed var(--border); border-radius: 8px; padding: 8px 12px; }
   details.ayrilanlar summary { cursor: pointer; font-size: 13.5px; color: var(--ink-soft); }
@@ -395,7 +395,7 @@
   .gl-kolon li { display: flex; justify-content: space-between; gap: 8px; align-items: center; border-bottom: 1px solid var(--border-soft); font-size: 14px; }
   .gl-kolon li:last-child { border-bottom: none; }
   .gl-kolon li.bos { color: var(--muted); font-size: 13px; }
-  .rozet { font-size: 11px; padding: 2px 8px; border-radius: 99px; white-space: nowrap; margin-left: 4px; }
+  .rozet { font-size: 12px; padding: 2px 8px; border-radius: 99px; white-space: nowrap; margin-left: 4px; }
 
   details.gl-yok { margin-top: 14px; border: 1px dashed var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
   details.gl-yok summary { cursor: pointer; }
@@ -404,21 +404,21 @@
   /* puantaj cetveli */
   .pz-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 10px; font-size: 12px; color: var(--muted); }
   .pz-legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .pz-legend i { display: inline-block; min-width: 24px; padding: 1px 5px; border-radius: 4px; font-style: normal; font-size: 11px; text-align: center; border: 1px solid var(--border); }
+  .pz-legend i { display: inline-block; min-width: 24px; padding: 1px 5px; border-radius: 4px; font-style: normal; font-size: 12px; text-align: center; border: 1px solid var(--border); }
   table.pz { border-collapse: separate; border-spacing: 0; font-size: 12px; }
   table.pz th, table.pz td { border-right: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); padding: 0; text-align: center; white-space: nowrap; }
-  table.pz th { font-size: 11px; padding: 4px 0; position: sticky; top: 0; z-index: 2; }
+  table.pz th { font-size: 12px; padding: 4px 0; position: sticky; top: 0; z-index: 2; }
   table.pz th.tt { background: var(--pz-bas); color: var(--ink); box-shadow: inset 0 -3px 0 var(--accent-soft); }
   table.pz th.ar { background: var(--arife-soft); color: var(--arife); }
-  table.pz th small { display: block; font-size: 9.5px; }
+  table.pz th small { display: block; font-size: 12px; }
   table.pz td.ad, table.pz th.ad { text-align: left; padding: 0 8px; min-width: 120px; position: sticky; left: 0; background: var(--surface); z-index: 1; font-size: 12.5px; }
   table.pz th.ad { z-index: 3; }
   table.pz td.ad .sira { display: inline-block; min-width: 22px; color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
-  table.pz th.sum { white-space: normal; line-height: 1.15; font-size: 10.5px; }
+  table.pz th.sum { white-space: normal; line-height: 1.15; font-size: 12px; }
   table.pz td.sum.aylik { font-weight: 700; }
   table.pz td.sum.fm { font-weight: 700; color: var(--accent-ink); cursor: help; }
   table.pz td.sum.gunduz, table.pz td.sum.gece { color: var(--ink-soft); }
-  table.pz th.sum.dilim small { display: block; font-weight: 500; font-size: 9.5px; color: var(--muted); margin-top: 1px; }
+  table.pz th.sum.dilim small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); margin-top: 1px; }
   table.pz td.pzc { min-width: 29px; height: 28px; cursor: pointer; position: relative; font-variant-numeric: tabular-nums; }
   table.pz td.pzc:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
   table.pz td.pzc.tt { background: var(--pz-hs); }
@@ -434,7 +434,7 @@
   /* özet sütunları sabit değil, tablonun sonunda akar: günlerin üstünü örtmez */
   table.pz td.sum.toplam, table.pz th.sum.toplam { border-left: 2px solid var(--border); }
   @media (max-width: 900px) { table.pz td.ad, table.pz th.ad { min-width: 84px; } }
-  table.pz td.rol { text-align: left; background: var(--bg); font-size: 11.5px; font-weight: 600; color: var(--muted); padding: 3px 8px; position: sticky; left: 0; }
+  table.pz td.rol { text-align: left; background: var(--bg); font-size: 12px; font-weight: 600; color: var(--muted); padding: 3px 8px; position: sticky; left: 0; }
   .pz-kodlar { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; }
   .pz-kodlar label { display: flex; align-items: center; gap: 9px; padding: 6px 9px; border: 1px solid var(--border); font-size: 13.5px; cursor: pointer; }
   .pz-kodlar label:hover { background: var(--border-soft); }
@@ -713,8 +713,8 @@
     .mob-brand span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .kpi { grid-column: span 6; padding: 13px 14px; }
     .kpi .v { font-size: 22px; }
-    .kpi small { font-size: 11.5px; }
-    .kpi .s { font-size: 11.5px; }
+    .kpi small { font-size: 12px; }
+    .kpi .s { font-size: 12px; }
     .topbar-actions { gap: 8px; }
   }
   @media (max-width: 340px) { .kpi { grid-column: span 12; } }
@@ -839,8 +839,8 @@
   ul.staff-list li.empty-note { background: none !important; border: 1px dashed var(--border) !important; box-shadow: none !important; justify-content: center; text-align: center; }
   ul.staff-list li.empty-note::before { display: none !important; }
   /* ===== ERİŞİLEBİLİRLİK (WCAG 2.1 AA) ===== */
-  :root[data-theme="dark"] .palette button.on, :root[data-theme="dark"] .sched-cell.bugun .daynum, :root[data-theme="dark"] table.pz th.bugun, :root[data-theme="dark"] table.pz th.bugun small { color: #0B1A17 !important; }
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .palette button.on, :root:not([data-theme="light"]) .sched-cell.bugun .daynum, :root:not([data-theme="light"]) table.pz th.bugun, :root:not([data-theme="light"]) table.pz th.bugun small { color: #0B1A17 !important; } }
+  :root[data-theme="dark"] .palette button.on:not([data-arac="R"]):not([data-arac="YI"]):not([data-arac="NI"]), :root[data-theme="dark"] .sched-cell.bugun .daynum, :root[data-theme="dark"] table.pz th.bugun, :root[data-theme="dark"] table.pz th.bugun small { color: #0B1A17 !important; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .palette button.on:not([data-arac="R"]):not([data-arac="YI"]):not([data-arac="NI"]), :root:not([data-theme="light"]) .sched-cell.bugun .daynum, :root:not([data-theme="light"]) table.pz th.bugun, :root:not([data-theme="light"]) table.pz th.bugun small { color: #0B1A17 !important; } }
   td.pzc:focus-visible, .sched-cell:focus-visible, .cal-cell:focus-visible, .ac-cell:focus-visible { outline: 2px solid var(--accent) !important; outline-offset: -2px; position: relative; z-index: 3; }
   .overflow-x[role="region"]:focus-visible { outline-offset: 0; }
 
@@ -925,7 +925,7 @@
   .uyari-rozet { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px !important; border-radius: 999px !important; font-size: 13px !important; border: 1px solid transparent !important; box-shadow: none !important; cursor: pointer; }
   .uyari-rozet.r-hata { background: var(--danger-soft) !important; color: var(--danger) !important; border-color: color-mix(in srgb, var(--danger) 30%, transparent) !important; }
   .uyari-rozet.r-uyari { background: var(--amber-soft) !important; color: var(--amber) !important; border-color: color-mix(in srgb, var(--amber) 30%, transparent) !important; }
-  table.rt th.bos-ay, table.rt td.bos-ay { color: var(--muted); opacity: .45; }
+  table.rt th.bos-ay, table.rt td.bos-ay { color: var(--muted); font-weight: 400; }
   .rblok .sub.dipnot, #rapor-icerik p.sub.dipnot { display: block; margin: 8px 0 0; }
   .sched-cell.uy-isaret { outline: 2.5px solid var(--amber); outline-offset: 1px; }
   .uyari-rozet.r-bilgi { background: var(--bg) !important; color: var(--muted) !important; border-color: var(--border) !important; }
@@ -1005,13 +1005,13 @@
   .ac-grid { margin-top: 0; }
   .ac-dow, .ls-dow > div { padding-bottom: 5px; }
   .ls-dow { gap: 8px; }
-  .ac-cell, .ls-cell { border: 1px solid var(--border); min-height: 98px; background: var(--surface); cursor: pointer; font-size: 11px; line-height: 1.35; transition: border-color .15s, box-shadow .15s; }
+  .ac-cell, .ls-cell { border: 1px solid var(--border); min-height: 98px; background: var(--surface); cursor: pointer; font-size: 12px; line-height: 1.35; transition: border-color .15s, box-shadow .15s; }
   .ac-cell.tt, .ls-cell.tt { background: var(--tatil-soft); }
   .ac-cell.bos, .ls-cell.bos { visibility: hidden; cursor: default; }
   .ac-cell .dn, .ls-cell .daynum { font-family: var(--font-ui); font-variant-numeric: tabular-nums; }
-  .ac-cell .k { font-size: 11px; }
+  .ac-cell .k { font-size: 12px; }
   .ls-cell.bugun .daynum { display: inline-grid; place-items: center; }
-  .ls-k { display: flex; align-items: center; gap: 5px; color: var(--ink-soft); font-size: 11.5px; line-height: 1.5; }
+  .ls-k { display: flex; align-items: center; gap: 5px; color: var(--ink-soft); font-size: 12px; line-height: 1.5; }
   .ls-k i { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--p-mint-3); }
   .ls-k.haz i { background: var(--role-tek); }
   .ls-k.dst i { background: var(--role-dst); }
@@ -1123,7 +1123,7 @@
   .sv-ngun select, .sv-tbl input[type=number] { padding: 6px 9px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; }
   .sv-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 6px; }
   .sv-chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface); color: var(--muted); font-size: 13px; }
-  .sv-chip small { font-weight: 500; font-size: 11px; color: var(--ink-soft); }
+  .sv-chip small { font-weight: 500; font-size: 12px; color: var(--ink-soft); }
   .sv-chip.on small { color: inherit; }
   .sv-chip .sv-ck { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--border); flex: none; }
   .sv-chip.on { border-color: var(--accent); color: var(--accent-ink); }
@@ -1137,11 +1137,11 @@
   .sv-kisi header { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; border-bottom: 1px solid var(--border-soft); }
   .sv-kisi header b { font-size: 14px; overflow-wrap: anywhere; }
   .sv-kisi header span { background: var(--accent-soft); color: var(--accent-ink); border-radius: 999px; padding: 1px 8px; font-size: 12px; }
-  .sv-meta { color: var(--muted); font-size: 11.5px; margin-bottom: 5px; }
+  .sv-meta { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
   .sv-kisi ul { list-style: none; margin: 0; padding: 0; }
   .sv-kisi li { font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
-  .sv-kisi li em { font-style: normal; margin-left: 5px; font-size: 10.5px; font-weight: 700; color: var(--kH-fg); }
-  .sv-kisi li.yb::after { margin-left: 6px; font-size: 9.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 3px; }
+  .sv-kisi li em { font-style: normal; margin-left: 5px; font-size: 12px; font-weight: 700; color: var(--kH-fg); }
+  .sv-kisi li.yb::after { margin-left: 6px; font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 3px; }
   .sv-det { margin-top: 12px; border: 1px solid var(--border-soft); border-radius: 12px; padding: 10px 14px; }
   .sv-det summary { cursor: pointer; font-weight: 600; font-size: 13.5px; }
   .sv-det summary .hint { font-weight: 400; margin-left: 6px; }
@@ -1179,7 +1179,7 @@
   .svmx .a2, .mx-sw.a2 { background: var(--mx-a2); font-weight: 700; }
   .svmx .f1, .mx-sw.f1 { background: var(--mx-f1); font-weight: 600; }
   .svmx .f2, .mx-sw.f2 { background: var(--mx-f2); font-weight: 700; }
-  table.svmx thead th small { display: block; font-weight: 500; font-size: 10.5px; color: var(--muted); }
+  table.svmx thead th small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); }
   table.svmx tbody tr.g-yb:not(.grp):nth-child(even) td.l, table.svmx tbody tr.g-cok:not(.grp):nth-child(even) td.l, table.svmx tbody tr.g-tek:not(.grp):nth-child(even) td.l { background: color-mix(in srgb, var(--ink) 2.5%, var(--surface)); }
   table.svmx td.mx-top { font-weight: 700; color: var(--ink-soft); background: var(--bg); }
   table.svmx tr.mx-alt td { font-weight: 700; background: var(--bg); border-top: 2px solid var(--border); }
@@ -1188,12 +1188,12 @@
   .mx-lej { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 6px; margin-top: 10px; font-size: 12px; color: var(--ink-soft); }
   .mx-lej-b { font-weight: 600; margin-right: 2px; }
   .mx-sw.a1, .mx-sw.a2, .mx-sw.f1, .mx-sw.f2 { color: var(--ink); }
-  .mx-sw { display: inline-grid; place-items: center; min-width: 26px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  .mx-sw { display: inline-grid; place-items: center; min-width: 26px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
   .mx-ayr { width: 1px; height: 18px; background: var(--border); margin: 0 8px; }
   .mx-gl { display: inline-flex; align-items: center; margin-right: 8px; }
   .mx-gl.g-yb { --gc: var(--g-yb); } .mx-gl.g-cok { --gc: var(--g-cok); } .mx-gl.g-tek { --gc: var(--g-tek); }
   .sv-tbl tr.kapali td { opacity: .55; }
-  .sv-etk { font-size: 10.5px; color: var(--kH-fg); font-weight: 600; margin-left: 4px; }
+  .sv-etk { font-size: 12px; color: var(--kH-fg); font-weight: 600; margin-left: 4px; }
   .sv-ayarust { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin: 10px 0 4px; }
   .sv-ayarust input[type=search] { padding: 8px 11px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); font: inherit; font-size: 13.5px; min-width: 200px; }
   .sv-yeni { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0 0; padding: 12px; border: 1px dashed var(--border); border-radius: 12px; }
@@ -1202,13 +1202,13 @@
   .sv-yeni input[type=number] { width: 70px; }
   .sv-yeni label { font-size: 13px; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 6px; }
   /* elle servis değiştirme */
-  .sv-svc-btn { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 4px; width: 100%; padding: 2px 4px; margin: 0 -4px; border-radius: 6px; cursor: pointer; font: inherit; color: inherit; }
+  .sv-svc-btn { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 4px; width: 100%; min-height: 24px; padding: 2px 4px; margin: 0 -4px; border-radius: 6px; cursor: pointer; font: inherit; color: inherit; }
   .sv-svc-btn:hover { background: var(--accent-soft); color: var(--accent-ink); }
   .sv-svc-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
   .sv-kisi li { padding: 0; }
-  .sv-kisi li.yb .sv-svc-btn::after { content: "YB"; margin-left: 6px; font-size: 9.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 3px; }
+  .sv-kisi li.yb .sv-svc-btn::after { content: "YB"; margin-left: 6px; font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 3px; }
   .sv-kisi li.yb::after { content: none; }
-  .sv-elle { font-style: normal; margin-left: auto; font-size: 11px; color: var(--accent); }
+  .sv-elle { font-style: normal; margin-left: auto; font-size: 12px; color: var(--accent); }
   .sv-ata-ipucu { margin: 0 0 8px; }
   .sv-ata-liste { display: grid; gap: 8px; margin: 10px 0 4px; max-height: 55vh; overflow: auto; }
   .sv-ata-sec { display: grid; gap: 3px; text-align: left; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; }
@@ -1371,7 +1371,7 @@
   table.pz th, table.pz th.ad, table.pz th.sum { background: var(--bg); font-weight: 600; color: var(--ink-soft); border-bottom: 1px solid var(--hat); }
   table.pz th small { font-weight: 400; color: var(--muted); }
   table.pz td.ad { font-weight: 500; }
-  table.pz tr.rol td, table.pz tr.grp td { font-weight: 600; color: var(--muted); font-size: 11.5px; }
+  table.pz tr.rol td, table.pz tr.grp td { font-weight: 600; color: var(--muted); font-size: 12px; }
 
   /* personel listesi */
   ul.staff-list li { box-shadow: none; border-color: var(--border-soft); border-radius: 9px; }
@@ -1449,7 +1449,7 @@
   @media (max-width: 520px) { .ydo-satir { grid-template-columns: 1fr; gap: 2px; } }
 
   /* hazırlayan imzası: masaüstünde kenar menüsünün dibinde, telefonda Ayarlar sayfasının sonunda */
-  .imza { margin: 0; font-size: 11.5px; line-height: 1.4; color: var(--muted); }
+  .imza { margin: 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
   .side .imza { padding: 14px 12px 0; margin-top: 10px; border-top: 1px solid var(--border-soft); }
   .side .imza b { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
   .main > .imza-ayar { display: none; }
@@ -1628,7 +1628,7 @@
     .brand { margin: 0 0 18px; padding: 0; justify-content: center; }
     .brand-metin { display: none; }
     .side nav { width: 100%; gap: 4px; }
-    .side nav button { flex-direction: column; gap: 5px; padding: 10px 2px; font-size: 10.5px; font-weight: 500; text-align: center; justify-content: center; line-height: 1.15; border-radius: 10px; }
+    .side nav button { flex-direction: column; gap: 5px; padding: 10px 2px; font-size: 12px; font-weight: 500; text-align: center; justify-content: center; line-height: 1.15; border-radius: 10px; }
     .side nav button svg { width: 21px; height: 21px; }
     .side nav button.active { font-weight: 600; }
     .side nav .uzun { display: none; } .side nav .kisa { display: inline; }
@@ -1641,9 +1641,9 @@
   #vurgu-bar, #vurgu-bilgi { display: none !important; }
   .kisi-panel[hidden], #generate-section.isaret-tatil .kisi-panel, #generate-section.isaret-tercih .kisi-panel { display: none !important; }
   .kp-bas { font-size: 14px; font-weight: 600; }
-  .kp-ipucu { font-size: 11.5px; color: var(--muted); margin: 2px 0 8px; line-height: 1.4; }
+  .kp-ipucu { font-size: 12px; color: var(--muted); margin: 2px 0 8px; line-height: 1.4; }
   .kp-liste { display: flex; flex-direction: column; gap: 2px; }
-  .kp-grup { font-size: 11.5px; font-weight: 600; color: var(--muted); margin: 10px 10px 2px; }
+  .kp-grup { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 10px 2px; }
   .kp-grup:first-child { margin-top: 2px; }
   .kisi-panel .kp-kisi { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 4px 9px; width: 100%; padding: 7px 10px; border-radius: 10px;
     border: 1px solid transparent; background: transparent; color: var(--ink); text-align: left; font-weight: 400; box-shadow: none; }
@@ -5228,7 +5228,7 @@
     function mevcutCiz(){
       const L = ayDurumlari(y,m);
       const lk = q("#dr-mevcut"); if (!lk) return;
-      lk.innerHTML = L.length ? (sekme ? '' : '<h4 style="margin:18px 0 0;font-size:14px">Bu ay girilenler</h4>')+'<div class="dr-liste dnm-list">'+L.map((x,i)=>'<div class="dnm"><span><span class="dr-'+x.kod+'" style="border-radius:4px;padding:1px 5px;font-weight:700;font-size:11px">'+DURUM_KISA[x.kod]+'</span> <b>'+escapeHtml(kisiAdi(x.id))+'</b>: '+(x.bas===x.bit ? gunAdi(x.bas) : gunAdi(x.bas)+' – '+gunAdi(x.bit))+' <small style="color:var(--muted)">('+DURUM_AD[x.kod].replace(/ \(.*\)$/, "")+')</small></span><button type="button" class="ghost small" data-dr-sil="'+i+'">Kaldır</button></div>').join("")+'</div>' : (sekme ? '<p class="empty-note">Bu ay için girilmiş izin, rapor ya da nöbet izni yok.</p>' : '');
+      lk.innerHTML = L.length ? (sekme ? '' : '<h4 style="margin:18px 0 0;font-size:14px">Bu ay girilenler</h4>')+'<div class="dr-liste dnm-list">'+L.map((x,i)=>'<div class="dnm"><span><span class="dr-'+x.kod+'" style="border-radius:4px;padding:1px 5px;font-weight:700;font-size:12px">'+DURUM_KISA[x.kod]+'</span> <b>'+escapeHtml(gorunenAd(kisiAdi(x.id)))+'</b>: '+(x.bas===x.bit ? gunAdi(x.bas) : gunAdi(x.bas)+' – '+gunAdi(x.bit))+' <small style="color:var(--muted)">('+DURUM_AD[x.kod].replace(/ \(.*\)$/, "")+')</small></span><button type="button" class="ghost small" data-dr-sil="'+i+'">Kaldır</button></div>').join("")+'</div>' : (sekme ? '<p class="empty-note">Bu ay için girilmiş izin, rapor ya da nöbet izni yok.</p>' : '');
       lk.querySelectorAll("[data-dr-sil]").forEach(b=> b.onclick = async ()=>{
         const x = L[Number(b.dataset.drSil)];
         if (!await onayla(kisiAdi(x.id)+" için "+DURUM_AD[x.kod].toLowerCase()+" kaydı kaldırılsın mı?\n\nO günler puantajda yeniden çizelgeden gelir. Yerine yazılan nöbetler kalır; geri almak için Değişim geçmişini kullan.")) return;
@@ -5329,7 +5329,7 @@
     h += '<div class="denge-lg dr-lejant"><span><i class="dr-R"></i>Rapor</span><span><i class="dr-YI"></i>Yıllık izin</span><span><i class="dr-NI"></i>Nöbet izni (fazla mesai karşılığı)</span></div>';
     const L = ayDurumlari(y,m);
     const gunAdi = g=> g+" "+AYLAR[m]+" "+GUNLER[jsDowToMonFirst(new Date(y,m,g).getDay())];
-    h += '<div class="dr-alt"><h3 class="dr-baslik">'+AYLAR[m]+' '+y+' kayıtları</h3>'+(L.length ? '<div class="dr-liste dnm-list">'+L.map((x,i)=>'<div class="dnm"><span><span class="dr-'+x.kod+' dr-rozet">'+DURUM_KISA[x.kod]+'</span> <b>'+escapeHtml(kisiAdi(x.id))+'</b>: '+(x.bas===x.bit ? gunAdi(x.bas) : gunAdi(x.bas)+' – '+gunAdi(x.bit))+' <small style="color:var(--muted)">('+DURUM_AD[x.kod].replace(/ \(.*\)$/, "")+')</small></span><button type="button" class="ghost small" data-dr-sil="'+i+'">Kaldır</button></div>').join("")+'</div>' : '<p class="empty-note">Bu ay için girilmiş izin, rapor ya da nöbet izni yok.</p>')+'</div>';
+    h += '<div class="dr-alt"><h3 class="dr-baslik">'+AYLAR[m]+' '+y+' kayıtları</h3>'+(L.length ? '<div class="dr-liste dnm-list">'+L.map((x,i)=>'<div class="dnm"><span><span class="dr-'+x.kod+' dr-rozet">'+DURUM_KISA[x.kod]+'</span> <b>'+escapeHtml(gorunenAd(kisiAdi(x.id)))+'</b>: '+(x.bas===x.bit ? gunAdi(x.bas) : gunAdi(x.bas)+' – '+gunAdi(x.bit))+' <small style="color:var(--muted)">('+DURUM_AD[x.kod].replace(/ \(.*\)$/, "")+')</small></span><button type="button" class="ghost small" data-dr-sil="'+i+'">Kaldır</button></div>').join("")+'</div>' : '<p class="empty-note">Bu ay için girilmiş izin, rapor ya da nöbet izni yok.</p>')+'</div>';
     kutu.innerHTML = h;
     document.getElementById("dr-kisi-sec").onchange = e=>{ izinKisi = Number(e.target.value) || null; renderIzin(); };
     document.getElementById("dr-palet").onclick = e=>{ const b = e.target.closest("[data-arac]"); if (!b) return; izinArac = b.dataset.arac; kutu.querySelectorAll("#dr-palet [data-arac]").forEach(x=>x.classList.toggle("on", x===b)); };
@@ -5415,7 +5415,7 @@
         satir.push({i, metin: a.gun+" "+AYLAR[m]+" "+(a.cikAd||kisiAdi(a.cik))+" ("+gorevAdi(a.yerYeni)+") ↔ "+b2.gun+" "+AYLAR[m]+" "+(b2.cikAd||kisiAdi(b2.cik))+" ("+gorevAdi(b2.yerYeni)+")", tur:"Karşılıklı takas", zaman:x.zaman});
       } else satir.push({i, metin: x.gun+" "+AYLAR[m]+": "+(x.cikAd||kisiAdi(x.cik))+" yerine "+(x.yerAd||kisiAdi(x.yer))+" ("+gorevAdi(x.yerYeni)+")", tur: x.zorunlu ? (DURUM_AD[x.sebep]||"İzin").replace(/ \(.*\)$/, "")+" nedeniyle (çizelgeye işlendi)" : "Yerine tutma", zaman:x.zaman});
     });
-    h += '<div class="dr-alt"><h3 class="dr-baslik">'+AYLAR[m]+' '+y+' değişimleri</h3>'+(satir.length ? '<div class="dr-liste dnm-list">'+satir.map(o=>'<div class="dnm"><span><b>'+escapeHtml(o.metin)+'</b><br><small style="color:var(--muted)">'+escapeHtml(o.tur)+' · '+yedekZamanMetni(o.zaman||0)+'</small></span><button type="button" class="ghost small" data-dg-geri="'+o.i+'">Geri al</button></div>').join("")+'</div>' : '<p class="empty-note">Bu ay henüz değişim yapılmadı.</p>')+'</div>';
+    h += '<div class="dr-alt"><h3 class="dr-baslik">'+AYLAR[m]+' '+y+' değişimleri</h3>'+(satir.length ? '<div class="dr-liste dnm-list">'+satir.map(o=>'<div class="dnm"><span><b>'+escapeHtml(adlariGorunur(o.metin))+'</b><br><small style="color:var(--muted)">'+escapeHtml(o.tur)+' · '+yedekZamanMetni(o.zaman||0)+'</small></span><button type="button" class="ghost small" data-dg-geri="'+o.i+'">Geri al</button></div>').join("")+'</div>' : '<p class="empty-note">Bu ay henüz değişim yapılmadı.</p>')+'</div>';
     kutu.innerHTML = h;
     // olaylar
     document.getElementById("dg-tur").onclick = e=>{ const b = e.target.closest("[data-tur]"); if (!b || b.dataset.tur===dgTur) return; dgTur = b.dataset.tur; dgSecimTemizle(); renderDegisim(); };
@@ -5443,14 +5443,14 @@
     if (dgTur==="devir"){
       const ad = yerineAdaylar(y, m, dgSec1.gun, dgSec1.id, dgSec1.kod);
       if (!dgYer || !ad.some(a=>a.id===dgYer)){ const iyi = ad.find(a=>!a.engel); dgYer = iyi ? iyi.id : (ad[0] ? ad[0].id : null); }
-      h += '<div class="dg-ozet"><span class="dg-etiket sec1">'+escapeHtml(kisiAdi(dgSec1.id))+'</span><span>'+gunAdi(dgSec1.gun)+' '+gorevAdi(dgSec1.kod)+'</span></div>';
+      h += '<div class="dg-ozet"><span class="dg-etiket sec1">'+escapeHtml(gorunenAd(kisiAdi(dgSec1.id)))+'</span><span>'+gunAdi(dgSec1.gun)+' '+gorevAdi(dgSec1.kod)+'</span></div>';
       h += '<div class="pz-form"><div class="tam"><label for="dg-yer">Yerine '+(dgSec1.kod==="H" ? "hazırlama yapacak" : "nöbet tutacak")+'</label><select id="dg-yer">'+(ad.length ? ad.map(a=>'<option value="'+a.id+'"'+(a.id===dgYer?' selected':'')+'>'+escapeHtml(a.ad)+' — yıl içinde '+a.yil+(dgSec1.kod==="H" ? ' hazırlama' : ' nöbet')+(a.engel ? ' (kural dışı)' : (a.uyari ? ' (uyarı var)' : ''))+'</option>').join("") : '<option value="">Uygun kimse yok</option>')+'</select></div>';
       d = {y, m, gorev:dgSec1.kod, tur:"devir", gun:dgSec1.gun, cik:dgSec1.id, yer:dgYer};
     } else {
-      h += '<div class="dg-ozet"><span class="dg-etiket sec1">'+escapeHtml(kisiAdi(dgSec1.id))+'</span><span>'+gunAdi(dgSec1.gun)+' '+gorevAdi(dgSec1.kod)+'</span></div>';
+      h += '<div class="dg-ozet"><span class="dg-etiket sec1">'+escapeHtml(gorunenAd(kisiAdi(dgSec1.id)))+'</span><span>'+gunAdi(dgSec1.gun)+' '+gorevAdi(dgSec1.kod)+'</span></div>';
       if (!dgSec2){ pn.innerHTML = h+'<div class="dg-bos">Şimdi karşılığında alınacak görevi seç: başka bir kişinin nöbeti ya da hazırlaması.</div><div class="actions-row"><button class="ghost" id="dg-temizle">Seçimi temizle</button></div>'; document.getElementById("dg-temizle").onclick = ()=>{ dgSecimTemizle(); renderDegisim(); }; return; }
-      h += '<div class="dg-ok">⇅</div><div class="dg-ozet"><span class="dg-etiket sec2">'+escapeHtml(kisiAdi(dgSec2.id))+'</span><span>'+gunAdi(dgSec2.gun)+' '+gorevAdi(dgSec2.kod)+'</span></div>';
-      h += '<p class="hint" style="margin:8px 0 0">'+escapeHtml(kisiAdi(dgSec2.id))+', '+gunAdi(dgSec1.gun)+' '+gorevAdi(dgSec1.kod)+' görevini; '+escapeHtml(kisiAdi(dgSec1.id))+', '+gunAdi(dgSec2.gun)+' '+gorevAdi(dgSec2.kod)+' görevini alır.</p><div class="pz-form">';
+      h += '<div class="dg-ok">⇅</div><div class="dg-ozet"><span class="dg-etiket sec2">'+escapeHtml(gorunenAd(kisiAdi(dgSec2.id)))+'</span><span>'+gunAdi(dgSec2.gun)+' '+gorevAdi(dgSec2.kod)+'</span></div>';
+      h += '<p class="hint" style="margin:8px 0 0">'+escapeHtml(gorunenAd(kisiAdi(dgSec2.id)))+', '+gunAdi(dgSec1.gun)+' '+gorevAdi(dgSec1.kod)+' görevini; '+escapeHtml(gorunenAd(kisiAdi(dgSec1.id)))+', '+gunAdi(dgSec2.gun)+' '+gorevAdi(dgSec2.kod)+' görevini alır.</p><div class="pz-form">';
       d = {y, m, gorev:dgSec1.kod, gorev2:dgSec2.kod, tur:"takas", gun:dgSec1.gun, cik:dgSec1.id, yer:dgSec2.id, gun2:dgSec2.gun};
     }
     h += '<div class="tam"><label for="dg-not">Not (isteğe bağlı)</label><input type="text" id="dg-not" maxlength="160"></div></div>';
