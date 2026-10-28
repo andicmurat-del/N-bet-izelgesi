@@ -1,10 +1,10 @@
 // Uygulama durumu ve tarayıcıda saklanması. Veriler yalnız bu tarayıcıda durur; taşımak için yedek dosyası kullanılır.
-import type { AyCizelgesi, Ayarlar, Gorevli, Kisi, Rol, Tercih, Veri } from "./tipler";
+import type { AyCizelgesi, Ayarlar, Gorevli, Kisi, PuantajKodu, Rol, Tercih, Veri } from "./tipler";
 import { ayAnahtari, gunAnahtari, gunSayisi, haftaSonuMu, tercihAnahtari } from "./tarih";
 
 const ANAHTAR = "nobet-cizelgesi-v2";
 
-export const AYAR_VARSAYILAN: Ayarlar = { minAra: 3, destekAylik: 2, cakismaOncelik: 1, arifeSaat: 3 };
+export const AYAR_VARSAYILAN: Ayarlar = { minAra: 3, destekAylik: 2, cakismaOncelik: 1, arifeSaat: 3, niDusum: 1 };
 
 export function bosVeri(): Veri {
   return {
@@ -16,6 +16,7 @@ export function bosVeri(): Veri {
     arife: {},
     settings: { ...AYAR_VARSAYILAN },
     schedules: {},
+    puantaj: {},
   };
 }
 
@@ -50,7 +51,15 @@ export function veriyiDogrula(ham: unknown): Veri {
     destekAylik: sayi(s.destekAylik, 0, 8, AYAR_VARSAYILAN.destekAylik),
     cakismaOncelik: Number(s.cakismaOncelik) === 2 ? 2 : 1,
     arifeSaat: sayi(s.arifeSaat, 0, 8, AYAR_VARSAYILAN.arifeSaat),
+    niDusum: Number(s.niDusum) === 2 ? 2 : 1,
   };
+  const kodlar: PuantajKodu[] = ["M", "N", "H", "NI", "YI", "R", "DI", "B"];
+  for (const [ayK, kisiler] of Object.entries(nesne(o.puantaj))) {
+    if (!/^\d{4}-\d{1,2}$/.test(ayK)) continue;
+    for (const [id, gunler] of Object.entries(nesne(kisiler)))
+      for (const [gun, kod] of Object.entries(nesne(gunler)))
+        if (kodlar.includes(kod as PuantajKodu)) ((v.puantaj[ayK] ??= {})[id] ??= {})[gun] = kod as PuantajKodu;
+  }
   for (const [k, c] of Object.entries(nesne(o.schedules))) {
     if (!c || !Array.isArray(c.days) || !Number.isInteger(c.year) || !Number.isInteger(c.month)) continue;
     v.schedules[k] = {
@@ -135,6 +144,7 @@ export function kisiSil(id: number) {
     if (c.onay) continue;
     for (const g of c.days) { g.assigned = g.assigned.filter(p => p.id !== id); g.prep = g.prep.filter(p => p.id !== id); }
   }
+  for (const [ayK, a] of Object.entries(depo.veri.puantaj)) if (!depo.veri.schedules[ayK]?.onay) delete a[id];
 }
 
 // ---------- tercih ve tatil işaretleri ----------
@@ -204,6 +214,18 @@ export function onayiKaldir(y: number, m: number) {
   const c = ayCizelgesi(y, m);
   if (c) delete c.onay;
 }
+
+// ---------- puantaj ----------
+export function puantajKoduAyarla(y: number, m: number, id: number, gun: number, kod: PuantajKodu | null) {
+  const ayK = ayAnahtari(y, m);
+  if (kod) { ((depo.veri.puantaj[ayK] ??= {})[id] ??= {})[gun] = kod; return; }
+  const a = depo.veri.puantaj[ayK]?.[id];
+  if (!a) return;
+  delete a[gun];
+  if (!Object.keys(a).length) delete depo.veri.puantaj[ayK][id];
+  if (!Object.keys(depo.veri.puantaj[ayK]).length) delete depo.veri.puantaj[ayK];
+}
+export const puantajElleKodu = (y: number, m: number, id: number, gun: number): PuantajKodu | undefined => depo.veri.puantaj[ayAnahtari(y, m)]?.[id]?.[gun];
 
 // ---------- ay içi sayımlar ----------
 export interface KisiAyOzeti { nobet: number; hazirlama: number; fazlaMesai: number; haftaSonu: number }

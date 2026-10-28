@@ -1649,6 +1649,124 @@ const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağus
     return out;
   }
 
+  // ---- puantaj kodları ve yardımcılar (index.html 4747–4767) ----
+
+  // ---------- puantaj (günlük düzenlenebilir) ----------
+  const PZ_KODLAR = [["M","Normal mesai"],["N","Nöbet"],["H","Hazırlama (tatil günü)"],["NI","Nöbet izni"],["YI","Yıllık izin"],["R","Rapor"],["B","Çalışmadı (devamsız / ücretsiz)"]];
+  const PZ_ROL_SIRA = {eczaci:0, nobetci:1, teknisyen:2, destek:3, servis:4};
+  function pzMetin(kod){
+    if (kod==="M") return String(ayar('mesai')); if (kod==="N") return String(ayar('nobetSuresi')); if (kod==="H") return String(ayar('hazSaat'));
+    if (kod==="NI") return "Nİ"; if (kod==="YI") return "Yİ"; if (kod==="R") return "R"; if (kod==="DI") return "Dİ"; if (kod==="P") return "–";
+    if (kod && kod.indexOf("S:")===0) return kod.slice(2);
+    return "";
+  }
+  function pzSaat(kod){
+    if (kod==="M") return ayar('mesai'); if (kod==="N") return ayar('nobetSuresi'); if (kod==="H") return ayar('hazSaat');
+    if (kod && kod.indexOf("S:")===0) return Number(kod.slice(2)) || 0;
+    return 0;
+  }
+  function pzSinif(kod){ return (kod && kod.indexOf("S:")===0) ? "k-S" : "k-"+kod; }
+  function pzOv(y,m,olustur){
+    const k = y+"-"+m;
+    if (!state.puantaj[k]){ if (!olustur) return {}; state.puantaj[k] = {}; }
+    return state.puantaj[k];
+  }
+  // ---- aylık puantaj cetveli (index.html 4779–4872) ----
+  function pzSonGunKodu(id, y, m){
+    const pm = prevMonthOf(y,m), dimP = daysInMonth(pm.y, pm.m);
+    const ov = state.puantaj[pm.y+"-"+pm.m];
+    const o = ov && ov[id] && ov[id][dimP];
+    if (o) return o;
+    const st = state.staff.find(x=>x.id===id);
+    if (st && !aktifGunMu(st, pm.y, pm.m, dimP)) return "P";
+    const sch = state.schedules[pm.y+"-"+pm.m];
+    if (sch && sch.days[dimP-1] && sch.days[dimP-1].assigned.some(p=>p.id===id)) return "N";
+    if (sch && sch.days[dimP-1] && (sch.days[dimP-1].prep||[]).some(p=>p.id===id)) return "H";
+    // acil servis nöbeti (acil eczane çizelgesinden) ayın son gününe düştüyse ertesi ayın 1'i nöbet iznidir
+    const ac = (state.acil||{})[pm.y+"-"+pm.m];
+    if (ac && Array.isArray(ac[dimP]) && ac[dimP].indexOf(id) >= 0) return "N";
+    return "";
+  }
+  function puantajGrid(y, m){
+    const dim = daysInMonth(y,m), sch = state.schedules[y+"-"+m], ov = pzOv(y,m,false), acilAy = state.acil[y+"-"+m] || {};
+    const gunler = [];
+    for (let d=1; d<=dim; d++){ const tt = isTatilGunu(y,m,d); gunler.push({gun:d, dw:jsDowToMonFirst(new Date(y,m,d).getDay()), tatil:tt, arife: !tt && isArife(y,m,d), ms: gunMesaiSaati(y,m,d)}); }
+    const mesaiS = ayar('mesai'), mesaiGun = gunler.filter(g=>!g.tatil).length;
+    // arife varsa beklenen mesai gün gün saatle hesaplanır (arife yarım gün); yoksa eski hesap aynen
+    const arifeVar = gunler.some(g=>g.arife), mesaiToplam = gunler.reduce((t,g)=>t+g.ms, 0);
+    const kisiler = state.staff.filter(st=>aktifAydaMi(st,y,m)).sort((a,b)=> PZ_ROL_SIRA[a.role]-PZ_ROL_SIRA[b.role] || a.name.localeCompare(b.name,"tr") || a.id-b.id);
+    const satirlar = kisiler.map(st=>{
+      const hucre = []; let prev = pzSonGunKodu(st.id, y, m);
+      const r = {s:st, cells:hucre, toplam:0, fm:0, n:0, hi:0, cu:0, cmt:0, paz:0, thu:0, h:0, ni:0, yi:0, rd:0, rt:0, gunlerN:[]};
+      let nMesaiSaat = 0, niSaat = 0, pSaat = 0, izinMesai = 0;
+      const sadeceNobet = st.role==="nobetci" || st.role==="destek"; // normal mesaisi olmayanlar: yalnızca nöbet/hazırlama günleri
+      gunler.forEach((g,i)=>{
+        const o = ov[st.id] && ov[st.id][g.gun];
+        let kod, acilFlag = false;
+        const acilVar = !!(acilAy[g.gun] && acilAy[g.gun].indexOf(st.id) >= 0);
+        if (o){ kod = o; // acil servis nöbetçi eczacısına puantajda elle yazılan nöbet, eczane nöbeti değil acil servis nöbetidir
+          if (o==="N" && (st.role==="servis" || acilVar)) acilFlag = true; }
+        else {
+          const sd = sch && sch.days[i];
+          if (!aktifGunMu(st,y,m,g.gun)) kod = "P";
+          else if (sd && sd.assigned.some(p=>p.id===st.id)) kod = "N";
+          else if (sd && (sd.prep||[]).some(p=>p.id===st.id)) kod = "H";
+          else if (acilVar){ kod = "N"; acilFlag = true; }
+          else if (sadeceNobet) kod = (st.role==="nobetci" && !g.tatil && prev==="N") ? "NI" : "B";
+          else if (!g.tatil){
+            if (prev==="N") kod = "NI";
+            else if (getPref(st.id,y,m,g.gun)==="izinli") kod = "YI";
+            else kod = "M";
+          } else kod = "B";
+        }
+        let saat = (kod==="M" && g.arife) ? g.ms : pzSaat(kod);
+        // memur: yıllık izin ve raporlu gün, o günün normal mesai saatiyle çalışılmış sayılır
+        if (!sadeceNobet && (kod==="YI" || kod==="R" || kod==="DI")) saat = g.ms;
+        hucre.push({kod, saat, ov:!!o, acil:acilFlag});
+        r.toplam += saat;
+        if (kod==="N"){ r.n++; if (!acilFlag && isManualTatil(y,m,g.gun)) r.rt++; if (!g.tatil) nMesaiSaat += g.ms; if (g.dw===5) r.cmt++; else if (g.dw===6) r.paz++; else if (g.dw===4) r.cu++; else r.hi++; if (g.dw===3) r.thu++; r.gunlerN.push({gun:g.gun, dw:g.dw, tip:"N"}); }
+        else if (kod==="H"){ r.h++; r.gunlerN.push({gun:g.gun, dw:g.dw, tip:"H"}); }
+        else if (kod==="NI"){ r.ni++; niSaat += g.ms; }
+        else if (kod==="YI") r.yi++;
+        else if (kod==="R" || kod==="DI") r.rd++;
+        if (!g.tatil && (kod==="YI" || kod==="R" || kod==="DI" || kod==="P")){ if (kod==="P") pSaat += g.ms; else izinMesai += g.ms; }
+        prev = kod;
+      });
+      // Ay sınırı: nöbetin ertesi gün izni (Nİ) nöbetin yazıldığı aya sayılır (çizelge planlamasıyla aynı):
+      //  - ayın 1. gününe düşen, önceki ayın son gün nöbetinden gelen Nİ bu ayın fazla mesaisini azaltmaz
+      //  - ayın son günü nöbet varsa ve ertesi gün mesai günüyse o Nİ bu aydan düşülür
+      const ilkNI = hucre.length && hucre[0].kod==="NI" && !hucre[0].ov && pzSonGunKodu(st.id, y, m)==="N";
+      const nm = m===11 ? 0 : m+1, ny = m===11 ? y+1 : y;
+      const ileriNI = (hucre.length && hucre[hucre.length-1].kod==="N" && isMesaiGunuGeneric(ny, nm, 1)) ? gunMesaiSaati(ny, nm, 1) : 0;
+      r.fmAdj = (ilkNI ? gunler[0].ms : 0) - ileriNI;
+      // dışarıdan nöbete gelen eczacı: nöbet gününün ve ertesi günün normal mesaisi düşülür
+      // (hafta içi 24-8-8 = 8, Cuma 16, Cumartesi 24, Pazar 16); destek: hazırlama saatleri aynen
+      // Aylık çalışma saati: ayın normal mesai saatleri (işe başlama öncesi / ayrılış sonrası günler hariç).
+      // Fazla mesai = toplam çalışma saati (Yİ ve R günleri mesai sayılarak) − aylık çalışma saati.
+      // Dışarıdan gelen eczacı: nöbet günü (mesai günüyse) ve nöbet izni gününün mesaisi düşülür. Destek: hazırlama saatleri.
+      r.aylik = sadeceNobet ? null : mesaiToplam - pSaat;
+      r.izinMesai = izinMesai;
+      r.dusum = st.role==="nobetci" ? niSaat + nMesaiSaat : 0;
+      r.fm = st.role==="nobetci" ? r.toplam - r.dusum + r.fmAdj : (sadeceNobet ? r.toplam : r.toplam - r.aylik + r.fmAdj);
+      // saat dilimleri: nöbet 08:00'de başlar. 20:00-08:00 dilimi (12 saat) tamamen fazla mesaidir; 08:00-20:00
+      // diliminden o günün normal mesaisi düşülür. Ertesi günün nöbet izni (Nİ) ayara göre bir dilimden düşülür,
+      // yetmezse kalanı diğerinden. Nöbet dışı tüm farklar (hazırlama, özel saat, eksik gün...) 08:00-20:00'e yazılır.
+      { const L = pzSaat("N"), gecePay = Math.min(12, L), gunduzOnce = ayar('niDusum')!==2; let gece = 0;
+        hucre.forEach((c,i)=>{
+          if (c.kod!=="N") return;
+          let gd = Math.max(0, L - gecePay - gunler[i].ms), gc = gecePay;
+          const D = (i+1 < hucre.length) ? (hucre[i+1].kod==="NI" ? gunler[i+1].ms : 0) : ileriNI;
+          if (gunduzOnce){ gd -= D; if (gd < 0){ gc += gd; gd = 0; } } else { gc -= D; if (gc < 0){ gd += gc; gc = 0; } }
+          gece += Math.max(0, gc);
+        });
+        if (r.fm <= 0){ r.fmGece = 0; r.fmGunduz = r.fm; }
+        else { r.fmGece = Math.min(gece, r.fm); r.fmGunduz = r.fm - r.fmGece; }
+      }
+      return r;
+    });
+    return {y, m, gunler, satirlar, mesaiGun, mesaiS, arifeVar, mesaiToplam, ay: AYLAR[m]+" "+y};
+  }
+
   // ---- taşıma katmanı ----
   // eski ensureScheduleDraft'ın karşılığı: ayın kayıtlı taslağı varsa (elle kilitlenmiş günler) o, yoksa boş günler
   function taslakGunler(y, m){
@@ -1667,7 +1785,7 @@ function veriyiHazirla(veri, y, m){
   return {
     staff: Array.isArray(v.staff) ? v.staff : [],
     prefs: nesne(v.prefs), manualTatil: nesne(v.manualTatil), arife: nesne(v.arife),
-    settings: nesne(v.settings), schedules: nesne(v.schedules), puantaj: nesne(v.puantaj),
+    settings: nesne(v.settings), schedules: nesne(v.schedules), puantaj: nesne(v.puantaj), acil: nesne(v.acil),
     year: y, month: m,
   };
 }
@@ -1702,6 +1820,16 @@ export function gunuDenetle(veri, sch, gun, nobetciler, hazirlama){
     return gunKontrol(s2, s2.days[gun-1], nobetciler, hazirlama, {fm: true});
   } finally { state = null; }
 }
+
+/**
+ * Ayın puantaj cetveli: kişi başı gün gün kod (M, N, H, NI, YI, R, DI, B, P) ve saat, toplamlar, fazla mesai
+ * ve 08:00-20:00 / 20:00-08:00 dilimleri. Çizelge + puantajdaki elle değişiklikler (veri.puantaj) birlikte okunur.
+ */
+export function puantajHesapla(veri, yil, ay){
+  state = veriyiHazirla(veri, yil, ay);
+  try { return puantajGrid(yil, ay); } finally { state = null; }
+}
+export const PUANTAJ_KODLARI = PZ_KODLAR;
 
 export function uyariSiniflandir(metin){ return uyariSinif(metin); }
 export { AGIRLIK, FM_MAX_FARK, AYAR_VARSAYILAN };

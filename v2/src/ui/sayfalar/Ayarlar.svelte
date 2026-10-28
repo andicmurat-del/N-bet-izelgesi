@@ -61,6 +61,16 @@
   </section>
 
   <section class="kart bolum">
+    <h2>Puantaj</h2>
+    <fieldset class="alan">
+      <legend>Nöbet ertesi izin (Nİ) fazla mesainin hangi diliminden düşülsün</legend>
+      <label class="secim"><input type="radio" name="nidusum" value={1} bind:group={depo.veri.settings.niDusum} />08:00-20:00 diliminden (önerilen)</label>
+      <label class="secim"><input type="radio" name="nidusum" value={2} bind:group={depo.veri.settings.niDusum} />20:00-08:00 diliminden</label>
+      <small>Yalnız puantajdaki gündüz/gece fazla mesai ayrımını etkiler; toplam fazla mesai değişmez.</small>
+    </fieldset>
+  </section>
+
+  <section class="kart bolum">
     <h2>Yedek</h2>
     <p class="aciklama">Veriler yalnız bu tarayıcıda durur. Tarayıcı verisi silinirse kaybolur; düzenli yedek alın. Yedek dosyasıyla başka bir bilgisayara da taşıyabilirsiniz.</p>
     <div class="dugmeler">

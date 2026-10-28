@@ -4,7 +4,7 @@
   import { GUN_KISA, gunMetni, gunSayisi, haftaGunu, haftaSonuMu, isoTarih } from "../../veri/tarih";
   import AySecici from "../ortak/AySecici.svelte";
 
-  let { git }: { git: (ad: "cizelge" | "izinler" | "kisiler" | "ayarlar") => void } = $props();
+  let { git }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void } = $props();
 
   type Mod = "kisi" | "tatil";
   let mod = $state<Mod>("kisi");

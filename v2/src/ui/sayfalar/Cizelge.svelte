@@ -12,7 +12,7 @@
   import KisiOzeti from "../cizelge/KisiOzeti.svelte";
   import GunPenceresi from "../cizelge/GunPenceresi.svelte";
 
-  let { git }: { git: (ad: "cizelge" | "izinler" | "kisiler" | "ayarlar") => void } = $props();
+  let { git }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void } = $props();
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
   const kisiler = $derived(aydaCalisanlar(depo.yil, depo.ay));
