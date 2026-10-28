@@ -2131,11 +2131,12 @@ function gunlukCizelgeVar(y, m){ const sc = state.schedules[y+"-"+m]; return !!(
   }
 
   function rngOf(seed){ let t = (seed>>>0) || 1; return ()=>{ t = (t*1664525 + 1013904223)>>>0; return t/4294967296; }; }
-  const W = {S:120, L:220, Y:60, D:6000, R:45, G:100000, Z:400, M:400, MU:30};
+  const W = {S:120, L:220, Y:60, D:6000, R:45, G:100000, Z:400, M:400};
+  // dağıtım kuralı değişince artırılır: bugün ve sonraki günler bir kez yeniden dağıtılır, geçmiş günler değişmez
+  const DAGITIM_SURUMU = "2";
   // zor servis: zorluk puanı ZOR_ESIK ve üstü (10 üzerinden). Her gün kişi başı zor servis sayısı en fazla 1 farklı
   // olur (kesin); ay içinde kişi başı zor servis sayısı eşitlenir.
   const ZOR_ESIK = 7;
-  const YAKIN_GUN = 7;
   const zorMu = s => (s && s.z >= ZOR_ESIK) ? 1 : 0;
   // people: [{id}], svcs: servisler, n: çok günlük gün sayısı, cum: önceki günlerden birikim.
   // Amaç: günlük kurallar (kişi başı servis ve YB sayısı en fazla 1 fark, grup kuralı) kesin;
@@ -2285,7 +2286,7 @@ function gunlukCizelgeVar(y, m){ const sc = state.schedules[y+"-"+m]; return !!(
     const svcs = SERVICES.filter(s=>s.on);
     // denge ay içinde kurulur: her ay sıfırdan başlar, önceki ayların dağıtımı bu ayı etkilemez
     // (eski uygulama aynı yılın önceki aylarını da birikime katıyordu)
-    const cum = {}; let degisti = false, ilkDegisen = null;
+    const cum = {}; let degisti = false;
     teknikerSatirlari(G).forEach(r=>{ R.ad[r.s.id] = r.s.name; });
     for (let d=1; d<=dim; d++){
       if (isTatilGunu(y, m, d)){ if (R.gun[d]){ delete R.gun[d]; degisti = true; } continue; }
@@ -2294,7 +2295,7 @@ function gunlukCizelgeVar(y, m){ const sc = state.schedules[y+"-"+m]; return !!(
       const ata = R.ata[d] || {}, sabit = {};
       Object.keys(ata).forEach(sn=>{ const ix = aktif.indexOf(ata[sn]); if (ix>=0 && svcs.some(s=>s.name===sn)) sabit[sn] = ix; });
       const ataImza = Object.keys(sabit).map(sn=>[svKod(sn), sn]).sort((a,b)=> a[0]<b[0] ? -1 : a[0]>b[0] ? 1 : 0).map(([kd, sn])=>kd+"="+aktif[sabit[sn]]).join(";");
-      const ik = aktif.join(",")+"/"+n, imza = ik+"/"+cfg+"/"+sk+"/"+kisaImza(ataImza)+"/0";   // son alan eskiden önceki ayların imzasıydı; ilk ayın kaydı ("0") geçerli kalır
+      const ik = aktif.join(",")+"/"+n, imza = ik+"/"+cfg+"/"+sk+"/"+kisaImza(ataImza)+"/"+DAGITIM_SURUMU;
       const eski = R.gun[d], gecmis = gunNo(y,m,d) < bugun, zorla = (opts.from && d >= opts.from && !(opts.gecmisKoru && gecmis)) || opts.zorlaGun===d;
       // elle değiştirilen gün: kayıt olduğu gibi kalır, imzası güncellenir
       if (eski && opts.imzaTazele===d){ eski.i = imza; delete eski.bayat; birikimEkle(cum, eski); continue; }
@@ -2304,12 +2305,11 @@ function gunlukCizelgeVar(y, m){ const sc = state.schedules[y+"-"+m]; return !!(
         birikimEkle(cum, eski); continue;
       }
       if (!aktif.length || !svcs.length){ if (eski){ delete R.gun[d]; degisti = true; } continue; }
-      // "Yeniden karıştır" (sk değişti) o günü baştan dağıtır; diğer yeniden hesaplamalarda önceki liste korunmaya çalışılır
-      // değişikliği izleyen YAKIN_GUN gün (yakında yazdırılan / bilinen listeler) sıkı korunur; daha sonraki günler
-      // tekrar dengesini toparlamak için daha serbesttir
+      // "Yeniden karıştır" (sk değişti) o günü baştan dağıtır. Diğer yeniden hesaplamalarda bugünün listesi (yazdırılmış
+      // olabilir) korunmaya çalışılır; sonraki günler eşitlik için serbestçe yeniden dağıtılır (eski liste korunursa
+      // izin/rapor girdikçe günlük yük ve servis tekrarı dengesi bozuluyordu)
       const onceki = eski && (eski.sk||0)===sk ? eski.a : null;
-      if (ilkDegisen===null) ilkDegisen = d;
-      const mW = ilkDegisen!==null && d - ilkDegisen >= YAKIN_GUN ? W.MU : W.M;
+      const mW = gunNo(y,m,d) === bugun ? W.M : 0;
       const res = gunDagit(aktif.map(id=>({id})), svcs, n, cum, gunNo(y,m,d)*31 + sk*977, sabit, onceki, mW);
       const rec = {k:aktif, n, i:imza, a:{}, w:{}, l:{}, yb:{}, t:{w:res.totW, l:res.totL, y:res.totY}, z:Date.now()};
       if (sk) rec.sk = sk;

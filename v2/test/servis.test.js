@@ -64,4 +64,22 @@ describe("servis hazırlama kuralları", () => {
     expect(v.servisKayit["2026-9"].gun[d].a[sn]).toBe(hedef);
     expect(v.servisKayit["2026-9"].ata[d][sn]).toBe(hedef);
   });
+  test("ay boyunca izin girdikçe yeniden dağıtılsa da günlük yük ve aylık servis tekrarı dengeli kalır", () => {
+    // gerçek kullanım: her gün açılır, araya izinler girer, geçmiş günler donar. Eskiden yeniden hesapta önceki liste
+    // korunduğu için günlük yük farkı ortalama %13'e, aynı servisin kişiler arası farkı 3'e çıkıyordu.
+    const v = kopya(girdi); v.servisKayit = {};
+    const olay = { 3: [10, [5, 6, 7]], 9: [12, [12, 13, 14, 15, 16]], 15: [8, [19, 20]], 22: [11, [23, 26, 27]], 26: [7, [28, 30]] };
+    for (let d = 1; d <= 31; d++) {
+      if (olay[d]) { const [id, gunler] = olay[d], P = (v.puantaj["2026-9"] ??= {}); P[id] = { ...(P[id] || {}) }; gunler.forEach(g => { P[id][g] = "YI"; }); }
+      v.servisKayit["2026-9"] = servisAyHesapla(v, 2026, 9, {}, 20261000 + d).kayit;
+    }
+    const gunler = Object.values(v.servisKayit["2026-9"].gun), fark = [], say = {};
+    for (const g of gunler) {
+      const l = g.k.map(id => g.l[id]), ort = l.reduce((a, b) => a + b, 0) / l.length;
+      fark.push((Math.max(...l) - Math.min(...l)) / ort);
+      for (const [sn, id] of Object.entries(g.a)) { say[sn] ??= {}; g.k.forEach(k => { say[sn][k] ??= 0; }); say[sn][id]++; }
+    }
+    expect(fark.reduce((a, b) => a + b, 0) / fark.length).toBeLessThan(0.05);
+    for (const sn in say) { const n = Object.values(say[sn]); expect(Math.max(...n) - Math.min(...n)).toBeLessThanOrEqual(2); }
+  });
 });
