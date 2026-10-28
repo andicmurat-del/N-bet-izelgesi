@@ -151,6 +151,7 @@ let kayitZamanlayici: ReturnType<typeof setTimeout> | undefined;
 function kaydet() {
   clearTimeout(kayitZamanlayici);
   kayitZamanlayici = setTimeout(() => {
+    gecmiseIsle();
     try {
       localStorage.setItem(ANAHTAR, JSON.stringify($state.snapshot(depo.veri)));
       if (depo.kayitSorunu !== acilisSorunu) depo.kayitSorunu = "";
@@ -165,6 +166,64 @@ $effect.root(() => {
     kaydet();
   });
 });
+
+// ---------- geri al / yinele (eski uygulamadaki gibi) ----------
+// Her kayıtta verinin görüntüsü alınır. Servis dağıtım kaydı görüntüye girmez: puantaja göre kendiliğinden
+// yeniden hesaplanır. Art arda çok hızlı değişiklikler (sürükleyerek işaretleme, yazı yazma) tek adım sayılır.
+// Onay bir geri alma noktasıdır: onaydan önceki adımlara dönülmez, geri alma onayı kaldırmaz.
+// Geçmiş yalnız bu oturumda tutulur (sayfa yenilenince sıfırlanır).
+const GECMIS_SINIR = 30, GRUPLAMA_MS = 350;
+export const gecmis = $state({ geri: [] as string[], ileri: [] as string[] });
+let sonGoruntu: string | null = null, sonEkleme = 0;
+const goruntu = () => JSON.stringify({ ...$state.snapshot(depo.veri), servisKayit: undefined });
+
+/** Son kayıttan bu yana değişiklik varsa önceki görüntü geri alma yığınına girer (kayıt sırasında çağrılır) */
+export function gecmiseIsle() {
+  const t = goruntu();
+  if (sonGoruntu === null) { sonGoruntu = t; return; }
+  if (t === sonGoruntu) return;
+  const su = Date.now();
+  if (su - sonEkleme > GRUPLAMA_MS || !gecmis.geri.length) {
+    gecmis.geri.push(sonGoruntu);
+    if (gecmis.geri.length > GECMIS_SINIR) gecmis.geri.shift();
+  }
+  sonEkleme = su;
+  gecmis.ileri = [];
+  sonGoruntu = t;
+}
+/** Geri alma noktası: önceki adımlar unutulur */
+export function gecmisiSifirla() {
+  gecmis.geri = []; gecmis.ileri = [];
+  sonGoruntu = goruntu();
+}
+function goruntuyuUygula(t: string) {
+  const simdi = $state.snapshot(depo.veri);
+  const v = veriyiDogrula(JSON.parse(t));
+  v.servisKayit = simdi.servisKayit;
+  // onay geri alma ile değişmez: onaylı çizelge olduğu gibi kalır, onaysız ayın onayı geri gelmez
+  for (const [k, c] of Object.entries(simdi.schedules)) if (c.onay) v.schedules[k] = c;
+  for (const [k, c] of Object.entries(v.schedules)) if (c.onay && !simdi.schedules[k]?.onay) delete c.onay;
+  depo.veri = v;
+  sonGoruntu = goruntu();
+}
+/** Son değişikliği geri alır; geri alınacak bir şey yoksa false */
+export function geriAl(): boolean {
+  gecmiseIsle();   // henüz kayda girmemiş son değişiklik de bir adım sayılır
+  const t = gecmis.geri.pop();
+  if (t === undefined) return false;
+  gecmis.ileri.push(sonGoruntu!);
+  goruntuyuUygula(t);
+  return true;
+}
+/** Geri alınanı yineler; yinelenecek bir şey yoksa false */
+export function yinele(): boolean {
+  gecmiseIsle();
+  const t = gecmis.ileri.pop();
+  if (t === undefined) return false;
+  gecmis.geri.push(sonGoruntu!);
+  goruntuyuUygula(t);
+  return true;
+}
 
 // ---------- kişiler ----------
 /** Verinin herhangi bir yerinde geçen en büyük kişi numarası (silinen kişiler onaylı aylarda, değişim ve servis kayıtlarında kalır) */
@@ -293,6 +352,7 @@ export function cizelgeSil(y: number, m: number) {
 export function onayla(y: number, m: number) {
   const c = ayCizelgesi(y, m);
   if (c) c.onay = { zaman: Date.now(), kim: depo.veri.kurum.onaylayan };
+  gecmisiSifirla();   // onay bir geri alma noktasıdır
 }
 export function onayiKaldir(y: number, m: number) {
   const c = ayCizelgesi(y, m);
@@ -357,6 +417,7 @@ export function yedektenYukle(metin: string): { tamam: true; atlanan: number } |
   // yüklemeden önceki veri bir kez saklanır: yanlış dosya seçilirse geri alınabilir
   try { localStorage.setItem(ANAHTAR + "-yukleme-oncesi", JSON.stringify($state.snapshot(depo.veri))); } catch { /* yer yoksa geçilir */ }
   depo.veri = v;
+  gecmisiSifirla();   // yüklemenin kendi geri dönüşü var (yuklemeOncesineDon)
   return { tamam: true, atlanan };
 }
 /** Yedekten yüklemeden önceki veriye döner (yanlış dosya seçildiyse) */
@@ -365,6 +426,7 @@ export function yuklemeOncesineDon(): boolean {
     const s = localStorage.getItem(ANAHTAR + "-yukleme-oncesi");
     if (!s) return false;
     depo.veri = veriyiDogrula(JSON.parse(s));
+    gecmisiSifirla();
     localStorage.removeItem(ANAHTAR + "-yukleme-oncesi");
     return true;
   } catch { return false; }

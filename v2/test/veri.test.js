@@ -1,7 +1,7 @@
 // Veri katmanı: yedek doğrulama, kişi numarası, silme koruması, izin/rapor ve nöbet değişimi (geri alma dahil).
 // .svelte.ts dosyaları vitest'te sunucu kipinde derlenir: $state düz nesnedir, $effect çalışmaz (kayıt yapılmaz).
-import { describe, test, expect, beforeEach } from "vitest";
-import { depo, bosVeri, veriyiDogrula, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar } from "../src/veri/depo.svelte.ts";
+import { describe, test, expect, beforeEach, vi } from "vitest";
+import { depo, bosVeri, veriyiDogrula, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla } from "../src/veri/depo.svelte.ts";
 import { degisimUygula, degisimGeriAl, izinUygula, puantajIzgarasi } from "../src/veri/degisim.svelte.ts";
 
 const Y = 2026, M = 9, AY = `${Y}-${M}`;
@@ -108,5 +108,53 @@ describe("nöbet değişimi ve izin", () => {
     expect(degisimGeriAl(depo.veri.degisimler.at(-1).id).tamam).toBe(true);
     expect(depo.veri.schedules[AY].days[1].assigned.map(p => p.id)).toEqual([2, 6]);
     expect([kod(1, 2), kod(4, 2)]).toEqual(["N", "M"]);
+  });
+});
+
+describe("geri al / yinele", () => {
+  // kayıt zamanlayıcısı testte çalışmaz: her değişiklikten sonra gecmiseIsle elle çağrılır, saat elle ilerletilir
+  let saat = 1_000_000;
+  const adim = (fn) => { fn(); saat += 1000; vi.setSystemTime(saat); gecmiseIsle(); };
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(saat); gecmisiSifirla(); });
+
+  test("değişiklikler sırayla geri alınır ve yinelenir", () => {
+    const bas = kopya(depo.veri);
+    adim(() => { depo.veri.kurum.ad = "A"; });
+    adim(() => { kisiEkle("Yeni", "eczaci"); });
+    const son = kopya(depo.veri);
+    expect(geriAl()).toBe(true);
+    expect(depo.veri.staff.length).toBe(8);
+    expect(depo.veri.kurum.ad).toBe("A");
+    expect(geriAl()).toBe(true);
+    expect(kopya(depo.veri)).toEqual(bas);
+    expect(geriAl()).toBe(false);
+    expect(yinele()).toBe(true);
+    expect(yinele()).toBe(true);
+    expect(kopya(depo.veri)).toEqual(son);
+    expect(yinele()).toBe(false);
+  });
+  test("çok hızlı art arda değişiklikler tek adım sayılır; yeni değişiklik yinelemeyi siler", () => {
+    for (let d = 1; d <= 5; d++) { tercihAyarla(1, 2026, 9, d, "izinli"); saat += 50; vi.setSystemTime(saat); gecmiseIsle(); }
+    expect(gecmis.geri.length).toBe(1);
+    geriAl();
+    expect(Object.keys(depo.veri.prefs)).toEqual([]);
+    adim(() => { depo.veri.kurum.ad = "B"; });
+    expect(gecmis.ileri.length).toBe(0);
+  });
+  test("onay bir geri alma noktasıdır; geri alma onayı kaldırmaz", () => {
+    adim(() => { depo.veri.kurum.ad = "C"; });
+    onayla(2026, 9);
+    expect(gecmis.geri.length).toBe(0);
+    adim(() => { depo.veri.kurum.ad = "D"; });
+    geriAl();
+    expect(depo.veri.kurum.ad).toBe("C");
+    expect(depo.veri.schedules[AY].onay).toBeTruthy();
+  });
+  test("servis dağıtım kaydı geri alınmaz", () => {
+    adim(() => { depo.veri.kurum.ad = "E"; });
+    depo.veri.servisKayit[AY] = { gun: {}, elle: {}, gunElle: {}, sk: {}, ad: {}, ata: {} };
+    geriAl();
+    expect(depo.veri.kurum.ad).toBe("");
+    expect(depo.veri.servisKayit[AY]).toBeTruthy();
   });
 });
