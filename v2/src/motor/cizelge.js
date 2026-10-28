@@ -3,8 +3,9 @@
 // test/motor.test.js aynı girdiyle eski uygulamanın kayıtlı çizelgelerini (tests/beklenen.json) birebir
 // üretmesini denetler. Kuralı değiştirmek gerekirse önce testi, sonra burayı değiştirin.
 //
-// Dışarıya açılan tek giriş cizelgeOlustur(veri, yil, ay, secenek): veri içindeki hiçbir şeyi değiştirmez,
-// {days, warnings, history} döndürür.
+// Ana giriş cizelgeOlustur(veri, yil, ay, secenek): veri içindeki hiçbir şeyi değiştirmez,
+// {days, warnings, history} döndürür. Diğer dışa açık işlevler (puantaj, raporlar, değişim, acil servis,
+// servis hazırlama) dosyanın sonunda, açıklamalarıyla; hepsi verinin kopyasıyla çalışır.
 
 let state = null;
 let simdi = Date.now;
@@ -12,8 +13,8 @@ const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağus
 
   // ---- ayarlar (index.html 2259–2266) ----
   const AYAR_VARSAYILAN = {nobetSuresi:24, mesai:8, arifeSaat:3, hazSaat:8, fmHedef:8, minAra:3, maxThu:1, hsTercih:1, hsUst:2, cumaEsles:true, thuHaftaSonu:true, destekAylik:2, cakismaOncelik:1, niDusum:1, kurumAdi:"", onaylayan:""};
-  // Panelde yalnızca "nöbetler arası en az gün farkı" ve "destek personeli aylık görev" gösterilir;
-  // diğer kurallar her zaman varsayılan değerinde çalışır
+  // Ayarlar ekranında nöbetler arası en az gün, destek personeli aylık hazırlama, arife saati ve çakışma önceliği
+  // değiştirilebilir; diğer kurallar (Nİ'nin düşüldüğü dilim dahil) her zaman varsayılan değerinde çalışır
   const AYAR_GIZLI = new Set(["niDusum","nobetSuresi","mesai","hazSaat","fmHedef","maxThu","thuHaftaSonu","hsTercih","hsUst","cumaEsles"]);
   function ayar(k){
     if (AYAR_GIZLI.has(k)) return AYAR_VARSAYILAN[k];
@@ -1749,8 +1750,8 @@ const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağus
       r.dusum = st.role==="nobetci" ? niSaat + nMesaiSaat : 0;
       r.fm = st.role==="nobetci" ? r.toplam - r.dusum + r.fmAdj : (sadeceNobet ? r.toplam : r.toplam - r.aylik + r.fmAdj);
       // saat dilimleri: nöbet 08:00'de başlar. 20:00-08:00 dilimi (12 saat) tamamen fazla mesaidir; 08:00-20:00
-      // diliminden o günün normal mesaisi düşülür. Ertesi günün nöbet izni (Nİ) ayara göre bir dilimden düşülür,
-      // yetmezse kalanı diğerinden. Nöbet dışı tüm farklar (hazırlama, özel saat, eksik gün...) 08:00-20:00'e yazılır.
+      // diliminden o günün normal mesaisi düşülür. Ertesi günün nöbet izni (Nİ) önce 08:00-20:00 diliminden düşülür
+      // (niDusum gizli ayar, hep 1), yetmezse kalanı 20:00-08:00 diliminden. Nöbet dışı tüm farklar (hazırlama, özel saat, eksik gün...) 08:00-20:00'e yazılır.
       { const L = pzSaat("N"), gecePay = Math.min(12, L), gunduzOnce = ayar('niDusum')!==2; let gece = 0;
         hucre.forEach((c,i)=>{
           if (c.kod!=="N") return;
@@ -2514,7 +2515,7 @@ function servisBaglam(veri, y, m, bugun){
 function bugunSayisi(){ const n = new Date(); return gunNo(n.getFullYear(), n.getMonth(), n.getDate()); }
 const kayitKopyasi = (y, m) => { const R = state.servisKayit[y+"-"+m]; return R ? JSON.parse(JSON.stringify(R)) : null; };
 
-/** Ayarlar ekranı için servis listesi (varsayılan değerleriyle) */
+/** Servisler ekranı için servis listesi: kayıtlı ayarlar uygulanmış (z, h, multi, on); varsayılanlar z0, h0, multi0 alanlarında */
 export function servisListesi(veri){
   servisleriKur((veri || {}).servisAyar);
   return SERVICES.map(s=>({id:s.id, name:s.name, z:s.z, h:s.h, multi:s.multi, on:s.on, z0:s.z0, h0:s.h0, multi0:s.multi0, ekstra:!!s.ekstra, yb:isYB(s), zor:!!zorMu(s), grup:s.grps.length>0}));

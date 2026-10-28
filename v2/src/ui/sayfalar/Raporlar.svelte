@@ -4,7 +4,7 @@
   import { depo } from "../../veri/depo.svelte";
   import { ROL_AD, type Rol } from "../../veri/tipler";
   import { AYLAR } from "../../veri/tarih";
-  import { dosyaKaydet } from "../../disa/indir";
+  import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Ikon from "../ortak/Ikon.svelte";
   import ServisRaporu from "../hazirlama/ServisRaporu.svelte";
   import type { Rapor } from "../../disa/raporCikti";
@@ -31,9 +31,11 @@
 
   let durum = $state("");
   async function excel() {
-    const { yillikKitap } = await import("../../disa/raporCikti");
-    const blob = yillikKitap(R, depo.veri.kurum.ad);
-    durum = (await dosyaKaydet(`yillik-rapor-${yil}.xlsx`, blob, blob.type)) ? "Excel dosyası kaydedildi." : "";
+    try {
+      const { yillikKitap } = await import("../../disa/raporCikti");
+      const blob = yillikKitap(R, depo.veri.kurum.ad);
+      durum = (await dosyaKaydet(`yillik-rapor-${yil}.xlsx`, blob, blob.type)) ? "Excel dosyası kaydedildi." : "";
+    } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }
   }
 </script>
 

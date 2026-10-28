@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { depo, tumVeriyiSil, yedekVerisi, yedektenYukle, AYAR_VARSAYILAN } from "../../veri/depo.svelte";
-  import { dosyaKaydet } from "../../disa/indir";
+  import { depo, tumVeriyiSil, yedekVerisi, yedektenYukle, yuklemeOncesineDon, AYAR_VARSAYILAN } from "../../veri/depo.svelte";
+  import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Ikon from "../ortak/Ikon.svelte";
 
   let durum = $state<{ tur: "tamam" | "hata"; metin: string } | null>(null);
@@ -13,17 +13,31 @@
     try {
       const ok = await dosyaKaydet(ad, yedekVerisi(), "application/json");
       durum = ok ? { tur: "tamam", metin: `Yedek kaydedildi: ${ad}` } : null;
-    } catch {
-      durum = { tur: "hata", metin: "Yedek kaydedilemedi. Tarayıcı dosya kaydetmeye izin vermedi." };
+    } catch (e) {
+      durum = { tur: "hata", metin: hataMetni(e, "Yedek kaydedilemedi.") };
     }
   }
+  let geriAlinabilir = $state(false);
   async function dosyaSecildi(e: Event) {
     const f = (e.target as HTMLInputElement).files?.[0];
     if (!f) return;
-    const r = yedektenYukle(await f.text());
-    durum = r.tamam ? { tur: "tamam", metin: `Yedek yüklendi: ${depo.veri.staff.length} kişi, ${Object.keys(depo.veri.schedules).length} ay çizelgesi.` } : { tur: "hata", metin: r.hata };
-    dosyaGirdi.value = "";
+    try {
+      const r = yedektenYukle(await f.text());
+      if (r.tamam) {
+        geriAlinabilir = true;
+        durum = { tur: r.atlanan ? "hata" : "tamam", metin: `Yedek yüklendi: ${depo.veri.staff.length} kişi, ${Object.keys(depo.veri.schedules).length} ay çizelgesi.${r.atlanan ? ` ${r.atlanan} kayıt okunamadı ve atlandı.` : ""}` };
+      } else durum = { tur: "hata", metin: r.hata };
+    } catch (err) {
+      console.error(err);
+      durum = { tur: "hata", metin: "Dosya okunamadı." };
+    } finally { dosyaGirdi.value = ""; }
   }
+  function geriDon() {
+    durum = yuklemeOncesineDon() ? { tur: "tamam", metin: "Yedek yüklemeden önceki verilere dönüldü." } : { tur: "hata", metin: "Önceki veriler bulunamadı." };
+    geriAlinabilir = false;
+  }
+  // sayı alanları: boş ya da sınır dışı değer kaydedilmez, sınıra çekilir
+  const sinirla = (v: string, a: number, b: number, vars: number) => { const n = Math.round(Number(v)); return v === "" || !Number.isFinite(n) ? vars : Math.max(a, Math.min(b, n)); };
   function sil() {
     if (!silOnayi) { silOnayi = true; return; }
     tumVeriyiSil(); silOnayi = false;
@@ -50,9 +64,9 @@
       <select class="girdi" bind:value={depo.veri.settings.minAra}>{#each [2, 3, 4] as n}<option value={n}>{n} gün{n === AYAR_VARSAYILAN.minAra ? " (önerilen)" : ""}</option>{/each}</select>
       <small>Ardışık günler her zaman yasaktır; bu sınır yalnız tercih edilir.</small></label>
     <label class="alan"><span>Destek personeli aylık hazırlama sayısı</span>
-      <input class="girdi" type="number" min="0" max="8" bind:value={depo.veri.settings.destekAylik} /></label>
+      <input class="girdi" type="number" min="0" max="8" value={depo.veri.settings.destekAylik} onchange={e => { depo.veri.settings.destekAylik = sinirla(e.currentTarget.value, 0, 8, AYAR_VARSAYILAN.destekAylik); e.currentTarget.value = String(depo.veri.settings.destekAylik); }} /></label>
     <label class="alan"><span>Arife günü normal mesai (saat)</span>
-      <input class="girdi" type="number" min="0" max="8" bind:value={depo.veri.settings.arifeSaat} /></label>
+      <input class="girdi" type="number" min="0" max="8" value={depo.veri.settings.arifeSaat} onchange={e => { depo.veri.settings.arifeSaat = sinirla(e.currentTarget.value, 0, 8, AYAR_VARSAYILAN.arifeSaat); e.currentTarget.value = String(depo.veri.settings.arifeSaat); }} /></label>
     <fieldset class="alan">
       <legend>Hazırlama eşitliği ile fazla mesai saati çakışırsa</legend>
       <label class="secim"><input type="radio" name="oncelik" value={1} bind:group={depo.veri.settings.cakismaOncelik} />Hazırlama sayıları eşit kalsın (önerilen)</label>
@@ -68,7 +82,8 @@
       <button class="dugme" onclick={() => dosyaGirdi.click()}><Ikon ad="yukle" />Yedekten yükle</button>
       <input bind:this={dosyaGirdi} type="file" accept=".json,application/json" onchange={dosyaSecildi} hidden />
     </div>
-    <p class="aciklama">Yedekten yükleme, bu tarayıcıdaki verilerin yerine geçer.</p>
+    <p class="aciklama">Yedekten yükleme, bu tarayıcıdaki verilerin yerine geçer. Yanlış dosya seçerseniz hemen ardından önceki verilere dönebilirsiniz.</p>
+    {#if geriAlinabilir}<div><button class="dugme" onclick={geriDon}><Ikon ad="yenile" />Yüklemeden önceki verilere dön</button></div>{/if}
   </section>
 
   <section class="kart bolum tehlikeli">

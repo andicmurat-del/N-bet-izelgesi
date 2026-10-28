@@ -6,7 +6,7 @@
   import { depo, tatilMi } from "../../veri/depo.svelte";
   import { servisGunu, servisAtamaAdaylari } from "../../motor/cizelge.js";
   import { servisAyiniGuncelle, servisIslemYap, type ServisIslemi } from "../../veri/servis.svelte";
-  import { dosyaKaydet } from "../../disa/indir";
+  import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR, GUN_UZUN, gunSayisi, haftaGunu } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
@@ -75,17 +75,18 @@
       const ad = `servis-${pdfTur === "toplu" ? "listesi" : "teknikerler"}-${y}-${String(m + 1).padStart(2, "0")}-${String(secGun).padStart(2, "0")}.pdf`;
       durum = (await dosyaKaydet(ad, blob, "application/pdf")) ? "PDF kaydedildi." : "";
       pdfAcik = false;
-    } catch { durum = "PDF oluşturulamadı."; }
+    } catch (e) { durum = hataMetni(e, "PDF oluşturulamadı."); }
     finally { hazirlaniyor = false; }
   }
   async function kopyala() {
     if (!gun?.sonuc) return;
-    const { servisMetni } = await import("../../disa/servisCikti");
-    const t = servisMetni(ciktiVerisi());
+    let t: string;
+    try { t = (await import("../../disa/servisCikti")).servisMetni(ciktiVerisi()); }
+    catch (e) { durum = hataMetni(e, "Kopyalanamadı."); return; }
     try { await navigator.clipboard.writeText(t); durum = "Kopyalandı."; }
     catch {
       const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select();
-      try { durum = document.execCommand("copy") ? "Kopyalandı." : "Kopyalanamadı."; } catch { durum = "Kopyalanamadı."; }
+      try { durum = document.execCommand("copy") ? "Kopyalandı." : "Kopyalanamadı."; } catch (e) { durum = hataMetni(e, "Kopyalanamadı."); }
       a.remove();
     }
   }

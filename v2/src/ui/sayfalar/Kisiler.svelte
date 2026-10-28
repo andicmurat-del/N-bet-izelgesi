@@ -42,7 +42,7 @@
   function sil() {
     if (!duzenlenen) return;
     if (!silOnayi) { silOnayi = true; return; }
-    kisiSil(duzenlenen.id);
+    if (!kisiSil(duzenlenen.id)) return;   // onaylı aylarda kaydı var: silinmez
     duzenleAcik = false;
   }
   const tarihMetni = (t?: string) => { if (!t) return ""; const [y, m, d] = t.split("-").map(Number); return `${d} ${AYLAR[m - 1]} ${y}`; };
@@ -102,14 +102,14 @@
   {#if silOnayi}
     <div class="sil-uyari" role="alert">
       {#if onayliAylar.length}
-        <b>Bu kişi onaylı aylarda görevli.</b> Onaylı çizelgeler değişmez; kişi yalnız listeden ve onaysız aylardan çıkar. Ayrıldıysa silmek yerine ayrılış tarihi girmeniz önerilir.
+        <b>Bu kişi silinemez:</b> onaylı aylarda kaydı var ({onayliAylar.map(k => { const [y, m] = k.split("-").map(Number); return `${AYLAR[m]} ${y}`; }).join(", ")}). Onaylı kayıtlar korunur. Kişi ayrıldıysa ayrılış tarihini girin; sonraki çizelgelere yazılmaz.
       {:else}
         <b>{duzenlenen?.name} silinsin mi?</b> İzin işaretleri ve onaysız aylardaki görevleri de silinir.
       {/if}
     </div>
   {/if}
   {#snippet altlik()}
-    <button class="dugme tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, sil" : "Sil"}</button>
+    {#if !(silOnayi && onayliAylar.length)}<button class="dugme tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, sil" : "Sil"}</button>{/if}
     <span style="flex:1"></span>
     <button class="dugme" onclick={() => (duzenleAcik = false)}>Vazgeç</button>
     <button class="dugme ana" onclick={kaydet}>Kaydet</button>

@@ -3,7 +3,7 @@
   import { untrack } from "svelte";
   import { depo } from "../../veri/depo.svelte";
   import { servisYilRaporu, type ServisYilRaporu } from "../../veri/servis.svelte";
-  import { dosyaKaydet } from "../../disa/indir";
+  import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
 
@@ -26,7 +26,7 @@
       const { servisYilKitabi } = await import("../../disa/servisCikti");
       const blob = servisYilKitabi(R, yil, depo.veri.kurum.ad);
       durum = (await dosyaKaydet(`servis-raporu-${yil}.xlsx`, blob, blob.type)) ? "Excel dosyası kaydedildi." : "";
-    } catch { durum = "Dosya oluşturulamadı."; }
+    } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }
   }
 </script>
 

@@ -1,6 +1,6 @@
 // Puantajda ay içi değişiklikler (eski uygulamadaki mantık): nöbet değişimi (yerine tutma, karşılıklı takas),
 // izin/rapor kaydı ve izin nedeniyle görevden düşen kişinin yerine geçen. Her değişim geri alınabilsin diye
-// puantajdaki önceki kodlarla birlikte depo.veri.degisimler'e yazılır.
+// puantajdaki önceki kodlarla birlikte depo.veri.degisimler'e yazılır; liste son 300 değişimi tutar, daha eskiler geri alınamaz.
 import { depo, tatilMi, tercihAl } from "./depo.svelte";
 import { puantajHesapla } from "../motor/cizelge.js";
 import { ayAnahtari, gunSayisi, tercihAnahtari } from "./tarih";
@@ -84,20 +84,22 @@ export function degisimGeriAl(id: number, zorla = false): { tamam: true } | { ta
   return { tamam: true };
 }
 
-/** izin/rapor nedeniyle zorunlu değişim: çizelgeye de işlenir (yıllık denge doğru kalsın) */
+/**
+ * izin/rapor nedeniyle zorunlu değişim: puantaja yazılır; kişi o gün çizelgede görevliyse çizelgeye de işlenir
+ * (yıllık denge doğru kalsın). Görev çizelgeden değil bir nöbet değişiminden geldiyse çizelge değişmez.
+ */
 function zorunluDegisim(y: number, m: number, gun: number, cik: number, yer: number, gorev: Gorev, sebep: IzinTuru) {
-  const g = depo.veri.schedules[ayAnahtari(y, m)]?.days[gun - 1];
   const k = depo.veri.staff.find(s => s.id === yer);
-  if (!g || !k) return;
-  const liste = gorev === "H" ? g.prep : g.assigned, i = liste.findIndex(p => p.id === cik);
-  if (i < 0) return;
-  liste[i] = { id: k.id, name: k.name, role: k.role };
-  g.locked = true;
+  if (!k) return;
+  const g = depo.veri.schedules[ayAnahtari(y, m)]?.days[gun - 1];
+  const liste = g ? (gorev === "H" ? g.prep : g.assigned) : [], i = liste.findIndex(p => p.id === cik);
+  const cizelgede = !!g && i >= 0;
+  if (cizelgede) { liste[i] = { id: k.id, name: k.name, role: k.role }; g.locked = true; }
   const a = depo.veri.puantaj[ayAnahtari(y, m)] ?? {};
   const cikOnce = a[cik]?.[gun] ?? null, yerOnce = a[yer]?.[gun] ?? null;
   kodYaz(y, m, yer, gun, gorev);
   // çıkan kişinin günü izinUygula'da izin koduyla yazılır
-  kayitEkle({ y, m, gun, cik, yer, cikAd: kisiAdi(cik), yerAd: k.name, cikOnce, yerOnce, cikYeni: sebep, yerYeni: gorev, gorev, zorunlu: true, sebep });
+  kayitEkle({ y, m, gun, cik, yer, cikAd: kisiAdi(cik), yerAd: k.name, cikOnce, yerOnce, cikYeni: sebep, yerYeni: gorev, gorev, ...(cizelgede ? { zorunlu: true as const } : {}), sebep });
 }
 
 export interface YerineSecim { gun: number; gorev: Gorev; yer: number }

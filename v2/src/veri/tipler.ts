@@ -95,7 +95,7 @@ export interface Degisim {
   gorev: "N" | "H";
   /** karşılıklı takasın iki yarısı aynı grupta */
   grup?: string;
-  /** izin/rapor nedeniyle zorunlu değişim: çizelgeye de işlendi */
+  /** izin/rapor nedeniyle değişim çizelgeye de işlendi (geri alınınca çizelgeden de geri alınır) */
   zorunlu?: true;
   sebep?: PuantajKodu;
   not?: string;

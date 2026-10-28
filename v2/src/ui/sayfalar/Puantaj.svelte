@@ -5,7 +5,7 @@
   import type { PuantajKodu } from "../../veri/tipler";
   import { ROL_AD } from "../../veri/tipler";
   import { GUN_KISA, gunMetni } from "../../veri/tarih";
-  import { dosyaKaydet } from "../../disa/indir";
+  import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { KOD_AD, kodMetni, type Izgara, type PuantajSatiri } from "../../disa/puantajTipleri";
   import AySecici from "../ortak/AySecici.svelte";
   import Ikon from "../ortak/Ikon.svelte";
@@ -54,7 +54,7 @@
       const ad = `puantaj-${depo.yil}-${String(depo.ay + 1).padStart(2, "0")}.${tur}`;
       const blob = tur === "xlsx" ? m.puantajKitabi(G, depo.yil, depo.ay, depo.veri.kurum.ad) : m.puantajPdf(G, depo.yil, depo.ay, depo.veri.kurum.ad, c?.onay ?? null);
       durum = (await dosyaKaydet(ad, blob, blob.type || "application/pdf")) ? (tur === "pdf" ? "PDF" : "Excel dosyası") + " kaydedildi." : "";
-    } catch { durum = "Dosya oluşturulamadı."; }
+    } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }
   }
 </script>
 
@@ -140,7 +140,7 @@
         </tbody>
       </table>
     </div>
-    <p class="dipnot">Fazla mesai = toplam çalışma (yıllık izin ve rapor günleri o günün mesaisi kadar sayılır) − aylık normal mesai. Ayın son günü tutulan nöbetin ertesi gün izni bu aydan düşülür. Nöbet ertesi izin 08:00-20:00 diliminden düşülür. Dışarıdan nöbetçi eczacıda nöbet günü ve ertesi günün mesaisi düşülür; destek personelinde hazırlama saatleri aynen yazılır.</p>
+    <p class="dipnot">Fazla mesai = toplam çalışma (yıllık izin ve rapor günleri o günün mesaisi kadar sayılır) − aylık normal mesai. Ayın son günü tutulan nöbetin ertesi gün izni bu aydan düşülür. Nöbet ertesi izin (Nİ) önce o günün 08:00-20:00 diliminden düşülür; bu dilim yetmezse kalanı 20:00-08:00 diliminden düşülür. Dışarıdan nöbetçi eczacıda nöbet günü ve ertesi günün mesaisi düşülür; destek personelinde hazırlama saatleri aynen yazılır.</p>
   </section>
   {/if}
 {/if}

@@ -76,7 +76,7 @@
         goruldu.add(x.grup);
         const [a, b = a] = L.filter(z => z.grup === x.grup).sort((p, q) => p.gun - q.gun);
         out.push({ id: x.id, metin: `${a.gun}. gün ${a.cikAd} (${gorevAdi(a.yerYeni)}) ↔ ${b.gun}. gün ${b.cikAd} (${gorevAdi(b.yerYeni)})`, tur: "Karşılıklı takas", zaman: x.zaman, not: x.not });
-      } else out.push({ id: x.id, metin: `${x.gun}. gün: ${x.cikAd} yerine ${x.yerAd} (${gorevAdi(x.yerYeni)})`, tur: x.zorunlu ? `${IZIN_AD[x.sebep as IzinTuru]?.replace(/ \(.*\)$/, "") ?? "İzin"} nedeniyle, çizelgeye işlendi` : "Yerine tutma", zaman: x.zaman, not: x.not });
+      } else out.push({ id: x.id, metin: `${x.gun}. gün: ${x.cikAd} yerine ${x.yerAd} (${gorevAdi(x.yerYeni)})`, tur: x.sebep ? `${IZIN_AD[x.sebep as IzinTuru]?.replace(/ \(.*\)$/, "") ?? "İzin"} nedeniyle${x.zorunlu ? ", çizelgeye işlendi" : ""}` : "Yerine tutma", zaman: x.zaman, not: x.not });
     }
     return out;
   });

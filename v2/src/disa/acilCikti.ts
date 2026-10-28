@@ -70,7 +70,7 @@ export function acilPdf(v: AcilVerisi): Blob {
     });
   }
   doc.setFontSize(8); doc.setTextColor(88, 105, 120);
-  doc.text("Gölgeli günler: hafta sonu ve resmi tatil. Acil servis nöbeti puantajda 24 saat sayılır; ertesi gün nöbet izni.", K, 200);
+  doc.text("Gölgeli günler: hafta sonu ve resmi tatil. Acil servis nöbeti puantajda 24 saat sayılır; ertesi gün mesai günüyse nöbet izni.", K, 200);
   doc.setTextColor(19, 33, 44);
   doc.text("Düzenleyen: ________________________          Onaylayan: ________________________", W - K, 205, { align: "right" });
   return doc.output("blob");

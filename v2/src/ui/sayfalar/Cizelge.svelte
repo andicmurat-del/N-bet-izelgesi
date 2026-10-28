@@ -3,7 +3,7 @@
   import { arkaPlandaOlustur } from "../../motor/istemci";
   import { uyariSiniflandir } from "../../motor/cizelge.js";
   import { cizelgeKitabi } from "../../disa/cizelgeXlsx";
-  import { dosyaKaydet } from "../../disa/indir";
+  import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR, ayAdi } from "../../veri/tarih";
   import AySecici from "../ortak/AySecici.svelte";
   import Ikon from "../ortak/Ikon.svelte";
@@ -64,11 +64,11 @@
   async function excel() {
     if (!c) return;
     const y = c.year, m = c.month;
-    const blob = cizelgeKitabi($state.snapshot(c) as any, $state.snapshot(depo.veri.staff) as any, depo.veri.kurum.ad, d => resmiTatilMi(y, m, d));
     try {
+      const blob = cizelgeKitabi($state.snapshot(c) as any, $state.snapshot(depo.veri.staff) as any, depo.veri.kurum.ad, d => resmiTatilMi(y, m, d));
       const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}.xlsx`, blob, blob.type);
       durum = ok ? "Excel dosyası kaydedildi." : "";
-    } catch { durum = "Dosya kaydedilemedi."; }
+    } catch (e) { durum = hataMetni(e, "Dosya kaydedilemedi."); }
   }
   let pdfHazirlaniyor = $state(false);
   async function pdf() {
@@ -80,7 +80,7 @@
       const blob = cizelgePdf($state.snapshot(c) as any, $state.snapshot(depo.veri.staff) as any, { kurum: depo.veri.kurum.ad, resmiTatil: d => resmiTatilMi(y, m, d), arife: d => arifeMi(y, m, d) });
       const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}.pdf`, blob, "application/pdf");
       durum = ok ? "PDF kaydedildi." : "";
-    } catch { durum = "PDF oluşturulamadı."; }
+    } catch (e) { durum = hataMetni(e, "PDF oluşturulamadı."); }
     finally { pdfHazirlaniyor = false; }
   }
   function sil() {
@@ -166,7 +166,7 @@
     </div>
   </div>
 
-  {#if c?.onay}<p class="bant bilgi">Onaylandı: {onayMetni}. Onaylı çizelge ve o ayın izin işaretleri değiştirilemez.</p>{/if}
+  {#if c?.onay}<p class="bant bilgi">Onaylandı: {onayMetni}. Onaylı çizelgenin günleri ve o ayın izin işaretleri kilitlidir; ay içinde gelişen izin, rapor ve nöbet değişimleri Puantaj bölümünden girilir.</p>{/if}
   {#if eskime.length}<p class="bant dikkat"><Ikon ad="uyari" boyut={16} />{eskime.join(" ")} Çizelgeyi yeniden oluşturmanız önerilir.</p>{/if}
   {#if nobetci.length < 2}<p class="bant dikkat">Çizelge için {AYLAR[depo.ay]} ayında en az 2 nöbetçi (eczacı ya da tekniker) gerekir. <button class="baglanti" onclick={() => git("kisiler")}>Personel ekleyin</button>.</p>
   {:else if !eczaci.length}<p class="bant dikkat">Her gün en az bir eczacı nöbetçi olmalı; personel listesinde eczacı yok.</p>{/if}

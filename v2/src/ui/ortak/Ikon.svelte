@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Tek çizgi kalınlığında, 24'lük ızgarada simgeler (yanında yazı olduğunda ekran okuyucudan gizlenir)
+  // Tek çizgi kalınlığında, 24'lük ızgarada simgeler. Her zaman ekran okuyucudan gizlidir; anlamı düğme metni ya da aria-label taşır.
   type Ad = "takvim" | "kisiler" | "izin" | "ayarlar" | "sol" | "sag" | "indir" | "kilit" | "uyari" | "tamam" | "yenile" | "kapat" | "arti" | "sil" | "duzenle" | "yukle" | "karisik" | "tablo" | "grafik" | "acil" | "liste" | "katman" | "diger";
   let { ad, boyut = 18 }: { ad: Ad; boyut?: number } = $props();
 </script>

@@ -49,7 +49,7 @@ export function veriyiDogrula(ham: unknown): Veri {
   for (const k of Object.keys(nesne(o.manualTatil))) v.manualTatil[k] = true;
   for (const k of Object.keys(nesne(o.arife))) v.arife[k] = true;
   const s = nesne(o.settings);
-  const sayi = (x: unknown, a: number, b: number, vars: number) => (Number.isFinite(Number(x)) && Number(x) >= a && Number(x) <= b ? Number(x) : vars);
+  const sayi = (x: unknown, a: number, b: number, vars: number) => (x !== null && x !== "" && Number.isFinite(Number(x)) && Number(x) >= a && Number(x) <= b ? Number(x) : vars);
   v.settings = {
     minAra: sayi(s.minAra, 2, 6, AYAR_VARSAYILAN.minAra),
     destekAylik: sayi(s.destekAylik, 0, 8, AYAR_VARSAYILAN.destekAylik),
@@ -74,9 +74,18 @@ export function veriyiDogrula(ham: unknown): Veri {
   }
   for (const [k, c] of Object.entries(nesne(o.schedules))) {
     if (!c || !Array.isArray(c.days) || !Number.isInteger(c.year) || !Number.isInteger(c.month)) continue;
+    // anahtar, ay ve gün sayısı tutmalı; günler alan alan kurulur (bozuk bir gün sayfayı her açılışta çökertmesin)
+    if (c.month < 0 || c.month > 11 || k !== ayAnahtari(c.year, c.month) || c.days.length !== gunSayisi(c.year, c.month)) continue;
+    const gorevli = (l: unknown): Gorevli[] => (Array.isArray(l) ? l : [])
+      .filter((p: any) => p && Number.isInteger(p.id))
+      .map((p: any) => ({ id: p.id, name: String(p.name ?? ""), role: roller.includes(p.role) ? p.role : "eczaci" }));
     v.schedules[k] = {
       year: c.year, month: c.month,
-      days: c.days,
+      days: c.days.map((g: unknown, i: number) => {
+        const x = nesne(g);
+        return { day: i + 1, tatil: x.tatil === true, conflict: x.conflict === true, fazlaMesai: Number.isFinite(Number(x.fazlaMesai)) ? Number(x.fazlaMesai) : 0,
+          assigned: gorevli(x.assigned), prep: gorevli(x.prep), locked: x.locked === true };
+      }),
       uyarilar: Array.isArray(c.uyarilar) ? c.uyarilar.map(String) : [],
       olusturma: Number(c.olusturma) || 0,
       ...(c.onay && typeof c.onay === "object" ? { onay: { zaman: Number(c.onay.zaman) || 0, kim: String(c.onay.kim ?? "") } } : {}),
@@ -115,11 +124,16 @@ export function veriyiDogrula(ham: unknown): Veri {
   return v;
 }
 
+let acilisSorunu = "";
 function yukle(): Veri {
-  try {
-    const s = localStorage.getItem(ANAHTAR);
-    return s ? veriyiDogrula(JSON.parse(s)) : bosVeri();
-  } catch {
+  let s: string | null = null;
+  try { s = localStorage.getItem(ANAHTAR); } catch { return bosVeri(); }
+  if (!s) return bosVeri();
+  try { return veriyiDogrula(JSON.parse(s)); }
+  catch {
+    // kayıt okunamadı: boş veri kaydedilmeden önce ham hali ayrı anahtara alınır, kullanıcıya söylenir
+    try { localStorage.setItem(ANAHTAR + "-okunamayan", s); } catch { /* yer yoksa yapılacak bir şey yok */ }
+    acilisSorunu = "Bu tarayıcıdaki kayıtlı veriler okunamadı; uygulama boş açıldı. Okunamayan kayıt ayrıca saklandı. Yedeğiniz varsa Ayarlar > Yedekten yükle ile geri alın.";
     return bosVeri();
   }
 }
@@ -130,7 +144,7 @@ export const depo = $state({
   yil: bugun.getFullYear(),
   ay: bugun.getMonth(),
   /** tarayıcı kaydı yazamazsa gösterilecek uyarı */
-  kayitSorunu: "" as string,
+  kayitSorunu: acilisSorunu,
 });
 
 let kayitZamanlayici: ReturnType<typeof setTimeout> | undefined;
@@ -139,7 +153,7 @@ function kaydet() {
   kayitZamanlayici = setTimeout(() => {
     try {
       localStorage.setItem(ANAHTAR, JSON.stringify($state.snapshot(depo.veri)));
-      depo.kayitSorunu = "";
+      if (depo.kayitSorunu !== acilisSorunu) depo.kayitSorunu = "";
     } catch {
       depo.kayitSorunu = "Veriler bu tarayıcıya kaydedilemedi (gizli pencere ya da depolama dolu olabilir). Sayfayı kapatmadan önce Ayarlar'dan yedek alın.";
     }
@@ -153,8 +167,22 @@ $effect.root(() => {
 });
 
 // ---------- kişiler ----------
+/** Verinin herhangi bir yerinde geçen en büyük kişi numarası (silinen kişiler onaylı aylarda, değişim ve servis kayıtlarında kalır) */
+function enBuyukKisiNo(): number {
+  const v = depo.veri;
+  let n = 0;
+  const al = (x: unknown) => { const i = Number(x); if (Number.isInteger(i) && i > n) n = i; };
+  v.staff.forEach(k => al(k.id));
+  for (const c of Object.values(v.schedules)) for (const g of c.days) for (const p of [...g.assigned, ...g.prep]) al(p.id);
+  for (const a of Object.values(v.puantaj)) Object.keys(a).forEach(al);
+  for (const a of Object.values(v.acil)) for (const l of Object.values(a)) l.forEach(al);
+  for (const d of v.degisimler) { al(d.cik); al(d.yer); }
+  for (const R of Object.values(v.servisKayit)) { Object.keys(R.ad ?? {}).forEach(al); for (const g of Object.values(R.gun ?? {})) (g.k ?? []).forEach(al); }
+  return n;
+}
+
 export function kisiEkle(name: string, role: Rol): Kisi {
-  const id = depo.veri.staff.reduce((m, k) => Math.max(m, k.id), 0) + 1;
+  const id = enBuyukKisiNo() + 1;
   const kisi: Kisi = { id, name: name.trim().replace(/\s+/g, " "), role };
   depo.veri.staff.push(kisi);
   return kisi;
@@ -171,14 +199,22 @@ export function kisiGuncelle(id: number, alanlar: Partial<Omit<Kisi, "id">>) {
     for (const g of c.days) for (const p of [...g.assigned, ...g.prep]) if (p.id === id) { p.name = k.name; p.role = k.role; }
 }
 
-/** Kişinin onaylı bir ayda görevi var mı (varsa silinmez, ayrılış tarihi girilir) */
+/** Kişinin onaylı aylarda kaydı (çizelge görevi, acil servis nöbeti, puantaj kaydı) var mı; varsa silinmez, ayrılış tarihi girilir */
 export function onayliGoreviVar(id: number): string[] {
   return Object.values(depo.veri.schedules)
-    .filter(c => c.onay && c.days.some(g => [...g.assigned, ...g.prep].some(p => p.id === id)))
+    .filter(c => {
+      if (!c.onay) return false;
+      const ayK = ayAnahtari(c.year, c.month);
+      return c.days.some(g => [...g.assigned, ...g.prep].some(p => p.id === id))
+        || Object.values(depo.veri.acil[ayK] ?? {}).some(l => l.includes(id))
+        || !!depo.veri.puantaj[ayK]?.[id];
+    })
     .map(c => ayAnahtari(c.year, c.month));
 }
 
-export function kisiSil(id: number) {
+/** Kişiyi siler; onaylı aylarda kaydı varsa silmez (false döner) */
+export function kisiSil(id: number): boolean {
+  if (onayliGoreviVar(id).length) return false;
   depo.veri.staff = depo.veri.staff.filter(k => k.id !== id);
   for (const k of Object.keys(depo.veri.prefs)) if (k.startsWith(id + "-")) delete depo.veri.prefs[k];
   for (const c of Object.values(depo.veri.schedules)) {
@@ -190,6 +226,9 @@ export function kisiSil(id: number) {
     for (const [g, l] of Object.entries(a)) { a[g] = l.filter(x => x !== id); if (!a[g].length) delete a[g]; }
     if (!Object.keys(a).length) delete depo.veri.acil[ayK];
   }
+  // geri alınacak kişisi kalmayan değişim kayıtları (onaysız aylar) da gider
+  depo.veri.degisimler = depo.veri.degisimler.filter(d => (d.cik !== id && d.yer !== id) || !!depo.veri.schedules[ayAnahtari(d.y, d.m)]?.onay);
+  return true;
 }
 
 // ---------- tercih ve tatil işaretleri ----------
@@ -307,12 +346,28 @@ export function aydaCalisanlar(y: number, m: number): Kisi[] {
 export function yedekVerisi(): string {
   return JSON.stringify({ uygulama: "nobet-cizelgesi-v2", zaman: new Date().toISOString(), veri: $state.snapshot(depo.veri) }, null, 1);
 }
-export function yedektenYukle(metin: string): { tamam: true } | { tamam: false; hata: string } {
+export function yedektenYukle(metin: string): { tamam: true; atlanan: number } | { tamam: false; hata: string } {
   let o: any;
   try { o = JSON.parse(metin); } catch { return { tamam: false, hata: "Dosya okunamadı: geçerli bir yedek dosyası değil." }; }
-  if (!o || o.uygulama !== "nobet-cizelgesi-v2" || !o.veri) return { tamam: false, hata: "Bu dosya bu uygulamanın yedeği değil." };
-  depo.veri = veriyiDogrula(o.veri);
-  return { tamam: true };
+  if (!o || o.uygulama !== "nobet-cizelgesi-v2" || !o.veri || typeof o.veri !== "object") return { tamam: false, hata: "Bu dosya bu uygulamanın yedeği değil." };
+  if (!Array.isArray(o.veri.staff) || typeof o.veri.schedules !== "object" || !o.veri.schedules) return { tamam: false, hata: "Yedek dosyası eksik ya da bozuk; mevcut veriler değiştirilmedi." };
+  const v = veriyiDogrula(o.veri);
+  // okunamayıp atlanan kişi ve çizelge sayısı (kullanıcıya söylenir)
+  const atlanan = (o.veri.staff.length - v.staff.length) + (Object.keys(o.veri.schedules).length - Object.keys(v.schedules).length);
+  // yüklemeden önceki veri bir kez saklanır: yanlış dosya seçilirse geri alınabilir
+  try { localStorage.setItem(ANAHTAR + "-yukleme-oncesi", JSON.stringify($state.snapshot(depo.veri))); } catch { /* yer yoksa geçilir */ }
+  depo.veri = v;
+  return { tamam: true, atlanan };
+}
+/** Yedekten yüklemeden önceki veriye döner (yanlış dosya seçildiyse) */
+export function yuklemeOncesineDon(): boolean {
+  try {
+    const s = localStorage.getItem(ANAHTAR + "-yukleme-oncesi");
+    if (!s) return false;
+    depo.veri = veriyiDogrula(JSON.parse(s));
+    localStorage.removeItem(ANAHTAR + "-yukleme-oncesi");
+    return true;
+  } catch { return false; }
 }
 export function tumVeriyiSil() {
   depo.veri = bosVeri();
