@@ -13,7 +13,7 @@ Eczane nöbet çizelgesinin baştan yazılan sürümü. Eski uygulama (`../index
 npm ci
 npm run dev        # geliştirme sunucusu
 npm run check      # tip denetimi
-npm test           # motor eski uygulamanın kayıtlı çizelgelerini birebir üretmeli (../tests/beklenen.json); değişim denetimi
+npm test           # motor eski uygulamanın kayıtlı çizelgelerini birebir üretmeli (../tests/beklenen.json); değişim denetimi; servis dağıtımı eski uygulamanın kayıtlı sonucuyla (test/servis-beklenen.json)
 npm run artifact   # dist/index.html ve artifact sayfası dist/artifact.html
 ```
 
@@ -23,5 +23,6 @@ npm run artifact   # dist/index.html ve artifact sayfası dist/artifact.html
 
 - **Çizelge:** eczane nöbet çizelgesi (oluştur, elle düzenle, onayla; PDF ve Excel), günlük çalışma listesi (puantaja göre onay, hazırlama, izinliler) ve acil servis nöbetleri (acil servis eczacıları için elle; PDF ve Excel).
 - **Puantaj:** aylık cetvel (hücreler elle değiştirilebilir, acil servis nöbetleri 24 saat; PDF ve Excel); ay içi izin ve rapor kaydı (kişinin görevli olduğu günler için yerine geçecek kişi önerilir, seçilen kişi çizelgeye de işlenir); nöbet değişimi (yerine tutma, karşılıklı takas, kural denetimi, geri alma).
+- **Servis hazırlama:** o gün çalışan teknikerlere servislerin zorluk × hasta sayısına göre dengeli dağıtımı (eski uygulamanın algoritması aynen; kişi başı servis, YB ve zor servis sayısı her gün en çok 1 farklı, aylar boyunca yük eşitlenir). Kişiyi dağıtımdan çıkarma, yeniden karıştırma, servisi elle başka teknikere verme; PDF listeler (tek sayfa, kişi başı kontrol listesi, toplu liste). Servis listesi ayarları aynı bölümde; yıllık rapor Raporlar > Servis hazırlama.
 - **İzin ve tercihler**, **Personel**, **Ayarlar** (kurallar, yedek).
 - **Raporlar:** yıllık fazla mesai, görev dağılımı, yıllık denge ve kişi geçmişi; Excel.

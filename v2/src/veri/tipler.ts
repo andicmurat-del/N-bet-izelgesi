@@ -73,6 +73,10 @@ export interface Veri {
   acil: Record<string, Record<string, number[]>>;
   /** puantajdaki nöbet değişimleri ve izin/rapor nedeniyle yerine geçmeler (geri alınabilsin diye önceki kodlarla) */
   degisimler: Degisim[];
+  /** servis hazırlama ayarları: servis adına göre zorluk/hasta/çok günlük/hazırlanıyor; elle eklenen servisler */
+  servisAyar: ServisAyar;
+  /** "yil-ay" → servis hazırlama dağıtımı (motorun ay kaydı; gün gün kişiler ve servisleri, elle değişiklikler) */
+  servisKayit: Record<string, ServisAyKaydi>;
   /** örnek kadroyla deneniyor: ekranda belirtilir, tek düğmeyle silinir */
   ornek?: true;
 }
@@ -95,6 +99,29 @@ export interface Degisim {
   zorunlu?: true;
   sebep?: PuantajKodu;
   not?: string;
+}
+
+export interface ServisAyar {
+  svc: Record<string, { z: number; h: number; multi: boolean; on: boolean }>;
+  ekstra: { name: string; z: number; h: number; multi: boolean }[];
+}
+/** Bir günün servis dağıtımı: k çalışan teknikerler, n çok günlük servis gün sayısı, a servis → kişi */
+export interface ServisGunKaydi {
+  k: number[]; n: number; i: string; a: Record<string, number>;
+  w: Record<string, number>; l: Record<string, number>; yb: Record<string, number>;
+  t: { w: number; l: number; y: number }; z: number; sk?: number; bayat?: number;
+}
+export interface ServisAyKaydi {
+  gun: Record<string, ServisGunKaydi>;
+  /** o gün dağıtıma elle katılan/çıkarılan kişiler */
+  elle: Record<string, Record<string, boolean>>;
+  /** çok günlük servislerin gün sayısı elle değiştirildiyse */
+  gunElle: Record<string, number>;
+  /** "yeniden karıştır" sayacı */
+  sk: Record<string, number>;
+  ad: Record<string, string>;
+  /** elle atanan servisler: gün → servis → kişi */
+  ata: Record<string, Record<string, number>>;
 }
 
 export const ROL_AD: Record<Rol, string> = {

@@ -2042,6 +2042,404 @@ function yerineAdaylar(y,m,gun,cik,gorev){
   return out;
 }
 
+// ---- servis hazırlama (eski uygulama index.html servisModul; ekran, yazdırma ve eski veri göçü dışındaki kod aynen) ----
+let SERVICES = [], svcByName = new Map(), SV_BUGUN = 0;
+function sessizKaydet(){}
+function adGocuAy(){}   // eski servis adlarının göçü: yeni sürümde eski veri yok
+const GUN_AD = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
+function gunlukCizelgeVar(y, m){ const sc = state.schedules[y+"-"+m]; return !!(sc && ayVeriVarMi(sc)); }
+  const AD_DEGISIKLIGI = {"2.BAS 10 YATAK YB": "+10 YATAK YB", "2.BAS 8 YATAK YB": "+8 YATAK YB", "2.BAS KORONER YB": "KORONER YB", "3.BAS GENEL YB": "CERRAHİ YB", "NÖR YB": "NÖROLOJİ YB", "BEYİN CER": "BEYİN CERRAHİ", "CERRAHİ-A": "GENEL CERRAHİ-A", "CERRAHİ-B": "GENEL CERRAHİ-B", "ÇOCUK CER": "ÇOCUK CERRAHİ", "ÇOCUK HAST.": "ÇOCUK HASTALIKLARI", "DAHİLİYE H": "DAHİLİYE-H", "FİZİK": "FİZİK TEDAVİ", "GÖĞÜS A": "GÖĞÜS-A", "GÖĞÜS CER": "GÖĞÜS CERRAHİ", "İNTANİYE+GERİATRİ": "İNTANİYE", "KADIN": "KADIN HASTALIKLARI", "KBB+PLASTİK": "KBB/PLASTİK", "KRONİK YARA": "KRONİK YARA BAKIM", "PALYATİF BKM": "PALYATİF BAKIM", "PSK": "PSİKİYATRİ", "RADYASYON": "RADYASYON ONKOLOJİ"};
+  // zorluk 10 üzerinden (1 kolay, 10 en zor); Ekim 2026'da yenilenen varsayılanlar
+  const SV_VARS = [
+  ["2.BAS 10 YATAK YB",6,1,10],["2.BAS 8 YATAK YB",5,1,8],["2.BAS KORONER YB",6,1,10],["GÖĞÜS-2 YB",5,1,10],
+  ["3.BAS GENEL YB",5,1,10],["ANJİO YB",5,1,10],["ARS YB",6,1,10],["BEYİN CER",8,3,25],["CERRAHİ-A",8,1,25],
+  ["CERRAHİ-B",8,1,25],["ÇOCUK CER",3,3,10],["ÇOCUK HAST.",3,3,10],["ÇYB-2 YB",3,1,5],["ÇYB-3 YB",3,1,5],
+  ["DAHİLİYE H",8,3,25],["DAHİLİYE-G",8,3,25],["DOĞUM-G",4,1,15],["DOĞUM-H",4,1,15],["EYB-1 YB",8,1,10],
+  ["EYB-2 YB",8,1,10],["EYB-3 YB",7,1,10],["EYB-4 YB",6,1,10],["FİZİK",2,3,10],["GÖĞÜS A",10,3,25],
+  ["GÖĞÜS CER",7,3,20],["GÖĞÜS-1 YB",3,1,10],["GÖĞÜS-C",9,3,25],["GÖĞÜS-D",9,3,25],
+  ["GÖZ",1,1,2],["İNME YB",2,1,6],["İNTANİYE+GERİATRİ",7,3,20],["KADIN",2,1,10],["KALP DAMAR",6,3,20],
+  ["KARDİYOLOJİ-C",7,1,20],["KARDİYOLOJİ-D",7,1,20],["KBB+PLASTİK",5,3,10],["KRONİK YARA",10,3,25],
+  ["KVC YB",7,1,10],["MAHKUM",1,1,1],["NEFROLOJİ",10,3,25],["NÖR YB",6,1,10],["NÖROLOJİ-E",7,3,20],
+  ["NÖROLOJİ-F",7,3,20],["ORTOPEDİ-E",7,3,20],["ORTOPEDİ-F",7,3,20],["ORTOPEDİ-G",7,3,20],
+  ["PALYATİF BKM",10,3,25],["PSK",1,1,3],["RADYASYON",6,3,15],["TBC",2,1,4],["TDL",2,1,5],
+  ["ÜROLOJİ",5,3,20],["YANIK",5,3,15],["YANIK YB",2,1,2],["YENİDOĞAN YB",5,1,15]
+  ].map(([kod,z,g,h],i)=>({id:i,name:AD_DEGISIKLIGI[kod]||kod,kod,z,g,h,multi:g>1,days:1,grps:[]}));
+  // Aynı kişiye aynı anda verilmeyecek servis grupları
+  const GROUPS = [
+    ["CERRAHİ-A","CERRAHİ-B"],
+    ["ORTOPEDİ-E","ORTOPEDİ-F","ORTOPEDİ-G"],
+    ["EYB-1 YB","EYB-2 YB","EYB-3 YB","EYB-4 YB"],
+    ["NÖROLOJİ-E","NÖROLOJİ-F"],
+    ["DAHİLİYE-G","DAHİLİYE H"],
+    ["GÖĞÜS A","GÖĞÜS-C","GÖĞÜS-D"],
+    ["KARDİYOLOJİ-C","KARDİYOLOJİ-D"],
+    ["NEFROLOJİ","PALYATİF BKM","GÖĞÜS A","GÖĞÜS-C"]
+  ];
+  GROUPS.forEach((names,gi)=>names.forEach(n=>{ const sv=SV_VARS.find(x=>x.kod===n); if(sv) sv.grps.push(gi); }));
+  const svKod = sn=>{ const s = SERVICES.find(x=>x.name===sn); return s && s.kod ? s.kod : sn; };
+  const isYB = s => /\sYB$/.test(s.name);
+  function kayitAy(y, m, olustur){
+    if (!state.servisKayit || typeof state.servisKayit!=="object") state.servisKayit = {};
+    const k = y+"-"+m;
+    if (!state.servisKayit[k]){ if (!olustur) return null; state.servisKayit[k] = {gun:{}, elle:{}, gunElle:{}, sk:{}, ad:{}, ata:{}}; }
+    const R = state.servisKayit[k];
+    if (!R.__ok){
+      ["gun","elle","gunElle","sk","ad"].forEach(a=>{ if (!R[a] || typeof R[a]!=="object" || Array.isArray(R[a])) R[a] = {}; });
+      // bozuk ya da eksik gün kayıtları atılır (yedekten yüklenen eski/yanlış veri)
+      Object.keys(R.gun).forEach(d=>{ const g = R.gun[d];
+        if (!g || !Array.isArray(g.k) || !g.a || typeof g.a!=="object" || !g.t || typeof g.n!=="number") { delete R.gun[d]; return; }
+        ["w","l","yb"].forEach(f=>{ if (!g[f] || typeof g[f]!=="object") g[f] = {}; }); });
+      adGocuAy(R);
+      Object.defineProperty(R, "__ok", {value:true, enumerable:false, configurable:true});
+    }
+    if (!R.ata || typeof R.ata!=="object" || Array.isArray(R.ata)) R.ata = {};   // elle atamalar: {gün: {servis: kişi}}
+    return R;
+  }
+
+  // ---- takvim yardımcıları
+  const z2 = n => (n<10?"0":"")+n;
+  const dowOf = (y,m,d) => (new Date(y,m,d).getDay()+6)%7;
+  const gunNo = (y,m,d) => y*10000+(m+1)*100+d;
+  function bugunNo(){ return SV_BUGUN; }
+  // çok günlük servisin bu sefer kaç gün hazırlanacağı: o gün + ardından gelen tatil günleri
+  function otoGun(y,m,d){
+    const dt = new Date(y,m,d); let n = 1;
+    for (let i=0; i<14; i++){ dt.setDate(dt.getDate()+1); if (isTatilGunu(dt.getFullYear(), dt.getMonth(), dt.getDate())) n++; else break; }
+    return n;
+  }
+  function gunMetni(y,m,d){ return d+" "+AYLAR[m]+" "+y+" "+GUN_AD[dowOf(y,m,d)]; }
+  // servis ayarlarının kısa özeti (her gün kaydında tam metin saklanmasın)
+  function cfgImza(){
+    const t = SERVICES.filter(s=>s.on).map(s=>(s.kod||s.name)+":"+s.z+":"+s.h+":"+(s.multi?1:0)).join("|");
+    let h = 2166136261; for (let i=0; i<t.length; i++){ h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h>>>0).toString(36);
+  }
+
+  // o günün teknikerleri (puantajdan); elle kapatılan/açılan kişiler R.elle'den
+  const ETIKET = {NI:"nöbet ertesi izni", YI:"yıllık izin", R:"raporlu", DI:"izinli", P:"çalışmıyor", B:"çalışmıyor"};
+  function teknikerSatirlari(G){ return G.satirlar.filter(r=>r.s.role==="teknisyen"); }
+  function gunKisileri(G, R, d){
+    const el = R.elle[d] || {};
+    return teknikerSatirlari(G).filter(r=>r.cells[d-1] && r.cells[d-1].kod!=="P").map(r=>{
+      const c = r.cells[d-1], kod = c.kod;
+      const calisiyor = kod==="M" || kod==="N" || kod==="H" || (kod && kod.indexOf("S:")===0 && c.saat>0);
+      const id = r.s.id, oto = !!calisiyor;
+      const on = Object.prototype.hasOwnProperty.call(el, id) ? !!el[id] : oto;
+      return {id, name:r.s.name, on, oto, elle: on!==oto, etiket: kod==="N" ? "nöbetçi" : (calisiyor ? "" : (ETIKET[kod] || "çalışmıyor"))};
+    });
+  }
+
+  function rngOf(seed){ let t = (seed>>>0) || 1; return ()=>{ t = (t*1664525 + 1013904223)>>>0; return t/4294967296; }; }
+  const W = {S:120, L:220, Y:60, D:6000, R:45, G:100000, Z:400, M:400, MU:30};
+  // zor servis: zorluk puanı ZOR_ESIK ve üstü (10 üzerinden). Her gün kişi başı zor servis sayısı en fazla 1 farklı
+  // olur (kesin); ay içinde (ve aynı yılın önceki aylarıyla) kişi başı zor servis sayısı eşitlenir.
+  const ZOR_ESIK = 7;
+  const YAKIN_GUN = 7;
+  const zorMu = s => (s && s.z >= ZOR_ESIK) ? 1 : 0;
+  // people: [{id}], svcs: servisler, n: çok günlük gün sayısı, cum: önceki günlerden birikim.
+  // Amaç: günlük kurallar (kişi başı servis ve YB sayısı en fazla 1 fark, grup kuralı) kesin;
+  // aylık servis-gün, yük ve YB payı, günlük yük dengesi ve servis tekrarı en aza indirilir.
+  // Tüm maliyetler kişi başına artımlı tutulur; taşı/takas denemeleri sabit sürede hesaplanır.
+  // sabit: {servis adı: kişi sırası} elle atanmış servisler; yerleri değişmez
+  // onceki: {servis adı: kişi} günün önceki dağıtımı; yeniden hesaplanırken servis o gün hâlâ çalışan
+  // önceki kişisinde kalmayı tercih eder (W.M): eşitlik için gerekenden fazlası yer değiştirmez
+  function gunDagit(people, svcs, n, cum, seed, sabit, onceki, mW){
+    sabit = sabit || {};
+    const P = people.length, S = svcs.length;
+    let GN = 0;
+    const xs = svcs.map((s, ix)=>{ const w = s.multi ? n : 1; s.grps.forEach(g=>{ if (g+1>GN) GN = g+1; }); return {s, ix, w, l:s.h*s.z*w, y:isYB(s) ? 1 : 0, z:zorMu(s), g:s.grps}; });
+    let totW = 0, totL = 0, totY = 0, totZ = 0; xs.forEach(x=>{ totW += x.w; totL += x.l; totY += x.y; totZ += x.z; });
+    const fW = totW/P, fL = totL/P, fY = totY/P, fZ = totZ/P, Ls = Math.max(1, fL);
+    const cLo = Math.floor(S/P), cHi = Math.ceil(S/P), yLo = Math.floor(totY/P), yHi = Math.ceil(totY/P), zLo = Math.floor(totZ/P), zHi = Math.ceil(totZ/P);
+    const gsize = new Array(GN).fill(0); xs.forEach(x=>x.g.forEach(g=>{ gsize[g]++; }));
+    const cap = gsize.map(v=>Math.ceil(v/P));
+    const pen = (g, v)=> v>cap[g] ? W.G*(v-cap[g]) : 0;
+    const base = people.map(p=>{ const c = cum[p.id] || {}; return {dW:(c.w||0)-(c.fw||0), dL:(c.l||0)-(c.fl||0), dY:(c.y||0)-(c.fy||0), dZ:(c.zr||0)-(c.fz||0)}; });
+    const fOf = (i, w, l, y, z)=>{ const b = base[i];
+      const a = b.dW + w - fW, c = (b.dL + l - fL)/Ls, e = b.dY + y - fY, dd = (l - fL)/Ls, zz = b.dZ + z - fZ;
+      return W.S*a*a + W.L*c*c + W.Y*e*e + W.D*dd*dd + W.Z*zz*zz; };
+    // aynı servis aynı kişiye: çalıştığı günlere göre düşen paydan fazlası cezalandırılır
+    const burada = new Set(people.map(p=>p.id));
+    const rc = people.map(p=>{ const c = cum[p.id] || {}, rep = c.rep || {}, frep = c.frep || {};
+      return xs.map(x=>{ const d = (rep[x.s.name]||0) - (frep[x.s.name]||0) - 1/P, o = onceki ? onceki[x.s.name] : undefined;
+        return W.R*(2*d+1) + (o!==undefined && o!==p.id && burada.has(o) ? mW : 0); }); });
+    let best = null, bestJ = Infinity;
+    for (let deneme=0; deneme<4; deneme++){
+      const rnd = rngOf(seed*7919 + deneme*104729 + 17);
+      const A = people.map(()=>({items:[], c:0, w:0, l:0, y:0, z:0, gc:new Array(GN).fill(0), gp:0, rp:0}));
+      const upd = (i, x, sg)=>{ const a = A[i]; a.c += sg; a.w += sg*x.w; a.l += sg*x.l; a.y += sg*x.y; a.z += sg*x.z; a.rp += sg*rc[i][x.ix];
+        for (let q=0; q<x.g.length; q++){ const g = x.g[q], o = a.gc[g]; a.gc[g] = o+sg; a.gp += pen(g, o+sg) - pen(g, o); } };
+      // günlük sınırlar (kişi başı servis ve YB sayısı) aşılırsa çok büyük ceza: iyileştirme bunu önce düzeltir
+      const sinirC = (c, y, z)=> Math.max(0, c-cHi) + Math.max(0, cLo-c) + Math.max(0, y-yHi) + Math.max(0, yLo-y) + Math.max(0, z-zHi) + Math.max(0, zLo-z);
+      const costHizli = i=>{ const a = A[i]; return fOf(i, a.w, a.l, a.y, a.z) + a.gp + a.rp; };
+      const costCezali = i=>{ const a = A[i]; return fOf(i, a.w, a.l, a.y, a.z) + a.gp + a.rp + W.G*sinirC(a.c, a.y, a.z); };
+      let cost = costCezali;
+      let ybKalan = totY, zrKalan = totZ;
+      // önce elle atananlar yerine konur
+      const sabitX = new Set();
+      xs.forEach(x=>{ const i = sabit[x.s.name]; if (i!==undefined && i>=0 && i<P){ A[i].items.push(x); upd(i, x, 1); sabitX.add(x); } });
+      sabitX.forEach(x=>{ if (x.y) ybKalan--; if (x.z) zrKalan--; });
+      // açgözlü başlangıç: önce zor servisler ve YB'ler, sonra diğerleri; büyük yükten küçüğe (eşitlerde rastgele)
+      const sira = xs.filter(x=>!sabitX.has(x)).map(x=>({x, r:rnd()})).sort((p,q)=> (q.x.z-p.x.z) || (q.x.y-p.x.y) || (q.x.l-p.x.l) || (p.r-q.r)).map(o=>o.x);
+      const S2 = sira.length;
+      for (let ix=0; ix<S2; ix++){
+        const x = sira[ix];
+        let eksik = 0, ybEksik = 0, zrEksik = 0; for (let i=0;i<P;i++){ eksik += Math.max(0, cLo-A[i].c); ybEksik += Math.max(0, yLo-A[i].y); zrEksik += Math.max(0, zLo-A[i].z); }
+        const doldur = (S2-ix) <= eksik, ybDoldur = x.y && ybKalan <= ybEksik, zrDoldur = x.z && zrKalan <= zrEksik;
+        if (x.y) ybKalan--;
+        if (x.z) zrKalan--;
+        let bi = -1, bm = Infinity;
+        for (let tur=0; tur<3 && bi<0; tur++){
+          for (let i=0;i<P;i++){
+            const a = A[i], c = a.items.length;
+            if (tur<2 && (c >= cHi || (doldur && c >= cLo))) continue;
+            if (tur<1 && x.y && (a.y >= yHi || (ybDoldur && a.y >= yLo))) continue;
+            if (tur<2 && x.z && (a.z >= zHi || (zrDoldur && a.z >= zLo))) continue;
+            const once = cost(i); upd(i, x, 1); const mm = cost(i) - once + rnd()*1e-6; upd(i, x, -1);
+            if (mm < bm){ bm = mm; bi = i; }
+          }
+        }
+        A[bi].items.push(x); upd(bi, x, 1);
+      }
+      // iyileştirme: taşı ve takas et (kişi başı servis ve YB sayısı sınırları korunur).
+      // Başlangıç sınırları sağlıyorsa hızlı yol: sınırı bozacak hamle hiç denenmez.
+      let bozuk = 0; for (let i=0;i<P;i++) bozuk += sinirC(A[i].c, A[i].y, A[i].z);
+      const hizli = bozuk===0; cost = hizli ? costHizli : costCezali;
+      let iyi = true, tur = 0;
+      while (iyi && tur++ < 80){
+        iyi = false;
+        for (let a=0;a<P;a++) for (let b=0;b<P;b++){
+          if (a===b) continue;
+          const Aa = A[a], Ab = A[b];
+          // taşı
+          for (let k=Aa.items.length-1; k>=0 && k<Aa.items.length; k--){
+            const x = Aa.items[k];
+            if (sabitX.has(x)) continue;
+            if (hizli){
+              if (Aa.c-1 < cLo || Ab.c+1 > cHi) break;
+              if (x.y && (Aa.y-1 < yLo || Ab.y+1 > yHi)) continue;
+              if (x.z && (Aa.z-1 < zLo || Ab.z+1 > zHi)) continue;
+            } else if (sinirC(Aa.c-1, Aa.y-x.y, Aa.z-x.z) + sinirC(Ab.c+1, Ab.y+x.y, Ab.z+x.z) > sinirC(Aa.c, Aa.y, Aa.z) + sinirC(Ab.c, Ab.y, Ab.z)) continue;
+            const once = cost(a)+cost(b); upd(a,x,-1); upd(b,x,1);
+            if (cost(a)+cost(b) < once - 1e-9){ Aa.items.splice(k,1); Ab.items.push(x); iyi = true; }
+            else { upd(b,x,-1); upd(a,x,1); }
+          }
+          if (b < a) continue;
+          // takas
+          for (let k=0; k<Aa.items.length; k++){
+            for (let j=0; j<Ab.items.length; j++){
+              const x = Aa.items[k], t = Ab.items[j];
+              if (sabitX.has(x) || sabitX.has(t)) continue;
+              if (x.y!==t.y || x.z!==t.z){
+                if (hizli){ const ya = Aa.y + t.y - x.y, yb2 = Ab.y + x.y - t.y, za = Aa.z + t.z - x.z, zb = Ab.z + x.z - t.z;
+                  if (ya<yLo || ya>yHi || yb2<yLo || yb2>yHi || za<zLo || za>zHi || zb<zLo || zb>zHi) continue; }
+                else if (sinirC(Aa.c, Aa.y+t.y-x.y, Aa.z+t.z-x.z) + sinirC(Ab.c, Ab.y+x.y-t.y, Ab.z+x.z-t.z) > sinirC(Aa.c, Aa.y, Aa.z) + sinirC(Ab.c, Ab.y, Ab.z)) continue;
+              }
+              const once = cost(a)+cost(b);
+              upd(a,x,-1); upd(b,t,-1); upd(a,t,1); upd(b,x,1);
+              if (cost(a)+cost(b) < once - 1e-9){ Aa.items[k] = t; Ab.items[j] = x; iyi = true; }
+              else { upd(a,t,-1); upd(b,x,-1); upd(a,x,1); upd(b,t,1); }
+            }
+          }
+        }
+      }
+      let J = 0; for (let i=0;i<P;i++) J += costCezali(i);
+      if (J < bestJ - 1e-9){ bestJ = J; best = A.map(a=>({items:a.items.map(x=>x.s), w:a.w, l:a.l, y:a.y})); }
+    }
+    return {kisi: best, totW, totL, totY};
+  }
+
+  // birikim (önceki günlerin kaydı)
+  function birikimEkle(cum, rec){
+    const P = rec.k.length; if (!P) return;
+    const t = rec.t || {w:0,l:0,y:0};
+    // zor servis sayısı kayıttaki servis adlarından, güncel zorluk puanına göre sayılır
+    let zToplam = 0; const zKisi = {};
+    Object.keys(rec.a).forEach(sn=>{ if (zorMu(svcByName.get(sn))){ zToplam++; zKisi[rec.a[sn]] = (zKisi[rec.a[sn]]||0) + 1; } });
+    rec.k.forEach(id=>{
+      const c = cum[id] || (cum[id] = {w:0,l:0,y:0,zr:0,fw:0,fl:0,fy:0,fz:0,rep:{},frep:{},gun:0});
+      c.fw += t.w/P; c.fl += t.l/P; c.fy += t.y/P; c.fz += zToplam/P; c.gun++;
+      Object.keys(rec.a).forEach(sn=>{ c.frep[sn] = (c.frep[sn]||0) + 1/P; });
+      c.w += (rec.w && rec.w[id]) || 0; c.l += (rec.l && rec.l[id]) || 0; c.y += (rec.yb && rec.yb[id]) || 0;
+    });
+    Object.keys(rec.a).forEach(sn=>{ const id = rec.a[sn]; const c = cum[id]; if (c) c.rep[sn] = (c.rep[sn]||0)+1; });
+    Object.keys(zKisi).forEach(id=>{ const c = cum[id]; if (c) c.zr += zKisi[id]; });
+  }
+
+  // kayıttaki imzadan kişi/gün kısmı (önceki sürüm imzayı JSON dizisi olarak saklıyordu)
+  function ikOf(i){
+    i = String(i||"");
+    if (i.charAt(0)==="["){ try { const a = JSON.parse(i); return (a[0]||[]).join(",")+"/"+a[1]; } catch(e){ return ""; } }
+    return i.split("/").slice(0,2).join("/");
+  }
+  function kisaImza(t){ let h = 2166136261; for (let i=0; i<t.length; i++){ h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h>>>0).toString(36); }
+  // aynı yılın önceki aylarının servis kayıtlarından birikim (aylar arası denge) ve bunun imzası
+  function devirBirikim(y, m){
+    const cum = {}; let t = "";
+    for (let mm=0; mm<m; mm++){
+      if (!cizVar(y, mm)) continue;
+      const R = state.servisKayit && state.servisKayit[y+"-"+mm]; if (!R || !R.gun) continue;
+      Object.keys(R.gun).map(Number).sort((a,b)=>a-b).forEach(d=>{ const g = R.gun[d];
+        if (!g || !Array.isArray(g.k) || !g.a || !g.t) return;
+        birikimEkle(cum, g); t += mm+"."+d+":"+g.k.join(",")+"|"+g.n+"|"+JSON.stringify(g.a)+";"; });
+    }
+    return {cum, imza: t ? kisaImza(t) : "0"};
+  }
+  // ayın tüm mesai günlerini hesaplar: kayıtlı ve değişmemiş günler korunur; bugün ve sonrasında
+  // girdisi değişen ilk günden itibaren yeniden dağıtılır. Geçmiş günler kendiliğinden değişmez.
+  // opts.from: bu günden itibaren (geçmiş dahil) zorla yeniden dağıt
+  function ayHesapla(y, m, opts){
+    opts = opts || {};
+    const R = kayitAy(y, m, true), once = JSON.stringify(R);
+    let G; try { G = puantajGrid(y, m); } catch(e){ return false; }
+    const dim = daysInMonth(y, m), bugun = bugunNo(), cfg = cfgImza();
+    const svcs = SERVICES.filter(s=>s.on);
+    // aylar arası denge: aynı yılın önceki aylarındaki kayıtlar birikime eklenir (Ocak'ta sıfırdan başlar)
+    const dv = devirBirikim(y, m), cum = dv.cum; let degisti = false, ilkDegisen = null;
+    teknikerSatirlari(G).forEach(r=>{ R.ad[r.s.id] = r.s.name; });
+    for (let d=1; d<=dim; d++){
+      if (isTatilGunu(y, m, d)){ if (R.gun[d]){ delete R.gun[d]; degisti = true; } continue; }
+      const aktif = gunKisileri(G, R, d).filter(k=>k.on).map(k=>k.id);
+      const n = R.gunElle[d] || otoGun(y, m, d), sk = R.sk[d] || 0;
+      const ata = R.ata[d] || {}, sabit = {};
+      Object.keys(ata).forEach(sn=>{ const ix = aktif.indexOf(ata[sn]); if (ix>=0 && svcs.some(s=>s.name===sn)) sabit[sn] = ix; });
+      const ataImza = Object.keys(sabit).map(sn=>[svKod(sn), sn]).sort((a,b)=> a[0]<b[0] ? -1 : a[0]>b[0] ? 1 : 0).map(([kd, sn])=>kd+"="+aktif[sabit[sn]]).join(";");
+      const ik = aktif.join(",")+"/"+n, imza = ik+"/"+cfg+"/"+sk+"/"+kisaImza(ataImza)+"/"+dv.imza;
+      const eski = R.gun[d], gecmis = gunNo(y,m,d) < bugun, zorla = (opts.from && d >= opts.from && !(opts.gecmisKoru && gecmis)) || opts.zorlaGun===d;
+      // elle değiştirilen gün: kayıt olduğu gibi kalır, imzası güncellenir
+      if (eski && opts.imzaTazele===d){ eski.i = imza; delete eski.bayat; birikimEkle(cum, eski); continue; }
+      if (eski && !zorla && (gecmis || (!degisti && eski.i===imza))){
+        // geçmiş gün: yalnızca kişi ya da gün sayısı değiştiyse uyarı (servis ayarı değişikliği geçmişi bozmaz)
+        if (ikOf(eski.i)!==ik) eski.bayat = 1; else delete eski.bayat;
+        birikimEkle(cum, eski); continue;
+      }
+      if (!aktif.length || !svcs.length){ if (eski){ delete R.gun[d]; degisti = true; } continue; }
+      // "Yeniden karıştır" (sk değişti) o günü baştan dağıtır; diğer yeniden hesaplamalarda önceki liste korunmaya çalışılır
+      // değişikliği izleyen YAKIN_GUN gün (yakında yazdırılan / bilinen listeler) sıkı korunur; daha sonraki günler
+      // tekrar dengesini toparlamak için daha serbesttir
+      const onceki = eski && (eski.sk||0)===sk ? eski.a : null;
+      if (ilkDegisen===null) ilkDegisen = d;
+      const mW = ilkDegisen!==null && d - ilkDegisen >= YAKIN_GUN ? W.MU : W.M;
+      const res = gunDagit(aktif.map(id=>({id})), svcs, n, cum, gunNo(y,m,d)*31 + sk*977, sabit, onceki, mW);
+      const rec = {k:aktif, n, i:imza, a:{}, w:{}, l:{}, yb:{}, t:{w:res.totW, l:res.totL, y:res.totY}, z:Date.now()};
+      if (sk) rec.sk = sk;
+      res.kisi.forEach((p, ix)=>{ const id = aktif[ix]; p.items.forEach(s=>{ rec.a[s.name] = id; }); rec.w[id] = p.w; rec.l[id] = p.l; rec.yb[id] = p.y; });
+      if (!eski || JSON.stringify(eski.a)!==JSON.stringify(rec.a) || JSON.stringify(eski.k)!==JSON.stringify(rec.k) || eski.n!==rec.n) degisti = true;
+      else rec.z = eski.z;
+      R.gun[d] = rec;
+      birikimEkle(cum, rec);
+    }
+    const sonra = JSON.stringify(R);
+    if (sonra !== once){ sessizKaydet(); return true; }
+    return false;
+  }
+
+  function gecmisAy(y, m){ return gunNo(y, m, daysInMonth(y, m)) < bugunNo(); }
+  // servis dağıtımı yalnızca nöbet çizelgesi olan aylarda yapılır (çizelge yoksa kayıt yok sayılır)
+  function cizVar(y, m){ try { return typeof gunlukCizelgeVar!=="function" || gunlukCizelgeVar(y, m); } catch(e){ return true; } }
+  function otoHesaplanir(y, m){ return cizVar(y, m) && (!!kayitAy(y, m, false) || !gecmisAy(y, m)); }
+  function ayVerisi(y, m){
+    const R = kayitAy(y, m, false) || {gun:{}, elle:{}, gunElle:{}, sk:{}, ad:{}};
+    const G = puantajGrid(y, m);
+    const satir = teknikerSatirlari(G);
+    const ad = id => { const r = satir.find(x=>x.s.id===id); return r ? r.s.name : (R.ad[id] || "(silinmiş)"); };
+    return {R, G, satir, ad};
+  }
+  function gunSonucu(V, d){
+    const rec = V.R.gun[d]; if (!rec) return null;
+    const kisi = rec.k.map(id=>({id, name:V.ad(id), items:[], total:0, w:rec.w[id]||0, yb:rec.yb[id]||0, zr:0}));
+    const svcs = [];
+    Object.keys(rec.a).forEach(sn=>{
+      const p = kisi.find(k=>k.id===rec.a[sn]); if (!p) return;
+      const s = svcByName.get(sn) || {name:sn, h:0, z:0, multi:false};
+      const l = s.h*s.z*(s.multi ? rec.n : 1);
+      const it = {name:sn, multi:!!s.multi, l, zor:!!zorMu(s)};
+      p.items.push(it); p.total += l; svcs.push(it); if (it.zor) p.zr++;
+    });
+    const ybSv = sn=> /\sYB$/.test(sn) ? 1 : 0;
+    kisi.forEach(p=>p.items.sort((a,b)=> (ybSv(b.name)-ybSv(a.name)) || a.name.localeCompare(b.name, "tr")));
+    kisi.sort((a,b)=>a.name.localeCompare(b.name, "tr"));
+    return {rec, kisi, svcs};
+  }
+  const AY3 = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+  function yillikVeri(yil){
+    const aylar = [], kisi = {}, adlar = {};
+    (state.staff||[]).forEach(st=>{ adlar[st.id] = st.name; });
+    for (let mm=0; mm<12; mm++){
+      const R = cizVar(yil, mm) && state.servisKayit && state.servisKayit[yil+"-"+mm];
+      const recs = R && R.gun ? Object.keys(R.gun).map(Number).sort((a,b)=>a-b).map(d=>R.gun[d]).filter(g=>g && Array.isArray(g.k) && g.k.length && g.a && g.t) : [];
+      if (R && R.ad) Object.keys(R.ad).forEach(id=>{ if (!adlar[id]) adlar[id] = R.ad[id]; });
+      aylar.push(recs);
+      recs.forEach(g=>{ const P = g.k.length;
+        g.k.forEach(id=>{ const k = kisi[id] || (kisi[id] = {id, ay:AY3.map(()=>null), gun:0, w:0, l:0, fw:0, fl:0, y:0, adet:0});
+          const a = k.ay[mm] || (k.ay[mm] = {gun:0, w:0, l:0});
+          a.gun++; a.w += g.w[id]||0; a.l += g.l[id]||0; k.gun++; k.w += g.w[id]||0; k.l += g.l[id]||0; k.y += g.yb[id]||0; k.fw += g.t.w/P; k.fl += (g.t.l||0)/P; });
+        Object.keys(g.a).forEach(sn=>{ const k = kisi[g.a[sn]]; if (k) k.adet++; }); });
+    }
+    const ad = id=> adlar[id] || "(silinmiş)";
+    const ids = Object.keys(kisi).map(Number).sort((a,b)=>ad(a).localeCompare(ad(b), "tr"));
+    return {yil, aylar, kisi, ids, ad, kayitli: aylar.filter(r=>r.length).length};
+  }
+  // aylar: kişinin o ayki toplam hazırlama yükü (hasta × zorluk, çok günlük servis gün sayısıyla);
+  // Gün: servis hazırladığı gün; Yük: yıllık toplam; Ort. yük: çalıştığı gün başına ortalama yük;
+  // Ekip ort.: kişinin çalıştığı günlerde ekipte kişi başına düşen ortalama yük (adil pay ölçüsü).
+  // Ort. yük, ekip ortalamasından %5'ten fazla saparsa turuncu (fazla) / mavi (az) işaretlenir.
+  const yukSapma = k=>{ if (!k.gun || !k.fl) return 0; const o = k.l/k.gun, e = k.fl/k.gun; return (o - e) / e; };
+  const ybMi = sn=> /\sYB$/.test(sn);
+  function svcYuk(sn, n){ const s = svcByName.get(sn); return s ? s.h*s.z*(s.multi ? n : 1) : 0; }
+  function kisiServisleri(rec, id){ return Object.keys(rec.a).filter(sn=>rec.a[sn]===id); }
+  function gunSinirlari(rec){
+    const P = rec.k.length, adlar = Object.keys(rec.a), S = adlar.length, Y = adlar.filter(ybMi).length, gs = {};
+    adlar.forEach(sn=>{ const s = svcByName.get(sn); (s ? s.grps : []).forEach(g=>{ gs[g] = (gs[g]||0) + 1; }); });
+    return {cLo:Math.floor(S/P), cHi:Math.ceil(S/P), yLo:Math.floor(Y/P), yHi:Math.ceil(Y/P), cap:g=>Math.ceil((gs[g]||0)/P)};
+  }
+  // id kişisi sn servisini alırsa (cikan servis kişiden ayrılırken) aynı grupta sınırı aşan servisler
+  function grupCakisma(rec, K, id, sn, cikan){
+    const s = svcByName.get(sn); if (!s) return [];
+    const L = kisiServisleri(rec, id).filter(x=>x!==cikan && x!==sn), out = [];
+    s.grps.forEach(g=>{ const ayni = L.filter(x=>{ const t = svcByName.get(x); return t && t.grps.indexOf(g)>=0; }); if (ayni.length+1 > K.cap(g)) ayni.forEach(x=>{ if (out.indexOf(x)<0) out.push(x); }); });
+    return out;
+  }
+  // sn servisi hedef kişiye verilirse: sayı/YB dengesi bozulacaksa hedefin aynı türden, yükü en yakın servisi karşılık olarak geri verilir
+  function degisimPlani(rec, R, d, sn, hedef){
+    const K = gunSinirlari(rec), kaynak = rec.a[sn], ata = R.ata[d] || {};
+    const ks = kisiServisleri(rec, kaynak).filter(x=>x!==sn), hs = kisiServisleri(rec, hedef).concat([sn]);
+    const tamam = L=>{ const yb = L.filter(ybMi).length; return L.length>=K.cLo && L.length<=K.cHi && yb>=K.yLo && yb<=K.yHi; };
+    let karsilik = null;
+    if (!tamam(ks) || !tamam(hs)){
+      const l0 = svcYuk(sn, rec.n);
+      karsilik = kisiServisleri(rec, hedef).filter(t=> ybMi(t)===ybMi(sn) && ata[t]!==hedef && !grupCakisma(rec, K, kaynak, t, sn).length)
+        .sort((a,b)=> Math.abs(svcYuk(a, rec.n)-l0) - Math.abs(svcYuk(b, rec.n)-l0))[0] || null;
+    }
+    const uyari = [], cak = grupCakisma(rec, K, hedef, sn, karsilik);
+    if (cak.length) uyari.push("Grup kuralı: aynı gün "+cak.join(", ")+" de bu kişide.");
+    if (!karsilik && (!tamam(ks) || !tamam(hs))) uyari.push("Karşılık verilecek uygun servis yok; o gün kişi başı servis ya da YB sayısı 1'den fazla farklı olur.");
+    return {kaynak, hedef, karsilik, uyari};
+  }
+  function kayitTopla(rec){
+    rec.w = {}; rec.l = {}; rec.yb = {};
+    rec.k.forEach(id=>{ rec.w[id] = 0; rec.l[id] = 0; rec.yb[id] = 0; });
+    Object.keys(rec.a).forEach(sn=>{ const id = rec.a[sn], s = svcByName.get(sn), w = s && s.multi ? rec.n : 1;
+      if (rec.w[id]===undefined) return; rec.w[id] += w; rec.l[id] += s ? s.h*s.z*w : 0; if (ybMi(sn)) rec.yb[id]++; });
+  }
+// servis listesi: varsayılanlar + elle eklenenler, kayıtlı ayarlarla (zorluk, hasta, çok günlük, hazırlanıyor mu)
+function servisleriKur(A){
+  A = (A && typeof A==="object") ? A : {};
+  const svc = (A.svc && typeof A.svc==="object") ? A.svc : {};
+  SERVICES = SV_VARS.map(s=>Object.assign({}, s, {grps:s.grps.slice(), z0:s.z, h0:s.h, multi0:s.multi}));
+  (Array.isArray(A.ekstra) ? A.ekstra : []).forEach(e=>{ if (!e || !e.name || SERVICES.some(x=>x.name===e.name)) return;
+    SERVICES.push({name:String(e.name), z0:Number(e.z)||1, h0:Number(e.h)||0, multi0:!!e.multi, z:1, h:0, multi:false, grps:[], ekstra:true}); });
+  SERVICES.forEach((x,i)=>{ x.id = i; });
+  SERVICES.forEach(s=>{
+    const k = svc[s.name] || {};
+    s.z = (Number.isFinite(k.z) && k.z>=1) ? Math.min(10, k.z) : s.z0;
+    s.h = (Number.isFinite(k.h) && k.h>=0) ? k.h : s.h0;
+    s.multi = (typeof k.multi==="boolean") ? k.multi : s.multi0;
+    s.on = (typeof k.on==="boolean") ? k.on : true;
+  });
+  svcByName = new Map(SERVICES.map(s=>[s.name, s]));
+}
+
 function veriyiHazirla(veri, y, m){
   const v = kopya(veri || {});
   const nesne = x => (x && typeof x==="object" && !Array.isArray(x)) ? x : {};
@@ -2049,6 +2447,7 @@ function veriyiHazirla(veri, y, m){
     staff: Array.isArray(v.staff) ? v.staff : [],
     prefs: nesne(v.prefs), manualTatil: nesne(v.manualTatil), arife: nesne(v.arife),
     settings: nesne(v.settings), schedules: nesne(v.schedules), puantaj: nesne(v.puantaj), acil: nesne(v.acil),
+    servisKayit: nesne(v.servisKayit),
     year: y, month: m,
   };
 }
@@ -2103,6 +2502,134 @@ export function degisimDenetle(veri, d){
 export function yerineAdaylarHesapla(veri, y, m, gun, cik, gorev){
   state = veriyiHazirla(veri, y, m);
   try { return yerineAdaylar(y, m, gun, cik, gorev); } finally { state = null; }
+}
+
+// ---- servis hazırlama: dışa açılan işlemler. Her çağrı verinin kopyasıyla çalışır; değişen ay kaydı (servisKayit["yıl-ay"])
+// sonuç olarak döner, ekran onu kaydeder. bugun: YYYYAAGG sayısı (gün öncesi kayıtlar geçmiş sayılır, kendiliğinden değişmez).
+function servisBaglam(veri, y, m, bugun){
+  state = veriyiHazirla(veri, y, m);
+  servisleriKur((veri || {}).servisAyar);
+  SV_BUGUN = bugun || bugunSayisi();
+}
+function bugunSayisi(){ const n = new Date(); return gunNo(n.getFullYear(), n.getMonth(), n.getDate()); }
+const kayitKopyasi = (y, m) => { const R = state.servisKayit[y+"-"+m]; return R ? JSON.parse(JSON.stringify(R)) : null; };
+
+/** Ayarlar ekranı için servis listesi (varsayılan değerleriyle) */
+export function servisListesi(veri){
+  servisleriKur((veri || {}).servisAyar);
+  return SERVICES.map(s=>({id:s.id, name:s.name, z:s.z, h:s.h, multi:s.multi, on:s.on, z0:s.z0, h0:s.h0, multi0:s.multi0, ekstra:!!s.ekstra, yb:isYB(s), zor:!!zorMu(s), grup:s.grps.length>0}));
+}
+export const SERVIS_ZOR_ESIK = ZOR_ESIK;
+
+/**
+ * Ayın dağıtımını günceller (girdisi değişen bugünkü ve sonraki günler yeniden dağıtılır, geçmiş korunur).
+ * Dönüş: {cizelgeVar, kayit (ayın kaydı ya da null), degisti, sil (çizelgesi silinen ayın kaydı silinmeli)}
+ */
+export function servisAyHesapla(veri, y, m, opts, bugun){
+  servisBaglam(veri, y, m, bugun);
+  try {
+    opts = opts || {};
+    if (!cizVar(y, m)) return {cizelgeVar:false, kayit:null, degisti:false, sil: !!state.servisKayit[y+"-"+m] && !gecmisAy(y, m)};
+    if (!opts.zorla && !otoHesaplanir(y, m)) return {cizelgeVar:true, kayit:kayitKopyasi(y, m), degisti:false};
+    const degisti = ayHesapla(y, m, opts);
+    return {cizelgeVar:true, kayit:kayitKopyasi(y, m), degisti};
+  } finally { state = null; }
+}
+
+/** Bir günün ekranı: kişiler (puantajdan, elle açılıp kapatılanlarla), dağıtım, çok günlük servis gün sayısı */
+export function servisGunu(veri, y, m, d, bugun){
+  servisBaglam(veri, y, m, bugun);
+  try {
+    const V = ayVerisi(y, m), oto = otoGun(y, m, d);
+    const S = gunSonucu(V, d);
+    return {
+      tatil: isTatilGunu(y, m, d), gecmis: gunNo(y, m, d) < SV_BUGUN, teknikerVar: V.satir.length > 0,
+      kisiler: isTatilGunu(y, m, d) ? [] : gunKisileri(V.G, V.R, d), oto, n: V.R.gunElle[d] || oto,
+      ata: (V.R.ata && V.R.ata[d]) || {}, bayat: !!(S && S.rec.bayat),
+      sonuc: S ? {kisi: S.kisi, svcs: S.svcs, n: S.rec.n} : null,
+    };
+  } finally { state = null; }
+}
+
+/**
+ * Ay kaydında bir işlem yapar ve dağıtımı buna göre yeniler (eski uygulamadaki düğmeler):
+ * {tur:"kisi", gun, id} kişiyi o gün dağıtıma kat/çıkar · {tur:"karistir", gun} günü yeniden karıştır ·
+ * {tur:"ngun", gun, n} çok günlük servis gün sayısı · {tur:"yeniden", gun} bu günden itibaren yeniden dağıt ·
+ * {tur:"ata", gun, sn, hedef, karsilik} servisi elle başka teknikere ver · {tur:"oto", gun, sn} elle atamayı kaldır ·
+ * {tur:"ataSifirla", gun} günün tüm elle atamalarını kaldır · {tur:"olustur"} geçmiş ay için dağıtım oluştur
+ */
+export function servisIslem(veri, y, m, islem, bugun){
+  servisBaglam(veri, y, m, bugun);
+  try {
+    const R = kayitAy(y, m, true), d = islem.gun;
+    let opts = {};
+    if (islem.tur==="kisi"){
+      const V = ayVerisi(y, m), k = gunKisileri(V.G, R, d).find(x=>x.id===islem.id); if (!k) return kayitKopyasi(y, m);
+      const el = R.elle[d] || (R.elle[d] = {});
+      if (!k.on===k.oto) delete el[k.id]; else el[k.id] = !k.on;
+      if (!Object.keys(el).length) delete R.elle[d];
+      opts = {from: d};
+    } else if (islem.tur==="karistir"){ R.sk[d] = (R.sk[d]||0)+1; opts = {from: d}; }
+    else if (islem.tur==="ngun"){ if (islem.n===otoGun(y,m,d)) delete R.gunElle[d]; else R.gunElle[d] = islem.n; opts = {from: d}; }
+    else if (islem.tur==="yeniden"){ opts = {from: d}; }
+    else if (islem.tur==="ataSifirla"){ delete R.ata[d]; opts = {zorlaGun: d, from: d+1, gecmisKoru: true}; }
+    else if (islem.tur==="oto"){ const ata = R.ata[d] || {}; delete ata[islem.sn]; if (!Object.keys(ata).length) delete R.ata[d]; opts = {zorlaGun: d, from: d+1, gecmisKoru: true}; }
+    else if (islem.tur==="ata"){
+      const rec = R.gun[d]; if (!rec || rec.a[islem.sn]===undefined) return kayitKopyasi(y, m);
+      const kaynak = rec.a[islem.sn], A = R.ata[d] || (R.ata[d] = {});
+      rec.a[islem.sn] = islem.hedef; A[islem.sn] = islem.hedef;
+      if (islem.karsilik){ rec.a[islem.karsilik] = kaynak; A[islem.karsilik] = kaynak; }
+      kayitTopla(rec); rec.z = Date.now();
+      opts = {imzaTazele: d, from: d+1, gecmisKoru: true};
+    } else if (islem.tur==="olustur"){ opts = {zorla: true}; }
+    if (cizVar(y, m)) ayHesapla(y, m, opts);
+    return kayitKopyasi(y, m);
+  } finally { state = null; }
+}
+
+/** Bir servisi başka teknikere verme seçenekleri: gerekirse karşılığında geri verilecek servis ve uyarılar */
+export function servisAtamaAdaylari(veri, y, m, d, sn, bugun){
+  servisBaglam(veri, y, m, bugun);
+  try {
+    const R = kayitAy(y, m, false), rec = R && R.gun[d];
+    if (!rec || rec.a[sn]===undefined) return null;
+    const V = ayVerisi(y, m), kaynak = rec.a[sn], ata = R.ata[d] || {};
+    const adaylar = rec.k.filter(id=>id!==kaynak).map(id=>{ const pl = degisimPlani(rec, R, d, sn, id), L = kisiServisleri(rec, id);
+        return {id, ad:V.ad(id), karsilik:pl.karsilik, uyari:pl.uyari, servis:L.length, yb:L.filter(ybMi).length, yuk:L.reduce((t,x)=>t+svcYuk(x, rec.n), 0)}; })
+      .sort((a,b)=> (a.uyari.length-b.uyari.length) || a.ad.localeCompare(b.ad, "tr"));
+    return {kaynak, kaynakAd:V.ad(kaynak), elle: ata[sn]===kaynak, elleVar: ata[sn]!==undefined, adaylar};
+  } finally { state = null; }
+}
+
+/**
+ * Yılın servis raporu. Önce çizelgesi olan ayların dağıtımı güncellenir (eski uygulamadaki yilGuncelle);
+ * dönüşte güncellenen kayıtlar (kayitlar) ve rapor verisi: kişi başı aylık yük, servis × kişi dağılımı.
+ */
+export function servisYillik(veri, yil, bugun){
+  servisBaglam(veri, yil, 0, bugun);
+  try {
+    const kayitlar = {};
+    for (let mm=0; mm<12; mm++){
+      const k = yil+"-"+mm;
+      if (!cizVar(yil, mm)){ if (state.servisKayit[k] && !gecmisAy(yil, mm)){ delete state.servisKayit[k]; kayitlar[k] = null; } continue; }
+      if (!otoHesaplanir(yil, mm)) continue;
+      if (ayHesapla(yil, mm, {})) kayitlar[k] = kayitKopyasi(yil, mm);
+    }
+    const Y = yillikVeri(yil), adlar = {};
+    Y.ids.forEach(id=>{ adlar[id] = Y.ad(id); });
+    // servis × kişi: kaç kez ve çalıştığı günlere göre payı (eski matrisRecs)
+    const recs = [].concat.apply([], Y.aylar), say = {}, pay = {}, gun = {};
+    for (const rec of recs){
+      const P = rec.k.length;
+      rec.k.forEach(id=>{ gun[id] = (gun[id]||0) + 1; });
+      Object.keys(rec.a).forEach(sn=>{ const id = rec.a[sn]; (say[sn] = say[sn] || {})[id] = (say[sn][id]||0) + 1;
+        const ps = pay[sn] || (pay[sn] = {}); rec.k.forEach(k=>{ ps[k] = (ps[k]||0) + 1/P; }); });
+    }
+    const grupOf = sn=>{ if (/\sYB$/.test(sn)) return "yb"; const s = svcByName.get(sn); return s && s.multi ? "cok" : "tek"; };
+    const servisler = Object.keys(say).sort((a,b)=>a.localeCompare(b, "tr")).map(sn=>({sn, grup:grupOf(sn), say:say[sn], pay:pay[sn]||{}}));
+    const kisi = Y.ids.map(id=>{ const k = Y.kisi[id]; return {id, ad:adlar[id], ay:k.ay, gun:k.gun, l:k.l, fl:k.fl, w:k.w, y:k.y, adet:k.adet, sapma:yukSapma(k)}; });
+    return {kayitlar, kayitli:Y.kayitli, bosAy:Y.aylar.map(r=>!r.length), kisi, matris:{servisler, gun}};
+  } finally { state = null; }
 }
 
 /**

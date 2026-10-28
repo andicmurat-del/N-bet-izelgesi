@@ -19,6 +19,8 @@ export function bosVeri(): Veri {
     puantaj: {},
     acil: {},
     degisimler: [],
+    servisAyar: { svc: {}, ekstra: [] },
+    servisKayit: {},
   };
 }
 
@@ -95,6 +97,20 @@ export function veriyiDogrula(ham: unknown): Veri {
       ...(kodMu(d.sebep) ? { sebep: d.sebep } : {}),
       ...(typeof d.not === "string" && d.not ? { not: d.not.slice(0, 160) } : {}),
     }));
+  // servis hazırlama: ayarlar sınırlar içinde; ay kayıtları motorun biçiminde (motor bozuk gün kayıtlarını kendisi atar)
+  const sa = nesne(o.servisAyar);
+  for (const [ad, k] of Object.entries(nesne(sa.svc))) {
+    const x = nesne(k);
+    v.servisAyar.svc[ad] = { z: sayi(x.z, 1, 10, 1), h: sayi(x.h, 0, 999, 0), multi: x.multi === true, on: x.on !== false };
+  }
+  v.servisAyar.ekstra = (Array.isArray(sa.ekstra) ? sa.ekstra : [])
+    .filter((e: any) => e && typeof e.name === "string" && e.name.trim())
+    .map((e: any) => ({ name: String(e.name).trim().slice(0, 40), z: sayi(e.z, 1, 10, 1), h: sayi(e.h, 0, 999, 0), multi: e.multi === true }));
+  for (const [k, R] of Object.entries(nesne(o.servisKayit))) {
+    if (!/^\d{4}-\d{1,2}$/.test(k) || !R || typeof R !== "object") continue;
+    const r = R as Record<string, unknown>;
+    v.servisKayit[k] = { gun: nesne(r.gun), elle: nesne(r.elle), gunElle: nesne(r.gunElle), sk: nesne(r.sk), ad: nesne(r.ad), ata: nesne(r.ata) } as any;
+  }
   if (o.ornek === true) v.ornek = true;
   return v;
 }

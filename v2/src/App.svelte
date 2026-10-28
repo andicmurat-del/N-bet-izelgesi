@@ -6,18 +6,23 @@
   import Izinler from "./ui/sayfalar/Izinler.svelte";
   import Puantaj from "./ui/sayfalar/Puantaj.svelte";
   import Raporlar from "./ui/sayfalar/Raporlar.svelte";
+  import Hazirlama from "./ui/sayfalar/Hazirlama.svelte";
   import Kisiler from "./ui/sayfalar/Kisiler.svelte";
   import Ayarlar from "./ui/sayfalar/Ayarlar.svelte";
 
   const SAYFALAR = [
     { ad: "cizelge", baslik: "Çizelge", ikon: "takvim" },
     { ad: "puantaj", baslik: "Puantaj", ikon: "tablo" },
+    { ad: "hazirlama", baslik: "Servis hazırlama", kisa: "Hazırlama", ikon: "katman" },
     { ad: "izinler", baslik: "İzin ve tercihler", kisa: "İzinler", ikon: "izin" },
     { ad: "raporlar", baslik: "Raporlar", ikon: "grafik" },
     { ad: "kisiler", baslik: "Personel", ikon: "kisiler" },
     { ad: "ayarlar", baslik: "Ayarlar", ikon: "ayarlar" },
   ] as const;
   type SayfaAdi = (typeof SAYFALAR)[number]["ad"];
+  // telefonun alt menüsünde "Diğer" altında duranlar
+  const DIGER: SayfaAdi[] = ["kisiler", "ayarlar"];
+  let digerAcik = $state(false);
 
   const hashOku = (): SayfaAdi => {
     const h = location.hash.slice(1);
@@ -37,6 +42,7 @@
   }
 </script>
 
+<svelte:window onkeydown={e => { if (e.key === "Escape") digerAcik = false; }} onclick={e => { if (digerAcik && !(e.target as Element).closest?.(".diger-kap")) digerAcik = false; }} />
 <a class="atla" href="#icerik">İçeriğe geç</a>
 <div class="kabuk">
   <nav class="yan" aria-label="Bölümler">
@@ -60,15 +66,26 @@
     {#if sayfa === "cizelge"}<Cizelge {git} />
     {:else if sayfa === "puantaj"}<Puantaj {git} />
     {:else if sayfa === "izinler"}<Izinler {git} />
+    {:else if sayfa === "hazirlama"}<Hazirlama {git} />
     {:else if sayfa === "raporlar"}<Raporlar />
     {:else if sayfa === "kisiler"}<Kisiler />
     {:else}<Ayarlar />{/if}
   </main>
 
   <nav class="alt" aria-label="Bölümler">
-    {#each SAYFALAR as s}
+    {#each SAYFALAR.filter(s => !DIGER.includes(s.ad)) as s}
       <button class:secili={sayfa === s.ad} aria-current={sayfa === s.ad ? "page" : undefined} onclick={() => git(s.ad)}><Ikon ad={s.ikon} boyut={22} /><span>{"kisa" in s ? s.kisa : s.baslik}</span></button>
     {/each}
+    <div class="diger-kap">
+      <button class:secili={DIGER.includes(sayfa)} aria-expanded={digerAcik} aria-controls="diger-menu" onclick={() => (digerAcik = !digerAcik)}><Ikon ad="diger" boyut={22} /><span>Diğer</span></button>
+      {#if digerAcik}
+        <div class="diger-menu" id="diger-menu">
+          {#each SAYFALAR.filter(s => DIGER.includes(s.ad)) as s}
+            <button class:secili={sayfa === s.ad} aria-current={sayfa === s.ad ? "page" : undefined} onclick={() => { digerAcik = false; git(s.ad); }}><Ikon ad={s.ikon} />{s.baslik}</button>
+          {/each}
+        </div>
+      {/if}
+    </div>
   </nav>
 </div>
 
@@ -98,5 +115,8 @@
       padding: 6px max(4px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
     .alt button { display: grid; justify-items: center; gap: 2px; min-height: 52px; min-width: 0; padding: 0 1px; border: 0; background: transparent; color: var(--soluk); font-size: var(--f-xs); font-weight: 500; border-radius: var(--r); cursor: pointer; }
     .alt button.secili { color: var(--vurgu); background: var(--vurgu-zemin); font-weight: 600; }
+    .diger-kap { position: relative; display: grid; }
+    .diger-menu { position: absolute; right: 0; bottom: calc(100% + 8px); display: grid; gap: 2px; min-width: 180px; padding: 6px; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--r); box-shadow: var(--golge); }
+    .alt .diger-menu button { display: flex; align-items: center; gap: var(--b2); justify-items: start; min-height: 44px; padding: 0 var(--b3); font-size: var(--f-sm); color: var(--yazi); }
   }
 </style>

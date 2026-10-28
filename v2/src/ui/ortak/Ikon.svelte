@@ -1,6 +1,6 @@
 <script lang="ts">
   // Tek çizgi kalınlığında, 24'lük ızgarada simgeler (yanında yazı olduğunda ekran okuyucudan gizlenir)
-  type Ad = "takvim" | "kisiler" | "izin" | "ayarlar" | "sol" | "sag" | "indir" | "kilit" | "uyari" | "tamam" | "yenile" | "kapat" | "arti" | "sil" | "duzenle" | "yukle" | "karisik" | "tablo" | "grafik" | "acil" | "liste";
+  type Ad = "takvim" | "kisiler" | "izin" | "ayarlar" | "sol" | "sag" | "indir" | "kilit" | "uyari" | "tamam" | "yenile" | "kapat" | "arti" | "sil" | "duzenle" | "yukle" | "karisik" | "tablo" | "grafik" | "acil" | "liste" | "katman" | "diger";
   let { ad, boyut = 18 }: { ad: Ad; boyut?: number } = $props();
 </script>
 
@@ -25,6 +25,8 @@
   {:else if ad === "grafik"}<path d="M4 20h16" /><rect x="5.5" y="11" width="3" height="6.5" rx="0.8" /><rect x="10.5" y="6" width="3" height="11.5" rx="0.8" /><rect x="15.5" y="13.5" width="3" height="4" rx="0.8" />
   {:else if ad === "acil"}<path d="M2.5 12h4l2.2-5.5 4.3 11 2.2-5.5h6.3" />
   {:else if ad === "liste"}<path d="M9 6.5h11M9 12h11M9 17.5h11" /><circle cx="4.8" cy="6.5" r="1.2" /><circle cx="4.8" cy="12" r="1.2" /><circle cx="4.8" cy="17.5" r="1.2" />
+  {:else if ad === "katman"}<path d="M12 3.5 21 8.5l-9 5-9-5z" /><path d="m3 12.5 9 5 9-5" /><path d="m3 16.5 9 5 9-5" />
+  {:else if ad === "diger"}<circle cx="5.5" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="18.5" cy="12" r="1.4" />
   {:else if ad === "duzenle"}<path d="M4 20h4L19 9l-4-4L4 16z" /><path d="m13.5 6.5 4 4" />
   {/if}
 </svg>
