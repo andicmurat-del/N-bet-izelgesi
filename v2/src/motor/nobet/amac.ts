@@ -324,5 +324,8 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     return r;
   }
 
-  return { hesaplaJ, tabanKur, jDelta };
+  /** taban çözümde i. günde kesin kural ihlali var mı */
+  const tabanIhlalli = (i: number) => bIhlGun[i] > 0;
+
+  return { hesaplaJ, tabanKur, jDelta, tabanIhlalli };
 }

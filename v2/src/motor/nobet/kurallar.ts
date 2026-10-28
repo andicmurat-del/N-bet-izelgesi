@@ -90,6 +90,19 @@ export function kurallarKur(K: AramaKurulumu) {
     }
     return true;
   }
+  /** ihlalli günde denenen hamlelerde bile bozulmayacak temel kurallar: günde eczacı var, kimse aynı gün hem nöbetçi
+   *  hem hazırlamacı değil, izinli/yasaklı kişi nöbetçi değil (eş durumu zorunluluğu hariç) */
+  function temelUygun(idx: number): boolean {
+    const dy = days[idx], as = dy.assigned, pr = dy.prep;
+    let eczaci = false;
+    for (let q = 0; q < as.length; q++) {
+      const id = as[q].id;
+      if (eczaciMi(as[q].role)) eczaci = true;
+      if (yasak(id, idx) && !zorunluMu(id, idx)) return false;
+      for (let r = 0; r < pr.length; r++) if (pr[r].id === id) return false;
+    }
+    return eczaci;
+  }
   /** Günün kesin kural ihlali sayısı (nöbetçiler ve hazırlama personeli için yukarıdaki kuralların hepsi). İlk yerleştirme
    *  başka kimse kalmayınca kural esnetebilir; aramadaki hamleler yeni ihlal yaratmaz (gunGecerli, prepUygun), ama var olanı
    *  gidermeleri için amaç fonksiyonu bu sayıyı cezalandırır. Boş kalan hazırlama yeri de sayılır. Gün kırmızı işareti de buna göredir. Bir günün sayısı
@@ -119,5 +132,5 @@ export function kurallarKur(K: AramaKurulumu) {
     return n;
   }
 
-  return { yasak, zorunluMu, gundeVar, tatilGunu, komsuda, prepKomsu, prepBitisik, persembeNobetliMi, hsHazirligiVarMi, prepUygun, ikiDisaridan, gunGecerli, ihlalSayisi };
+  return { yasak, zorunluMu, gundeVar, tatilGunu, komsuda, prepKomsu, prepBitisik, persembeNobetliMi, hsHazirligiVarMi, prepUygun, ikiDisaridan, gunGecerli, temelUygun, ihlalSayisi };
 }
