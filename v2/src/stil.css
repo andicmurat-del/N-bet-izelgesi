@@ -16,6 +16,7 @@
   --tek: #2D5C9C;          --tek-zemin: #E5EDF7;
   --haz: #8F520C;          --haz-zemin: #F7EBDA;
   --destek: #5E6B75;       --destek-zemin: #EDF0F2;
+  --acil: #9C2A73;         --acil-zemin: #F8E5F0;
   /* tercih işaretleri */
   --izin: #6A3E9E;         --izin-zemin: #EFE8F7;
   --ister: #1E6E3E;        --ister-zemin: #E3F2E8;
@@ -48,7 +49,7 @@
   :root:not([data-theme="light"]) {
     --zemin: #0E151C; --yuzey: #16202A; --yuzey-2: #1B2733; --cizgi: #2A3A48; --cizgi-acik: #213040;
     --yazi: #E4EBF1; --yazi-2: #B6C4D0; --soluk: #93A4B4;
-    --ecz: #5CC9B1; --ecz-zemin: #163731; --tek: #8DB2EA; --tek-zemin: #1B2D45; --haz: #E7B46A; --haz-zemin: #3A2C17; --destek: #AAB6BF; --destek-zemin: #25313B;
+    --ecz: #5CC9B1; --ecz-zemin: #163731; --tek: #8DB2EA; --tek-zemin: #1B2D45; --haz: #E7B46A; --haz-zemin: #3A2C17; --destek: #AAB6BF; --destek-zemin: #25313B; --acil: #EE9ACB; --acil-zemin: #3B1D30;
     --izin: #C2A3EC; --izin-zemin: #2E2445; --ister: #7FD3A0; --ister-zemin: #173524; --istemez: #F09AAA; --istemez-zemin: #3D1F27;
     --es: #8FC0EC; --es-zemin: #1A2E42; --esyok: #EBB07A; --esyok-zemin: #3A2918;
     --tatil: #E7B46A; --tatil-zemin: #241D15; --arife: #E9CF7A; --arife-zemin: #2B2512;
@@ -61,7 +62,7 @@
 :root[data-theme="dark"] {
   --zemin: #0E151C; --yuzey: #16202A; --yuzey-2: #1B2733; --cizgi: #2A3A48; --cizgi-acik: #213040;
   --yazi: #E4EBF1; --yazi-2: #B6C4D0; --soluk: #93A4B4;
-  --ecz: #5CC9B1; --ecz-zemin: #163731; --tek: #8DB2EA; --tek-zemin: #1B2D45; --haz: #E7B46A; --haz-zemin: #3A2C17; --destek: #AAB6BF; --destek-zemin: #25313B;
+  --ecz: #5CC9B1; --ecz-zemin: #163731; --tek: #8DB2EA; --tek-zemin: #1B2D45; --haz: #E7B46A; --haz-zemin: #3A2C17; --destek: #AAB6BF; --destek-zemin: #25313B; --acil: #EE9ACB; --acil-zemin: #3B1D30;
   --izin: #C2A3EC; --izin-zemin: #2E2445; --ister: #7FD3A0; --ister-zemin: #173524; --istemez: #F09AAA; --istemez-zemin: #3D1F27;
   --es: #8FC0EC; --es-zemin: #1A2E42; --esyok: #EBB07A; --esyok-zemin: #3A2918;
   --tatil: #E7B46A; --tatil-zemin: #241D15; --arife: #E9CF7A; --arife-zemin: #2B2512;
@@ -118,5 +119,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .isaret.teknisyen { border-radius: 2px; background: var(--tek); }
 .isaret.nobetci { background: transparent; box-shadow: inset 0 0 0 2px var(--ecz); }
 .isaret.destek { border-radius: 2px; background: var(--destek); }
+.isaret.servis { border-radius: 2px; background: var(--acil); transform: rotate(45deg) scale(.85); }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }

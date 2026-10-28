@@ -1,6 +1,6 @@
 // Uygulamanın kayıtlı verisi. Alan adları motorla (src/motor/cizelge.js) ortaktır; motor bu yapıyı olduğu gibi okur.
 
-export type Rol = "eczaci" | "teknisyen" | "destek" | "nobetci";
+export type Rol = "eczaci" | "teknisyen" | "destek" | "nobetci" | "servis";
 
 export interface Kisi {
   id: number;
@@ -71,6 +71,8 @@ export interface Veri {
   schedules: Record<string, AyCizelgesi>;
   /** "yil-ay" → kişi id → gün → elle yazılan puantaj kodu (çizelgeden gelen kodun yerine geçer) */
   puantaj: Record<string, Record<string, Record<string, PuantajKodu>>>;
+  /** "yil-ay" → gün → acil serviste nöbetçi kişi id'leri (en çok 2); puantajda nöbet (24 saat) sayılır */
+  acil: Record<string, Record<string, number[]>>;
   /** örnek kadroyla deneniyor: ekranda belirtilir, tek düğmeyle silinir */
   ornek?: true;
 }
@@ -80,6 +82,7 @@ export const ROL_AD: Record<Rol, string> = {
   teknisyen: "Tekniker",
   destek: "Destek personeli",
   nobetci: "Dışarıdan nöbetçi eczacı",
+  servis: "Acil servis eczacısı",
 };
 
 export const ROL_ACIKLAMA: Record<Rol, string> = {
@@ -87,6 +90,7 @@ export const ROL_ACIKLAMA: Record<Rol, string> = {
   teknisyen: "Nöbet ve hazırlama tutar.",
   destek: "Nöbet tutmaz; tatil günlerinde ikinci hazırlama görevini alır.",
   nobetci: "Kurum dışından nöbete gelen eczacı; eczacı yerine sayılır.",
+  servis: "Eczane nöbetine yazılmaz; acil servis nöbetleri ayrı çizelgede elle girilir. Hafta içi normal mesai yapar.",
 };
 
 export const TERCIH_AD: Record<Tercih, string> = {

@@ -14,7 +14,7 @@
   const onayli = $derived(!!c.onay);
   const iso = $derived(isoTarih(c.year, c.month, gun));
   const calisiyor = (k: Kisi) => !(k.baslangic && iso < k.baslangic) && !(k.bitis && iso > k.bitis);
-  const tum = $derived(aydaCalisanlar(c.year, c.month).filter(calisiyor).sort((a, b) => a.name.localeCompare(b.name, "tr")));
+  const tum = $derived(aydaCalisanlar(c.year, c.month).filter(k => k.role !== "servis" && calisiyor(k)).sort((a, b) => a.name.localeCompare(b.name, "tr")));
   const nobetAday = $derived(tum.filter(k => k.role !== "destek"));
   const hazAday = $derived(tum);
 

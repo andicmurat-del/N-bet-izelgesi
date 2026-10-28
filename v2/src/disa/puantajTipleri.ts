@@ -3,7 +3,7 @@ import type { Rol } from "../veri/tipler";
 
 export interface PuantajSatiri {
   s: { id: number; name: string; role: Rol };
-  cells: { kod: string; saat: number; ov: boolean }[];
+  cells: { kod: string; saat: number; ov: boolean; acil?: boolean }[];
   toplam: number;
   /** aylık normal mesai; normal mesaisi olmayanlarda (dışarıdan nöbetçi, destek) null */
   aylik: number | null;

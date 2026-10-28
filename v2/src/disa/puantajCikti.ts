@@ -7,7 +7,7 @@ import { ROL_AD, type Onay } from "../veri/tipler";
 import { AYLAR, GUN_KISA, buyukAd } from "../veri/tarih";
 
 const baslik = (y: number, m: number, kurum: string) => `${kurum ? buyukAd(kurum) + " · " : ""}${AYLAR[m]} ${y} puantaj cetveli`;
-const ONEK: Record<string, string> = { eczaci: "Ecz. ", nobetci: "Ecz. ", teknisyen: "Ecz. Tek. ", destek: "" };
+const ONEK: Record<string, string> = { eczaci: "Ecz. ", nobetci: "Ecz. ", teknisyen: "Ecz. Tek. ", destek: "", servis: "Ecz. " };
 
 export function puantajKitabi(G: Izgara, y: number, m: number, kurum: string): Blob {
   const gunBas: Hucre[] = G.gunler.map(g => ({ v: `${g.gun} ${GUN_KISA[g.dw]}`, s: g.tatil ? "baslikTatil" : "baslik" }));

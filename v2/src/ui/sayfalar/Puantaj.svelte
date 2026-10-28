@@ -17,7 +17,7 @@
   const G = $derived(puantajHesapla($state.snapshot(depo.veri), depo.yil, depo.ay) as Izgara);
   const elleSayisi = $derived(Object.values(depo.veri.puantaj[`${depo.yil}-${depo.ay}`] ?? {}).reduce((t, a) => t + Object.keys(a).length, 0));
 
-  const grupAd: Record<string, string> = { eczaci: "Eczacılar", nobetci: "Dışarıdan nöbetçi eczacılar", teknisyen: "Teknikerler", destek: "Destek personeli" };
+  const grupAd: Record<string, string> = { eczaci: "Eczacılar", nobetci: "Dışarıdan nöbetçi eczacılar", teknisyen: "Teknikerler", destek: "Destek personeli", servis: "Acil servis eczacıları" };
 
   // hücre düzenleme
   let acik = $state(false);
@@ -77,7 +77,7 @@
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
   <p class="lejant">
-    <span><i class="k">8</i>Normal mesai</span><span><i class="k k-N">24</i>Nöbet</span><span><i class="k k-H">8</i>Hazırlama</span>
+    <span><i class="k">8</i>Normal mesai</span><span><i class="k k-N">24</i>Nöbet</span><span><i class="k k-N acil">24</i>Acil servis nöbeti</span><span><i class="k k-H">8</i>Hazırlama</span>
     <span><i class="k k-NI">Nİ</i>Nöbet izni</span><span><i class="k k-YI">Yİ</i>Yıllık izin</span><span><i class="k k-R">R</i>Rapor</span>
     <span><i class="k k-P">–</i>Çalışma dönemi dışında</span><span><i class="k ov-ornek"></i>Elle değiştirildi</span>
   </p>
@@ -102,8 +102,8 @@
             <th class="ad" scope="row"><span class="isaret {r.s.role}"></span>{r.s.name}</th>
             {#each r.cells as h, i}
               {@const g = G.gunler[i]}
-              <td class="k-{h.kod}" class:tatil={g.tatil} class:ov={h.ov}>
-                <button onclick={() => hucreAc(r, i)} aria-label="{r.s.name}, {gunMetni(depo.yil, depo.ay, g.gun)}: {KOD_AD[h.kod] ?? h.kod}{h.ov ? ' (elle)' : ''}">{kodMetni(h.kod, h.saat, g.arife)}</button>
+              <td class="k-{h.kod}" class:tatil={g.tatil} class:ov={h.ov} class:acil={h.acil}>
+                <button onclick={() => hucreAc(r, i)} aria-label="{r.s.name}, {gunMetni(depo.yil, depo.ay, g.gun)}: {h.acil ? 'Acil servis nöbeti (24 saat)' : (KOD_AD[h.kod] ?? h.kod)}{h.ov ? ' (elle)' : ''}">{kodMetni(h.kod, h.saat, g.arife)}</button>
               </td>
             {/each}
             <td class="ozet ilk rakam">{r.toplam}</td>
@@ -181,6 +181,7 @@
   .cetvel td button:hover { outline: 2px solid var(--odak); outline-offset: -2px; }
   .cetvel td.ov::after { content: ""; position: absolute; top: 0; right: 0; border-top: 7px solid var(--odak); border-left: 7px solid transparent; pointer-events: none; }
   .k-N { background: var(--izin-zemin) !important; color: var(--izin); font-weight: 700; }
+  .k-N.acil { background: var(--acil-zemin) !important; color: var(--acil); }
   .k-H { background: var(--haz-zemin) !important; color: var(--haz); font-weight: 600; }
   .k-NI { background: var(--es-zemin) !important; color: var(--es); font-weight: 600; }
   .k-YI { background: var(--ister-zemin) !important; color: var(--ister); font-weight: 600; }

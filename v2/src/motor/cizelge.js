@@ -1859,6 +1859,43 @@ const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağus
 
 const kopya = v => JSON.parse(JSON.stringify(v));
 
+// ---- günlük çalışma listesi (eski uygulama index.html gunlukListe, aynen) ----
+function gunlukListe(G, d){
+  const var_ = [], yok = [], tatil = !!G.gunler[d-1].tatil;
+  G.satirlar.forEach(r=>{
+    const c = r.cells[d-1], kod = c.kod;
+    const calisiyor = kod==="M" || kod==="N" || kod==="H" || (kod && kod.indexOf("S:")===0 && c.saat>0);
+    if (calisiyor){ var_.push({s:r.s, kod, saat:c.saat, acil:!!c.acil}); return; }
+    const neden = {NI:"Nöbet ertesi izni", YI:"Yıllık izin", R:"Raporlu", DI:"Diğer izin"}[kod];
+    if (neden) yok.push({s:r.s, neden});
+  });
+  let onay, haz, dst;
+  // hafta sonu / tatil: dışarıdan gelen eczacı ayrı listelenmez, görevine göre onaycı ya da hazırlamacıdır
+  const gel = tatil ? [] : var_.filter(x=>x.s.role==="nobetci");
+  if (tatil){
+    // Hafta sonu/tatil: nöbetçiler (eczacı+tekniker ya da eczacı+eczacı) onay görevinde;
+    // 2 hazırlamacı rolü ne olursa olsun (eczacı, tekniker, destek) hazırlama görevinde.
+    // Acil serviste nöbet tutan eczacılar (acil servis nöbetçi eczacısı ya da acil listesine yazılan eczacı)
+    // hafta sonu / tatil listesinde gösterilmez: yalnız günlük eczanede nöbet tutanlar onaycıdır.
+    const acilMi = x=> x.acil || x.s.role==="servis";
+    const hazMi = x=> x.kod==="H" && !acilMi(x);
+    const onayMi = x=> x.kod==="N" && !acilMi(x);
+    onay = var_.filter(onayMi);
+    haz = var_.filter(hazMi);
+    dst = [];
+    // nöbet/hazırlama dışında kalan diğer çalışanlar rolüne göre yerleşir
+    var_.forEach(x=>{ if (acilMi(x) || onayMi(x) || hazMi(x) || x.s.role==="nobetci") return;
+      if (x.s.role==="eczaci") onay.push(x); else haz.push(x); });
+  } else {
+    onay = var_.filter(x=>x.s.role==="eczaci" || x.s.role==="servis");
+    haz = var_.filter(x=>x.s.role==="teknisyen");
+    dst = var_.filter(x=>x.s.role==="destek");
+  }
+  const azSira = (a,b)=> a.s.name.localeCompare(b.s.name, "tr");
+  [onay, haz, dst, gel, yok].forEach(l=>l.sort(azSira));
+  return {tatil, onay, haz, dst, gel, yok, toplam: var_.length, nobetci: var_.filter(x=>x.kod==="N" && !x.acil).length, acilN: var_.filter(x=>x.acil).length};
+}
+
 function veriyiHazirla(veri, y, m){
   const v = kopya(veri || {});
   const nesne = x => (x && typeof x==="object" && !Array.isArray(x)) ? x : {};
@@ -1910,6 +1947,38 @@ export function puantajHesapla(veri, yil, ay){
   try { return puantajGrid(yil, ay); } finally { state = null; }
 }
 export const PUANTAJ_KODLARI = PZ_KODLAR;
+
+/**
+ * Acil servis nöbeti denetimi (eski acilKontrol): aynı kişi iki kez, izin/eş durumu, art arda iki gün,
+ * aynı gün eczane nöbeti. {sev:"hata"|"uyari", t} listesi döner.
+ */
+export function acilDenetle(veri, y, m, g, ids){
+  state = veriyiHazirla(veri, y, m);
+  try {
+    const ay = state.acil[y+"-"+m] || {}, out = [];
+    if (ids.length===2 && ids[0]===ids[1]) out.push({sev:"hata", t:"Aynı kişi iki kez seçilemez."});
+    const sch = state.schedules[y+"-"+m];
+    [...new Set(ids)].forEach(id=>{
+      const s = state.staff.find(x=>x.id===id); if (!s) return;
+      if (kesinYasak(id,y,m,g)) out.push({sev:"uyari", t:s.name+" bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında."});
+      [-1,1].forEach(k=>{ if ((ay[g+k]||[]).indexOf(id)>=0) out.push({sev:"uyari", t:s.name+", "+(g+k)+". gün de acil serviste nöbetçi (nöbet ertesi gün izin gerekir)."}); });
+      if (sch && sch.days[g-1] && sch.days[g-1].assigned.some(p=>p.id===id)) out.push({sev:"uyari", t:s.name+" aynı gün eczane nöbetçisi."});
+    });
+    return out;
+  } finally { state = null; }
+}
+
+/**
+ * Günlük çalışma listesi: puantaja göre her gün kim onayda, kim hazırlamada, kim yok (izin/rapor).
+ * Hafta sonu ve tatilde onaycılar eczane nöbetçileri, hazırlamacılar o günün hazırlamacılarıdır.
+ */
+export function calismaListesiHesapla(veri, y, m){
+  state = veriyiHazirla(veri, y, m);
+  try {
+    const G = puantajGrid(y, m);
+    return G.gunler.map(g=>({gun:g.gun, dw:g.dw, ...gunlukListe(G, g.gun)}));
+  } finally { state = null; }
+}
 
 /**
  * Yılın raporu: ay ay kişi başı puantaj özeti (fazla mesai, nöbet, gün türleri, hazırlama, izin, rapor) ve

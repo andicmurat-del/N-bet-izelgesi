@@ -5,7 +5,7 @@
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
 
-  const ROLLER: Rol[] = ["eczaci", "teknisyen", "destek", "nobetci"];
+  const ROLLER: Rol[] = ["eczaci", "teknisyen", "destek", "nobetci", "servis"];
   let yeniAd = $state("");
   let yeniRol = $state<Rol>("eczaci");
   let ekleHata = $state("");

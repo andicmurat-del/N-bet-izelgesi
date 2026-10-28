@@ -17,6 +17,7 @@ export function bosVeri(): Veri {
     settings: { ...AYAR_VARSAYILAN },
     schedules: {},
     puantaj: {},
+    acil: {},
   };
 }
 
@@ -26,7 +27,7 @@ export function veriyiDogrula(ham: unknown): Veri {
   if (!ham || typeof ham !== "object") return v;
   const o = ham as Record<string, any>;
   const nesne = (x: unknown) => (x && typeof x === "object" && !Array.isArray(x) ? (x as Record<string, any>) : {});
-  const roller: Rol[] = ["eczaci", "teknisyen", "destek", "nobetci"];
+  const roller: Rol[] = ["eczaci", "teknisyen", "destek", "nobetci", "servis"];
   const iso = (t: unknown) => (typeof t === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : undefined);
   const kurum = nesne(o.kurum);
   v.kurum = { ad: String(kurum.ad ?? ""), onaylayan: String(kurum.onaylayan ?? "") };
@@ -59,6 +60,15 @@ export function veriyiDogrula(ham: unknown): Veri {
     for (const [id, gunler] of Object.entries(nesne(kisiler)))
       for (const [gun, kod] of Object.entries(nesne(gunler)))
         if (kodlar.includes(kod as PuantajKodu)) ((v.puantaj[ayK] ??= {})[id] ??= {})[gun] = kod as PuantajKodu;
+  }
+  const kisiIdleri = new Set(v.staff.map(k => k.id));
+  for (const [ayK, gunler] of Object.entries(nesne(o.acil))) {
+    if (!/^\d{4}-\d{1,2}$/.test(ayK)) continue;
+    for (const [gun, ids] of Object.entries(nesne(gunler))) {
+      const l = (Array.isArray(ids) ? ids : []).filter((id: unknown): id is number => Number.isInteger(id) && kisiIdleri.has(id as number));
+      const tek = [...new Set(l)].slice(0, 2);
+      if (/^\d{1,2}$/.test(gun) && tek.length) (v.acil[ayK] ??= {})[gun] = tek;
+    }
   }
   for (const [k, c] of Object.entries(nesne(o.schedules))) {
     if (!c || !Array.isArray(c.days) || !Number.isInteger(c.year) || !Number.isInteger(c.month)) continue;
@@ -145,6 +155,10 @@ export function kisiSil(id: number) {
     for (const g of c.days) { g.assigned = g.assigned.filter(p => p.id !== id); g.prep = g.prep.filter(p => p.id !== id); }
   }
   for (const [ayK, a] of Object.entries(depo.veri.puantaj)) if (!depo.veri.schedules[ayK]?.onay) delete a[id];
+  for (const [ayK, a] of Object.entries(depo.veri.acil)) {
+    for (const [g, l] of Object.entries(a)) { a[g] = l.filter(x => x !== id); if (!a[g].length) delete a[g]; }
+    if (!Object.keys(a).length) delete depo.veri.acil[ayK];
+  }
 }
 
 // ---------- tercih ve tatil işaretleri ----------
@@ -215,6 +229,18 @@ export function onayiKaldir(y: number, m: number) {
   if (c) delete c.onay;
 }
 
+// ---------- acil servis nöbeti ----------
+export const acilGunu = (y: number, m: number, gun: number): number[] => depo.veri.acil[ayAnahtari(y, m)]?.[gun] ?? [];
+export function acilGunuAyarla(y: number, m: number, gun: number, ids: number[]) {
+  const ayK = ayAnahtari(y, m), tek = [...new Set(ids)].slice(0, 2);
+  if (tek.length) { (depo.veri.acil[ayK] ??= {})[gun] = tek; return; }
+  const a = depo.veri.acil[ayK];
+  if (!a) return;
+  delete a[gun];
+  if (!Object.keys(a).length) delete depo.veri.acil[ayK];
+}
+export function acilAyiniSil(y: number, m: number) { delete depo.veri.acil[ayAnahtari(y, m)]; }
+
 // ---------- puantaj ----------
 export function puantajKoduAyarla(y: number, m: number, id: number, gun: number, kod: PuantajKodu | null) {
   const ayK = ayAnahtari(y, m);
@@ -261,7 +287,7 @@ export function tumVeriyiSil() {
   depo.veri = bosVeri();
 }
 
-/** Uygulamayı denemek için örnek kadro: 6 eczacı, 6 tekniker. Ekranda "örnek" diye belirtilir. */
+/** Uygulamayı denemek için örnek kadro: 6 eczacı, 6 tekniker, 2 acil servis eczacısı. Ekranda "örnek" diye belirtilir. */
 export function ornekKadroYukle() {
   const v = bosVeri();
   v.ornek = true;
@@ -270,5 +296,6 @@ export function ornekKadroYukle() {
   const tek = ["Fatma Koç", "Emre Aydın", "Selin Öztürk", "Burak Yıldız", "Hülya Kurt", "Can Polat"];
   ecz.forEach((name, i) => v.staff.push({ id: i + 1, name, role: "eczaci" }));
   tek.forEach((name, i) => v.staff.push({ id: i + 7, name, role: "teknisyen" }));
+  ["Deniz Acar", "Okan Tekin"].forEach((name, i) => v.staff.push({ id: i + 13, name, role: "servis" }));
   depo.veri = v;
 }
