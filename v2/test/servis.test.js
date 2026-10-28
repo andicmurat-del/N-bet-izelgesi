@@ -1,5 +1,7 @@
 // Servis hazırlama: yeni motor, eski uygulamanın aynı girdiyle ürettiği dağıtımı birebir üretmeli
-// (servis-beklenen.json; eski uygulama tarayıcıda çalıştırılıp kaydedildi). Ayrıca günlük kurallar ve kayıt davranışı.
+// (servis-beklenen.json; eski uygulama tarayıcıda çalıştırılıp kaydedildi). Fark: eski uygulama yük dengesini yıl boyunca
+// taşıyordu, yenisi her ayı kendi içinde dengeler; bu yüzden birebir karşılaştırma yalnız ilk ay (Ekim) için.
+// Ayrıca günlük kurallar ve kayıt davranışı.
 import { describe, test, expect } from "vitest";
 import { createRequire } from "module";
 import { servisAyHesapla, servisIslem, servisGunu, servisListesi } from "../src/motor/cizelge.js";
@@ -8,16 +10,23 @@ const require = createRequire(import.meta.url);
 const { girdi, beklenen, bugun } = require("./servis-beklenen.json");
 const kopya = o => JSON.parse(JSON.stringify(o));
 
-// Ekim kaydı Kasım'ın birikimine girer: aylar sırayla hesaplanır
 const veri = kopya(girdi);
 veri.servisKayit = {};
 for (const ay of [9, 10]) veri.servisKayit["2026-" + ay] = servisAyHesapla(veri, 2026, ay, {}, bugun).kayit;
 
 describe("servis hazırlama, eski uygulamayla aynı", () => {
-  for (const ay of [9, 10]) test(`2026-${ay + 1}`, () => {
-    const R = veri.servisKayit["2026-" + ay];
-    expect(Object.keys(R.gun).sort()).toEqual(Object.keys(beklenen[ay]).sort());
-    for (const [d, g] of Object.entries(beklenen[ay])) expect({ gun: d, k: R.gun[d].k, n: R.gun[d].n, a: R.gun[d].a }).toEqual({ gun: d, ...g });
+  test("2026-10", () => {
+    const R = veri.servisKayit["2026-9"];
+    expect(Object.keys(R.gun).sort()).toEqual(Object.keys(beklenen[9]).sort());
+    for (const [d, g] of Object.entries(beklenen[9])) expect({ gun: d, k: R.gun[d].k, n: R.gun[d].n, a: R.gun[d].a }).toEqual({ gun: d, ...g });
+  });
+  test("her ay kendi içinde dengelenir: Ekim dağıtımı Kasım'ı etkilemez", () => {
+    const v = kopya(veri);
+    delete v.servisKayit["2026-9"];
+    const yalniz = servisAyHesapla(v, 2026, 10, {}, bugun).kayit.gun, ozet = G => Object.fromEntries(Object.entries(G).map(([d, g]) => [d, [g.k, g.n, g.a]]));
+    expect(ozet(yalniz)).toEqual(ozet(veri.servisKayit["2026-10"].gun));
+    // eski uygulama Ekim'i Kasım'a taşıdığı için Kasım'ın en az bir günü ondan farklı
+    expect(Object.entries(beklenen[10]).some(([d, g]) => JSON.stringify(veri.servisKayit["2026-10"].gun[d].a) !== JSON.stringify(g.a))).toBe(true);
   });
 });
 
