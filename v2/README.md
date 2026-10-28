@@ -13,7 +13,7 @@ Eczane nöbet çizelgesinin baştan yazılan sürümü. Eski uygulama (`../index
 npm ci
 npm run dev        # geliştirme sunucusu
 npm run check      # tip denetimi
-npm test           # motor, eski uygulamanın kayıtlı çizelgelerini birebir üretmeli (../tests/beklenen.json)
+npm test           # motor eski uygulamanın kayıtlı çizelgelerini birebir üretmeli (../tests/beklenen.json); değişim denetimi
 npm run artifact   # dist/index.html ve artifact sayfası dist/artifact.html
 ```
 
@@ -22,10 +22,6 @@ npm run artifact   # dist/index.html ve artifact sayfası dist/artifact.html
 ## Bölümler
 
 - **Çizelge:** eczane nöbet çizelgesi (oluştur, elle düzenle, onayla; PDF ve Excel), günlük çalışma listesi (puantaja göre onay, hazırlama, izinliler) ve acil servis nöbetleri (acil servis eczacıları için elle; PDF ve Excel).
-- **Puantaj:** aylık cetvel; hücreler elle değiştirilebilir, acil servis nöbetleri 24 saat sayılır. PDF ve Excel.
+- **Puantaj:** aylık cetvel (hücreler elle değiştirilebilir, acil servis nöbetleri 24 saat; PDF ve Excel); ay içi izin ve rapor kaydı (kişinin görevli olduğu günler için yerine geçecek kişi önerilir, seçilen kişi çizelgeye de işlenir); nöbet değişimi (yerine tutma, karşılıklı takas, kural denetimi, geri alma).
 - **İzin ve tercihler**, **Personel**, **Ayarlar** (kurallar, yedek).
 - **Raporlar:** yıllık fazla mesai, görev dağılımı, yıllık denge ve kişi geçmişi; Excel.
-
-## Yapılacaklar
-
-- Puantajda izin/rapor aralığı girişi ve yerine geçecek kişi önerisi; nöbet değişimi kaydı

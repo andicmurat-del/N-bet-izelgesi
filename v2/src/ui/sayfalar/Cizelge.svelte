@@ -13,6 +13,7 @@
   import GunPenceresi from "../cizelge/GunPenceresi.svelte";
   import AcilServis from "../cizelge/AcilServis.svelte";
   import CalismaListesi from "../cizelge/CalismaListesi.svelte";
+  import Sekmeler from "../ortak/Sekmeler.svelte";
 
   let { git }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void } = $props();
 
@@ -119,11 +120,7 @@
     </div>
   </section>
 {:else}
-  <div class="gorunumler" role="tablist" aria-label="Görünüm">
-    {#each GORUNUMLER as g}
-      <button role="tab" aria-label={g.baslik} aria-selected={gorunum === g.ad} class:secili={gorunum === g.ad} onclick={() => (gorunum = g.ad)}><Ikon ad={g.ikon} boyut={16} /><span class="uzun">{g.baslik}</span><span class="kisa">{g.kisa}</span></button>
-    {/each}
-  </div>
+  <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Görünüm" />
 
   {#if gorunum === "acil"}
     <AcilServis {git} />
@@ -219,11 +216,6 @@
   .adimlar li { counter-increment: adim; display: grid; align-content: start; gap: 2px; padding: var(--b3) var(--b4); border: 1px solid var(--cizgi); border-radius: var(--r); background: var(--yuzey-2); }
   .adimlar li::before { content: counter(adim); font-family: var(--yazi-rakam); font-size: var(--f-xs); color: var(--vurgu); font-weight: 600; }
   .adimlar span { font-size: var(--f-sm); color: var(--soluk); }
-  .gorunumler { display: inline-flex; gap: 2px; padding: 3px; margin-bottom: var(--b4); background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--r); max-width: 100%; overflow-x: auto; }
-  .gorunumler button { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 var(--b3); border: 0; border-radius: var(--r-kucuk); background: transparent; color: var(--yazi-2); font-weight: 500; cursor: pointer; white-space: nowrap; }
-  .gorunumler button:hover { color: var(--yazi); background: var(--yuzey-2); }
-  .gorunumler button.secili { background: var(--vurgu-zemin); color: var(--vurgu); font-weight: 600; }
-  .gorunumler .kisa { display: none; }
   .arac-cubugu { display: flex; flex-wrap: wrap; gap: var(--b3); align-items: center; justify-content: space-between; margin-bottom: var(--b3); }
   .durumlar, .dugmeler { display: flex; flex-wrap: wrap; gap: var(--b2); align-items: center; }
   .bant { display: flex; align-items: center; gap: var(--b2); flex-wrap: wrap; padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; }
@@ -260,8 +252,5 @@
     .karsilama { padding: var(--b5) var(--b4); }
     .adimlar { grid-template-columns: 1fr; }
     .arac-cubugu .dugmeler { width: 100%; }
-    .gorunumler { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
-    .gorunumler button { justify-content: center; padding: 0 var(--b2); }
-    .gorunumler .uzun { display: none; } .gorunumler .kisa { display: inline; }
-  }
+        }
 </style>

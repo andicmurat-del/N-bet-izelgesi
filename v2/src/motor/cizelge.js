@@ -1896,6 +1896,152 @@ function gunlukListe(G, d){
   return {tatil, onay, haz, dst, gel, yok, toplam: var_.length, nobetci: var_.filter(x=>x.kod==="N" && !x.acil).length, acilN: var_.filter(x=>x.acil).length};
 }
 
+// ---- nöbet değişimi ve izin/rapor yerine geçme (eski uygulama index.html, aynen) ----
+function cikYeniKod(y,m,gun,cik){
+  const st = state.staff.find(x=>x.id===cik) || {};
+  return (isTatilGunu(y,m,gun) || st.role==="nobetci" || st.role==="destek") ? "B" : "M";
+}
+
+function kisiAdi(id){ const q = state.staff.find(x=>x.id===id); return q ? q.name : "(silinmiş)"; }
+function degisimMetni(d){
+  const hz = d.gorev==="H";
+  if (d.tur==="takas" && d.gun2 && d.gorev2 && d.gorev2!==d.gorev){
+    const t = k=> k==="H" ? "hazırlama" : "nöbet";
+    return d.gun+" "+AYLAR[d.m]+" "+kisiAdi(d.cik)+" ("+t(d.gorev)+") ↔ "+d.gun2+" "+AYLAR[d.m]+" "+kisiAdi(d.yer)+" ("+t(d.gorev2)+"), karşılıklı takas";
+  }
+  return d.tur==="takas" && d.gun2
+    ? d.gun+" "+AYLAR[d.m]+" "+kisiAdi(d.cik)+" ↔ "+d.gun2+" "+AYLAR[d.m]+" "+kisiAdi(d.yer)+(hz ? " (hazırlama, karşılıklı takas)" : " (karşılıklı takas)")
+    : d.gun+" "+AYLAR[d.m]+": "+kisiAdi(d.cik)+" yerine "+kisiAdi(d.yer)+(hz ? " (hazırlama)" : "");
+}
+
+function degisimKontrol(d){
+  const out = {engel:[], uyari:[], bilgi:[]}, y = d.y, m = d.m, ay = AYLAR[m];
+  const HZ = d.gorev==="H", KOD = HZ ? "H" : "N", GOREV = HZ ? "hazırlama görevinde" : "nöbetçi";
+  const KOD2 = d.gorev2==="H" ? "H" : (d.gorev2==="N" ? "N" : KOD), GOREV2 = KOD2==="H" ? "hazırlama görevinde" : "nöbetçi";
+  if (!d.cik || !d.yer) return out;
+  if (d.cik===d.yer){ out.engel.push("Görevden çıkan ve yerine tutan aynı kişi."); return out; }
+  const G1 = puantajGrid(y,m);
+  const rc = G1.satirlar.find(x=>x.s.id===d.cik), ry = G1.satirlar.find(x=>x.s.id===d.yer);
+  if (!rc || !ry){ out.engel.push("Kişilerden biri bu ay çalışmıyor."); return out; }
+  if (!(d.gun>=1 && d.gun<=G1.gunler.length)){ out.engel.push("Geçersiz tarih."); return out; }
+  if (rc.cells[d.gun-1].kod!==KOD) out.engel.push(kisiAdi(d.cik)+", "+d.gun+" "+ay+" günü "+GOREV+" değil.");
+  const takas = d.tur==="takas";
+  if (takas){
+    if (!d.gun2){ out.engel.push("Takas için karşılık günü seçilmedi."); return out; }
+    if (d.gun2===d.gun){ out.engel.push("Takasın iki günü aynı olamaz."); return out; }
+    if (ry.cells[d.gun2-1].kod!==KOD2) out.engel.push(kisiAdi(d.yer)+", "+d.gun2+" "+ay+" günü "+GOREV2+" değil.");
+  }
+  // varsayımsal puantaj (asıl veri değişmez)
+  const k = y+"-"+m, asil = state.puantaj[k], kopya = JSON.parse(JSON.stringify(asil || {}));
+  const uygula = (gun, cik, yer, kod)=>{ (kopya[cik] = kopya[cik] || {})[gun] = cikYeniKod(y,m,gun,cik); (kopya[yer] = kopya[yer] || {})[gun] = kod; };
+  uygula(d.gun, d.cik, d.yer, KOD); if (takas) uygula(d.gun2, d.yer, d.cik, KOD2);
+  let G2;
+  state.puantaj[k] = kopya;
+  try { G2 = puantajGrid(y,m); } finally { if (asil===undefined) delete state.puantaj[k]; else state.puantaj[k] = asil; }
+  // sonraki ayın 1. günü nöbetçileri (ayın son günü için art arda kontrolü)
+  const nmY = m===11 ? y+1 : y, nmM = m===11 ? 0 : m+1, sS = state.schedules[nmY+"-"+nmM];
+  const sonrakiIlkN = (sS && sS.days && sS.days[0]) ? sS.days[0].assigned.map(p=>p.id) : [];
+  const sonrakiIlkH = (sS && sS.days && sS.days[0]) ? (sS.days[0].prep||[]).map(p=>p.id) : [];
+  const ortak = (id, gun, st, r1, n, et)=>{
+    const once = r1.cells[gun-1].kod;
+    if (once==="YI") out.engel.push(n+" "+et+" yıllık izinde.");
+    else if (once==="R") out.engel.push(n+" "+et+" raporlu.");
+    else if (once==="DI") out.engel.push(n+" "+et+" izinli (diğer izin).");
+    else if (once==="P") out.engel.push(n+" "+et+" tarihinde çalışmıyor (işe başlama / ayrılış dışında).");
+    const pr = getPref(id,y,m,gun);
+    if (pr==="izinli" && once!=="YI") out.engel.push(n+" "+et+" izinli olarak işaretli.");
+    else if (pr!=="izinli" && izinArasiMi(id,y,m,gun)) out.engel.push(n+" "+et+" izin arasında (iki izin günü arasındaki tatil).");
+    else if (izinHaftasiKenariMi(id,y,m,gun)) out.engel.push(n+" "+et+" bir haftalık yıllık izninin önündeki / arkasındaki hafta sonu.");
+    if (pr==="esYok") out.engel.push(n+" için eş durumu: "+et+" gününe yazılmaması gerekiyor.");
+    return once;
+  };
+  const kisiKontrol = (id, gun)=>{
+    const st = state.staff.find(x=>x.id===id), r1 = G1.satirlar.find(x=>x.s.id===id), r2 = G2.satirlar.find(x=>x.s.id===id);
+    const n = kisiAdi(id), et = gun+" "+ay, sonGun = gun===G1.gunler.length;
+    if (!st || !r1 || !r2) return;
+    if (st.role==="destek") out.engel.push(n+" destek personeli; nöbet tutmaz.");
+    const once = ortak(id, gun, st, r1, n, et);
+    if (once==="N") out.engel.push(n+" "+et+" zaten nöbetçi.");
+    const pr = getPref(id,y,m,gun);
+    if (pr==="avoid") out.uyari.push(n+" "+et+" nöbet istemiyor olarak işaretli.");
+    [-1, 1].forEach(kk=>{ const c = r2.cells[gun-1+kk]; if (c && c.kod==="N") out.engel.push(n+" "+(gun+kk)+". gün de nöbetçi: art arda nöbet olur."); });
+    if (gun===1 && pzSonGunKodu(id,y,m)==="N") out.engel.push(n+" önceki ayın son günü nöbetçi: art arda nöbet olur.");
+    if (sonGun && sonrakiIlkN.indexOf(id)>=0) out.engel.push(n+" sonraki ayın 1. günü nöbetçi: art arda nöbet olur.");
+    if (gun===1 && pzSonGunKodu(id,y,m)==="H") out.engel.push(n+" önceki ayın son günü hazırlama görevinde (nöbetle komşu gün olamaz).");
+    if (sonGun && sonrakiIlkH.indexOf(id)>=0) out.engel.push(n+" sonraki ayın 1. günü hazırlama görevinde (nöbetle komşu gün olamaz).");
+    if (once==="H") out.engel.push(n+" "+et+" hazırlama görevinde; aynı gün nöbete geçerse hazırlama yeri boş kalır.");
+    [-1, 1].forEach(kk=>{ const c = r2.cells[gun-1+kk]; if (c && c.kod==="H") out.engel.push(n+" "+(gun+kk)+". gün hazırlama görevinde (nöbetle komşu gün olamaz)."); });
+    { const v = k=>{ const c = r2.cells[gun-1+k]; return !!(c && c.kod==="N"); };
+      if ((v(-2) && v(-4)) || (v(-2) && v(2)) || (v(2) && v(4))) out.engel.push(n+" 5 gün içinde 3 nöbet tutmuş olur (ör. Pazartesi–Çarşamba–Cuma)."); }
+    const ara = ayar('minAra');
+    for (let a2=2; a2<ara; a2++) [-a2, a2].forEach(kk=>{ const c = r2.cells[gun-1+kk]; if (c && c.kod==="N") out.uyari.push(n+" "+(gun+kk)+". gün de nöbetçi (en az "+ara+" gün ara önerilir)."); });
+    // Kim ne kadar nöbet verip aldığı serbesttir: hafta sonu / Perşembe sayısı burada uyarılmaz
+    // ama Perşembe nöbeti ↔ aynı hafta sonu kuralı kontrol edilir
+    const dwG = G1.gunler[gun-1].dw;
+    if (dwG===3 && ayar('thuHaftaSonu')) [2,3].forEach(k=>{ const c = r2.cells[gun-1+k]; if (!c) return;
+      if (c.kod==="H") out.engel.push(n+" "+(gun+k)+". gün hazırlama görevinde; Perşembe nöbetini alırsa aynı hafta sonu hazırlama olur.");
+      else if (c.kod==="N") out.uyari.push(n+" "+(gun+k)+". gün de nöbetçi; Perşembe nöbetini tutan aynı hafta sonu nöbet tutmamalı."); });
+    if (dwG===4){ const c = r2.cells[gun+1]; if (c && c.kod==="N") out.uyari.push(n+" "+(gun+2)+". gün (Pazar) de nöbetçi; Cuma ve Pazar aynı kişiye yazılmamalı.");
+      else if (c && c.kod==="H") out.uyari.push(n+" "+(gun+2)+". gün (Pazar) hazırlama görevinde; Cuma nöbetçisine aynı hafta Pazar hazırlaması yazılmamalı."); }
+    if (dwG===6){ const c = r2.cells[gun-3]; if (c && c.kod==="N") out.uyari.push(n+" aynı haftanın Cuma günü ("+(gun-2)+". gün) nöbetçi; Cuma ve Pazar aynı kişiye yazılmamalı."); }
+    if ((dwG===5 || dwG===6) && ayar('thuHaftaSonu')){ const c = r2.cells[gun-1-(dwG===5?2:3)]; if (c && c.kod==="N") out.uyari.push(n+" aynı haftanın Perşembe günü ("+(gun-(dwG===5?2:3))+". gün) nöbetçi."); }
+  };
+  const kisiKontrolH = (id, gun)=>{
+    const st = state.staff.find(x=>x.id===id), r1 = G1.satirlar.find(x=>x.s.id===id), r2 = G2.satirlar.find(x=>x.s.id===id);
+    const n = kisiAdi(id), et = gun+" "+ay, sonGun = gun===G1.gunler.length;
+    if (!st || !r1 || !r2) return;
+    if (!(st.role==="eczaci" || st.role==="teknisyen" || st.role==="destek" || st.role==="nobetci")) out.engel.push(n+" hazırlama görevi almaz (yalnızca eczacı, dışarıdan gelen eczacı, tekniker ve destek personeli).");
+    const once = ortak(id, gun, st, r1, n, et);
+    if (once==="N") out.engel.push(n+" "+et+" nöbetçi; aynı gün hazırlama yapamaz.");
+    else if (once==="H") out.engel.push(n+" "+et+" zaten hazırlama görevinde.");
+    if (!G1.gunler[gun-1].tatil) out.uyari.push(et+" tatil günü değil; hazırlama yalnızca hafta sonu ve resmi tatilde yapılır.");
+    [-1, 1].forEach(kk=>{ const c = r2.cells[gun-1+kk]; if (c && c.kod==="N") out.engel.push(n+" "+(gun+kk)+". gün nöbetçi (hazırlama, nöbetle komşu gün olamaz)."); });
+    if (gun===1 && pzSonGunKodu(id,y,m)==="N") out.engel.push(n+" önceki ayın son günü nöbetçi (hazırlama, nöbetle komşu gün olamaz).");
+    if (sonGun && sonrakiIlkN.indexOf(id)>=0) out.engel.push(n+" sonraki ayın 1. günü nöbetçi (hazırlama, nöbetle komşu gün olamaz).");
+    [-1, 1].forEach(kk=>{ const c = r2.cells[gun-1+kk]; if (c && c.kod==="H") out.engel.push(n+" "+(gun+kk)+". gün de hazırlama görevinde; art arda iki gün hazırlama yazılmaz."); });
+    if (gun===1 && pzSonGunKodu(id,y,m)==="H") out.engel.push(n+" önceki ayın son günü hazırlama görevinde; art arda iki gün hazırlama yazılmaz.");
+    if (sonGun && sonrakiIlkH.indexOf(id)>=0) out.engel.push(n+" sonraki ayın 1. günü hazırlama görevinde; art arda iki gün hazırlama yazılmaz.");
+    const dwH = G1.gunler[gun-1].dw;
+    if (dwH===6){ const c = r2.cells[gun-3]; if (c && c.kod==="N") out.uyari.push(n+" aynı haftanın Cuma günü ("+(gun-2)+". gün) nöbetçi; Pazar hazırlaması yazılmamalı."); }
+    if ((dwH===5 || dwH===6) && ayar('thuHaftaSonu')){ const c = r2.cells[gun-1-(dwH===5?2:3)]; if (c && c.kod==="N") out.engel.push(n+" aynı haftanın Perşembe günü ("+(gun-(dwH===5?2:3))+". gün) nöbetçi; hafta sonu hazırlama yazılmaz."); }
+  };
+  const gunEczaci = gun=>{ const nb = G2.satirlar.filter(r=>r.cells[gun-1].kod==="N"); if (nb.length && !nb.some(r=>eczaciMi(r.s.role))) out.engel.push(gun+" "+ay+" günü nöbette eczacı kalmıyor.");
+    if (nb.filter(r=>r.s.role==="nobetci").length > 1) out.engel.push(gun+" "+ay+" günü iki dışarıdan gelen eczacı birlikte nöbetçi olur (aynı güne yalnızca biri nöbet yazılır; hazırlama olabilir)."); };
+  if (HZ) kisiKontrolH(d.yer, d.gun); else { kisiKontrol(d.yer, d.gun); gunEczaci(d.gun); }
+  if (takas){ if (KOD2==="H") kisiKontrolH(d.cik, d.gun2); else { kisiKontrol(d.cik, d.gun2); gunEczaci(d.gun2); } }
+  const karisik = takas && KOD2!==KOD;
+  [d.cik, d.yer].forEach(id=>{
+    const a1 = G1.satirlar.find(x=>x.s.id===id), b1 = G2.satirlar.find(x=>x.s.id===id);
+    if (a1 && b1) out.bilgi.push(kisiAdi(id)+": bu ay "+(karisik ? "nöbet "+a1.n+" → "+b1.n+", hazırlama "+a1.h+" → "+b1.h : (HZ ? "hazırlama "+a1.h+" → "+b1.h : "nöbet "+a1.n+" → "+b1.n))+", fazla mesai "+a1.fm+" → "+b1.fm+" saat.");
+  });
+  out.engel = out.engel.filter((v,i,arr)=>arr.indexOf(v)===i);
+  out.uyari = out.uyari.filter((v,i,arr)=>arr.indexOf(v)===i);
+  return out;
+}
+
+function yilGorevSayilari(y){
+  const t = {};
+  for (let mm=0; mm<12; mm++){ const sc = state.schedules[y+"-"+mm]; if (!sc || !Array.isArray(sc.days)) continue;
+    const st = ayIstatistik(sc); Object.keys(st).forEach(id=>{ const a = t[id] || (t[id] = {nobet:0, prep:0, fm:0}); a.nobet += st[id].nobet||0; a.prep += st[id].prep||0; a.fm += st[id].fm||0; }); }
+  return t;
+}
+
+function yerineAdaylar(y,m,gun,cik,gorev){
+  const G = puantajGrid(y,m), g = G.gunler[gun-1], H = gorev==="H", Y = yilGorevSayilari(y), out = [];
+  G.satirlar.forEach(r=>{
+    const id = r.s.id; if (id===cik) return;
+    if (H ? !(hazirlamaRol(r.s.role) || r.s.role==="destek") : !nobetciRol(r.s.role)) return;
+    const c = r.cells[gun-1]; if (!c || c.kod==="N" || c.kod==="H") return;
+    if (["YI","R","DI","NI","P"].indexOf(c.kod)>=0 || (c.kod==="B" && !g.tatil)) return;
+    if (kesinYasak(id,y,m,gun)) return;
+    const k = degisimKontrol({y, m, gorev: H ? "H" : "N", tur:"devir", gun, cik, yer:id});
+    const yt = Y[id] || {nobet:0, prep:0, fm:0};
+    out.push({id, ad:r.s.name, rol:r.s.role, engel:k.engel.length, uyari:k.uyari.length, yil: H ? yt.prep : yt.nobet, fm: yt.fm, k});
+  });
+  out.sort((a,b)=> (a.engel>0)-(b.engel>0) || a.uyari-b.uyari || a.yil-b.yil || a.fm-b.fm || a.ad.localeCompare(b.ad,"tr"));
+  return out;
+}
+
 function veriyiHazirla(veri, y, m){
   const v = kopya(veri || {});
   const nesne = x => (x && typeof x==="object" && !Array.isArray(x)) ? x : {};
@@ -1947,6 +2093,17 @@ export function puantajHesapla(veri, yil, ay){
   try { return puantajGrid(yil, ay); } finally { state = null; }
 }
 export const PUANTAJ_KODLARI = PZ_KODLAR;
+
+/** Değişim yapılırsa ne olur: d = {y, m, gorev:"N"|"H", tur:"devir"|"takas", gun, cik, yer, gun2?, gorev2?} → {engel, uyari, bilgi} */
+export function degisimDenetle(veri, d){
+  state = veriyiHazirla(veri, d.y, d.m);
+  try { return degisimKontrol(d); } finally { state = null; }
+}
+/** Görevden düşen kişinin (cik) yerine geçebilecekler: kurallara uyanlar önce, sonra yıl içinde en az görev alan */
+export function yerineAdaylarHesapla(veri, y, m, gun, cik, gorev){
+  state = veriyiHazirla(veri, y, m);
+  try { return yerineAdaylar(y, m, gun, cik, gorev); } finally { state = null; }
+}
 
 /**
  * Acil servis nöbeti denetimi (eski acilKontrol): aynı kişi iki kez, izin/eş durumu, art arda iki gün,

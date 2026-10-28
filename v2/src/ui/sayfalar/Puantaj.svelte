@@ -10,8 +10,14 @@
   import AySecici from "../ortak/AySecici.svelte";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
+  import Sekmeler from "../ortak/Sekmeler.svelte";
+  import IzinRapor from "../puantaj/IzinRapor.svelte";
+  import NobetDegisimi from "../puantaj/NobetDegisimi.svelte";
 
   let { git }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void } = $props();
+
+  const GORUNUMLER = [{ ad: "cetvel", baslik: "Cetvel", ikon: "tablo" }, { ad: "izin", baslik: "İzin ve rapor", kisa: "İzin", ikon: "izin" }, { ad: "degisim", baslik: "Nöbet değişimi", kisa: "Değişim", ikon: "karisik" }] as const;
+  let gorunum = $state<(typeof GORUNUMLER)[number]["ad"]>("cetvel");
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
   const G = $derived(puantajHesapla($state.snapshot(depo.veri), depo.yil, depo.ay) as Izgara);
@@ -55,7 +61,7 @@
 <header class="sayfa-bas">
   <div>
     <h1>Puantaj</h1>
-    <p>Gerçekleşen çalışma: çizelgedeki nöbet ve hazırlamalar, nöbet ertesi izinler, yıllık izin ve raporlar. Bir hücreye dokunarak o günün kodunu değiştirebilirsiniz.</p>
+    <p>Gerçekleşen çalışma: çizelgedeki nöbet ve hazırlamalar, nöbet ertesi izinler, yıllık izin ve raporlar. Ay içinde gelişen izin ve raporları, nöbet değişimlerini ilgili sekmeden girin; tek bir günü değiştirmek için cetveldeki hücreye dokunun.</p>
   </div>
   <AySecici />
 </header>
@@ -63,6 +69,10 @@
 {#if !G.satirlar.length}
   <div class="kart bos"><h2>Bu ayda çalışan personel yok</h2><button class="dugme ana" onclick={() => git("kisiler")}>Personel ekle</button></div>
 {:else}
+  <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Puantaj görünümü" />
+  {#if gorunum === "izin"}<IzinRapor />
+  {:else if gorunum === "degisim"}<NobetDegisimi />
+  {:else}
   <div class="arac-cubugu">
     <div class="durumlar">
       {#if !c}<span class="rozet dikkat">Bu ayın çizelgesi yok: nöbetler boş görünür</span>{/if}
@@ -132,6 +142,7 @@
     </div>
     <p class="dipnot">Fazla mesai = toplam çalışma (yıllık izin ve rapor günleri o günün mesaisi kadar sayılır) − aylık normal mesai. Ayın son günü tutulan nöbetin ertesi gün izni bu aydan düşülür. Dışarıdan nöbetçi eczacıda nöbet günü ve ertesi günün mesaisi düşülür; destek personelinde hazırlama saatleri aynen yazılır.</p>
   </section>
+  {/if}
 {/if}
 
 {#if secili}

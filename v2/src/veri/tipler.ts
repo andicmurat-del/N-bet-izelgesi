@@ -73,8 +73,30 @@ export interface Veri {
   puantaj: Record<string, Record<string, Record<string, PuantajKodu>>>;
   /** "yil-ay" → gün → acil serviste nöbetçi kişi id'leri (en çok 2); puantajda nöbet (24 saat) sayılır */
   acil: Record<string, Record<string, number[]>>;
+  /** puantajdaki nöbet değişimleri ve izin/rapor nedeniyle yerine geçmeler (geri alınabilsin diye önceki kodlarla) */
+  degisimler: Degisim[];
   /** örnek kadroyla deneniyor: ekranda belirtilir, tek düğmeyle silinir */
   ornek?: true;
+}
+
+/** Puantajda bir günün görevi bir kişiden ötekine geçti (yerine tutma ya da takasın bir yarısı) */
+export interface Degisim {
+  id: number;
+  zaman: number;
+  y: number; m: number; gun: number;
+  /** görevden çıkan ve yerine giren */
+  cik: number; yer: number;
+  cikAd: string; yerAd: string;
+  /** değişimden önce puantajda elle yazılı kod (yoksa null): geri almada geri yazılır */
+  cikOnce: PuantajKodu | null; yerOnce: PuantajKodu | null;
+  cikYeni: PuantajKodu; yerYeni: "N" | "H";
+  gorev: "N" | "H";
+  /** karşılıklı takasın iki yarısı aynı grupta */
+  grup?: string;
+  /** izin/rapor nedeniyle zorunlu değişim: çizelgeye de işlendi */
+  zorunlu?: true;
+  sebep?: PuantajKodu;
+  not?: string;
 }
 
 export const ROL_AD: Record<Rol, string> = {

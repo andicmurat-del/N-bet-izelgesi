@@ -18,6 +18,7 @@ export function bosVeri(): Veri {
     schedules: {},
     puantaj: {},
     acil: {},
+    degisimler: [],
   };
 }
 
@@ -80,6 +81,21 @@ export function veriyiDogrula(ham: unknown): Veri {
       ...(c.onay && typeof c.onay === "object" ? { onay: { zaman: Number(c.onay.zaman) || 0, kim: String(c.onay.kim ?? "") } } : {}),
     };
   }
+  const tamsayi = (x: unknown) => Number.isInteger(x);
+  const kodMu = (x: unknown) => kodlar.includes(x as PuantajKodu);
+  v.degisimler = (Array.isArray(o.degisimler) ? o.degisimler : [])
+    .filter((d: any) => d && [d.id, d.y, d.m, d.gun, d.cik, d.yer].every(tamsayi) && (d.gorev === "N" || d.gorev === "H") && kodMu(d.cikYeni) && (d.yerYeni === "N" || d.yerYeni === "H"))
+    .slice(-300)
+    .map((d: any) => ({
+      id: d.id, zaman: Number(d.zaman) || 0, y: d.y, m: d.m, gun: d.gun, cik: d.cik, yer: d.yer,
+      cikAd: String(d.cikAd ?? ""), yerAd: String(d.yerAd ?? ""),
+      cikOnce: kodMu(d.cikOnce) ? d.cikOnce : null, yerOnce: kodMu(d.yerOnce) ? d.yerOnce : null,
+      cikYeni: d.cikYeni, yerYeni: d.yerYeni, gorev: d.gorev,
+      ...(typeof d.grup === "string" ? { grup: d.grup } : {}),
+      ...(d.zorunlu === true ? { zorunlu: true as const } : {}),
+      ...(kodMu(d.sebep) ? { sebep: d.sebep } : {}),
+      ...(typeof d.not === "string" && d.not ? { not: d.not.slice(0, 160) } : {}),
+    }));
   if (o.ornek === true) v.ornek = true;
   return v;
 }
