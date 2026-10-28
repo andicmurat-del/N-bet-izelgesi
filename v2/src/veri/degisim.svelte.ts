@@ -2,7 +2,7 @@
 // izin/rapor kaydı ve izin nedeniyle görevden düşen kişinin yerine geçen. Her değişim geri alınabilsin diye
 // puantajdaki önceki kodlarla birlikte depo.veri.degisimler'e yazılır; liste son 300 değişimi tutar, daha eskiler geri alınamaz.
 import { depo, tatilMi, tercihAl } from "./depo.svelte";
-import { puantajHesapla } from "../motor/cizelge.js";
+import { puantajHesapla } from "../motor";
 import { ayAnahtari, gunSayisi, tercihAnahtari } from "./tarih";
 import type { Degisim, PuantajKodu } from "./tipler";
 import type { Izgara } from "../disa/puantajTipleri";

@@ -6,7 +6,7 @@ import { describe, test, expect, afterAll } from "vitest";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import * as M from "../src/motor/cizelge.js";
+import * as M from "../src/motor";
 import { veriKur, AYARLAR, AYLAR, darVeri } from "./altin/senaryo.js";
 
 const KAYIT_YOLU = path.join(path.dirname(new URL(import.meta.url).pathname), "altin", "beklenen.json");

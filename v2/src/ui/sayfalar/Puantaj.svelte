@@ -1,6 +1,6 @@
 <script lang="ts">
   // Aylık puantaj cetveli: çizelgeden gelen nöbet/hazırlama, nöbet ertesi izin ve izinler; hücre elle değiştirilebilir.
-  import { puantajHesapla } from "../../motor/cizelge.js";
+  import { puantajHesapla } from "../../motor";
   import { depo, ayCizelgesi, puantajKoduAyarla, puantajElleKodu } from "../../veri/depo.svelte";
   import type { PuantajKodu } from "../../veri/tipler";
   import { ROL_AD } from "../../veri/tipler";

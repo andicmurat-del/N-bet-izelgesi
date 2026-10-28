@@ -1,5 +1,5 @@
 import Isci from "./isci.ts?worker&inline";
-import { cizelgeOlustur } from "./cizelge.js";
+import { cizelgeOlustur } from "./index";
 import type { Gun, Veri } from "../veri/tipler";
 
 export interface OlusturmaSonucu { days: Gun[] | null; warnings: string[] }

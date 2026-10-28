@@ -2,7 +2,7 @@
   // Servis listesi: zorluk (10 üzerinden), hasta sayısı, çok günlük, hazırlanıyor mu; elle servis ekleme.
   // Değişiklik bugünden sonraki günlerin dağıtımına uygulanır, geçmiş kayıtlar değişmez.
   import { servisler, servisAyariYaz, servisEkle, servisSil, servisAyarlariniSifirla, type ServisBilgisi } from "../../veri/servis.svelte";
-  import { SERVIS_ZOR_ESIK } from "../../motor/cizelge.js";
+  import { SERVIS_ZOR_ESIK } from "../../motor";
   import Ikon from "../ortak/Ikon.svelte";
 
   const L = $derived(servisler());

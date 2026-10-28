@@ -2,7 +2,7 @@
   // Günlük çalışma listesi (puantaja göre): her gün kaç kişi onayda, hazırlamada, destekte; kim izinli.
   // Hafta sonu ve tatilde onaycılar eczane nöbetçileri, hazırlamacılar o günün hazırlamacılarıdır.
   import { depo } from "../../veri/depo.svelte";
-  import { calismaListesiHesapla } from "../../motor/cizelge.js";
+  import { calismaListesiHesapla } from "../../motor";
   import { GUN_KISA, GUN_UZUN, gunMetni, haftaGunu } from "../../veri/tarih";
   import { ROL_AD, type Rol } from "../../veri/tipler";
   import Pencere from "../ortak/Pencere.svelte";

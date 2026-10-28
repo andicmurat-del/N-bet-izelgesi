@@ -4,7 +4,7 @@
   // Geçmiş günler kendiliğinden değişmez; değiştirilirse sonraki günler de yeniden dengelenir.
   import { untrack } from "svelte";
   import { depo, tatilMi } from "../../veri/depo.svelte";
-  import { servisGunu, servisAtamaAdaylari } from "../../motor/cizelge.js";
+  import { servisGunu, servisAtamaAdaylari } from "../../motor";
   import { servisAyiniGuncelle, servisIslemYap, type ServisIslemi } from "../../veri/servis.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR, GUN_UZUN, gunSayisi, haftaGunu } from "../../veri/tarih";

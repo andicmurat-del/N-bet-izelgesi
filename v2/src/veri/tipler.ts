@@ -1,4 +1,4 @@
-// Uygulamanın kayıtlı verisi. Alan adları motorla (src/motor/cizelge.js) ortaktır; motor bu yapıyı olduğu gibi okur.
+// Uygulamanın kayıtlı verisi. Alan adları motorla (src/motor) ortaktır; motor bu yapıyı olduğu gibi okur.
 
 export type Rol = "eczaci" | "teknisyen" | "destek" | "nobetci" | "servis";
 

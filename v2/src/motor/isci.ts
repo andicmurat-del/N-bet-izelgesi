@@ -1,5 +1,5 @@
 // Çizelge araması birkaç saniye sürer; ekran donmasın diye ayrı iş parçacığında (Web Worker) çalışır.
-import { cizelgeOlustur } from "./cizelge.js";
+import { cizelgeOlustur } from "./index";
 
 self.onmessage = (e: MessageEvent) => {
   const { veri, yil, ay, varyasyon } = e.data;

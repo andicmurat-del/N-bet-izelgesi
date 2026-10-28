@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { uyariSiniflandir } from "../../motor/cizelge.js";
+  import { uyariSiniflandir } from "../../motor";
   import Ikon from "../ortak/Ikon.svelte";
   let { metinler }: { metinler: string[] } = $props();
   const SIRA = { hata: 0, uyari: 1, bilgi: 2 } as const;

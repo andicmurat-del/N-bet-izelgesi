@@ -4,7 +4,7 @@
 // Ayrıca günlük kurallar ve kayıt davranışı.
 import { describe, test, expect } from "vitest";
 import { createRequire } from "module";
-import { servisAyHesapla, servisIslem, servisGunu, servisListesi } from "../src/motor/cizelge.js";
+import { servisAyHesapla, servisIslem, servisGunu, servisListesi } from "../src/motor";
 
 const require = createRequire(import.meta.url);
 const { girdi, beklenen, bugun } = require("./servis-beklenen.json");

@@ -1,4 +1,4 @@
-// Motorun puantajHesapla() sonucunun biçimi (src/motor/cizelge.js, puantajGrid)
+// Motorun puantajHesapla() sonucunun biçimi (src/motor/puantaj.ts, puantajIzgarasi)
 import type { Rol } from "../veri/tipler";
 
 export interface PuantajSatiri {
