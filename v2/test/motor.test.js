@@ -4,7 +4,7 @@
 import { describe, test, expect } from "vitest";
 import { createRequire } from "module";
 import crypto from "crypto";
-import { cizelgeOlustur } from "../src/motor/cizelge.js";
+import { cizelgeOlustur } from "../src/motor";
 
 const require = createRequire(import.meta.url);
 const senaryolar = require("../../tests/senaryolar.js");

@@ -2,7 +2,7 @@
   // Acil servis nöbet çizelgesi: acil servis eczacılarının nöbetleri elle girilir (günde en çok 2 kişi).
   // Puantajda bu günler nöbet (24 saat) sayılır; ertesi gün mesai günüyse nöbet izni (Nİ), tatilse çalışılmadı (B) yazılır.
   import { depo, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, resmiTatilMi, tatilMi } from "../../veri/depo.svelte";
-  import { acilDenetle } from "../../motor/cizelge.js";
+  import { acilDenetle } from "../../motor";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { GUN_KISA, GUN_UZUN, gunMetni, gunSayisi, haftaGunu, ayAdi } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";

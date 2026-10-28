@@ -4,7 +4,7 @@
   // yansır; yıllık denge çizelgeye göre kalır. Bu ayın değişimleri listelenir, geri alınabilir.
   import { tick, untrack } from "svelte";
   import { depo, ayCizelgesi } from "../../veri/depo.svelte";
-  import { degisimDenetle, yerineAdaylarHesapla } from "../../motor/cizelge.js";
+  import { degisimDenetle, yerineAdaylarHesapla } from "../../motor";
   import { degisimUygula, degisimGeriAl, ayDegisimleri, puantajIzgarasi, IZIN_AD, type Gorev, type DegisimIstegi, type IzinTuru } from "../../veri/degisim.svelte";
   import { GUN_KISA, GUN_UZUN, gunMetni, haftaGunu } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";

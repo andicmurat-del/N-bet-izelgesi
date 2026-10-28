@@ -1,6 +1,6 @@
 <script lang="ts">
   // Bir günü elle düzenleme: nöbetçiler ve (tatil günüyse) hazırlama. Seçim değiştikçe kurallar anında denetlenir.
-  import { gunuDenetle } from "../../motor/cizelge.js";
+  import { gunuDenetle } from "../../motor";
   import { depo, gunuGuncelle, gunKilidiniKaldir, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import type { AyCizelgesi, Gorevli, Kisi } from "../../veri/tipler";
   import { ROL_AD } from "../../veri/tipler";

@@ -1,7 +1,7 @@
-// Servis hazırlama: motorun (src/motor/cizelge.js, servis bölümü) hesapladığı ay kayıtlarını ve servis ayarlarını saklar.
+// Servis hazırlama: motorun (src/motor/servis) hesapladığı ay kayıtlarını ve servis ayarlarını saklar.
 // Motor verinin kopyasıyla çalışır; burada yalnız değişen ay kaydı depo.veri.servisKayit'e yazılır.
 import { depo } from "./depo.svelte";
-import { servisAyHesapla, servisIslem, servisListesi, servisYillik } from "../motor/cizelge.js";
+import { servisAyHesapla, servisIslem, servisListesi, servisYillik } from "../motor";
 import type { ServisAyKaydi } from "./tipler";
 
 export type ServisIslemi =

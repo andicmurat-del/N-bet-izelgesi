@@ -4,7 +4,7 @@
   // en az görev alan önce). Kaydedilince yerine geçenler çizelgeye ve puantaja işlenir.
   import { untrack } from "svelte";
   import { depo, aydaCalisanlar } from "../../veri/depo.svelte";
-  import { yerineAdaylarHesapla } from "../../motor/cizelge.js";
+  import { yerineAdaylarHesapla } from "../../motor";
   import { izinUygula, izinSil, ayIzinleri, puantajIzgarasi, IZIN_AD, IZIN_KISA, type IzinTuru, type Gorev } from "../../veri/degisim.svelte";
   import { ROL_AD } from "../../veri/tipler";
   import { gunMetni, gunSayisi } from "../../veri/tarih";

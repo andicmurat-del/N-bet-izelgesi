@@ -1,7 +1,7 @@
 <script lang="ts">
   import { depo, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, ornekKadroYukle, tumVeriyiSil, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import { arkaPlandaOlustur } from "../../motor/istemci";
-  import { uyariSiniflandir } from "../../motor/cizelge.js";
+  import { uyariSiniflandir } from "../../motor";
   import { cizelgeKitabi } from "../../disa/cizelgeXlsx";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR, ayAdi } from "../../veri/tarih";

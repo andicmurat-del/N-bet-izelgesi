@@ -1,6 +1,6 @@
 // Puantaj değişim denetimi ve yerine geçecek aday önerisi (eski uygulamadan taşınan kurallar).
 import { describe, test, expect } from "vitest";
-import { cizelgeOlustur, degisimDenetle, yerineAdaylarHesapla, puantajHesapla } from "../src/motor/cizelge.js";
+import { cizelgeOlustur, degisimDenetle, yerineAdaylarHesapla, puantajHesapla } from "../src/motor";
 
 const adlar = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 const veri = {

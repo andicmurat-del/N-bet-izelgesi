@@ -1,6 +1,6 @@
 <script lang="ts">
   // Yıllık raporlar: özet (aylara göre fazla mesai, görev dağılımı), yıllık denge (beklenen paya göre fark), kişi geçmişi.
-  import { yillikRaporHesapla } from "../../motor/cizelge.js";
+  import { yillikRaporHesapla } from "../../motor";
   import { depo } from "../../veri/depo.svelte";
   import { ROL_AD, type Rol } from "../../veri/tipler";
   import { AYLAR } from "../../veri/tarih";
