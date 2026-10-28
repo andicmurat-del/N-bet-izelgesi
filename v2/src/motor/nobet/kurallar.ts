@@ -2,6 +2,7 @@
 // 5 gün içinde 3 nöbet yok, Perşembe nöbetçisine aynı hafta sonu hazırlama yok, art arda iki gün hazırlama yok.
 import type { Gorevli } from "../../veri/tipler";
 import { eczaciMi } from "../baglam";
+import { HAZ_SAYISI } from "../sabitler";
 import { CUMARTESI, gunKaydir, PAZAR, PERSEMBE } from "../takvim";
 import type { AramaKurulumu } from "./kurulum";
 import { ucluSikisik } from "./sinir";
@@ -91,11 +92,13 @@ export function kurallarKur(K: AramaKurulumu) {
   }
   /** Günün kesin kural ihlali sayısı (nöbetçiler ve hazırlama personeli için yukarıdaki kuralların hepsi). İlk yerleştirme
    *  başka kimse kalmayınca kural esnetebilir; aramadaki hamleler yeni ihlal yaratmaz (gunGecerli, prepUygun), ama var olanı
-   *  gidermeleri için amaç fonksiyonu bu sayıyı cezalandırır. Gün kırmızı işareti de buna göredir. Bir günün sayısı
+   *  gidermeleri için amaç fonksiyonu bu sayıyı cezalandırır. Boş kalan hazırlama yeri de sayılır. Gün kırmızı işareti de buna göredir. Bir günün sayısı
    *  idx−4 … idx+4 günlerine bağlıdır (5 günde 3 nöbet). */
   function ihlalSayisi(idx: number): number {
     const dy = days[idx];
     let n = 0;
+    // tatil gününde boş kalan hazırlama yeri (her eksik yer bir ihlal)
+    if (!dy.locked && tatilGunu(idx) && dy.prep.length < HAZ_SAYISI) n += HAZ_SAYISI - dy.prep.length;
     if (!dy.assigned.some(p => eczaciMi(p.role))) n++;
     if (ikiDisaridan(dy.assigned, idx)) n++;
     for (const p of dy.assigned) {

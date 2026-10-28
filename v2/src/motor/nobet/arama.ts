@@ -8,6 +8,9 @@ import type { Amac } from "./amac";
 import type { Kurallar } from "./kurallar";
 import type { AramaKurulumu } from "./kurulum";
 
+/** boş hazırlama yeri (hamle 3 için; rolü destek değil) */
+const BOS_YER = { id: -1, role: "" };
+
 /** en iyi hamle: uygulanması için gereken bilgi */
 type Hamle =
   | { tip: "kisi"; i: number; a: Gorevli; b: Kisi }                                   // nöbetçiyi değiştir
@@ -65,8 +68,8 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
         break;
       }
       case "hazKisi": {
-        const liste = days[h.i].prep;
-        days[h.i].prep = liste.map((pp, ix) => (ix === h.slot ? gn(havuzdanBul(h.b.id)!) : pp));
+        const liste = days[h.i].prep, nb = gn(havuzdanBul(h.b.id)!);
+        days[h.i].prep = h.slot < liste.length ? liste.map((pp, ix) => (ix === h.slot ? nb : pp)) : liste.concat([nb]);
         break;
       }
       case "hazTakas": {
@@ -129,15 +132,16 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
           }
         }
       }
-      // 3) bir hazırlama personelini (belirli bir yerde) değiştir
+      // 3) bir hazırlama personelini (belirli bir yerde) değiştir; boş kalmış yer varsa (ilk yerleştirmede kimse uygun
+      //    değildi) oraya da yazmayı dene
       for (let i = 0; i < days.length; i++) {
         if (days[i].locked || !tatilGunu(i)) continue;
-        const eskiListe = days[i].prep;
-        for (let slot = 0; slot < eskiListe.length; slot++) {
-          const eskiP = eskiListe[slot];
+        const eskiListe = days[i].prep, yerSay = eskiListe.length + (eskiListe.length < HAZ_SAYISI ? 1 : 0);
+        for (let slot = 0; slot < yerSay; slot++) {
+          const eskiP = slot < eskiListe.length ? eskiListe[slot] : BOS_YER;
           for (const b of degisimHavuzu(eskiP, slot)) {
             if (b.id === eskiP.id || eskiListe.some((pp, ix) => ix !== slot && pp.id === b.id)) continue;
-            days[i].prep = eskiListe.map((pp, ix) => (ix === slot ? gn(b) : pp));
+            days[i].prep = slot < eskiListe.length ? eskiListe.map((pp, ix) => (ix === slot ? gn(b) : pp)) : eskiListe.concat([gn(b)]);
             if (prepUygun(b.id, i) && iyiMi(jDelta(i, -1, false))) enIyi = { tip: "hazKisi", i, slot, b };
             days[i].prep = eskiListe;
           }
