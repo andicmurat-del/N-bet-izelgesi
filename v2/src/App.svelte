@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { depo } from "./veri/depo.svelte";
+  import { depo, gecmis, geriAl, yinele } from "./veri/depo.svelte";
   import Ikon from "./ui/ortak/Ikon.svelte";
   import Cizelge from "./ui/sayfalar/Cizelge.svelte";
   import Izinler from "./ui/sayfalar/Izinler.svelte";
@@ -34,6 +34,21 @@
     addEventListener("hashchange", dinle);
     return () => removeEventListener("hashchange", dinle);
   });
+  // geri al / yinele: düğmeler ve Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z); yazı alanındayken tarayıcının kendi geri alması çalışır
+  let geriDurum = $state(""), geriZaman: ReturnType<typeof setTimeout> | undefined;
+  function bildir(t: string) { geriDurum = t; clearTimeout(geriZaman); geriZaman = setTimeout(() => (geriDurum = ""), 2200); }
+  const geri = () => bildir(geriAl() ? "Son değişiklik geri alındı." : "Geri alınacak değişiklik yok.");
+  const ileri = () => bildir(yinele() ? "Değişiklik yinelendi." : "Yinelenecek değişiklik yok.");
+  function tus(e: KeyboardEvent) {
+    if (e.key === "Escape") digerAcik = false;
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const h = e.target as HTMLElement | null;
+    if (h && (h.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(h.tagName))) return;
+    const k = e.key.toLocaleLowerCase("en");
+    if (k === "z" && !e.shiftKey) { e.preventDefault(); geri(); }
+    else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); ileri(); }
+  }
+
   function git(ad: SayfaAdi) {
     sayfa = ad;
     try { history.replaceState(null, "", "#" + ad); } catch { /* çerçeve izin vermezse yalnız durum değişir */ }
@@ -42,7 +57,7 @@
   }
 </script>
 
-<svelte:window onkeydown={e => { if (e.key === "Escape") digerAcik = false; }} onclick={e => { if (digerAcik && !(e.target as Element).closest?.(".diger-kap")) digerAcik = false; }} />
+<svelte:window onkeydown={tus} onclick={e => { if (digerAcik && !(e.target as Element).closest?.(".diger-kap")) digerAcik = false; }} />
 <a class="atla" href="#icerik">İçeriğe geç</a>
 <div class="kabuk">
   <nav class="yan" aria-label="Bölümler">
@@ -58,10 +73,18 @@
         <li><button class:secili={sayfa === s.ad} aria-current={sayfa === s.ad ? "page" : undefined} onclick={() => git(s.ad)}><Ikon ad={s.ikon} />{s.baslik}</button></li>
       {/each}
     </ul>
+    <div class="geri-al" role="group" aria-label="Geri al">
+      <button class="dugme kucuk" onclick={geri} disabled={!gecmis.geri.length} title="Son değişikliği geri al (Ctrl+Z)"><Ikon ad="geri" />Geri al</button>
+      <button class="dugme kucuk" onclick={ileri} disabled={!gecmis.ileri.length} title="Geri alınanı yinele (Ctrl+Y)"><Ikon ad="ileri" />Yinele</button>
+    </div>
     <p class="not">Veriler yalnız bu tarayıcıda saklanır. Düzenli yedek almayı unutmayın.</p>
   </nav>
 
   <main id="icerik" tabindex="-1">
+    <div class="tel-ust" role="group" aria-label="Geri al">
+      <button class="dugme sade kucuk" onclick={geri} disabled={!gecmis.geri.length} aria-label="Son değişikliği geri al"><Ikon ad="geri" />Geri al</button>
+      <button class="dugme sade kucuk" onclick={ileri} disabled={!gecmis.ileri.length} aria-label="Geri alınanı yinele"><Ikon ad="ileri" />Yinele</button>
+    </div>
     {#if depo.kayitSorunu}<div class="kayit-sorunu" role="alert"><Ikon ad="uyari" />{depo.kayitSorunu}</div>{/if}
     {#if sayfa === "cizelge"}<Cizelge {git} />
     {:else if sayfa === "puantaj"}<Puantaj {git} />
@@ -71,6 +94,8 @@
     {:else if sayfa === "kisiler"}<Kisiler />
     {:else}<Ayarlar />{/if}
   </main>
+
+  <p class="geri-durum" role="status" aria-live="polite">{geriDurum}</p>
 
   <nav class="alt" aria-label="Bölümler">
     {#each SAYFALAR.filter(s => !DIGER.includes(s.ad)) as s}
@@ -106,10 +131,17 @@
   main { min-width: 0; padding-block: var(--b5) var(--b6); padding-left: max(var(--b5), env(safe-area-inset-left, 0px)); padding-right: max(var(--b5), env(safe-area-inset-right, 0px)); outline: none; }
   .kayit-sorunu { display: flex; gap: var(--b2); align-items: center; padding: var(--b3) var(--b4); margin-bottom: var(--b4); border-radius: var(--r); background: var(--hata-zemin); color: var(--hata); font-weight: 500; }
   .alt { display: none; }
+  .geri-al { display: flex; gap: var(--b2); padding: 0 var(--b2); }
+  .geri-al .dugme { flex: 1; justify-content: center; }
+  .tel-ust { display: none; }
+  .geri-durum:empty { display: none; }
+  .geri-durum { position: fixed; left: 50%; transform: translateX(-50%); bottom: var(--b5); z-index: 40; max-width: min(480px, calc(100vw - 32px)); padding: var(--b2) var(--b4); border-radius: var(--r); background: var(--yazi); color: var(--yuzey); font-weight: 500; box-shadow: var(--golge); }
 
   @media (max-width: 860px) {
     .kabuk { grid-template-columns: 1fr; }
     .yan { display: none; }
+    .tel-ust { display: flex; justify-content: flex-end; gap: var(--b1); margin: calc(-1 * var(--b2)) 0 var(--b2); }
+    .geri-durum { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
     main { padding-block: var(--b4) calc(84px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
     .alt { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--yuzey); border-top: 1px solid var(--cizgi);
       padding: 6px max(4px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
