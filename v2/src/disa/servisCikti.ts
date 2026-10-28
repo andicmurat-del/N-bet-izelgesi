@@ -48,7 +48,7 @@ export function servisTekSayfaPdf(v: ServisGunCiktisi): Blob {
     doc.setDrawColor(...CIZGI); doc.setLineWidth(0.3); doc.roundedRect(x, y, bw, bh, 2, 2);
     doc.setFillColor(...BASLIK); doc.roundedRect(x, y, bw, 11, 2, 2, "F"); doc.rect(x, y + 6, bw, 5, "F");
     doc.setFont("CizelgeSans", "bold"); doc.setFontSize(11); doc.setTextColor(...YAZI);
-    doc.text(buyukAd(k.ad), x + 3, y + 7.4, { maxWidth: bw - 6 });
+    doc.text(buyukAd(k.ad), x + bw / 2, y + 7.4, { maxWidth: bw - 6, align: "center" });
     doc.setFont("CizelgeSans", "normal"); doc.setFontSize(8); doc.setTextColor(...SOLUK);
     doc.text(`${k.items.length} servis · ${k.yb} YB`, x + 3, y + 15.5);
     doc.setFontSize(fs); doc.setTextColor(...YAZI);
@@ -88,15 +88,20 @@ export function servisTopluPdf(v: ServisGunCiktisi): Blob {
   const yari = Math.ceil(satir.length / 2), gen = (W - 2 * K - 8) / 2;
   // satırlar tek sayfaya sığsın: satır yüksekliği = yazı (pt → mm, satır aralığıyla) + iki kenar boşluğu
   const pad = 0.8, satirMm = 165 / (yari + 1), fs = Math.max(6, Math.min(10, (satirMm - 2 * pad) / (0.3528 * 1.15)));
+  // sütunlar en uzun yazı kadar: hazırlayan adı servisin hemen yanında dursun, satırlar karışmasın
+  const en = (l: string[], kalin: boolean) => { doc.setFont("CizelgeSans", kalin ? "bold" : "normal"); doc.setFontSize(fs); return Math.max(...l.map(t => doc.getTextWidth(t))) + 2 * pad + 4; };
+  const s1 = en(["Servis", ...satir.map(r => r[0])], false), s2 = en(["Hazırlayan", ...satir.map(r => r[1])], true);
+  const tw = Math.min(gen, s1 + s2), ara = 16, sol = Math.max(K, (W - (satir.length > yari ? 2 * tw + ara : tw)) / 2);
   const ortak = {
-    theme: "grid" as const, head: [["Servis", "Hazırlayan"]], startY: 30,
+    theme: "grid" as const, head: [["Servis", "Hazırlayan"]], startY: 30, tableWidth: tw,
     styles: { font: "CizelgeSans", fontSize: fs, cellPadding: pad, textColor: YAZI, lineColor: CIZGI, lineWidth: 0.15 },
     headStyles: { font: "CizelgeSans", fontStyle: "bold" as const, fillColor: BASLIK },
-    columnStyles: { 1: { fontStyle: "bold" as const } },
+    alternateRowStyles: { fillColor: [243, 246, 248] as Rgb },
+    columnStyles: { 0: { cellWidth: tw - s2 }, 1: { fontStyle: "bold" as const, cellWidth: s2 } },
   };
-  autoTable(doc, { ...ortak, body: satir.slice(0, yari), margin: { left: K, right: W - K - gen } });
+  autoTable(doc, { ...ortak, body: satir.slice(0, yari), margin: { left: sol, right: W - sol - tw } });
   doc.setPage(1);
-  if (satir.length > yari) autoTable(doc, { ...ortak, body: satir.slice(yari), margin: { left: K + gen + 8, right: K } });
+  if (satir.length > yari) autoTable(doc, { ...ortak, body: satir.slice(yari), margin: { left: sol + tw + ara, right: W - sol - 2 * tw - ara } });
   return doc.output("blob");
 }
 
