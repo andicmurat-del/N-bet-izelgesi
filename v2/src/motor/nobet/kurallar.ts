@@ -13,6 +13,7 @@ export function kurallarKur(K: AramaKurulumu) {
   const { B, y, m, days, A, yasakGun, zorunluGun, gunDow } = K;
   const { sinir, sonGunEngel } = A;
   const thuHaftaSonu = K.ayar.thuHaftaSonu;
+  const destekId = new Set(K.destekler.map(s => s.id)), DESTEK_AYLIK = K.DESTEK_AYLIK;
 
   /** o gün kişiye görev yazılamaz (izin, eş durumu yok, çalışma dönemi dışı…) */
   function yasak(id: number, i: number): boolean { const v = yasakGun[i][id]; return v === undefined ? B.kesinYasak(id, y, m, days[i].day) : v; }
@@ -66,8 +67,15 @@ export function kurallarKur(K: AramaKurulumu) {
     for (const k of [2, 3]) { const t = idx + k; if (t < days.length && (days[t].prep || []).some(pp => pp.id === id)) return true; }
     return false;
   }
+  /** destek personelinin aylık hazırlama sayısı (Ayarlar) kesin sınırdır: o ayki hazırlamaları sınırı aşmamalı */
+  function destekSiniriAsildi(id: number): boolean {
+    if (!destekId.has(id)) return false;
+    let n = 0;
+    for (let k = 0; k < days.length; k++) { const pr = days[k].prep; for (let q = 0; q < pr.length; q++) if (pr[q].id === id) n++; }
+    return n > DESTEK_AYLIK;
+  }
   function prepUygun(id: number, idx: number): boolean {
-    return !yasak(id, idx) && !prepKomsu(id, idx) && !persembeNobetliMi(id, idx) && !prepBitisik(id, idx);
+    return !yasak(id, idx) && !prepKomsu(id, idx) && !persembeNobetliMi(id, idx) && !prepBitisik(id, idx) && !destekSiniriAsildi(id);
   }
   /** dışarıdan nöbete gelen iki eczacı aynı gün birlikte nöbetçi olmaz (ikisi de eş durumu zorunluluğuysa hariç) */
   function ikiDisaridan(as: Gorevli[], idx: number): boolean {

@@ -5,7 +5,7 @@
 //   N=200 BAS=1 npx vitest run test/tarama.test.js      (TAM=1: aramayı gerçek uzunlukta çalıştırır, yavaştır)
 import { test, expect } from "vitest";
 import * as M from "../src/motor";
-import { eczaciMi } from "../src/motor/baglam";
+import { Baglam, eczaciMi } from "../src/motor/baglam";
 import { senaryo, denetle, hizliSaat, dimOf } from "./tarama/ortak";
 
 const N = Number(process.env.N || 20), BAS = Number(process.env.BAS || 1);
@@ -31,6 +31,12 @@ for (let s = BAS; s < BAS + N; s++) test("senaryo " + s, () => {
     const r2 = M.cizelgeOlustur(veri, y, m, { saat: hizliSaat() });
     if (JSON.stringify(r1) !== JSON.stringify(r2)) bulgu.push(`${y}-${m + 1} aynı girdi farklı sonuç`);
     bulgu.push(...denetle(veri, y, m, r1, kilitli && kilitli.map((k, i) => k)));
+    // destek personelinin aylık hazırlama sayısı kesin sınırdır (Ayarlar): aşılmamalı (elle kilitlenen günler hariç)
+    if (r1.days) {
+      const sinir = new Baglam(veri).sayi("destekAylik"), say = {};
+      r1.days.forEach(g => { if (!g.locked) (g.prep || []).forEach(p => { if (p.role === "destek") say[p.id] = (say[p.id] || 0) + 1; }); });
+      Object.entries(say).forEach(([id, n]) => { if (n > sinir) bulgu.push(`${y}-${m + 1} destek ${id} ${n} hazırlama (sınır ${sinir})`); });
+    }
     // "matematiksel olarak mümkün değil" uyarısı yalnız kesin kural ihlali kaçınılmazken verilir: kırmızı gün olmalı
     if (r1.days && r1.warnings.some(w => /matematiksel olarak mümkün değil/.test(w)) && !r1.days.some(g => g.conflict && !g.locked)) bulgu.push(`${y}-${m + 1} "mümkün değil" uyarısı var ama kırmızı gün yok`);
     if (!r1.days) break;
