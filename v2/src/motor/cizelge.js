@@ -2133,7 +2133,7 @@ function gunlukCizelgeVar(y, m){ const sc = state.schedules[y+"-"+m]; return !!(
   function rngOf(seed){ let t = (seed>>>0) || 1; return ()=>{ t = (t*1664525 + 1013904223)>>>0; return t/4294967296; }; }
   const W = {S:120, L:220, Y:60, D:6000, R:45, G:100000, Z:400, M:400, MU:30};
   // zor servis: zorluk puanı ZOR_ESIK ve üstü (10 üzerinden). Her gün kişi başı zor servis sayısı en fazla 1 farklı
-  // olur (kesin); ay içinde (ve aynı yılın önceki aylarıyla) kişi başı zor servis sayısı eşitlenir.
+  // olur (kesin); ay içinde kişi başı zor servis sayısı eşitlenir.
   const ZOR_ESIK = 7;
   const YAKIN_GUN = 7;
   const zorMu = s => (s && s.z >= ZOR_ESIK) ? 1 : 0;
@@ -2274,18 +2274,6 @@ function gunlukCizelgeVar(y, m){ const sc = state.schedules[y+"-"+m]; return !!(
     return i.split("/").slice(0,2).join("/");
   }
   function kisaImza(t){ let h = 2166136261; for (let i=0; i<t.length; i++){ h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h>>>0).toString(36); }
-  // aynı yılın önceki aylarının servis kayıtlarından birikim (aylar arası denge) ve bunun imzası
-  function devirBirikim(y, m){
-    const cum = {}; let t = "";
-    for (let mm=0; mm<m; mm++){
-      if (!cizVar(y, mm)) continue;
-      const R = state.servisKayit && state.servisKayit[y+"-"+mm]; if (!R || !R.gun) continue;
-      Object.keys(R.gun).map(Number).sort((a,b)=>a-b).forEach(d=>{ const g = R.gun[d];
-        if (!g || !Array.isArray(g.k) || !g.a || !g.t) return;
-        birikimEkle(cum, g); t += mm+"."+d+":"+g.k.join(",")+"|"+g.n+"|"+JSON.stringify(g.a)+";"; });
-    }
-    return {cum, imza: t ? kisaImza(t) : "0"};
-  }
   // ayın tüm mesai günlerini hesaplar: kayıtlı ve değişmemiş günler korunur; bugün ve sonrasında
   // girdisi değişen ilk günden itibaren yeniden dağıtılır. Geçmiş günler kendiliğinden değişmez.
   // opts.from: bu günden itibaren (geçmiş dahil) zorla yeniden dağıt
@@ -2295,8 +2283,9 @@ function gunlukCizelgeVar(y, m){ const sc = state.schedules[y+"-"+m]; return !!(
     let G; try { G = puantajGrid(y, m); } catch(e){ return false; }
     const dim = daysInMonth(y, m), bugun = bugunNo(), cfg = cfgImza();
     const svcs = SERVICES.filter(s=>s.on);
-    // aylar arası denge: aynı yılın önceki aylarındaki kayıtlar birikime eklenir (Ocak'ta sıfırdan başlar)
-    const dv = devirBirikim(y, m), cum = dv.cum; let degisti = false, ilkDegisen = null;
+    // denge ay içinde kurulur: her ay sıfırdan başlar, önceki ayların dağıtımı bu ayı etkilemez
+    // (eski uygulama aynı yılın önceki aylarını da birikime katıyordu)
+    const cum = {}; let degisti = false, ilkDegisen = null;
     teknikerSatirlari(G).forEach(r=>{ R.ad[r.s.id] = r.s.name; });
     for (let d=1; d<=dim; d++){
       if (isTatilGunu(y, m, d)){ if (R.gun[d]){ delete R.gun[d]; degisti = true; } continue; }
@@ -2305,7 +2294,7 @@ function gunlukCizelgeVar(y, m){ const sc = state.schedules[y+"-"+m]; return !!(
       const ata = R.ata[d] || {}, sabit = {};
       Object.keys(ata).forEach(sn=>{ const ix = aktif.indexOf(ata[sn]); if (ix>=0 && svcs.some(s=>s.name===sn)) sabit[sn] = ix; });
       const ataImza = Object.keys(sabit).map(sn=>[svKod(sn), sn]).sort((a,b)=> a[0]<b[0] ? -1 : a[0]>b[0] ? 1 : 0).map(([kd, sn])=>kd+"="+aktif[sabit[sn]]).join(";");
-      const ik = aktif.join(",")+"/"+n, imza = ik+"/"+cfg+"/"+sk+"/"+kisaImza(ataImza)+"/"+dv.imza;
+      const ik = aktif.join(",")+"/"+n, imza = ik+"/"+cfg+"/"+sk+"/"+kisaImza(ataImza)+"/0";   // son alan eskiden önceki ayların imzasıydı; ilk ayın kaydı ("0") geçerli kalır
       const eski = R.gun[d], gecmis = gunNo(y,m,d) < bugun, zorla = (opts.from && d >= opts.from && !(opts.gecmisKoru && gecmis)) || opts.zorlaGun===d;
       // elle değiştirilen gün: kayıt olduğu gibi kalır, imzası güncellenir
       if (eski && opts.imzaTazele===d){ eski.i = imza; delete eski.bayat; birikimEkle(cum, eski); continue; }

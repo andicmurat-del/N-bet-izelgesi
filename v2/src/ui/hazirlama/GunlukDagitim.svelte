@@ -93,7 +93,6 @@
 
   const ort = $derived(gun?.sonuc ? gun.sonuc.kisi.reduce((t, p) => t + p.total, 0) / Math.max(1, gun.sonuc.kisi.length) : 0);
   const enCok = $derived(gun?.sonuc ? Math.max(1, ...gun.sonuc.kisi.map(p => p.total)) : 1);
-  const toplu = $derived(gun?.sonuc ? gun.sonuc.kisi.flatMap(p => p.items.map(i => ({ sn: i.name, ad: p.name }))).sort((a, b) => a.sn.localeCompare(b.sn, "tr")) : []);
 </script>
 
 {#if !ay.cizelgeVar}
@@ -186,10 +185,6 @@
         {/each}
       </div>
     </details>
-    <details class="kart detay">
-      <summary>Toplu servis listesi <span class="not">{S.kisi.length} kişi, {S.svcs.length} servis</span></summary>
-      <ul class="toplu">{#each toplu as t}<li><span>{t.sn}</span><b>{t.ad}</b></li>{/each}</ul>
-    </details>
   {:else}
     <p class="bant bilgi">Bu gün için dağıtım yok: seçili tekniker ya da hazırlanan servis yok.</p>
   {/if}
@@ -224,7 +219,7 @@
     <legend class="gizli">Liste türü</legend>
     <label><input type="radio" name="pdf-tur" value="tek" bind:group={pdfTur} /><span><b>Tüm teknikerler tek sayfada</b><small>Panoya asmak için; A4 yatay</small></span></label>
     <label><input type="radio" name="pdf-tur" value="kisi" bind:group={pdfTur} /><span><b>Her teknikere ayrı sayfa</b><small>Hazırlandı işaret kutusuyla; A4 dikey</small></span></label>
-    <label><input type="radio" name="pdf-tur" value="toplu" bind:group={pdfTur} /><span><b>Servis → hazırlayan listesi</b><small>Servisler alfabetik; A4 yatay</small></span></label>
+    <label><input type="radio" name="pdf-tur" value="toplu" bind:group={pdfTur} /><span><b>Servis → hazırlayan listesi</b><small>Servisler alfabetik; A4 dikey</small></span></label>
   </fieldset>
   {#snippet altlik()}<span style="flex:1"></span><button class="dugme" onclick={() => (pdfAcik = false)}>Vazgeç</button><button class="dugme ana" onclick={pdf} disabled={hazirlaniyor}><Ikon ad="indir" />{hazirlaniyor ? "Hazırlanıyor…" : "PDF oluştur"}</button>{/snippet}
 </Pencere>
@@ -278,8 +273,6 @@
   .iz { position: relative; height: 12px; background: var(--yuzey-2); border-radius: 6px; }
   .iz i { position: absolute; inset: 0 auto 0 0; background: var(--tek); border-radius: 6px; }
   .iz u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--yazi); }
-  .toplu { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2px var(--b4); margin-top: var(--b3); font-size: var(--f-sm); }
-  .toplu li { display: flex; justify-content: space-between; gap: var(--b3); padding: 4px 0; border-bottom: 1px solid var(--cizgi-acik); }
   .adaylar { display: grid; gap: 6px; }
   .aday { display: grid; gap: 2px; text-align: left; padding: var(--b2) var(--b3); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); color: var(--yazi); cursor: pointer; }
   .aday:hover { border-color: var(--vurgu); }
