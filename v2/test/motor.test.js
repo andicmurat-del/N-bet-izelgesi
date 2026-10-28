@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 const senaryolar = require("../../tests/senaryolar.js");
 const beklenen = require("../../tests/beklenen.json");
 
-const BILEREK_FARKLI = { "az-kadro": { 0: "93d53d3167f1", 1: "841a6379371b" } };
+const BILEREK_FARKLI = { "az-kadro": { 0: "0d72810f4102", 1: "fe28dc563b62" } };
 
 const imza = days => crypto.createHash("sha1")
   .update(days.map(d => d.day + ":" + d.assigned.map(p => p.id).join(",") + "/" + (d.prep || []).map(p => p.id).join(",")).join(";"))

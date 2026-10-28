@@ -4,6 +4,7 @@
 import { gorevli, hazirlamaRol } from "../baglam";
 import type { Gorevli, Kisi } from "../../veri/tipler";
 import { AGIRLIK, HAZ_SAYISI } from "../sabitler";
+import { CUMARTESI } from "../takvim";
 import type { Amac } from "./amac";
 import type { Kurallar } from "./kurallar";
 import type { AramaKurulumu } from "./kurulum";
@@ -24,8 +25,8 @@ type Hamle =
   | { tip: "hazNobet"; i: number; k: number; slot: number; aId: number; bId: number }; // hazırlamayı ver, nöbet al
 
 export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi: () => number): void {
-  const { A, days, staffList, tumHavuz, destekler, destekVar, degisimHavuzu, ayniTur, resmiGunVar, resmiGunDizi, hIx } = K;
-  const { zorunluMu, gunGecerli, prepUygun, tatilGunu, yasak, gundeVar } = kural;
+  const { A, days, staffList, tumHavuz, destekler, destekVar, degisimHavuzu, ayniTur, resmiGunVar, resmiGunDizi, hIx, gunDow } = K;
+  const { zorunluMu, gunGecerli, prepUygun, tatilGunu, yasak, gundeVar, persembeNobetliMi } = kural;
   const { hesaplaJ, tabanKur, jDelta } = amac;
   const bul = (id: number) => staffList.find(s => s.id === id)!;
   const havuzdanBul = (id: number) => tumHavuz.find(s => s.id === id);
@@ -41,7 +42,8 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
       case "hazNobet": {
         const aOb = gn(bul(h.aId)), bOb = gn(havuzdanBul(h.bId) || bul(h.bId));
         days[h.k].assigned = days[h.k].assigned.map(p => (p.id === h.bId ? aOb : p));
-        days[h.i].prep = days[h.i].prep.map((pp, ix) => (ix === h.slot ? bOb : pp));
+        const liste = days[h.i].prep;
+        days[h.i].prep = h.slot < liste.length ? liste.map((pp, ix) => (ix === h.slot ? bOb : pp)) : liste.concat([bOb]);
         break;
       }
       case "nobetHaz": {
@@ -181,29 +183,32 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
           }
         }
       }
-      // 6) resmi tatil hazırlaması: b komşu günde nöbetçi olduğu için hazırlamaya geçemiyorsa, o nöbeti c'ye
-      //    devredip b'yi hazırlamaya almayı dene (nöbet ve hazırlama gün sayısı ayrı ayrı eşitlenebilsin)
-      if (resmiGunVar) {
-        for (let i = 0; i < days.length; i++) {
-          if (days[i].locked || !tatilGunu(i) || !resmiGunDizi[i]) continue;
-          const eskiListe = days[i].prep;
-          for (let slot = 0; slot < eskiListe.length; slot++) {
-            const pa = eskiListe[slot];
-            for (const b of degisimHavuzu(pa, slot)) {
-              if (b.id === pa.id || eskiListe.some(pp => pp.id === b.id) || yasak(b.id, i) || gundeVar(i, b.id)) continue;
-              const kl = [i - 1, i + 1].filter(k => k >= 0 && k < days.length && gundeVar(k, b.id));
-              if (kl.length !== 1) continue;
-              const k = kl[0];
-              if (days[k].locked || zorunluMu(b.id, k)) continue;
-              const eskiK = days[k].assigned;
-              for (const c of staffList) {
-                if (c.id === b.id || eskiK.some(p => p.id === c.id)) continue;
-                days[k].assigned = eskiK.map(p => (p.id === b.id ? gn(c) : p));
-                days[i].prep = eskiListe.map((pp, ix) => (ix === slot ? gn(b) : pp));
-                const cHazirlamada = days[i].prep.some(pp => pp.id === c.id) || (k - 1 >= 0 && (days[k - 1].prep || []).some(pp => pp.id === c.id)) || (k + 1 < days.length && (days[k + 1].prep || []).some(pp => pp.id === c.id));
-                if (gunGecerli(k) && prepUygun(b.id, i) && !cHazirlamada && iyiMi(jDelta(i, k, true))) enIyi = { tip: "resmiHaz", i, k, slot, b, c };
-                days[k].assigned = eskiK; days[i].prep = eskiListe;
-              }
+      // 6) hazırlamaya b yazılamıyor, çünkü b komşu günde (boş yer için: ya da o haftanın Perşembesinde) nöbetçi:
+      //    o nöbeti c'ye devredip b'yi hazırlamaya almayı dene. Resmi tatilde dolu yerler için de (nöbet ve hazırlama
+      //    gün sayısı ayrı ayrı eşitlenebilsin); diğer tatil günlerinde yalnız boş kalan yer için (tek hamleyle
+      //    doldurulamayan hazırlama yeri)
+      for (let i = 0; i < days.length; i++) {
+        if (days[i].locked || !tatilGunu(i)) continue;
+        const eskiListe = days[i].prep, bos = eskiListe.length < HAZ_SAYISI;
+        if (!bos && !resmiGunDizi[i]) continue;
+        for (let slot = resmiGunDizi[i] ? 0 : eskiListe.length; slot < eskiListe.length + (bos ? 1 : 0); slot++) {
+          const pa = slot < eskiListe.length ? eskiListe[slot] : BOS_YER;
+          for (const b of degisimHavuzu(pa, slot)) {
+            if (b.id === pa.id || eskiListe.some(pp => pp.id === b.id) || yasak(b.id, i) || gundeVar(i, b.id)) continue;
+            const aday = [i - 1, i + 1];
+            if (pa === BOS_YER && persembeNobetliMi(b.id, i)) aday.push(i - (gunDow[i] === CUMARTESI ? 2 : 3));
+            const kl = aday.filter(k => k >= 0 && k < days.length && gundeVar(k, b.id));
+            if (kl.length !== 1) continue;
+            const k = kl[0];
+            if (days[k].locked || zorunluMu(b.id, k)) continue;
+            const eskiK = days[k].assigned;
+            for (const c of staffList) {
+              if (c.id === b.id || eskiK.some(p => p.id === c.id)) continue;
+              days[k].assigned = eskiK.map(p => (p.id === b.id ? gn(c) : p));
+              days[i].prep = slot < eskiListe.length ? eskiListe.map((pp, ix) => (ix === slot ? gn(b) : pp)) : eskiListe.concat([gn(b)]);
+              const cHazirlamada = days[i].prep.some(pp => pp.id === c.id) || (k - 1 >= 0 && (days[k - 1].prep || []).some(pp => pp.id === c.id)) || (k + 1 < days.length && (days[k + 1].prep || []).some(pp => pp.id === c.id));
+              if (gunGecerli(k) && prepUygun(b.id, i) && !cHazirlamada && iyiMi(jDelta(i, k, true))) enIyi = { tip: "resmiHaz", i, k, slot, b, c };
+              days[k].assigned = eskiK; days[i].prep = eskiListe;
             }
           }
         }
