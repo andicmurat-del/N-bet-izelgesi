@@ -1,5 +1,6 @@
 // Rastgele senaryo taraması: motorun tüm işlevleri çökmeden çalışmalı, kesin kurallar ya sağlanmalı ya da gün
-// açıkça uyarılı (conflict) işaretlenmeli, girdi değişmemeli, aynı girdi aynı sonucu vermeli.
+// açıkça uyarılı (conflict) işaretlenmeli, girdi değişmemeli, aynı girdi aynı sonucu vermeli; "kadro yetmiyor" uyarısı
+// yalnız ihlal kaçınılmazken verilmeli.
 // Varsayılan 20 senaryo, hızlı saatle (arama ilk yerel en iyide durur). Daha geniş tarama:
 //   N=200 BAS=1 npx vitest run test/tarama.test.js      (TAM=1: aramayı gerçek uzunlukta çalıştırır, yavaştır)
 import { test, expect } from "vitest";
@@ -30,6 +31,8 @@ for (let s = BAS; s < BAS + N; s++) test("senaryo " + s, () => {
     const r2 = M.cizelgeOlustur(veri, y, m, { saat: hizliSaat() });
     if (JSON.stringify(r1) !== JSON.stringify(r2)) bulgu.push(`${y}-${m + 1} aynı girdi farklı sonuç`);
     bulgu.push(...denetle(veri, y, m, r1, kilitli && kilitli.map((k, i) => k)));
+    // "matematiksel olarak mümkün değil" uyarısı yalnız kesin kural ihlali kaçınılmazken verilir: kırmızı gün olmalı
+    if (r1.days && r1.warnings.some(w => /matematiksel olarak mümkün değil/.test(w)) && !r1.days.some(g => g.conflict && !g.locked)) bulgu.push(`${y}-${m + 1} "mümkün değil" uyarısı var ama kırmızı gün yok`);
     if (!r1.days) break;
     veri.schedules[y + "-" + m] = { year: y, month: m, days: r1.days, uyarilar: r1.warnings };
     // diğer işlevler çökmemeli ve tutarlı olmalı

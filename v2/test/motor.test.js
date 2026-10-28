@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 const senaryolar = require("../../tests/senaryolar.js");
 const beklenen = require("../../tests/beklenen.json");
 
-const BILEREK_FARKLI = { "az-kadro": { 0: "ea0bf29e4d58", 1: "2ac79e342817" } };
+const BILEREK_FARKLI = { "az-kadro": { 0: "87c41ea1a3b9", 1: "b4786479b286" } };
 
 const imza = days => crypto.createHash("sha1")
   .update(days.map(d => d.day + ":" + d.assigned.map(p => p.id).join(",") + "/" + (d.prep || []).map(p => p.id).join(",")).join(";"))
@@ -29,8 +29,9 @@ for (const sen of senaryolar) {
       const farkli = BILEREK_FARKLI[sen.ad]?.[i];
       test((m + 1) + (farkli ? ". ay (eski uygulamanın hatası düzeltildi)" : ". ay eski uygulamayla aynı"), () => {
         const r = cizelgeOlustur(veri, sen.yil, m, { saat: () => 0 });
-        expect(imza(r.days)).toBe(farkli || beklenen[sen.ad][i].imza);
+        // sonraki ay bu ayın çizelgesine bakar: beklenti tutmasa da kaydedilsin (yoksa sonraki ay da yanlış görünür)
         veri.schedules[sen.yil + "-" + m] = { year: sen.yil, month: m, days: r.days };
+        expect(imza(r.days)).toBe(farkli || beklenen[sen.ad][i].imza);
         expect(JSON.stringify(sen.staff), "motor girdiyi değiştirmemeli").toBe(personel);
       });
     });

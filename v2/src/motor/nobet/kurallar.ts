@@ -2,6 +2,7 @@
 // 5 gün içinde 3 nöbet yok, Perşembe nöbetçisine aynı hafta sonu hazırlama yok, art arda iki gün hazırlama yok.
 import type { Gorevli } from "../../veri/tipler";
 import { eczaciMi } from "../baglam";
+import { HAZ_SAYISI } from "../sabitler";
 import { CUMARTESI, gunKaydir, PAZAR, PERSEMBE } from "../takvim";
 import type { AramaKurulumu } from "./kurulum";
 import { ucluSikisik } from "./sinir";
@@ -89,13 +90,28 @@ export function kurallarKur(K: AramaKurulumu) {
     }
     return true;
   }
+  /** ihlalli günde denenen hamlelerde bile bozulmayacak temel kurallar: günde eczacı var, kimse aynı gün hem nöbetçi
+   *  hem hazırlamacı değil, izinli/yasaklı kişi nöbetçi değil (eş durumu zorunluluğu hariç) */
+  function temelUygun(idx: number): boolean {
+    const dy = days[idx], as = dy.assigned, pr = dy.prep;
+    let eczaci = false;
+    for (let q = 0; q < as.length; q++) {
+      const id = as[q].id;
+      if (eczaciMi(as[q].role)) eczaci = true;
+      if (yasak(id, idx) && !zorunluMu(id, idx)) return false;
+      for (let r = 0; r < pr.length; r++) if (pr[r].id === id) return false;
+    }
+    return eczaci;
+  }
   /** Günün kesin kural ihlali sayısı (nöbetçiler ve hazırlama personeli için yukarıdaki kuralların hepsi). İlk yerleştirme
    *  başka kimse kalmayınca kural esnetebilir; aramadaki hamleler yeni ihlal yaratmaz (gunGecerli, prepUygun), ama var olanı
-   *  gidermeleri için amaç fonksiyonu bu sayıyı cezalandırır. Gün kırmızı işareti de buna göredir. Bir günün sayısı
+   *  gidermeleri için amaç fonksiyonu bu sayıyı cezalandırır. Boş kalan hazırlama yeri de sayılır. Gün kırmızı işareti de buna göredir. Bir günün sayısı
    *  idx−4 … idx+4 günlerine bağlıdır (5 günde 3 nöbet). */
   function ihlalSayisi(idx: number): number {
     const dy = days[idx];
     let n = 0;
+    // tatil gününde boş kalan hazırlama yeri (her eksik yer bir ihlal)
+    if (!dy.locked && tatilGunu(idx) && dy.prep.length < HAZ_SAYISI) n += HAZ_SAYISI - dy.prep.length;
     if (!dy.assigned.some(p => eczaciMi(p.role))) n++;
     if (ikiDisaridan(dy.assigned, idx)) n++;
     for (const p of dy.assigned) {
@@ -116,5 +132,5 @@ export function kurallarKur(K: AramaKurulumu) {
     return n;
   }
 
-  return { yasak, zorunluMu, gundeVar, tatilGunu, komsuda, prepKomsu, prepBitisik, persembeNobetliMi, hsHazirligiVarMi, prepUygun, ikiDisaridan, gunGecerli, ihlalSayisi };
+  return { yasak, zorunluMu, gundeVar, tatilGunu, komsuda, prepKomsu, prepBitisik, persembeNobetliMi, hsHazirligiVarMi, prepUygun, ikiDisaridan, gunGecerli, temelUygun, ihlalSayisi };
 }
