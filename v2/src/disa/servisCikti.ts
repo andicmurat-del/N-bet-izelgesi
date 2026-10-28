@@ -79,29 +79,34 @@ export function servisKisiPdf(v: ServisGunCiktisi): Blob {
   return doc.output("blob");
 }
 
-/** Servis → hazırlayan listesi (alfabetik, iki sütun, tek A4 yatay) */
+/** Servis → hazırlayan listesi (alfabetik, tek A4 dikey; sığmazsa iki sütun) */
 export function servisTopluPdf(v: ServisGunCiktisi): Blob {
-  const doc = yeniPdf(), W = 297, K = 10;
+  const doc = yeniPdf("portrait"), W = 210, K = 12;
   doc.setProperties({ title: `Servis hazırlama listesi ${v.tarih}`, creator: "Nöbet Çizelgesi" });
   ust(doc, W, K, v.kurum, "Servis Hazırlama Listesi", `${v.tarih} · ${v.kisiler.length} kişi, ${servisSayisi(v)} servis${gunNotu(v)}`);
   const satir = v.kisiler.flatMap(k => k.items.map(s => [s.name, buyukAd(k.ad)])).sort((a, b) => a[0].localeCompare(b[0], "tr"));
-  const yari = Math.ceil(satir.length / 2), gen = (W - 2 * K - 8) / 2;
   // satırlar tek sayfaya sığsın: satır yüksekliği = yazı (pt → mm, satır aralığıyla) + iki kenar boşluğu
-  const pad = 0.8, satirMm = 165 / (yari + 1), fs = Math.max(6, Math.min(10, (satirMm - 2 * pad) / (0.3528 * 1.15)));
+  const pad = 1, yukseklik = (297 - 30 - K) * 0.95, boy = (n: number) => (yukseklik / (n + 1) - 2 * pad) / (0.3528 * 1.15);
+  const tekSutun = boy(satir.length) >= 8;
+  const yari = tekSutun ? satir.length : Math.ceil(satir.length / 2);
+  const fs = Math.max(6, Math.min(11, boy(yari)));
+  // yazı büyüklüğü sınırda kalırsa kalan yer satır aralığına gider: sayfa dolar, satırlar daha kolay izlenir
+  const dikey = Math.min(2.5, Math.max(pad, (yukseklik / (yari + 1) - fs * 0.3528 * 1.15) / 2));
   // sütunlar en uzun yazı kadar: hazırlayan adı servisin hemen yanında dursun, satırlar karışmasın
   const en = (l: string[], kalin: boolean) => { doc.setFont("CizelgeSans", kalin ? "bold" : "normal"); doc.setFontSize(fs); return Math.max(...l.map(t => doc.getTextWidth(t))) + 2 * pad + 4; };
   const s1 = en(["Servis", ...satir.map(r => r[0])], false), s2 = en(["Hazırlayan", ...satir.map(r => r[1])], true);
-  const tw = Math.min(gen, s1 + s2), ara = 16, sol = Math.max(K, (W - (satir.length > yari ? 2 * tw + ara : tw)) / 2);
+  const ara = 8, tw = Math.min(tekSutun ? W - 2 * K : (W - 2 * K - ara) / 2, s1 + s2);
+  const sol = (W - (tekSutun ? tw : 2 * tw + ara)) / 2;
   const ortak = {
     theme: "grid" as const, head: [["Servis", "Hazırlayan"]], startY: 30, tableWidth: tw,
-    styles: { font: "CizelgeSans", fontSize: fs, cellPadding: pad, textColor: YAZI, lineColor: CIZGI, lineWidth: 0.15 },
+    styles: { font: "CizelgeSans", fontSize: fs, cellPadding: { top: dikey, bottom: dikey, left: pad, right: pad }, textColor: YAZI, lineColor: CIZGI, lineWidth: 0.15, valign: "middle" as const },
     headStyles: { font: "CizelgeSans", fontStyle: "bold" as const, fillColor: BASLIK },
     alternateRowStyles: { fillColor: [243, 246, 248] as Rgb },
     columnStyles: { 0: { cellWidth: tw - s2 }, 1: { fontStyle: "bold" as const, cellWidth: s2 } },
   };
-  autoTable(doc, { ...ortak, body: satir.slice(0, yari), margin: { left: sol, right: W - sol - tw } });
+  autoTable(doc, { ...ortak, body: satir.slice(0, yari), margin: { left: sol, right: W - sol - tw, bottom: K } });
   doc.setPage(1);
-  if (satir.length > yari) autoTable(doc, { ...ortak, body: satir.slice(yari), margin: { left: sol + tw + ara, right: W - sol - 2 * tw - ara } });
+  if (satir.length > yari) autoTable(doc, { ...ortak, body: satir.slice(yari), margin: { left: sol + tw + ara, right: W - sol - 2 * tw - ara, bottom: K } });
   return doc.output("blob");
 }
 

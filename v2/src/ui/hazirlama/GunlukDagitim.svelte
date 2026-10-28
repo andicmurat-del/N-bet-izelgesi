@@ -224,7 +224,7 @@
     <legend class="gizli">Liste türü</legend>
     <label><input type="radio" name="pdf-tur" value="tek" bind:group={pdfTur} /><span><b>Tüm teknikerler tek sayfada</b><small>Panoya asmak için; A4 yatay</small></span></label>
     <label><input type="radio" name="pdf-tur" value="kisi" bind:group={pdfTur} /><span><b>Her teknikere ayrı sayfa</b><small>Hazırlandı işaret kutusuyla; A4 dikey</small></span></label>
-    <label><input type="radio" name="pdf-tur" value="toplu" bind:group={pdfTur} /><span><b>Servis → hazırlayan listesi</b><small>Servisler alfabetik; A4 yatay</small></span></label>
+    <label><input type="radio" name="pdf-tur" value="toplu" bind:group={pdfTur} /><span><b>Servis → hazırlayan listesi</b><small>Servisler alfabetik; A4 dikey</small></span></label>
   </fieldset>
   {#snippet altlik()}<span style="flex:1"></span><button class="dugme" onclick={() => (pdfAcik = false)}>Vazgeç</button><button class="dugme ana" onclick={pdf} disabled={hazirlaniyor}><Ikon ad="indir" />{hazirlaniyor ? "Hazırlanıyor…" : "PDF oluştur"}</button>{/snippet}
 </Pencere>
