@@ -1,0 +1,58 @@
+// Servis hazırlama: yeni motor, eski uygulamanın aynı girdiyle ürettiği dağıtımı birebir üretmeli
+// (servis-beklenen.json; eski uygulama tarayıcıda çalıştırılıp kaydedildi). Ayrıca günlük kurallar ve kayıt davranışı.
+import { describe, test, expect } from "vitest";
+import { createRequire } from "module";
+import { servisAyHesapla, servisIslem, servisGunu, servisListesi } from "../src/motor/cizelge.js";
+
+const require = createRequire(import.meta.url);
+const { girdi, beklenen, bugun } = require("./servis-beklenen.json");
+const kopya = o => JSON.parse(JSON.stringify(o));
+
+// Ekim kaydı Kasım'ın birikimine girer: aylar sırayla hesaplanır
+const veri = kopya(girdi);
+veri.servisKayit = {};
+for (const ay of [9, 10]) veri.servisKayit["2026-" + ay] = servisAyHesapla(veri, 2026, ay, {}, bugun).kayit;
+
+describe("servis hazırlama, eski uygulamayla aynı", () => {
+  for (const ay of [9, 10]) test(`2026-${ay + 1}`, () => {
+    const R = veri.servisKayit["2026-" + ay];
+    expect(Object.keys(R.gun).sort()).toEqual(Object.keys(beklenen[ay]).sort());
+    for (const [d, g] of Object.entries(beklenen[ay])) expect({ gun: d, k: R.gun[d].k, n: R.gun[d].n, a: R.gun[d].a }).toEqual({ gun: d, ...g });
+  });
+});
+
+describe("servis hazırlama kuralları", () => {
+  const svc = new Map(servisListesi(veri).map(s => [s.name, s]));
+  test("her gün kişi başı servis, YB ve zor servis sayısı en çok 1 farklı", () => {
+    for (const ay of [9, 10]) for (const g of Object.values(veri.servisKayit["2026-" + ay].gun)) {
+      const say = {}, yb = {}, zor = {};
+      g.k.forEach(id => { say[id] = 0; yb[id] = 0; zor[id] = 0; });
+      for (const [sn, id] of Object.entries(g.a)) { say[id]++; if (/\sYB$/.test(sn)) yb[id]++; if (svc.get(sn)?.zor) zor[id]++; }
+      for (const t of [say, yb, zor]) { const v = Object.values(t); expect(Math.max(...v) - Math.min(...v)).toBeLessThanOrEqual(1); }
+    }
+  });
+  test("girdi değişmezse yeniden hesap kaydı değiştirmez", () => {
+    expect(servisAyHesapla(veri, 2026, 10, {}, bugun).degisti).toBe(false);
+  });
+  test("puantaj değişince geçmiş günler korunur (29 Ekim resmi tatil), bugün ve sonrası yeniden dağıtılır", () => {
+    const v = kopya(veri), once = v.servisKayit["2026-9"];
+    const kisi = once.gun[30].k[0];
+    v.puantaj["2026-9"] = { ...(v.puantaj["2026-9"] || {}), [kisi]: { 5: "R", 30: "R" } };
+    const R = servisAyHesapla(v, 2026, 9, {}, bugun).kayit;
+    expect(R.gun[5].a).toEqual(once.gun[5].a);          // geçmiş gün olduğu gibi
+    expect(R.gun[5].bayat).toBe(1);                       // ama değiştiği işaretlenir
+    expect(R.gun[30].k).not.toContain(kisi);              // bugünden sonraki gün yeniden dağıtıldı
+  });
+  test("kişi dağıtımdan çıkarılınca o gün servis almaz; elle atama yeniden hesapta korunur", () => {
+    const v = kopya(veri), d = 28, R0 = v.servisKayit["2026-9"].gun[d];
+    const cik = R0.k[0];
+    v.servisKayit["2026-9"] = servisIslem(v, 2026, 9, { tur: "kisi", gun: d, id: cik }, bugun);
+    expect(v.servisKayit["2026-9"].gun[d].k).not.toContain(cik);
+    expect(servisGunu(v, 2026, 9, d, bugun).kisiler.find(k => k.id === cik).on).toBe(false);
+    const g = v.servisKayit["2026-9"].gun[d], sn = Object.keys(g.a)[0], hedef = g.k.find(id => id !== g.a[sn]);
+    v.servisKayit["2026-9"] = servisIslem(v, 2026, 9, { tur: "ata", gun: d, sn, hedef, karsilik: null }, bugun);
+    v.servisKayit["2026-9"] = servisIslem(v, 2026, 9, { tur: "karistir", gun: 30 }, bugun);
+    expect(v.servisKayit["2026-9"].gun[d].a[sn]).toBe(hedef);
+    expect(v.servisKayit["2026-9"].ata[d][sn]).toBe(hedef);
+  });
+});
