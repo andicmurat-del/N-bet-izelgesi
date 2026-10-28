@@ -26,6 +26,9 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
   const { hesaplaJ, tabanKur, jDelta } = amac;
   const bul = (id: number) => staffList.find(s => s.id === id)!;
   const havuzdanBul = (id: number) => tumHavuz.find(s => s.id === id);
+  // görevli nesneleri kaynak nesne başına bir kez oluşturulur (her aday hamlede yeni nesne oluşmasın)
+  const nesneler = new Map<object, Gorevli>();
+  const gn = (s: Kisi | Gorevli) => { let o = nesneler.get(s); if (!o) { o = gorevli(s); nesneler.set(s, o); } return o; };
 
   let J = hesaplaJ();
 
@@ -33,37 +36,37 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
   function uygula(h: Hamle) {
     switch (h.tip) {
       case "hazNobet": {
-        const aOb = gorevli(bul(h.aId)), bOb = gorevli(havuzdanBul(h.bId) || bul(h.bId));
+        const aOb = gn(bul(h.aId)), bOb = gn(havuzdanBul(h.bId) || bul(h.bId));
         days[h.k].assigned = days[h.k].assigned.map(p => (p.id === h.bId ? aOb : p));
         days[h.i].prep = days[h.i].prep.map((pp, ix) => (ix === h.slot ? bOb : pp));
         break;
       }
       case "nobetHaz": {
-        const dI = days[h.i], pOb = gorevli(bul(h.pid)), aOb = gorevli(h.a);
+        const dI = days[h.i], pOb = gn(bul(h.pid)), aOb = gn(h.a);
         dI.assigned = dI.assigned.map(p => (p.id === h.a.id ? pOb : p));
         dI.prep = dI.prep.map((q, ix) => (ix === h.slot ? aOb : q));
         break;
       }
       case "resmiNobet": {
-        const bOb = gorevli(bul(h.b.id)), cOb = gorevli(bul(h.c.id));
+        const bOb = gn(bul(h.b.id)), cOb = gn(bul(h.c.id));
         days[h.k].assigned = days[h.k].assigned.map(p => (p.id === h.b.id ? cOb : p));
         days[h.i].assigned = days[h.i].assigned.map(p => (p.id === h.a.id ? bOb : p));
         break;
       }
       case "resmiHaz": {
-        const bOb = gorevli(havuzdanBul(h.b.id) || h.b), cOb = gorevli(bul(h.c.id));
+        const bOb = gn(havuzdanBul(h.b.id) || h.b), cOb = gn(bul(h.c.id));
         days[h.k].assigned = days[h.k].assigned.map(p => (p.id === h.b.id ? cOb : p));
         days[h.i].prep = days[h.i].prep.map((pp, ix) => (ix === h.slot ? bOb : pp));
         break;
       }
       case "destekEkle": {
-        const lst = days[h.i].prep, nb = gorevli(havuzdanBul(h.b.id)!);
+        const lst = days[h.i].prep, nb = gn(havuzdanBul(h.b.id)!);
         days[h.i].prep = lst.length < HAZ_SAYISI ? lst.concat([nb]) : lst.map((pp, ix) => (ix === lst.length - 1 ? nb : pp));
         break;
       }
       case "hazKisi": {
         const liste = days[h.i].prep;
-        days[h.i].prep = liste.map((pp, ix) => (ix === h.slot ? gorevli(havuzdanBul(h.b.id)!) : pp));
+        days[h.i].prep = liste.map((pp, ix) => (ix === h.slot ? gn(havuzdanBul(h.b.id)!) : pp));
         break;
       }
       case "hazTakas": {
@@ -74,7 +77,7 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
       }
       case "kisi": {
         const dy = days[h.i], b = bul(h.b.id);
-        dy.assigned = dy.assigned.map(p => (p.id === h.a.id ? gorevli(b) : p));
+        dy.assigned = dy.assigned.map(p => (p.id === h.a.id ? gn(b) : p));
         break;
       }
       case "takas": {
@@ -90,7 +93,8 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
   function inis() {
     for (let tur = 0; tur < 400; tur++) {
       let enIyiJ = J, enIyi: Hamle | null = null;
-      const dene = (j2: number, h: Hamle) => { if (j2 < enIyiJ - 1e-9) { enIyiJ = j2; enIyi = h; } };
+      // aday hamle şimdiye kadarkinden iyi mi (iyiyse en iyi değer güncellenir; hamle kaydı yalnız o zaman oluşturulur)
+      const iyiMi = (j2: number) => { if (j2 < enIyiJ - 1e-9) { enIyiJ = j2; return true; } return false; };
       tabanKur();
       // 1) bir nöbetçiyi başka biriyle değiştir
       for (let i = 0; i < days.length; i++) {
@@ -101,8 +105,8 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
           if (zorunluMu(a.id, i)) continue;
           for (const b of staffList) {
             if (b.id === a.id || eski.some(p => p.id === b.id)) continue;
-            dy.assigned = eski.map(p => (p.id === a.id ? gorevli(b) : p));
-            if (gunGecerli(i)) dene(jDelta(i, -1, true), { tip: "kisi", i, a, b });
+            dy.assigned = eski.map(p => (p.id === a.id ? gn(b) : p));
+            if (gunGecerli(i) && iyiMi(jDelta(i, -1, true))) enIyi = { tip: "kisi", i, a, b };
             dy.assigned = eski;
           }
         }
@@ -119,7 +123,7 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
               if (ei.some(p => p.id === b.id) || zorunluMu(b.id, k)) continue;
               days[i].assigned = ei.map(p => (p.id === a.id ? b : p));
               days[k].assigned = ek.map(p => (p.id === b.id ? a : p));
-              if (gunGecerli(i) && gunGecerli(k)) dene(jDelta(i, k, true), { tip: "takas", i, k, a, b });
+              if (gunGecerli(i) && gunGecerli(k) && iyiMi(jDelta(i, k, true))) enIyi = { tip: "takas", i, k, a, b };
               days[i].assigned = ei; days[k].assigned = ek;
             }
           }
@@ -133,8 +137,8 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
           const eskiP = eskiListe[slot];
           for (const b of degisimHavuzu(eskiP, slot)) {
             if (b.id === eskiP.id || eskiListe.some((pp, ix) => ix !== slot && pp.id === b.id)) continue;
-            days[i].prep = eskiListe.map((pp, ix) => (ix === slot ? gorevli(b) : pp));
-            if (prepUygun(b.id, i)) dene(jDelta(i, -1, false), { tip: "hazKisi", i, slot, b });
+            days[i].prep = eskiListe.map((pp, ix) => (ix === slot ? gn(b) : pp));
+            if (prepUygun(b.id, i) && iyiMi(jDelta(i, -1, false))) enIyi = { tip: "hazKisi", i, slot, b };
             days[i].prep = eskiListe;
           }
         }
@@ -153,7 +157,7 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
               const eskiI = days[i].prep, eskiK = days[k].prep;
               days[i].prep = eskiI.map((pp, ix) => (ix === si ? pb : pp));
               days[k].prep = eskiK.map((pp, ix) => (ix === sk ? pa : pp));
-              if (prepUygun(pb.id, i) && prepUygun(pa.id, k)) dene(jDelta(i, k, false), { tip: "hazTakas", i, k, si, sk });
+              if (prepUygun(pb.id, i) && prepUygun(pa.id, k) && iyiMi(jDelta(i, k, false))) enIyi = { tip: "hazTakas", i, k, si, sk };
               days[i].prep = eskiI; days[k].prep = eskiK;
             }
           }
@@ -167,8 +171,8 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
           const eskiL = days[i].prep;
           for (const b of destekler) {
             if (eskiL.some(pp => pp.id === b.id)) continue;
-            days[i].prep = eskiL.length < HAZ_SAYISI ? eskiL.concat([gorevli(b)]) : eskiL.map((pp, ix) => (ix === eskiL.length - 1 ? gorevli(b) : pp));
-            if (prepUygun(b.id, i)) dene(jDelta(i, -1, false), { tip: "destekEkle", i, b });
+            days[i].prep = eskiL.length < HAZ_SAYISI ? eskiL.concat([gn(b)]) : eskiL.map((pp, ix) => (ix === eskiL.length - 1 ? gn(b) : pp));
+            if (prepUygun(b.id, i) && iyiMi(jDelta(i, -1, false))) enIyi = { tip: "destekEkle", i, b };
             days[i].prep = eskiL;
           }
         }
@@ -190,10 +194,10 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
               const eskiK = days[k].assigned;
               for (const c of staffList) {
                 if (c.id === b.id || eskiK.some(p => p.id === c.id)) continue;
-                days[k].assigned = eskiK.map(p => (p.id === b.id ? gorevli(c) : p));
-                days[i].prep = eskiListe.map((pp, ix) => (ix === slot ? gorevli(b) : pp));
+                days[k].assigned = eskiK.map(p => (p.id === b.id ? gn(c) : p));
+                days[i].prep = eskiListe.map((pp, ix) => (ix === slot ? gn(b) : pp));
                 const cHazirlamada = days[i].prep.some(pp => pp.id === c.id) || (k - 1 >= 0 && (days[k - 1].prep || []).some(pp => pp.id === c.id)) || (k + 1 < days.length && (days[k + 1].prep || []).some(pp => pp.id === c.id));
-                if (gunGecerli(k) && prepUygun(b.id, i) && !cHazirlamada) dene(jDelta(i, k, true), { tip: "resmiHaz", i, k, slot, b, c });
+                if (gunGecerli(k) && prepUygun(b.id, i) && !cHazirlamada && iyiMi(jDelta(i, k, true))) enIyi = { tip: "resmiHaz", i, k, slot, b, c };
                 days[k].assigned = eskiK; days[i].prep = eskiListe;
               }
             }
@@ -217,9 +221,9 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
               const eskiK = days[k].assigned;
               for (const c of staffList) {
                 if (c.id === b.id || eskiK.some(p => p.id === c.id)) continue;
-                days[k].assigned = eskiK.map(p => (p.id === b.id ? gorevli(c) : p));
-                days[i].assigned = eskiI.map(p => (p.id === a.id ? gorevli(b) : p));
-                if (gunGecerli(i) && gunGecerli(k)) dene(jDelta(i, k, true), { tip: "resmiNobet", i, k, a, b, c });
+                days[k].assigned = eskiK.map(p => (p.id === b.id ? gn(c) : p));
+                days[i].assigned = eskiI.map(p => (p.id === a.id ? gn(b) : p));
+                if (gunGecerli(i) && gunGecerli(k) && iyiMi(jDelta(i, k, true))) enIyi = { tip: "resmiNobet", i, k, a, b, c };
                 days[k].assigned = eskiK; days[i].assigned = eskiI;
               }
             }
@@ -237,9 +241,9 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
             for (let slot = 0; slot < eP.length; slot++) {
               const pp = eP[slot];
               if (pp.role === "destek" || !hazirlamaRol(a.role) || !staffList.some(s => s.id === pp.id)) continue;
-              days[i].assigned = eA.map(p => (p.id === a.id ? gorevli(bul(pp.id)) : p));
-              days[i].prep = eP.map((q, ix) => (ix === slot ? gorevli(a) : q));
-              if (gunGecerli(i) && prepUygun(a.id, i)) dene(jDelta(i, -1, true), { tip: "nobetHaz", i, a, slot, pid: pp.id });
+              days[i].assigned = eA.map(p => (p.id === a.id ? gn(bul(pp.id)) : p));
+              days[i].prep = eP.map((q, ix) => (ix === slot ? gn(a) : q));
+              if (gunGecerli(i) && prepUygun(a.id, i) && iyiMi(jDelta(i, -1, true))) enIyi = { tip: "nobetHaz", i, a, slot, pid: pp.id };
               days[i].assigned = eA; days[i].prep = eP;
             }
           }
@@ -260,15 +264,15 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
               if (k === i || days[k].locked) continue;
               const eK = days[k].assigned;
               if (!eK.some(p => p.id === b.id) || eK.some(p => p.id === pa.id) || zorunluMu(b.id, k)) continue;
-              days[k].assigned = eK.map(p => (p.id === b.id ? gorevli(aS) : p));
-              days[i].prep = eP.map((pp, ix) => (ix === slot ? gorevli(b) : pp));
-              if (gunGecerli(k) && prepUygun(b.id, i)) dene(jDelta(i, k, true), { tip: "hazNobet", i, k, slot, aId: pa.id, bId: b.id });
+              days[k].assigned = eK.map(p => (p.id === b.id ? gn(aS) : p));
+              days[i].prep = eP.map((pp, ix) => (ix === slot ? gn(b) : pp));
+              if (gunGecerli(k) && prepUygun(b.id, i) && iyiMi(jDelta(i, k, true))) enIyi = { tip: "hazNobet", i, k, slot, aId: pa.id, bId: b.id };
               days[k].assigned = eK; days[i].prep = eP;
             }
           }
         }
       }
-      const secilen = enIyi as Hamle | null;   // dene() içinde atanır
+      const secilen = enIyi as Hamle | null;   // iyiMi() ile birlikte atanır
       if (!secilen) break;
       uygula(secilen);
       J = enIyiJ;
@@ -300,7 +304,7 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
       const b = staffList[Math.floor(rnd() * staffList.length)];
       if (zorunluMu(a.id, i) || b.id === a.id || dy.assigned.some(p => p.id === b.id)) continue;
       const eski = dy.assigned;
-      dy.assigned = eski.map(p => (p.id === a.id ? gorevli(b) : p));
+      dy.assigned = eski.map(p => (p.id === a.id ? gn(b) : p));
       if (!gunGecerli(i)) dy.assigned = eski;
     }
     // iki hazırlama yerini rastgele değiştir
@@ -313,7 +317,7 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
       const b = havuzB[Math.floor(rnd() * havuzB.length)];
       if (days[i].prep.some((pp, ix) => ix !== slot && pp.id === b.id)) continue;
       const eskiListe = days[i].prep;
-      days[i].prep = eskiListe.map((pp, ix) => (ix === slot ? gorevli(b) : pp));
+      days[i].prep = eskiListe.map((pp, ix) => (ix === slot ? gn(b) : pp));
       if (!prepUygun(b.id, i)) days[i].prep = eskiListe;
     }
     J = hesaplaJ();
@@ -336,11 +340,11 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
         tabanKur();
         for (const b of degisimHavuzu(pp, slot)) {
           if (b.id === pp.id || eski.some(q => q.id === b.id)) continue;
-          days[i].prep = eski.map((q, ix) => (ix === slot ? gorevli(b) : q));
+          days[i].prep = eski.map((q, ix) => (ix === slot ? gn(b) : q));
           if (prepUygun(b.id, i)) { const j2 = jDelta(i, -1, false); if (j2 < enIyiJ2) { enIyiJ2 = j2; enIyiB = b; } }
           days[i].prep = eski;
         }
-        if (enIyiB) { const sec = enIyiB; days[i].prep = eski.map((q, ix) => (ix === slot ? gorevli(sec) : q)); degisti = true; }
+        if (enIyiB) { const sec = enIyiB; days[i].prep = eski.map((q, ix) => (ix === slot ? gn(sec) : q)); degisti = true; }
       }
     }
     if (!degisti) break;

@@ -24,13 +24,18 @@ export function aySiniri(B: Baglam, y: number, m: number): AySiniri {
 
 /** j. gün (0'dan; eksi ise önceki ay) kişi nöbetçi mi. days ilk yerleştirmede henüz yarımdır. */
 function nobetVarIdx(days: MotorGunu[], sinir: AySiniri, id: number, j: number): boolean {
-  if (j >= 0) return j < days.length && !!days[j] && days[j].assigned.some(p => p.id === id);
+  if (j >= 0) {
+    if (j >= days.length || !days[j]) return false;
+    const as = days[j].assigned;
+    for (let q = 0; q < as.length; q++) if (as[q].id === id) return true;
+    return false;
+  }
   return (sinir.oncekiSonGunler[-j] || []).indexOf(id) >= 0;
 }
 /** aynı kişiye 5 gün içinde 3 nöbet yazılmaz (ör. Pazartesi–Çarşamba–Cuma); 2 gün arayla tek bir tekrar olabilir */
 export function ucluSikisik(days: MotorGunu[], sinir: AySiniri, id: number, idx: number): boolean {
-  const v = (k: number) => nobetVarIdx(days, sinir, id, idx + k);
-  return (v(-2) && v(-4)) || (v(-2) && v(2)) || (v(2) && v(4));
+  const g2 = nobetVarIdx(days, sinir, id, idx - 2), i2 = nobetVarIdx(days, sinir, id, idx + 2);
+  return (g2 && nobetVarIdx(days, sinir, id, idx - 4)) || (g2 && i2) || (i2 && nobetVarIdx(days, sinir, id, idx + 4));
 }
 
 /** Ayrılan personelin son çalışma günü: ertesi gün mesai günüyse nöbet izni kullanamaz, nöbet yazılmaz */

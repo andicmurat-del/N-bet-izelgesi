@@ -25,8 +25,9 @@ export function kurallarKur(K: AramaKurulumu) {
   function komsuda(id: number, idx: number): boolean {
     for (let k = idx - 1; k <= idx + 1; k++) {
       if (k < 0 || k >= days.length) continue;
-      if (k !== idx && days[k].assigned.some(p => p.id === id)) return true;
-      if (days[k].prep && days[k].prep.some(pp => pp.id === id)) return true;
+      if (k !== idx && gundeVar(k, id)) return true;
+      const pr = days[k].prep;
+      if (pr) for (let q = 0; q < pr.length; q++) if (pr[q].id === id) return true;
     }
     if (idx === 0 && (sinir.oncekiSonN.indexOf(id) >= 0 || sinir.oncekiSonH.indexOf(id) >= 0)) return true;
     if (idx === days.length - 1 && (sinir.sonrakiIlkN.indexOf(id) >= 0 || sinir.sonrakiIlkH.indexOf(id) >= 0)) return true;
@@ -68,18 +69,52 @@ export function kurallarKur(K: AramaKurulumu) {
     return !yasak(id, idx) && !prepKomsu(id, idx) && !persembeNobetliMi(id, idx) && !prepBitisik(id, idx);
   }
   /** dışarıdan nöbete gelen iki eczacı aynı gün birlikte nöbetçi olmaz (ikisi de eş durumu zorunluluğuysa hariç) */
-  function ikiDisaridan(as: Gorevli[], idx: number): boolean { const d = as.filter(p => p.role === "nobetci"); return d.length > 1 && !d.every(p => zorunluMu(p.id, idx)); }
+  function ikiDisaridan(as: Gorevli[], idx: number): boolean {
+    let say = 0, hepsiZorunlu = true;
+    for (let q = 0; q < as.length; q++) if (as[q].role === "nobetci") { say++; if (!zorunluMu(as[q].id, idx)) hepsiZorunlu = false; }
+    return say > 1 && !hepsiZorunlu;
+  }
   /** günün nöbetçileri kesin kurallara uyuyor mu */
   function gunGecerli(idx: number): boolean {
+    const dy = days[idx], as = dy.assigned;
+    let eczaci = false;
+    for (let q = 0; q < as.length; q++) if (eczaciMi(as[q].role)) { eczaci = true; break; }
+    if (!eczaci) return false;
+    if (ikiDisaridan(as, idx)) return false;
+    for (let q = 0; q < as.length; q++) {
+      const id = as[q].id;
+      if (yasak(id, idx)) return false;
+      if (zorunluMu(id, idx)) continue;
+      if (sonGunEngel(id, dy.day) || komsuda(id, idx) || hsHazirligiVarMi(id, idx) || ucluSikisik(days, sinir, id, idx)) return false;
+    }
+    return true;
+  }
+  /** Günün kesin kural ihlali sayısı (nöbetçiler ve hazırlama personeli için yukarıdaki kuralların hepsi). İlk yerleştirme
+   *  başka kimse kalmayınca kural esnetebilir; aramadaki hamleler yeni ihlal yaratmaz (gunGecerli, prepUygun), ama var olanı
+   *  gidermeleri için amaç fonksiyonu bu sayıyı cezalandırır. Gün kırmızı işareti de buna göredir. Bir günün sayısı
+   *  idx−4 … idx+4 günlerine bağlıdır (5 günde 3 nöbet). */
+  function ihlalSayisi(idx: number): number {
     const dy = days[idx];
-    if (!dy.assigned.some(p => eczaciMi(p.role))) return false;
-    if (ikiDisaridan(dy.assigned, idx)) return false;
-    return dy.assigned.every(p => {
-      if (yasak(p.id, idx)) return false;
-      if (zorunluMu(p.id, idx)) return true;
-      return !sonGunEngel(p.id, dy.day) && !komsuda(p.id, idx) && !hsHazirligiVarMi(p.id, idx) && !ucluSikisik(days, sinir, p.id, idx);
-    });
+    let n = 0;
+    if (!dy.assigned.some(p => eczaciMi(p.role))) n++;
+    if (ikiDisaridan(dy.assigned, idx)) n++;
+    for (const p of dy.assigned) {
+      if (yasak(p.id, idx)) { n++; continue; }
+      if (zorunluMu(p.id, idx)) continue;
+      if (sonGunEngel(p.id, dy.day)) n++;
+      if (komsuda(p.id, idx)) n++;
+      if (hsHazirligiVarMi(p.id, idx)) n++;
+      if (ucluSikisik(days, sinir, p.id, idx)) n++;
+    }
+    for (const p of dy.prep || []) {
+      if (yasak(p.id, idx)) n++;
+      if (prepKomsu(p.id, idx)) n++;
+      if (persembeNobetliMi(p.id, idx)) n++;
+      // destek personelinde art arda hazırlama ihlal sayılmaz (yalnız başka yer yoksa yazılır; eski uygulamada da işaretlenmez)
+      if (p.role !== "destek" && prepBitisik(p.id, idx)) n++;
+    }
+    return n;
   }
 
-  return { yasak, zorunluMu, gundeVar, tatilGunu, komsuda, prepKomsu, prepBitisik, persembeNobetliMi, hsHazirligiVarMi, prepUygun, ikiDisaridan, gunGecerli };
+  return { yasak, zorunluMu, gundeVar, tatilGunu, komsuda, prepKomsu, prepBitisik, persembeNobetliMi, hsHazirligiVarMi, prepUygun, ikiDisaridan, gunGecerli, ihlalSayisi };
 }

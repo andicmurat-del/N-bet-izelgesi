@@ -3,7 +3,7 @@
 //  2. tatil günlerinin hazırlama personeli        → hazirlama.ts
 //  3. yerel arama (amaç fonksiyonu en aza)        → arama.ts, amac.ts, kurallar.ts
 //  4. kural esnetilen günler ve uyarılar          → uyarilar.ts
-import type { Baglam, MotorGunu } from "../baglam";
+import { gorevli, type Baglam, type MotorGunu } from "../baglam";
 import { ayBilgisi, nobetKadrosu } from "./ay";
 import { amacKur } from "./amac";
 import { yerelArama } from "./arama";
@@ -32,6 +32,8 @@ export function cizelgeUret(B: Baglam, y: number, m: number, varyasyon: number, 
   const kural = kurallarKur(K);
   hazirlamaAta(K, kural);
   yerelArama(K, kural, amacKur(K, kural), simdi);
+  // aramada aynı kişi nesnesi birden çok günde kullanılır; sonuçta her gün kendi kopyasını taşısın
+  days.forEach(d => { if (!d.locked) { d.assigned = d.assigned.map(gorevli); d.prep = d.prep.map(gorevli); } });
   gunleriIsaretle(K, kural);
   return { days, warnings: uyarilariYaz(K, kural), history: ayGecmisi(K) };
 }
