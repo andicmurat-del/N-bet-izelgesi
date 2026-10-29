@@ -1,8 +1,8 @@
 // Motorun kuralları ve ağırlıkları: tek yerde, öncelik sırasıyla.
 
 /** Ayarların varsayılan değerleri. Ayarlar ekranında nöbetler arası en az gün, destek personeli aylık hazırlama,
- *  arife saati ve çakışma önceliği değiştirilebilir; AYAR_GIZLI'dakiler her zaman varsayılan değerinde çalışır. */
-export const AYAR_VARSAYILAN = { nobetSuresi: 24, mesai: 8, arifeSaat: 3, hazSaat: 8, fmHedef: 8, minAra: 3, maxThu: 1, hsTercih: 1, hsUst: 2, cumaEsles: true, thuHaftaSonu: true, destekAylik: 2, cakismaOncelik: 1, niDusum: 1, kurumAdi: "", onaylayan: "" };
+ *  ve arife saati değiştirilebilir; AYAR_GIZLI'dakiler her zaman varsayılan değerinde çalışır. */
+export const AYAR_VARSAYILAN = { nobetSuresi: 24, mesai: 8, arifeSaat: 3, hazSaat: 8, fmHedef: 8, minAra: 3, maxThu: 1, hsTercih: 1, hsUst: 2, cumaEsles: true, thuHaftaSonu: true, destekAylik: 2, niDusum: 1, kurumAdi: "", onaylayan: "" };
 export type AyarAdi = keyof typeof AYAR_VARSAYILAN;
 export const AYAR_GIZLI = new Set<AyarAdi>(["niDusum", "nobetSuresi", "mesai", "hazSaat", "fmHedef", "maxThu", "thuHaftaSonu", "hsTercih", "hsUst", "cumaEsles"]);
 
@@ -45,8 +45,7 @@ export const AGIRLIK = Object.freeze({
   // 2. kesin kurallar
   KESIN: KESIN_AGIRLIK,                    // genel kesin kural birimi: aylık nöbet sayısı farkı 2'yi aşan her nöbet; fazla mesai farkı 8 saati aşan her saat
   fmBant: KESIN_AGIRLIK * 0.25,            // fazla mesai: herkesi 8 saatlik tek aralığa sokmak için gereken toplam saat (arama düzlükte takılmasın)
-  hzFarkHazirlamaOncelik: KESIN_AGIRLIK * 200, // hazırlama farkı 1'i aşınca, Ayarlar'da "hazırlama eşitliği" öncelikliyse
-  hzFarkSaatOncelik: 300000,               // hazırlama farkı 1'i aşınca, Ayarlar'da "fazla mesai saati" öncelikliyse
+  hzFark: KESIN_AGIRLIK * 200,            // hazırlama farkı 1'i aşınca (fazla mesai 8 saat kuralından önce gelir)
   destekSayi: KESIN_AGIRLIK * 40,          // destek personeli ayda tam ayardaki sayı kadar hazırlama alır (her fark için)
   tekOnce: KESIN_AGIRLIK * 10,             // hazırlama önce teknikerlere: eczacının (yıllık) hazırlaması teknikerinkini geçmez
   resmiYilToplam: 2 * GUNYIL_AGIRLIK,      // yıllık resmi tatil görevi (nöbet + hazırlama) farkı 1'i aşınca

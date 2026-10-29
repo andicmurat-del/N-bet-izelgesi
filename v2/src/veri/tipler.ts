@@ -46,7 +46,6 @@ export interface Ayarlar {
   /** destek personeli başına aylık hazırlama */
   destekAylik: number;
   /** hazırlama eşitliği ile fazla mesai saati çakışırsa öncelik: 1 hazırlama, 2 saat */
-  cakismaOncelik: 1 | 2;
   /** arife günü normal mesai saati */
   arifeSaat: number;
 }
