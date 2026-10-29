@@ -1,6 +1,6 @@
 // Puantajda nöbet değişimi (yerine tutma, karşılıklı takas) ve izin/rapor nedeniyle yerine geçme: değişim yapılırsa
 // hangi kurallar bozulur (engel / uyarı) ve kim yerine geçebilir.
-import { eczaciMi, hazirlamaRol, nobetciRol, type Baglam } from "./baglam";
+import { eczaciMi, hazirlamaRol, ikiDisaridanSerbestMi, nobetciRol, type Baglam } from "./baglam";
 import { ayIstatistik } from "./istatistik";
 import { oncekiAySonKodu, puantajIzgarasi, type PuantajIzgarasi } from "./puantaj";
 import { AYLAR, ayAnahtari, CUMA, CUMARTESI, PAZAR, PERSEMBE, sonrakiAy } from "./takvim";
@@ -93,10 +93,10 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     });
     if (dwG === CUMA) {
       const c = c2(gun + 1);
-      if (c && c.kod === "N") out.uyari.push(n + " " + (gun + 2) + ". gün (Pazar) de nöbetçi; Cuma ve Pazar aynı kişiye yazılmamalı.");
-      else if (c && c.kod === "H") out.uyari.push(n + " " + (gun + 2) + ". gün (Pazar) hazırlama görevinde; Cuma nöbetçisine aynı hafta Pazar hazırlaması yazılmamalı.");
+      if (c && c.kod === "N") out.bilgi.push(n + " " + (gun + 2) + ". gün (Pazar) de nöbetçi (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).");
+      else if (c && c.kod === "H") out.bilgi.push(n + " " + (gun + 2) + ". gün (Pazar) hazırlama görevinde (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).");
     }
-    if (dwG === PAZAR) { const c = c2(gun - 3); if (c && c.kod === "N") out.uyari.push(n + " aynı haftanın Cuma günü (" + (gun - 2) + ". gün) nöbetçi; Cuma ve Pazar aynı kişiye yazılmamalı."); }
+    if (dwG === PAZAR) { const c = c2(gun - 3); if (c && c.kod === "N") out.bilgi.push(n + " aynı haftanın Cuma günü (" + (gun - 2) + ". gün) de nöbetçi (kural dışı değil; eşitlik gerekmiyorsa kaçınılır)."); }
     if ((dwG === CUMARTESI || dwG === PAZAR) && thuHs) { const c = c2(gun - 1 - (dwG === CUMARTESI ? 2 : 3)); if (c && c.kod === "N") out.uyari.push(n + " aynı haftanın Perşembe günü (" + (gun - (dwG === CUMARTESI ? 2 : 3)) + ". gün) nöbetçi."); }
   };
   // yerine geçen hazırlama alırsa
@@ -117,14 +117,14 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     if (gun === 1 && oncekiSon(id) === "H") out.engel.push(n + " önceki ayın son günü hazırlama görevinde; art arda iki gün hazırlama yazılmaz.");
     if (sonGun && sonrakiIlkH.indexOf(id) >= 0) out.engel.push(n + " sonraki ayın 1. günü hazırlama görevinde; art arda iki gün hazırlama yazılmaz.");
     const dwH = G1.gunler[gun - 1].dw;
-    if (dwH === PAZAR) { const c = c2(gun - 3); if (c && c.kod === "N") out.uyari.push(n + " aynı haftanın Cuma günü (" + (gun - 2) + ". gün) nöbetçi; Pazar hazırlaması yazılmamalı."); }
+    if (dwH === PAZAR) { const c = c2(gun - 3); if (c && c.kod === "N") out.bilgi.push(n + " aynı haftanın Cuma günü (" + (gun - 2) + ". gün) nöbetçi; Pazar hazırlaması (kural dışı değil; eşitlik gerekmiyorsa kaçınılır)."); }
     if ((dwH === CUMARTESI || dwH === PAZAR) && B.ayar("thuHaftaSonu")) { const c = c2(gun - 1 - (dwH === CUMARTESI ? 2 : 3)); if (c && c.kod === "N") out.engel.push(n + " aynı haftanın Perşembe günü (" + (gun - (dwH === CUMARTESI ? 2 : 3)) + ". gün) nöbetçi; hafta sonu hazırlama yazılmaz."); }
   };
   // günün nöbetinde eczacı kalıyor mu, iki dışarıdan gelen eczacı birlikte mi
   const gunEczaci = (gun: number) => {
     const nb = G2.satirlar.filter(r => r.cells[gun - 1].kod === "N");
     if (nb.length && !nb.some(r => eczaciMi(r.s.role))) out.engel.push(gun + " " + ay + " günü nöbette eczacı kalmıyor.");
-    if (nb.filter(r => r.s.role === "nobetci").length > 1) out.engel.push(gun + " " + ay + " günü iki dışarıdan gelen eczacı birlikte nöbetçi olur (aynı güne yalnızca biri nöbet yazılır; hazırlama olabilir).");
+    if (nb.filter(r => r.s.role === "nobetci").length > 1 && !ikiDisaridanSerbestMi(y, m, gun)) out.engel.push(gun + " " + ay + " günü iki dışarıdan gelen eczacı birlikte nöbetçi olur (Cuma ve Cumartesi dışında aynı güne yalnızca biri nöbet yazılır; hazırlama olabilir).");
   };
   if (HZ) hazirlamaKontrol(d.yer, d.gun); else { nobetKontrol(d.yer, d.gun); gunEczaci(d.gun); }
   if (takas) { if (KOD2 === "H") hazirlamaKontrol(d.cik, d.gun2!); else { nobetKontrol(d.cik, d.gun2!); gunEczaci(d.gun2!); } }

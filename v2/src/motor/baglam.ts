@@ -3,7 +3,7 @@
 // artık her hesap kendi Baglam'ıyla çalışır.
 import type { Gorevli, Kisi } from "../veri/tipler";
 import { AYAR_GIZLI, AYAR_VARSAYILAN, DURUM_KOD, IZIN_HAFTA_GUN, type AyarAdi } from "./sabitler";
-import { ayAnahtari, ayGunSayisi, CUMA, gunAnahtari, gunKaydir, haftaGunu, haftaSonuMu, isoNo, sonrakiAy, tarihNo } from "./takvim";
+import { ayAnahtari, ayGunSayisi, CUMA, CUMARTESI, gunAnahtari, gunKaydir, haftaGunu, haftaSonuMu, isoNo, sonrakiAy, tarihNo } from "./takvim";
 
 /** Motorun okuduğu çizelge günü (kayıtlı verideki biçim) */
 export interface MotorGunu {
@@ -168,6 +168,8 @@ export function ayrildiMi(st: Kisi): boolean {
 // ---- roller ----
 /** eczacı yerine sayılanlar (her gün en az biri nöbetçi) */
 export const eczaciMi = (r: string) => r === "eczaci" || r === "nobetci";
+/** dışarıdan gelen iki eczacı aynı gün birlikte nöbetçi olmaz; Cuma ve Cumartesi günleri olabilir */
+export const ikiDisaridanSerbestMi = (y: number, m: number, d: number) => { const dw = haftaGunu(y, m, d); return dw === CUMA || dw === CUMARTESI; };
 /** nöbet tutanlar */
 export const nobetciRol = (r: string) => r === "eczaci" || r === "teknisyen" || r === "nobetci";
 /** 1. hazırlama yerine yazılabilenler (destek personeli yalnız 2. yere) */

@@ -1,6 +1,6 @@
 // 1. adım: açgözlü ilk yerleştirme. Günler sırayla doldurulur; her güne o ana kadarki yüke göre en uygun eczacı ve
 // ikinci nöbetçi yazılır. Sonraki adımlar (hazırlama, yerel arama) bu çizelgeyi iyileştirir.
-import { aktifGunMu, gorevli, type MotorGunu } from "../baglam";
+import { aktifGunMu, gorevli, ikiDisaridanSerbestMi, type MotorGunu } from "../baglam";
 import type { Kisi } from "../../veri/tipler";
 import { CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "../takvim";
 import type { AyBilgisi } from "./ay";
@@ -173,9 +173,9 @@ export function ilkYerlestirme(A: AyBilgisi): MotorGunu[] {
       if (!p1) conflict = true;
     }
     if (!p2) {
-      // dışarıdan gelen iki eczacı aynı gün birlikte nöbetçi olmaz
-      const ilk = p1;
-      const havuz = eczacilar.concat(teknisyenler).filter(s => (!ilk || s.id !== ilk.id) && !(ilk && ilk.role === "nobetci" && s.role === "nobetci"));
+      // dışarıdan gelen iki eczacı aynı gün birlikte nöbetçi olmaz (Cuma ve Cumartesi olabilir)
+      const ilk = p1, ikiDisaridanOlur = ikiDisaridanSerbestMi(y, m, d);
+      const havuz = eczacilar.concat(teknisyenler).filter(s => (!ilk || s.id !== ilk.id) && !(ilk && ilk.role === "nobetci" && s.role === "nobetci" && !ikiDisaridanOlur));
       const r = adaylar(d, havuz, dinlenen);
       conflict = conflict || r.conflict;
       p2 = siraya(r.list, d)[0] || null;

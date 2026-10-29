@@ -3,7 +3,7 @@
 import type { Gorevli } from "../../veri/tipler";
 import { eczaciMi } from "../baglam";
 import { HAZ_SAYISI } from "../sabitler";
-import { CUMARTESI, gunKaydir, PAZAR, PERSEMBE } from "../takvim";
+import { CUMA, CUMARTESI, gunKaydir, PAZAR, PERSEMBE } from "../takvim";
 import type { AramaKurulumu } from "./kurulum";
 import { ucluSikisik } from "./sinir";
 
@@ -77,8 +77,10 @@ export function kurallarKur(K: AramaKurulumu) {
   function prepUygun(id: number, idx: number): boolean {
     return !yasak(id, idx) && !prepKomsu(id, idx) && !persembeNobetliMi(id, idx) && !prepBitisik(id, idx) && !destekSiniriAsildi(id);
   }
-  /** dışarıdan nöbete gelen iki eczacı aynı gün birlikte nöbetçi olmaz (ikisi de eş durumu zorunluluğuysa hariç) */
+  /** dışarıdan nöbete gelen iki eczacı aynı gün birlikte nöbetçi olmaz (Cuma ve Cumartesi olabilir; ikisi de eş durumu
+   *  zorunluluğuysa da olabilir) */
   function ikiDisaridan(as: Gorevli[], idx: number): boolean {
+    if (gunDow[idx] === CUMA || gunDow[idx] === CUMARTESI) return false;
     let say = 0, hepsiZorunlu = true;
     for (let q = 0; q < as.length; q++) if (as[q].role === "nobetci") { say++; if (!zorunluMu(as[q].id, idx)) hepsiZorunlu = false; }
     return say > 1 && !hepsiZorunlu;
