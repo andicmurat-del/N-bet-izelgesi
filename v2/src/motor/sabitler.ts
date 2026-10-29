@@ -8,7 +8,7 @@ export const AYAR_GIZLI = new Set<AyarAdi>(["niDusum", "nobetSuresi", "mesai", "
 
 // KESİN KURALLAR (çizelge oluşturma, elle düzenleme ve uyarılarda ortak)
 //  - Fazla mesai: destek personeli hariç nöbetçi personel arasında aylık fazla mesai farkı en fazla FM_MAX_FARK saat
-//  - Hafta sonu: kişiye ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti; Cuma + Cumartesi + Pazar üçü birden yazılmaz
+//  - Hafta sonu: kişiye ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti (Cuma + Cumartesi + Pazar üçü birden güçlü tercihtir, kesin değil)
 export const FM_MAX_FARK = 8;
 
 /** tatil günü başına hazırlama personeli sayısı */
@@ -46,8 +46,9 @@ export const AGIRLIK = Object.freeze({
   tekOnce: KESIN_AGIRLIK * 10,             // hazırlama önce teknikerlere: eczacının (yıllık) hazırlaması teknikerinkini geçmez
   resmiYilToplam: 2 * GUNYIL_AGIRLIK,      // yıllık resmi tatil görevi (nöbet + hazırlama) farkı 1'i aşınca
   gunYil: GUNYIL_AGIRLIK,                  // yıllık Perşembe / Cuma / Cumartesi / Pazar / resmi tatil nöbeti farkı 1'i aşınca
-  hsKural: 500000,                         // ayda en fazla 1 Cumartesi, 1 Pazar; Cuma + Cumartesi + Pazar birlikte olmaz
+  hsKural: 500000,                         // ayda en fazla 1 Cumartesi, 1 Pazar
   // 3. güçlü tercihler
+  cuCmtPaz: 50000,                         // Cuma + Cumartesi + Pazar aynı ay aynı kişide (yıllık Cuma eşitliği bundan önce gelir)
   prepUst: 400000,                         // eczacı / tekniker ayda en fazla 2 hazırlama
   grupHazFark: 300000,                     // eczacılar kendi arasında, teknikerler kendi arasında aylık hazırlama farkı 1'i aşınca
   hsEnAz1: 150000,                         // ayda en az 1 Cumartesi/Pazar nöbeti (uygun gün varsa)

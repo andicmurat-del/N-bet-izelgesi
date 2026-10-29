@@ -19,7 +19,7 @@ npm run artifact   # dist/index.html ve artifact sayfası dist/artifact.html
 
 `npm test` yaklaşık 4 dakika sürer:
 
-- 5 senaryonun 15 ayı eski uygulamanın aynı girdiyle kaydettiği sonuçla karşılaştırılır: hata düzeyinde uyarı sayısı ve nöbet / hazırlama / fazla mesai farkı eski uygulamadan kötü olmamalı (kurallar bilerek değiştirildiği için çizelgeler artık birebir aynı değil; bilinen istisna `test/motor.test.js` FAZLA_HATA).
+- 5 senaryonun 15 ayı eski uygulamanın aynı girdiyle kaydettiği sonuçla karşılaştırılır: hata düzeyinde uyarı sayısı ve nöbet / hazırlama / fazla mesai farkı eski uygulamadan kötü olmamalı (kurallar bilerek değiştirildiği için çizelgeler artık birebir aynı değil; kuralların tam tutmadığı aylarda yalnız hata sayısı karşılaştırılır).
 - Altın kayıt testi, zengin bir senaryoda (izinler, resmi tatil, arife, kilitli günler, destek ve dışarıdan gelen eczacı, acil servis, servis hazırlama) motorun tüm işlevlerinin çıktısını kayıtla karşılaştırır. Kodu düzenlerken davranışın değişmediğinin güvencesidir.
 - Rastgele senaryo taraması (`test/tarama.test.js`) 20 rastgele kadro/izin/ayar bileşiminde motorun tüm işlevlerini çalıştırır: çökme yok, girdi değişmez, aynı girdi aynı sonuç, her kesin kural ihlali gün üzerinde işaretli. Daha geniş tarama: `N=200 npx vitest run test/tarama.test.js`.
 - Kuralı bilerek değiştirdiyseniz kaydı yenileyin: `ALTIN_YAZ=1 npx vitest run test/altin.test.js`.

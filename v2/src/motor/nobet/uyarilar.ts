@@ -83,7 +83,7 @@ export function uyarilariYaz(K: AramaKurulumu, kural: Kurallar): string[] {
   {
     const hsI: string[] = [];
     staffList.forEach(s => { const ih = hsKuralIhlali(hsSayilari(y, m, days, s.id)); if (ih.length) hsI.push(s.name + " (" + ih.join(", ") + ")"); });
-    if (hsI.length) warnings.push("Hafta sonu kuralı esnetildi (ayda en fazla 1 Cumartesi, 1 Pazar; Cuma + Cumartesi + Pazar birlikte olmaz): " + hsI.join("; ") + ". Personel/izin durumu nedeniyle uyarısız bir çizelge bulunamadı; en az uyarılı çizelge seçildi, ilgili günleri elle düzenleyebilirsin.");
+    if (hsI.length) warnings.push("Hafta sonu kuralı esnetildi (ayda en fazla 1 Cumartesi, 1 Pazar): " + hsI.join("; ") + ". Personel/izin durumu nedeniyle uyarısız bir çizelge bulunamadı; en az uyarılı çizelge seçildi, ilgili günleri elle düzenleyebilirsin.");
   }
   {
     const hz: Record<number, number> = {}; prepAday.forEach(s => { hz[s.id] = 0; });

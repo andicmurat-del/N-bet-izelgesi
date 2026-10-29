@@ -37,14 +37,16 @@ export function hsSayilari(y: number, m: number, days: { day: number; assigned: 
   });
   return r;
 }
-/** hafta sonu kuralı: ayda en fazla 1 Cumartesi, 1 Pazar; Cuma + Cumartesi + Pazar üçü birden olmaz */
+/** hafta sonu kuralı (kesin): ayda en fazla 1 Cumartesi, 1 Pazar */
 export function hsKuralIhlali(r: { cu: number; cmt: number; paz: number }): string[] {
   const o: string[] = [];
   if (r.cmt > 1) o.push(r.cmt + " Cumartesi");
   if (r.paz > 1) o.push(r.paz + " Pazar");
-  if (r.cu > 0 && r.cmt > 0 && r.paz > 0) o.push("Cuma + Cumartesi + Pazar");
   return o;
 }
+/** Cuma + Cumartesi + Pazar aynı ay aynı kişide: kaçınılır ama gerekirse olur (ör. 5 Cuma, 5 Cumartesi, 5 Pazar olan ayda
+ *  7 eczacıya 15 yer düşer; yıllık Cuma eşitliği bozulmasın diye biri üçünü birden alır) */
+export function cumaHaftaSonuUclu(r: { cu: number; cmt: number; paz: number }): boolean { return r.cu > 0 && r.cmt > 0 && r.paz > 0; }
 
 export interface AyIstatistigi { fm: number; thu: number; sat: number; sun: number; cum: number; nobet: number; prep: number }
 /** ayın çizelgesinden kişi başı fazla mesai, nöbet, hazırlama ve gün türü sayıları */

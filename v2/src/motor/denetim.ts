@@ -2,7 +2,7 @@
 // hata / uyarı / bilgi listesi.
 import type { Gorevli } from "../veri/tipler";
 import { aktifGunMu, eczaciMi, ikiDisaridanSerbestMi, nobetciRol, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
-import { fmKuralKisileri, hsKuralIhlali, hsSayilari } from "./istatistik";
+import { cumaHaftaSonuUclu, fmKuralKisileri, hsKuralIhlali, hsSayilari } from "./istatistik";
 import { DURUM_AD, FM_MAX_FARK } from "./sabitler";
 import { AYLAR, ayGunSayisi, CUMA, CUMARTESI, haftaGunu, isoNo, oncekiAy, PAZAR, PERSEMBE, sonrakiAy, tarihNo } from "./takvim";
 
@@ -92,8 +92,9 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
     }
     if (dw === CUMA || dw === CUMARTESI || dw === PAZAR) {
       const yeniGunler = days.map((gg, i) => (i === idx ? { day: gg.day, assigned: nb } : gg));
-      const ih = hsKuralIhlali(hsSayilari(y, m, yeniGunler, p.id));
-      if (ih.length) ekle("hata", p.name + ": hafta sonu kuralı — ayda en fazla 1 Cumartesi ve 1 Pazar; Cuma + Cumartesi + Pazar birlikte yazılmaz (bu ay: " + ih.join(", ") + ").");
+      const say = hsSayilari(y, m, yeniGunler, p.id), ih = hsKuralIhlali(say);
+      if (ih.length) ekle("hata", p.name + ": hafta sonu kuralı — ayda en fazla 1 Cumartesi ve 1 Pazar (bu ay: " + ih.join(", ") + ").");
+      else if (cumaHaftaSonuUclu(say)) ekle("bilgi", p.name + " bu ay Cuma, Cumartesi ve Pazar nöbetlerinin üçünü de alıyor (kural dışı değil; mümkünse kaçınılır).");
     }
   });
 
