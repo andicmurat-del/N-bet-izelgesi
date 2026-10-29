@@ -96,7 +96,7 @@ export function aramaKur(A: AyBilgisi, days: MotorGunu[]) {
     ayar: {
       minAra: B.sayi("minAra"), thuHaftaSonu: !!B.ayar("thuHaftaSonu"), cumaEsles: !!B.ayar("cumaEsles"), hsUst: B.sayi("hsUst"), maxThu: B.sayi("maxThu"),
       // saat ile hazırlama çakışırsa öncelik (Ayarlar): 1 = hazırlama eşitliği (fark en fazla 1, saat esner), 2 = fazla mesai saati
-      hzFark: Number(B.ayar("cakismaOncelik")) === 2 ? AGIRLIK.hzFarkSaatOncelik : AGIRLIK.hzFarkHazirlamaOncelik,
+      hzFark: AGIRLIK.hzFark,
     },
   };
 }

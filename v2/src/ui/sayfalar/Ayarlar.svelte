@@ -67,11 +67,6 @@
       <input class="girdi" type="number" min="0" max="8" value={depo.veri.settings.destekAylik} onchange={e => { depo.veri.settings.destekAylik = sinirla(e.currentTarget.value, 0, 8, AYAR_VARSAYILAN.destekAylik); e.currentTarget.value = String(depo.veri.settings.destekAylik); }} /></label>
     <label class="alan"><span>Arife günü normal mesai (saat)</span>
       <input class="girdi" type="number" min="0" max="8" value={depo.veri.settings.arifeSaat} onchange={e => { depo.veri.settings.arifeSaat = sinirla(e.currentTarget.value, 0, 8, AYAR_VARSAYILAN.arifeSaat); e.currentTarget.value = String(depo.veri.settings.arifeSaat); }} /></label>
-    <fieldset class="alan">
-      <legend>Hazırlama eşitliği ile fazla mesai saati çakışırsa</legend>
-      <label class="secim"><input type="radio" name="oncelik" value={1} bind:group={depo.veri.settings.cakismaOncelik} />Hazırlama sayıları eşit kalsın (önerilen)</label>
-      <label class="secim"><input type="radio" name="oncelik" value={2} bind:group={depo.veri.settings.cakismaOncelik} />Fazla mesai saatleri eşit kalsın</label>
-    </fieldset>
   </section>
 
   <section class="kart bolum">
@@ -105,10 +100,6 @@
   .bolum { padding: var(--b5); display: grid; gap: var(--b4); }
   .bolum h2 { font-size: var(--f-lg); }
   .aciklama { font-size: var(--f-sm); color: var(--soluk); }
-  fieldset { border: 0; padding: 0; margin: 0; }
-  legend { font-size: var(--f-sm); font-weight: 500; color: var(--yazi-2); margin-bottom: var(--b1); }
-  .secim { display: flex; align-items: center; gap: var(--b2); min-height: 32px; cursor: pointer; }
-  .secim input { width: 18px; height: 18px; accent-color: var(--vurgu); }
   .dugmeler { display: flex; flex-wrap: wrap; gap: var(--b2); }
   .tehlikeli h2 { color: var(--hata); }
   .durum { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 30; max-width: min(560px, calc(100vw - 32px));

@@ -32,7 +32,7 @@ export function senaryo(seed, kadro = {}) {
     const acilKisi = staff.filter(s => s.role === "servis" || s.role === "eczaci");
     if (acilKisi.length) { const a = (acil[y + "-" + m] = {}); for (let j = 0; j < ri(0, 6); j++) a[ri(1, dim)] = [sec(acilKisi).id]; }
   }
-  const settings = { minAra: sec([2, 3, 4]), cakismaOncelik: sec([1, 2]), destekAylik: sec([1, 2, 3]), arifeSaat: sec([3, 4, 5]) };
+  const settings = { minAra: sec([2, 3, 4]), destekAylik: sec([1, 2, 3]), arifeSaat: sec([3, 4, 5]) };
   return { r, y, m0, veri: { staff, prefs, manualTatil, arife, puantaj, acil, settings, schedules: {}, servisAyar: {} } };
 }
 

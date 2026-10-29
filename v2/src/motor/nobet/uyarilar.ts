@@ -26,7 +26,6 @@ export function uyarilariYaz(K: AramaKurulumu, kural: Kurallar): string[] {
   const { tatilGunu } = kural;
   const gunTuru = (d: number) => haftaGunu(y, m, d);
   const haftaSonu = (d: number) => { const dw = gunTuru(d); return dw === CUMARTESI || dw === PAZAR; };
-  const cakismaSaat = Number(B.ayar("cakismaOncelik")) === 2;
   const warnings: string[] = [];
 
   if (eczacilar.length < 2) {
@@ -100,7 +99,7 @@ export function uyarilariYaz(K: AramaKurulumu, kural: Kurallar): string[] {
     const L = prepAday.filter(s => days.some(dy => dy.tatil && !B.kesinYasak(s.id, y, m, dy.day)));
     if (L.length > 1) {
       const v = L.map(s => hz[s.id]), mx = Math.max(...v), mn = Math.min(...v);
-      if (mx - mn > 1) warnings.push("Hazırlama farkı sağlanamadı: hazırlama sayıları arasındaki fark " + (mx - mn) + " (en fazla 1). En çok: " + L.filter(s => hz[s.id] === mx).map(s => s.name + " (" + mx + ")").join(", ") + "; en az: " + L.filter(s => hz[s.id] === mn).map(s => s.name + " (" + mn + ")").join(", ") + ". " + (cakismaSaat ? "Ayarlar'da çakışmada öncelik fazla mesai saati seçili." : "Personel/izin durumu nedeniyle."));
+      if (mx - mn > 1) warnings.push("Hazırlama farkı sağlanamadı: hazırlama sayıları arasındaki fark " + (mx - mn) + " (en fazla 1). En çok: " + L.filter(s => hz[s.id] === mx).map(s => s.name + " (" + mx + ")").join(", ") + "; en az: " + L.filter(s => hz[s.id] === mn).map(s => s.name + " (" + mn + ")").join(", ") + ". Personel/izin durumu nedeniyle.");
     }
   }
   {
@@ -123,7 +122,7 @@ export function uyarilariYaz(K: AramaKurulumu, kural: Kurallar): string[] {
   }
   {
     const fb = fmFarkBilgisi(B, y, m, days);
-    if (fb.fark > FM_MAX_FARK && fb.enCok && fb.enAz) warnings.push("KESİN KURAL sağlanamadı: fazla mesai farkı " + fb.fark + " saat (en fazla " + FM_MAX_FARK + "). En çok: " + fb.enCok.name + " (" + (fb.t[fb.enCok.id] || 0) + " sa), en az: " + fb.enAz.name + " (" + (fb.t[fb.enAz.id] || 0) + " sa). " + (cakismaSaat ? "Uzun izin, az eczacı ya da kilitli günler nedeniyle olur." : "Ayarlar'da çakışmada öncelik hazırlama eşitliği seçili; hazırlama farkını en fazla 1 tutmak için ya da uzun izin, az eczacı, kilitli günler nedeniyle olur."));
+    if (fb.fark > FM_MAX_FARK && fb.enCok && fb.enAz) warnings.push("KESİN KURAL sağlanamadı: fazla mesai farkı " + fb.fark + " saat (en fazla " + FM_MAX_FARK + "). En çok: " + fb.enCok.name + " (" + (fb.t[fb.enCok.id] || 0) + " sa), en az: " + fb.enAz.name + " (" + (fb.t[fb.enAz.id] || 0) + " sa). Hazırlama eşitliği fazla mesaiden önce gelir: hazırlama farkını en fazla 1 tutmak için ya da uzun izin, az eczacı, kilitli günler nedeniyle olur.");
   }
   // Cumartesi/Pazar nöbeti ayardaki üst sınırı aşanlar
   {
