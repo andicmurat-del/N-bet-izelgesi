@@ -25,3 +25,20 @@ describe("dışarıdan gelen iki eczacı aynı gün", () => {
     expect(ikiDisaridan(1).length).toBe(1);
   });
 });
+
+describe("Cuma + Cumartesi + Pazar kesin kural değil", () => {
+  // Ocak 2027: 5 Cuma, 5 Cumartesi, 5 Pazar; 1 Ocak resmi tatil. 7 eczacıya 15 yer düşer: herkes 1 Cuma'yı geçmesin diye
+  // biri Cuma + Cumartesi + Pazar alır (eskiden bu kesin kuraldı ve yıllık Cuma eşitliği uyarısı çıkıyordu)
+  const kadro = [];
+  for (let i = 1; i <= 7; i++) kadro.push({ id: i, name: "E" + i, role: "eczaci" });
+  for (let i = 1; i <= 7; i++) kadro.push({ id: 7 + i, name: "T" + i, role: "teknisyen" });
+  for (let i = 1; i <= 3; i++) kadro.push({ id: 14 + i, name: "D" + i, role: "destek" });
+  const v = { staff: kadro, prefs: {}, manualTatil: { "2027-0-1": true }, arife: {}, settings: {}, schedules: {}, puantaj: {}, acil: {} };
+  test("uyarı yok; herkes en fazla 1 Cuma, 1 Cumartesi, 1 Pazar", () => {
+    const r = cizelgeOlustur(v, 2027, 0, { saat: () => 0 });
+    expect(r.warnings).toEqual([]);
+    const gt = d => (new Date(2027, 0, d).getDay() + 6) % 7, say = {};
+    r.days.forEach(g => g.assigned.forEach(p => { const o = (say[p.id] ??= [0, 0, 0]); const w = gt(g.day); if (w >= 4) o[w - 4]++; }));
+    Object.values(say).forEach(o => expect(Math.max(...o)).toBeLessThanOrEqual(1));
+  });
+});

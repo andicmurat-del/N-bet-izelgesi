@@ -216,10 +216,10 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     for (let q = 0; q < ixStaff.length; q++) {
       const ix = ixStaff[q];
       const w = hSat[ix] + hSun[ix], cm = hCum[ix];
-      // ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti; Cuma + Cumartesi + Pazar üçü birden olmaz
+      // ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti (kesin); Cuma + Cumartesi + Pazar üçü birden güçlü tercih
       if (hSat[ix] > 1) { kesinPen += AGIRLIK.hsKural * (hSat[ix] - 1); uy += hSat[ix] - 1; }
       if (hSun[ix] > 1) { kesinPen += AGIRLIK.hsKural * (hSun[ix] - 1); uy += hSun[ix] - 1; }
-      if (cm > 0 && hSat[ix] > 0 && hSun[ix] > 0) { kesinPen += AGIRLIK.hsKural; uy++; }
+      if (cm > 0 && hSat[ix] > 0 && hSun[ix] > 0) hsPen += AGIRLIK.cuCmtPaz;
       if (ayar.cumaEsles && w >= 1 && cm === 0) hsPen += AGIRLIK.cumaEslesmeYok;
       if (ayar.cumaEsles && w === 0 && cm >= 1) hsPen += AGIRLIK.cumaTek;
       if (cm > 1) hsPen += AGIRLIK.cumaFazla * (cm - 1);

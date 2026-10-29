@@ -42,16 +42,16 @@ export function ilkYerlestirme(A: AyBilgisi): MotorGunu[] {
   // Perşembe/hafta sonu, ay aşırı telafi) burada elenmez, sıralamada yumuşak kıstastır (bkz. siraya).
   function adaylar(d: number, pool: Kisi[], dinlenen: Set<number>): { list: Kisi[]; conflict: boolean } {
     let izinsiz = pool.filter(s => !B.kesinYasak(s.id, y, m, d) && !sonGunEngel(s.id, d));
-    // kesin kural: ayda en fazla 1 Cumartesi, 1 Pazar; Cuma + Cumartesi + Pazar üçü birden olmaz
+    // kesin kural: ayda en fazla 1 Cumartesi, 1 Pazar; Cuma + Cumartesi + Pazar üçü birden mümkünse olmaz (güçlü tercih)
     {
-      const dw = gunTuru(d), uy = izinsiz.filter(s => {
+      const dw = gunTuru(d);
+      const sinirda = (s: Kisi) => (dw === CUMARTESI && (cmtCount[s.id] || 0) > 0) || (dw === PAZAR && (pazCount[s.id] || 0) > 0);
+      const uclu = (s: Kisi) => {
         const cu = cumaGunCount[s.id] || 0, ct = cmtCount[s.id] || 0, pz = pazCount[s.id] || 0;
-        if (dw === CUMARTESI) return ct === 0 && !(cu > 0 && pz > 0);
-        if (dw === PAZAR) return pz === 0 && !(cu > 0 && ct > 0);
-        if (dw === CUMA) return !(ct > 0 && pz > 0);
-        return true;
-      });
-      if (uy.length) izinsiz = uy;
+        return (dw === CUMARTESI && cu > 0 && pz > 0) || (dw === PAZAR && cu > 0 && ct > 0) || (dw === CUMA && ct > 0 && pz > 0);
+      };
+      const kesin = izinsiz.filter(s => !sinirda(s)), tercih = kesin.filter(s => !uclu(s));
+      if (tercih.length) izinsiz = tercih; else if (kesin.length) izinsiz = kesin;
     }
     const dinlenmis = izinsiz.filter(s => !dinlenen.has(s.id));
     const istekli = dinlenmis.filter(s => B.tercih(s.id, y, m, d) !== "avoid" && !B.izinOncesiMi(s.id, y, m, d));
