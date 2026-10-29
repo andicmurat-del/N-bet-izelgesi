@@ -153,7 +153,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     for (let q = 0; q < as.length; q++) {
       const pid = as[q].id;
       if (hIx[pid] === undefined) continue;
-      if (pg[pid] === "avoid") z += UYARI;
+      if (pg[pid] === "avoid") z += AGIRLIK.istemiyor;
       if (izinOnceGun[i][pid]) z += UYARI;
     }
     return z;
@@ -270,7 +270,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
       gunYilPen = yilCeza(onceki.bPe, hThu) + yilCeza(onceki.bCu, hCum) + yilCeza(onceki.bCmt, hSat) + yilCeza(onceki.bPaz, hSun) + (resmiGunVar ? yilCeza(onceki.bRt, hRc) : 0);
     }
     // fmYil: fazla mesai (saat) eşitliği yıllık — her ay 8 saat kuralının yanında yıl toplamı da eşite yakın
-    return UYARI * (uy + hPrAv) + kesinPen + zPen + AGIRLIK.fmYil * ssIx2(hFm, onceki.fm, ixStaff) + hsYilPen + cuYilPen + peYilPen + nYilPen + cpYilPen + gunYilPen + devirPen
+    return UYARI * uy + AGIRLIK.istemiyor * hPrAv + kesinPen + zPen + AGIRLIK.fmYil * ssIx2(hFm, onceki.fm, ixStaff) + hsYilPen + cuYilPen + peYilPen + nYilPen + cpYilPen + gunYilPen + devirPen
       + AGIRLIK.nobetAy * ssIx(hCnt, ixStaff) + AGIRLIK.haftaSonuIs * ssIx(hWk, ixStaff) + AGIRLIK.prpYil * ssIx2(hPrp, onceki.prp, ixPrep)
       + AGIRLIK.prpGrup * (ssIx2(hPrp, onceki.prp, ixEczPrep) + ssIx2(hPrp, onceki.prp, ixTekPrep)) + (destekVar ? AGIRLIK.destekYil * ssIx2(hPrp, onceki.prp, ixDestek) : 0)
       + destekFazla + hzAdil + hsPen + AGIRLIK.gunTercihCarpani * soft + AGIRLIK.thuFazla * thuFazla + resmiPen;

@@ -73,10 +73,10 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     [-1, 1].forEach(kk => { const c = c2(gun - 1 + kk); if (c && c.kod === "N") out.engel.push(n + " " + (gun + kk) + ". gün de nöbetçi: art arda nöbet olur."); });
     if (gun === 1 && oncekiSon(id) === "N") out.engel.push(n + " önceki ayın son günü nöbetçi: art arda nöbet olur.");
     if (sonGun && sonrakiIlkN.indexOf(id) >= 0) out.engel.push(n + " sonraki ayın 1. günü nöbetçi: art arda nöbet olur.");
-    if (gun === 1 && oncekiSon(id) === "H") out.engel.push(n + " önceki ayın son günü hazırlama görevinde (nöbetle komşu gün olamaz).");
+    if (gun === 1 && oncekiSon(id) === "H") out.uyari.push(n + " önceki ayın son günü hazırlama görevinde (personel yetmezse olabilir: hazırlama ertesi gün nöbet; mümkünse kaçınılır).");
     if (sonGun && sonrakiIlkH.indexOf(id) >= 0) out.engel.push(n + " sonraki ayın 1. günü hazırlama görevinde (nöbetle komşu gün olamaz).");
     if (once === "H") out.engel.push(n + " " + et + " hazırlama görevinde; aynı gün nöbete geçerse hazırlama yeri boş kalır.");
-    [-1, 1].forEach(kk => { const c = c2(gun - 1 + kk); if (c && c.kod === "H") out.engel.push(n + " " + (gun + kk) + ". gün hazırlama görevinde (nöbetle komşu gün olamaz)."); });
+    [-1, 1].forEach(kk => { const c = c2(gun - 1 + kk); if (c && c.kod === "H") (kk === -1 ? out.uyari : out.engel).push(n + " " + (gun + kk) + ". gün hazırlama görevinde" + (kk === -1 ? " (personel yetmezse olabilir: hazırlama ertesi gün nöbet; mümkünse kaçınılır)" : " (nöbet ertesi gün hazırlama olamaz)") + "."); });
     {
       const v = (k: number) => { const c = c2(gun - 1 + k); return !!(c && c.kod === "N"); };
       if ((v(-2) && v(-4)) || (v(-2) && v(2)) || (v(2) && v(4))) out.engel.push(n + " 5 gün içinde 3 nöbet tutmuş olur (ör. Pazartesi–Çarşamba–Cuma).");
@@ -110,9 +110,9 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     if (once === "N") out.engel.push(n + " " + et + " nöbetçi; aynı gün hazırlama yapamaz.");
     else if (once === "H") out.engel.push(n + " " + et + " zaten hazırlama görevinde.");
     if (!G1.gunler[gun - 1].tatil) out.uyari.push(et + " tatil günü değil; hazırlama yalnızca hafta sonu ve resmi tatilde yapılır.");
-    [-1, 1].forEach(kk => { const c = c2(gun - 1 + kk); if (c && c.kod === "N") out.engel.push(n + " " + (gun + kk) + ". gün nöbetçi (hazırlama, nöbetle komşu gün olamaz)."); });
+    [-1, 1].forEach(kk => { const c = c2(gun - 1 + kk); if (c && c.kod === "N") (kk === 1 ? out.uyari : out.engel).push(n + " " + (gun + kk) + ". gün nöbetçi" + (kk === 1 ? " (personel yetmezse olabilir: hazırlama ertesi gün nöbet; mümkünse kaçınılır)" : " (nöbet ertesi gün hazırlama olamaz)") + "."); });
     if (gun === 1 && oncekiSon(id) === "N") out.engel.push(n + " önceki ayın son günü nöbetçi (hazırlama, nöbetle komşu gün olamaz).");
-    if (sonGun && sonrakiIlkN.indexOf(id) >= 0) out.engel.push(n + " sonraki ayın 1. günü nöbetçi (hazırlama, nöbetle komşu gün olamaz).");
+    if (sonGun && sonrakiIlkN.indexOf(id) >= 0) out.uyari.push(n + " sonraki ayın 1. günü nöbetçi (personel yetmezse olabilir: hazırlama ertesi gün nöbet; mümkünse kaçınılır).");
     [-1, 1].forEach(kk => { const c = c2(gun - 1 + kk); if (c && c.kod === "H") out.engel.push(n + " " + (gun + kk) + ". gün de hazırlama görevinde; art arda iki gün hazırlama yazılmaz."); });
     if (gun === 1 && oncekiSon(id) === "H") out.engel.push(n + " önceki ayın son günü hazırlama görevinde; art arda iki gün hazırlama yazılmaz.");
     if (sonGun && sonrakiIlkH.indexOf(id) >= 0) out.engel.push(n + " sonraki ayın 1. günü hazırlama görevinde; art arda iki gün hazırlama yazılmaz.");

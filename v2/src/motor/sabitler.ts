@@ -13,6 +13,9 @@ export const FM_MAX_FARK = 8;
 
 /** tatil günü başına hazırlama personeli sayısı */
 export const HAZ_SAYISI = 2;
+/** hazırlama günü ertesi gün nöbet: kadro yetmediğinde ilk esneyen kural; ihlal sayısında yarım sayılır (boş hazırlama
+ *  yerinden ya da başka kesin kural ihlalinden önce seçilsin) */
+export const HAFIF_IHLAL = 0.5;
 /** en az bu kadar iş günü süren yıllık izin bloğunun iki yanındaki hafta sonu da yasak */
 export const IZIN_HAFTA_GUN = 5;
 /** puantajda elle girilen ve o gün görev yazılmasını engelleyen kodlar */
@@ -47,6 +50,7 @@ export const AGIRLIK = Object.freeze({
   resmiYilToplam: 2 * GUNYIL_AGIRLIK,      // yıllık resmi tatil görevi (nöbet + hazırlama) farkı 1'i aşınca
   gunYil: GUNYIL_AGIRLIK,                  // yıllık Perşembe / Cuma / Cumartesi / Pazar / resmi tatil nöbeti farkı 1'i aşınca
   hsKural: 500000,                         // ayda en fazla 1 Cumartesi, 1 Pazar
+  istemiyor: KESIN_AGIRLIK * 2.5,          // "istemiyor" işaretli güne nöbet / hazırlama (uyarı düzeyindeki eşitlik kuralları önce gelir)
   // 3. güçlü tercihler
   cuCmtPaz: 50000,                         // Cuma + Cumartesi + Pazar aynı ay aynı kişide (yıllık Cuma eşitliği bundan önce gelir)
   ucluSonHaz: 200000,                      // Cuma + Cumartesi + Pazar nöbeti olan kendi grubunda (eczacı / tekniker) hazırlamayı en son alır

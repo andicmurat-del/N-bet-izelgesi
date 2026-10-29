@@ -43,6 +43,15 @@ export function uyarilariYaz(K: AramaKurulumu, kural: Kurallar): string[] {
   if (izinOncesiAtama.length) {
     warnings.push("Başka uygun kişi kalmadığı için şu nöbetler izinden önceki güne yazıldı; nöbet ertesi izni izin gününe denk gelir: " + izinOncesiAtama.join(", ") + ". İsterseniz günü açıp başka bir kişiyle değiştirebilirsiniz.");
   }
+  // kadro yetmediği için hazırlama yapan ertesi gün nöbetçi (kadro yetmediğinde ilk esneyen kural)
+  {
+    const l: string[] = [];
+    days.forEach((dd, i) => {
+      if (dd.locked || !tatilGunu(i)) return;
+      (dd.prep || []).forEach(p => { if (!kural.prepKomsuSert(p.id, i) && kural.prepSonrasiNobet(p.id, i)) l.push(p.name + " (" + dd.day + " " + AYLAR[m] + ")"); });
+    });
+    if (l.length) warnings.push("Personel yetmediği için hazırlama yeri boş kalmasın diye şu kişiler hazırlamanın ertesi günü nöbet tutuyor (hazırlama günü yazılı): " + l.join(", ") + ".");
+  }
   const kirmiziGunler = days.filter(dd => dd.conflict && !dd.locked).map(dd => dd.day);
   if (kirmiziGunler.length) {
     warnings.push("Bazı otomatik atanan günlerde dinlenme kuralı ve/veya \"istemiyorum\"/\"izinli\" tercihi personel yetersizliğinden dolayı korunamadı; bu günlerde zorunlu atama yapıldı. Bu günler kırmızı ile işaretlendi (gün numarasının yanında ! var): " + kirmiziGunler.map(g => g + " " + AYLAR[m]).join(", ") + ". Günün üzerine gelince ya da güne dokununca sebebi görünür.");

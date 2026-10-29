@@ -66,3 +66,26 @@ describe("Cuma + Cumartesi + Pazar nöbeti olan hazırlamayı grubunda en son al
     expect(ucluVar, "senaryoda Cuma + Cumartesi + Pazar nöbeti olan biri bulunmalı").toBe(true);
   });
 });
+
+describe("kadro yetmezse önce hazırlama ertesi gün nöbet esner", () => {
+  // 4 eczacı + 3 tekniker: hafta sonu için 8 farklı kişi gerekir, 7 kişi var. Hazırlamacı ertesi gün nöbet tutabilince
+  // (Cumartesi hazırlama, Pazar nöbet) yerler dolar. Ters yön (nöbet ertesi gün hazırlama) hiç olmaz: nöbet ertesi dinlenilir.
+  // Bu kural eklenmeden önce Ocak 2027'de 7 tatil gününde hazırlama eksik kalıyordu.
+  const kadro = [];
+  for (let i = 1; i <= 4; i++) kadro.push({ id: i, name: "E" + i, role: "eczaci" });
+  for (let i = 1; i <= 3; i++) kadro.push({ id: 4 + i, name: "T" + i, role: "teknisyen" });
+  const v = { staff: kadro, prefs: {}, manualTatil: {}, arife: {}, settings: {}, schedules: {}, puantaj: {}, acil: {} };
+  test("eksik hazırlama azalır, nöbet ertesi hazırlama olmaz", () => {
+    const r = cizelgeOlustur(v, 2027, 0, { saat: () => 0 });
+    const eksik = r.days.filter(g => g.tatil && g.prep.length < 2).length;
+    let duz = 0, ters = 0;
+    r.days.forEach((g, i) => g.prep.forEach(p => {
+      if (r.days[i + 1] && r.days[i + 1].assigned.some(q => q.id === p.id)) duz++;
+      if (i > 0 && r.days[i - 1].assigned.some(q => q.id === p.id)) ters++;
+    }));
+    expect(ters).toBe(0);
+    expect(duz).toBeGreaterThan(0);
+    expect(eksik).toBeLessThan(7);
+    expect(r.warnings.some(w => /hazırlamanın ertesi günü nöbet/.test(w))).toBe(true);
+  });
+});

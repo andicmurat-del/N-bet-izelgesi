@@ -42,7 +42,7 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
     [-1, 1].forEach(k => {
       const gg = g(k); if (!gg) return;
       if (gg.assigned.some(q => q.id === p.id)) ekle("hata", p.name + ", " + gl(gg) + " de nöbetçi; nöbetten sonra ertesi gün izinli olmalı.");
-      if ((gg.prep || []).some(q => q.id === p.id)) ekle("hata", p.name + ", " + gl(gg) + " hazırlama personeli (komşu gün).");
+      if ((gg.prep || []).some(q => q.id === p.id)) ekle(k === -1 ? "uyari" : "hata", p.name + ", " + gl(gg) + " hazırlama personeli" + (k === -1 ? " (personel yetmezse olabilir: hazırlama ertesi gün nöbet; mümkünse kaçınılır)" : " (nöbet ertesi gün hazırlama olamaz)") + ".");
     });
     {
       const v = (k: number) => { const gg = days[idx + k]; return !!(gg && gg.assigned.some(q => q.id === p.id)); };
@@ -102,17 +102,17 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
     if (nb.some(q => q.id === p.id)) ekle("hata", p.name + " hem nöbetçi hem hazırlama olamaz.");
     for (let k = -1; k <= 1; k++) {
       const gg = g(k); if (!gg || k === 0) continue;
-      if (gg.assigned.some(q => q.id === p.id)) ekle("hata", p.name + " hazırlama, ama " + gl(gg) + " nöbetçi.");
+      if (gg.assigned.some(q => q.id === p.id)) ekle(k === 1 ? "uyari" : "hata", p.name + " hazırlama, ama " + gl(gg) + " nöbetçi" + (k === 1 ? " (personel yetmezse olabilir: hazırlama ertesi gün nöbet; mümkünse kaçınılır)" : " (nöbet ertesi gün hazırlama olamaz)") + ".");
     }
     [-1, 1].forEach(k => { const gg = g(k); if (gg && (gg.prep || []).some(q => q.id === p.id)) ekle("hata", p.name + ", " + gl(gg) + " de hazırlama görevinde; art arda iki gün hazırlama yazılmaz."); });
     if (B.izinliMi(p.id, y, m, day.day)) ekle("hata", p.name + " bu gün izinli" + (B.tercih(p.id, y, m, day.day) === "izinli" ? " olarak işaretli." : " (iki izin günü arasındaki tatil)."));
     else if (B.izinHaftasiKenariMi(p.id, y, m, day.day)) ekle("hata", p.name + " bu gün bir haftalık yıllık izninin önündeki / arkasındaki hafta sonu.");
-    if (dw === PAZAR) { const gg = days[idx - 2]; if (gg && gg.assigned.some(q => q.id === p.id)) ekle("uyari", p.name + " aynı haftanın Cuma günü (" + gg.day + ". gün) nöbetçi; Pazar hazırlaması yazılmamalı."); }
+    if (dw === PAZAR) { const gg = days[idx - 2]; if (gg && gg.assigned.some(q => q.id === p.id)) ekle("bilgi", p.name + " aynı haftanın Cuma günü (" + gg.day + ". gün) nöbetçi; Pazar hazırlaması (kural dışı değil; eşitlik gerekmiyorsa kaçınılır)."); }
     if ((dw === CUMARTESI || dw === PAZAR) && thuHaftaSonu) { const gg = days[idx - (dw === CUMARTESI ? 2 : 3)]; if (gg && gg.assigned.some(q => q.id === p.id)) ekle("hata", p.name + " aynı haftanın Perşembe günü (" + gg.day + ". gün) nöbetçi; hafta sonu hazırlama yazılmaz."); }
     if (B.tercih(p.id, y, m, day.day) === "esYok") ekle("hata", p.name + " için eş durumu: bu güne yazılmaması gerekiyor.");
     let say = 1; days.forEach((gg, i) => { if (i !== idx && (gg.prep || []).some(q => q.id === p.id)) say++; });
     if (p.role !== "destek" && say > 2) ekle("hata", p.name + " bu ay " + say + ". hazırlama görevini alıyor (ayda en fazla 2).");
-    if (p.role === "destek" && say > B.sayi("destekAylik")) ekle("uyari", p.name + " bu ay " + say + ". hazırlama görevini alıyor (destek personeli için " + B.sayi("destekAylik") + ").");
+    if (p.role === "destek" && say > B.sayi("destekAylik")) ekle("hata", p.name + " bu ay " + say + ". hazırlama görevini alıyor (destek personeli için " + B.sayi("destekAylik") + ").");
   });
 
   // fazla mesai etkisi
