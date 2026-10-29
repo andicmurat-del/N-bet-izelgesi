@@ -40,6 +40,8 @@ const KESIN_AGIRLIK = 2e6, GUNYIL_AGIRLIK = 1.5e6;
 export const AGIRLIK = Object.freeze({
   // 1. uyarı
   UYARI: 1e11,
+  IHLAL: 2e11,                             // kesin kural ihlali (izinli nöbet, art arda nöbet, boş hazırlama yeri…): 2 uyarı sayılır
+  tekOnceUyari: 1.5e11,                    // hazırlama sırası (önce teknikerler) bozulursa: fazla mesai 8 saat kuralından (1 uyarı) önce
   // 2. kesin kurallar
   KESIN: KESIN_AGIRLIK,                    // genel kesin kural birimi: aylık nöbet sayısı farkı 2'yi aşan her nöbet; fazla mesai farkı 8 saati aşan her saat
   fmBant: KESIN_AGIRLIK * 0.25,            // fazla mesai: herkesi 8 saatlik tek aralığa sokmak için gereken toplam saat (arama düzlükte takılmasın)
