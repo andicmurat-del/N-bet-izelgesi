@@ -3,7 +3,7 @@
 import { eczaciMi, gorevli } from "../baglam";
 import type { Kisi } from "../../veri/tipler";
 import { HAZ_SAYISI } from "../sabitler";
-import { PAZAR } from "../takvim";
+import { CUMA, CUMARTESI, PAZAR } from "../takvim";
 import type { Kurallar } from "./kurallar";
 import type { AramaKurulumu } from "./kurulum";
 
@@ -20,6 +20,17 @@ export function hazirlamaAta(K: AramaKurulumu, kural: Kurallar): void {
     (dy.prep || []).forEach(pp => { if (fmTop[pp.id] !== undefined) { fmTop[pp.id] += HAZ_SAAT; prpCnt[pp.id]++; } });
   });
 
+  // Cuma + Cumartesi + Pazar nöbeti olan kişi kendi grubunda (eczacı / tekniker) hazırlamayı en son alır
+  const ucluNobet = new Set<number>();
+  prepAday.forEach(s => {
+    let cu = 0, ct = 0, pz = 0;
+    days.forEach((dy, i) => {
+      if (!dy.assigned.some(p => p.id === s.id)) return;
+      if (gunDow[i] === CUMA) cu++; else if (gunDow[i] === CUMARTESI) ct++; else if (gunDow[i] === PAZAR) pz++;
+    });
+    if (cu && ct && pz) ucluNobet.add(s.id);
+  });
+
   // bir güne (i) bir hazırlama yeri için kişi seç ve yaz; destekMi: yalnız destek personelinden seç
   function yerAta(i: number, slot: number, destekMi: boolean): boolean {
     const secilmis = days[i].prep.map(pp => pp.id);
@@ -34,8 +45,9 @@ export function hazirlamaAta(K: AramaKurulumu, kural: Kurallar): void {
         .sort((a, b) => (ist(a) - ist(b)) || (rH(a) - rH(b)) || (prpAg(a.id) - prpAg(b.id)) || sira[a.id] - sira[b.id]);
       if (!adaylar.length) return false;
     } else {
-      // sıra: önce her teknikere 1, sonra eczacılara; yeni tur yine teknikerden
-      const tur = (s: Kisi) => prpCnt[s.id] * 2 + (eczaciMi(s.role) ? 1 : 0);
+      // sıra: önce her teknikere 1, sonra eczacılara; yeni tur yine teknikerden. Grubun içinde Cuma + Cumartesi + Pazar
+      // nöbeti olan en sona
+      const tur = (s: Kisi) => prpCnt[s.id] * 4 + (eczaciMi(s.role) ? 2 : 0) + (ucluNobet.has(s.id) ? 1 : 0);
       adaylar = prepAday.filter(s => !secilmis.includes(s.id) && prepUygun(s.id, i))
         .sort((a, b) => (tur(a) - tur(b)) || (ist(a) - ist(b)) || (rH(a) - rH(b)) || fmTop[a.id] - fmTop[b.id] || prpAg(a.id) - prpAg(b.id) || sira[a.id] - sira[b.id]);
       if (!adaylar.length) {

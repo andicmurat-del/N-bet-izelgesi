@@ -49,6 +49,7 @@ export const AGIRLIK = Object.freeze({
   hsKural: 500000,                         // ayda en fazla 1 Cumartesi, 1 Pazar
   // 3. güçlü tercihler
   cuCmtPaz: 50000,                         // Cuma + Cumartesi + Pazar aynı ay aynı kişide (yıllık Cuma eşitliği bundan önce gelir)
+  ucluSonHaz: 200000,                      // Cuma + Cumartesi + Pazar nöbeti olan kendi grubunda (eczacı / tekniker) hazırlamayı en son alır
   prepUst: 400000,                         // eczacı / tekniker ayda en fazla 2 hazırlama
   grupHazFark: 300000,                     // eczacılar kendi arasında, teknikerler kendi arasında aylık hazırlama farkı 1'i aşınca
   hsEnAz1: 150000,                         // ayda en az 1 Cumartesi/Pazar nöbeti (uygun gün varsa)

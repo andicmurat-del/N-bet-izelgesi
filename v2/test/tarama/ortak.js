@@ -5,12 +5,13 @@ export function rngOf(seed) { let t = seed >>> 0 || 1; return () => { t = (t * 1
 export const dimOf = (y, m) => new Date(y, m + 1, 0).getDate();
 const hg = (y, m, d) => (new Date(y, m, d).getDay() + 6) % 7;
 
-export function senaryo(seed) {
+/** kadro: isteğe bağlı aralıklar, ör. { eczaci: [6, 8], teknisyen: [4, 8] } (gerçekçi kadro); verilmezse geniş tarama */
+export function senaryo(seed, kadro = {}) {
   const r = rngOf(seed), ri = (a, b) => a + Math.floor(r() * (b - a + 1)), sec = a => a[Math.floor(r() * a.length)];
   const y = sec([2025, 2026, 2027]), m0 = ri(0, 10);
   const staff = []; let id = 1;
   const ekle = (role, n) => { for (let i = 0; i < n; i++) staff.push({ id: id++, name: role.slice(0, 3) + id, role }); };
-  ekle("eczaci", ri(1, 6)); ekle("nobetci", ri(0, 2)); ekle("teknisyen", ri(0, 8)); ekle("destek", ri(0, 3)); ekle("servis", ri(0, 1));
+  ekle("eczaci", ri(...(kadro.eczaci || [1, 6]))); ekle("nobetci", ri(0, 2)); ekle("teknisyen", ri(...(kadro.teknisyen || [0, 8]))); ekle("destek", ri(0, 3)); ekle("servis", ri(0, 1));
   // çalışma dönemi
   staff.forEach(s => {
     if (r() < 0.08) s.baslangic = `${y}-${String(m0 + 1).padStart(2, "0")}-${String(ri(2, 25)).padStart(2, "0")}`;
