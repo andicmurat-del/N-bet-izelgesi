@@ -1,6 +1,7 @@
 // Puantajda ay içi değişiklikler (eski uygulamadaki mantık): nöbet değişimi (yerine tutma, karşılıklı takas),
 // izin/rapor kaydı ve izin nedeniyle görevden düşen kişinin yerine geçen. Her değişim geri alınabilsin diye
-// puantajdaki önceki kodlarla birlikte depo.veri.degisimler'e yazılır; liste son 300 değişimi tutar, daha eskiler geri alınamaz.
+// puantajdaki önceki kodlarla birlikte depo.veri.degisimler'e yazılır; liste son 300 değişimi tutar (bu yılın izin/rapor
+// nedeniyle yerine geçmeleri silinmez: yıllık eşitlik ve yerine tutma sırası bunlara bakar), daha eskiler geri alınamaz.
 import { depo, tatilMi, tercihAl } from "./depo.svelte";
 import { puantajHesapla } from "../motor";
 import { ayAnahtari, gunSayisi, tercihAnahtari } from "./tarih";
@@ -31,7 +32,11 @@ function kodYaz(y: number, m: number, id: number, gun: number, kod: PuantajKodu 
 const yeniId = () => depo.veri.degisimler.reduce((m, x) => Math.max(m, x.id), 0) + 1;
 function kayitEkle(d: Omit<Degisim, "id" | "zaman">) {
   depo.veri.degisimler.push({ id: yeniId(), zaman: Date.now(), ...d });
-  if (depo.veri.degisimler.length > 300) depo.veri.degisimler.shift();
+  if (depo.veri.degisimler.length > 300) {
+    // izin/rapor nedeniyle yerine geçmeler yıl boyunca saklanır: yıllık eşitlik ve yerine tutma sırası bunlara bakar
+    const L = depo.veri.degisimler, yil = new Date().getFullYear(), i = L.findIndex(x => !(x.sebep && x.y >= yil));
+    L.splice(i >= 0 ? i : 0, 1);
+  }
 }
 
 /** nöbetten çıkan kişinin o gün dönüştüğü kod */
@@ -85,8 +90,9 @@ export function degisimGeriAl(id: number, zorla = false): { tamam: true } | { ta
 }
 
 /**
- * izin/rapor nedeniyle zorunlu değişim: puantaja yazılır; kişi o gün çizelgede görevliyse çizelgeye de işlenir
- * (yıllık denge doğru kalsın). Görev çizelgeden değil bir nöbet değişiminden geldiyse çizelge değişmez.
+ * izin/rapor nedeniyle zorunlu değişim: puantaja yazılır; kişi o gün çizelgede görevliyse çizelgeye de işlenir (gün
+ * gerçekte tutanı göstersin; yıllık eşitlikte görev yine çıkanın sayılır: motor değişim kaydından geri çevirir).
+ * Görev çizelgeden değil bir nöbet değişiminden geldiyse çizelge değişmez.
  */
 function zorunluDegisim(y: number, m: number, gun: number, cik: number, yer: number, gorev: Gorev, sebep: IzinTuru) {
   const k = depo.veri.staff.find(s => s.id === yer);

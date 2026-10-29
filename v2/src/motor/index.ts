@@ -45,9 +45,10 @@ export function puantajHesapla(veri: unknown, yil: number, ay: number) { return 
 
 /** Değişim yapılırsa ne olur → {engel, uyari, bilgi} */
 export function degisimDenetle(veri: unknown, d: Degisiklik) { return degisimDenetimi(new Baglam(veri), d); }
-/** Görevden düşen kişinin (cik) yerine geçebilecekler: kurallara uyanlar önce, sonra yıl içinde en az görev alan */
-export function yerineAdaylarHesapla(veri: unknown, y: number, m: number, gun: number, cik: number, gorev: "N" | "H") {
-  return yerineAdaylar(new Baglam(veri), y, m, gun, cik, gorev);
+/** Görevden düşen kişinin (cik) yerine geçebilecekler: kurallara uyanlar önce, sonra yıl içinde en az görev alan
+ *  (sirayla: izin/rapor nedeniyle yerine tutma herkese sırayla gelir) */
+export function yerineAdaylarHesapla(veri: unknown, y: number, m: number, gun: number, cik: number, gorev: "N" | "H", sirayla = false) {
+  return yerineAdaylar(new Baglam(veri), y, m, gun, cik, gorev, sirayla);
 }
 
 /** Acil servis nöbeti denetimi: aynı kişi iki kez, izin/eş durumu, art arda iki gün, aynı gün eczane nöbeti */

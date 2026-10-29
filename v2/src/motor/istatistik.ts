@@ -8,6 +8,19 @@ export function fmKuralKisileri(B: Baglam, y: number, m: number) {
   const dim = ayGunSayisi(y, m);
   return B.staff.filter(s => nobetciRol(s.role) && aktifGunMu(s, y, m, 1) && aktifGunMu(s, y, m, dim));
 }
+/** ay içinde ayrılan kişi en az bu kadar gün çalışıyorsa nöbetleri ayrılmadan önceki günlere sığdırılır */
+export const AYRILAN_EN_AZ_GUN = 15;
+/** aylık nöbet sayısı eşitliğine girenler: fazla mesai kuralındakiler ve ay içinde ayrılıp en az AYRILAN_EN_AZ_GUN gün
+ *  çalışanlar (ayrılacağı baştan belliyse o ayın nöbetleri kalan günlere sığdırılır; fazla mesai kuralı onlara uygulanmaz:
+ *  hafta sonu sınırıyla 15 günde herkes kadar saat tutmak çoğu zaman mümkün değil) */
+export function nobetKuralKisileri(B: Baglam, y: number, m: number) {
+  const dim = ayGunSayisi(y, m);
+  return B.staff.filter(s => {
+    if (!nobetciRol(s.role) || !aktifGunMu(s, y, m, 1)) return false;
+    let gun = 0; for (let d = 1; d <= dim; d++) if (aktifGunMu(s, y, m, d)) gun++;
+    return gun === dim || gun >= AYRILAN_EN_AZ_GUN;
+  });
+}
 
 /** günlere göre kişi başı aylık fazla mesai (nöbet + hazırlama saatleri) */
 export function ayFmTablosu(B: Baglam, days: MotorGunu[]): Record<number, number> {

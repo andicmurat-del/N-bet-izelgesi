@@ -120,3 +120,20 @@ describe("eş durumu isteyenler birlikte yazılamıyorsa biri yazılır", () => 
   test("yıl içinde eşitse ilk sıradaki yazılır", () => bak(kur(false), T1, T2));
   test("yıl içinde eş durumu daha az karşılanan yazılır", () => bak(kur(true), T2, T1));
 });
+
+describe("ay içinde ayrılan kişinin nöbetleri kalan günlere sığdırılır", () => {
+  // ayrılacağı baştan belliyse (en az 15 gün çalışıyorsa) o ayın nöbetlerini ayrılmadan önce herkes kadar tutar;
+  // eskiden ayrılan aylık eşitliğe girmiyordu ve Kasım 2026'da 4 nöbet alıyordu (diğerleri 6–7)
+  test("15'inde ayrılan, ayın tamamında çalışanların en azından az nöbet almaz", () => {
+    const kadro = [];
+    for (let i = 1; i <= 6; i++) kadro.push({ id: i, name: "E" + i, role: "eczaci" });
+    for (let i = 1; i <= 4; i++) kadro.push({ id: 6 + i, name: "T" + i, role: "teknisyen" });
+    kadro[0].bitis = "2026-11-15";
+    const v = { staff: kadro, prefs: {}, manualTatil: {}, arife: {}, settings: {}, schedules: {}, puantaj: {}, acil: {} };
+    const r = cizelgeOlustur(v, 2026, 10, { saat: () => 0 }), n = {};
+    r.days.forEach(g => g.assigned.forEach(p => { n[p.id] = (n[p.id] || 0) + 1; }));
+    expect(r.days.slice(15).some(g => g.assigned.some(p => p.id === 1))).toBe(false);
+    expect(n[1]).toBeGreaterThanOrEqual(Math.min(...kadro.slice(1).map(s => n[s.id] || 0)));
+    expect(r.warnings).toEqual([]);
+  });
+});

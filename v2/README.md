@@ -27,7 +27,7 @@ npm run artifact   # dist/index.html ve artifact sayfası dist/artifact.html
 ## Bölümler
 
 - **Çizelge:** eczane nöbet çizelgesi (oluştur, elle düzenle, onayla; PDF ve Excel), günlük çalışma listesi (puantaja göre onay, hazırlama, izinliler) ve acil servis nöbetleri (acil servis eczacıları için elle; PDF ve Excel).
-- **Puantaj:** aylık cetvel (hücreler elle değiştirilebilir, acil servis nöbetleri 24 saat; PDF ve Excel); ay içi izin ve rapor kaydı (kişinin görevli olduğu günler için yerine geçecek kişi önerilir, seçilen kişi çizelgeye de işlenir); nöbet değişimi (yerine tutma, karşılıklı takas, kural denetimi, geri alma).
+- **Puantaj:** aylık cetvel (hücreler elle değiştirilebilir, acil servis nöbetleri 24 saat; PDF ve Excel); ay içi izin ve rapor kaydı (kişinin görevli olduğu günler için yerine geçecek kişi önerilir; yerine tutma sırayla gelir, seçilen kişi çizelgeye de işlenir, yıllık eşitlikte görev raporlu / izinli kişinin sayılır, telafi edilmez); nöbet değişimi (yerine tutma, karşılıklı takas, kural denetimi, geri alma).
 - **Servis hazırlama:** o gün çalışan teknikerlere servislerin zorluk × hasta sayısına göre dengeli dağıtımı (eski uygulamanın algoritması aynen; kişi başı servis, YB ve zor servis sayısı her gün en çok 1 farklı; yük her ay kendi içinde eşitlenir, eski uygulamadaki gibi yıl boyunca taşınmaz). Kişiyi dağıtımdan çıkarma, yeniden karıştırma, servisi elle başka teknikere verme; PDF listeler (tek sayfa, kişi başı kontrol listesi, toplu liste). Servis listesi ayarları aynı bölümde; yıllık rapor Raporlar > Servis hazırlama.
 - **İzin ve tercihler**, **Personel**, **Ayarlar** (kurallar, yedek).
 - **Geri al / yinele:** yan menüde (telefonda üstte) ve Ctrl+Z / Ctrl+Y; son 30 adım, bu oturum boyunca. Onay bir geri alma noktasıdır.

@@ -1,7 +1,7 @@
 // Aramanın sabit girdileri: ilk yerleştirmeden sonra bir kez hesaplanır, arama boyunca değişmez (hız için diziler).
 // Kişiler aramada sıra numarasıyla (hIx) tutulur; sayaçlar Float64Array'dir.
 import { aktifAydaMi, aktifGunMu, eczaciMi, hazirlamaRol, type MotorGunu } from "../baglam";
-import { fmKuralKisileri, yilGunSayilari } from "../istatistik";
+import { fmKuralKisileri, nobetKuralKisileri, yilGunSayilari } from "../istatistik";
 import type { Kisi } from "../../veri/tipler";
 import { AGIRLIK } from "../sabitler";
 import { CUMARTESI, gunKaydir, haftaGunu, PAZAR } from "../takvim";
@@ -57,6 +57,7 @@ export function aramaKur(A: AyBilgisi, days: MotorGunu[]) {
   const eczIx = new Uint8Array(NH); tumHavuz.forEach((s, ix) => { if (eczaciMi(s.role)) eczIx[ix] = 1; });
   // kesin kural grubu: fazla mesai farkı en fazla FM_MAX_FARK saat (ayın tamamında çalışan nöbetçi personel; destek hariç)
   const ixFmKural = fmKuralKisileri(B, y, m).map(s => hIx[s.id]).filter(ix => ix !== undefined);
+  const ixNobetKural = nobetKuralKisileri(B, y, m).map(s => hIx[s.id]).filter(ix => ix !== undefined);
 
   // önceki aylardan gelen sayılar (yıllık eşitlik): kişi sırasıyla diziler
   const dizi = (f: (s: Kisi) => number) => { const a = new Float64Array(NH); tumHavuz.forEach((s, ix) => { a[ix] = f(s); }); return a; };
@@ -90,7 +91,7 @@ export function aramaKur(A: AyBilgisi, days: MotorGunu[]) {
     A, B, y, m, days, staffList, destekler, destekVar, DESTEK_AYLIK, prepAday, tumHavuz, degisimHavuzu, ayniTur,
     GUN_SAY, gunDow, gunFm, resmiGunDizi, resmiGunVar, cuGunDizi, zorunluGun,
     NH, hIx, prefGun, yasakGun, izinOnceGun, oncekiAyPersembe, oncekiAyCuma,
-    ixStaff, ixPrep, ixDestek, ixEczPrep, ixTekPrep, eczIx, ixFmKural, onceki, pv, hsMusait, HS_SIFIR_IZIN, destekTamUyari,
+    ixStaff, ixPrep, ixDestek, ixEczPrep, ixTekPrep, eczIx, ixFmKural, ixNobetKural, onceki, pv, hsMusait, HS_SIFIR_IZIN, destekTamUyari,
     HAZ_SAAT: B.sayi("hazSaat"),
     ayar: {
       minAra: B.sayi("minAra"), thuHaftaSonu: !!B.ayar("thuHaftaSonu"), cumaEsles: !!B.ayar("cumaEsles"), hsUst: B.sayi("hsUst"), maxThu: B.sayi("maxThu"),

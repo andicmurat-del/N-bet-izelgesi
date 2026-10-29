@@ -29,7 +29,7 @@ export interface EsDurumu { secilen: Kisi[]; dusen: Kisi[] }
 export function esKarsilanan(B: Baglam, y: number, m: number): Record<number, number> {
   const k: Record<number, number> = {};
   for (let mm = 0; mm < m; mm++) {
-    const sc = B.cizelge(y, mm);
+    const sc = B.dengeCizelgesi(y, mm);
     if (sc && sc.days) sc.days.forEach(g => (g.assigned || []).forEach(p => { if (B.tercih(p.id, y, mm, g.day) === "esVar") k[p.id] = (k[p.id] || 0) + 1; }));
   }
   return k;
