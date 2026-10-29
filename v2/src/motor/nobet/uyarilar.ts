@@ -81,8 +81,8 @@ export function uyarilariYaz(K: AramaKurulumu, kural: Kurallar): string[] {
   // eş durumu
   days.forEach((dd, i) => {
     if (dd.locked) return;
-    const zor = staffList.filter(s => B.tercih(s.id, y, m, dd.day) === "esVar" && aktifGunMu(s, y, m, dd.day));
-    if (zor.length > 2) warnings.push(dd.day + ". gün için eş durumu 'istiyor' işaretli " + zor.length + " kişi var, günde en fazla 2 nöbetçi yazılabilir.");
+    const { secilen: zor, dusen } = A.esDurumu[i];
+    if (dusen.length) warnings.push(dd.day + " " + AYLAR[m] + " için eş durumu isteyenler birlikte yazılamıyor (günde 2 nöbetçi, en az 1 eczacı); yıl içinde eş durumu daha az karşılanan " + zor.map(z => z.name).join(", ") + " yazıldı, " + dusen.map(z => z.name).join(", ") + " yazılmadı.");
     zor.forEach(z => {
       if (!dd.assigned.some(p => p.id === z.id)) { warnings.push(dd.day + ". gün " + z.name + " için eş durumu isteği karşılanamadı."); return; }
       [-1, 1].forEach(k => { const gg = days[i + k]; if (gg && gg.assigned.some(p => p.id === z.id)) warnings.push(z.name + ": eş durumu isteği nedeniyle " + dd.day + ". gün ile " + gg.day + ". gün art arda nöbet yazıldı."); });

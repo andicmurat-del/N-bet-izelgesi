@@ -1,6 +1,6 @@
 // 1. adım: açgözlü ilk yerleştirme. Günler sırayla doldurulur; her güne o ana kadarki yüke göre en uygun eczacı ve
 // ikinci nöbetçi yazılır. Sonraki adımlar (hazırlama, yerel arama) bu çizelgeyi iyileştirir.
-import { aktifGunMu, gorevli, ikiDisaridanSerbestMi, type MotorGunu } from "../baglam";
+import { aktifGunMu, eczaciMi, gorevli, ikiDisaridanSerbestMi, type MotorGunu } from "../baglam";
 import type { Kisi } from "../../veri/tipler";
 import { CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "../takvim";
 import type { AyBilgisi } from "./ay";
@@ -157,8 +157,8 @@ export function ilkYerlestirme(A: AyBilgisi): MotorGunu[] {
     let conflict = false;
 
     // eş durumu "istiyor" işaretliler bu güne kesin yazılır
-    const zEcz = eczacilar.filter(s => B.tercih(s.id, y, m, d) === "esVar" && aktifGunMu(s, y, m, d));
-    const zDiger = teknisyenler.filter(s => B.tercih(s.id, y, m, d) === "esVar" && aktifGunMu(s, y, m, d));
+    const zSec = A.esDurumu[d - 1].secilen;   // birlikte yazılamayan istekler düşmüş olarak (ay.ts esDurumuSec)
+    const zEcz = zSec.filter(s => eczaciMi(s.role)), zDiger = zSec.filter(s => !eczaciMi(s.role));
     let p1: Kisi | null = null, p2: Kisi | null = null;
     if (zEcz.length) { p1 = zEcz[0]; p2 = zEcz[1] || zDiger[0] || null; }
     else if (zDiger.length >= 2) { p1 = zDiger[0]; p2 = zDiger[1]; conflict = true; }

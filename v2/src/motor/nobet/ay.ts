@@ -1,5 +1,5 @@
 // Bir ayın çizelgesi oluşturulurken bütün adımların ortak girdisi: kadro, yıllık devirler, ay sınırı, kişi sırası.
-import { aktifAydaMi, eczaciMi, type Baglam, type MotorGunu } from "../baglam";
+import { aktifAydaMi, aktifGunMu, eczaciMi, type Baglam, type MotorGunu } from "../baglam";
 import { cmtDevir, cuDevir, devirHesapla, hsDevir, nobetDevir, pazDevir, peDevir, resmiDevir, type AyDevri, type Fark } from "../devir";
 import type { Kisi } from "../../veri/tipler";
 import { ayGunSayisi } from "../takvim";
@@ -19,6 +19,34 @@ export interface AyBilgisi {
   /** eşit durumlarda kişi sırası ("farklı dağılım" bu sırayı karıştırır) */
   sira: Record<number, number>;
   varyasyon: number;
+  /** gün gün (0'dan) eş durumu "istiyor" istekleri: yazılacaklar ve birlikte yazılamadığı için düşenler */
+  esDurumu: EsDurumu[];
+}
+
+export interface EsDurumu { secilen: Kisi[]; dusen: Kisi[] }
+
+/** yıl içinde (önceki aylarda) kişinin eş durumu isteğinin karşılandığı gün sayısı */
+export function esKarsilanan(B: Baglam, y: number, m: number): Record<number, number> {
+  const k: Record<number, number> = {};
+  for (let mm = 0; mm < m; mm++) {
+    const sc = B.cizelge(y, mm);
+    if (sc && sc.days) sc.days.forEach(g => (g.assigned || []).forEach(p => { if (B.tercih(p.id, y, mm, g.day) === "esVar") k[p.id] = (k[p.id] || 0) + 1; }));
+  }
+  return k;
+}
+
+/** Bir günün eş durumu istekleri. Hepsi birlikte yazılamıyorsa (günde 2 nöbetçi, en az 1 eczacı) yıl içinde eş durumu isteği
+ *  daha az karşılanan seçilir, diğerine uyarı verilir: ör. iki tekniker aynı gün isterse biri yazılır, öbür yer eczacının. */
+export function esDurumuSec(B: Baglam, y: number, m: number, d: number, kadro: Kisi[], karsilanan: Record<number, number>): EsDurumu {
+  const istek = kadro.filter(s => B.tercih(s.id, y, m, d) === "esVar" && aktifGunMu(s, y, m, d));
+  if (istek.length <= 1) return { secilen: istek, dusen: [] };
+  const sirali = istek.slice().sort((a, b) => (karsilanan[a.id] || 0) - (karsilanan[b.id] || 0) || a.id - b.id);
+  const ilkEcz = sirali.find(s => eczaciMi(s.role)), secilen: Kisi[] = ilkEcz ? [ilkEcz] : [];
+  for (const s of sirali) {
+    if (secilen.length >= 2 || (!ilkEcz && secilen.length === 1)) break;   // eczacı yoksa ikinci yer eczacıya kalır
+    if (!secilen.includes(s)) secilen.push(s);
+  }
+  return { secilen, dusen: istek.filter(s => !secilen.includes(s)) };
 }
 
 /** eski ensureScheduleDraft'ın karşılığı: ayın kayıtlı taslağı varsa (elle kilitlenmiş günler) o, yoksa boş günler */
@@ -49,9 +77,11 @@ function kisiSirasi(staff: Kisi[], varyasyon: number): Record<number, number> {
 export function ayBilgisi(B: Baglam, y: number, m: number, varyasyon: number, eczacilar: Kisi[], teknisyenler: Kisi[]): AyBilgisi {
   const taslak = taslakGunler(B, y, m);
   const devir = devirHesapla(B, y, m);
-  const sira = kisiSirasi(B.staff, varyasyon);
+  const sira = kisiSirasi(B.staff, varyasyon), dim = ayGunSayisi(y, m);
+  const karsilanan = esKarsilanan(B, y, m), kadro = eczacilar.concat(teknisyenler), esDurumu: EsDurumu[] = [];
+  for (let d = 1; d <= dim; d++) esDurumu.push(esDurumuSec(B, y, m, d, kadro, karsilanan));
   return {
-    B, y, m, dim: ayGunSayisi(y, m), eczacilar, teknisyenler, taslak, devir, sira, varyasyon,
+    B, y, m, dim, eczacilar, teknisyenler, taslak, devir, sira, varyasyon, esDurumu,
     resmiDv: resmiDevir(B, y, m), hsDv: hsDevir(B, y, m), cuDv: cuDevir(B, y, m), peDv: peDevir(B, y, m),
     cmtDv: cmtDevir(B, y, m), pazDv: pazDevir(B, y, m), nDv: nobetDevir(B, y, m),
     sinir: aySiniri(B, y, m), sonGunEngel: sonGunEngeli(B, y, m),

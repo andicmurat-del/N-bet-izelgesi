@@ -31,7 +31,8 @@ export function aramaKur(A: AyBilgisi, days: MotorGunu[]) {
   const resmiGunDizi = days.map(dy => B.resmiTatilMi(y, m, dy.day)), resmiGunVar = resmiGunDizi.some(Boolean);
   const cuGunDizi = days.map(dy => B.cumaTipiMi(y, m, dy.day));
   // eş durumu: "istiyor" işaretli güne o kişi kesin nöbetçi yazılır
-  const zorunluGun = days.map(dy => staffList.filter(s => B.tercih(s.id, y, m, dy.day) === "esVar" && aktifGunMu(s, y, m, dy.day)).map(s => s.id));
+  // (birlikte yazılamayan istekler düşmüş olarak: ay.ts esDurumuSec)
+  const zorunluGun = days.map(dy => A.esDurumu[dy.day - 1].secilen.map(s => s.id));
 
   const NH = tumHavuz.length, hIx: Record<number, number> = {};
   tumHavuz.forEach((s, ix) => { hIx[s.id] = ix; });
