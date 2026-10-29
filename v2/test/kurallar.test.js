@@ -1,6 +1,7 @@
 // Tek tek kural testleri: kullanıcının netleştirdiği kurallar (elle düzenleme denetimi üzerinden).
 import { describe, test, expect } from "vitest";
-import { cizelgeOlustur, gunuDenetle } from "../src/motor";
+import { cizelgeOlustur, gunuDenetle, uyariSiniflandir } from "../src/motor";
+import { cizelgeUret } from "../src/motor/nobet/olustur";
 import { Baglam } from "../src/motor/baglam";
 import { senaryo } from "./tarama/ortak";
 
@@ -135,5 +136,17 @@ describe("ay içinde ayrılan kişinin nöbetleri kalan günlere sığdırılır
     expect(r.days.slice(15).some(g => g.assigned.some(p => p.id === 1))).toBe(false);
     expect(n[1]).toBeGreaterThanOrEqual(Math.min(...kadro.slice(1).map(s => n[s.id] || 0)));
     expect(r.warnings).toEqual([]);
+  });
+});
+
+describe("çizelge her zaman en az uyarılı hâliyle oluşturulur", () => {
+  // ilk aramada uyarı kalırsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir. Gerçekçi kadrolu 10.
+  // senaryoda ilk arama 1 hata ve 3 kırmızı gün bırakıyordu; ek denemelerden biri uyarısız
+  const say = r => r.warnings.filter(w => uyariSiniflandir(w).seviye !== "bilgi").length + r.days.filter(g => g.conflict).length;
+  test("ilk aramadan daha çok uyarılı olmaz; uyarısızı bulunursa o seçilir", () => {
+    const { y, m0, veri } = senaryo(10, { eczaci: [6, 8], teknisyen: [4, 8] });
+    const ilk = cizelgeUret(new Baglam(veri), y, m0, 0, () => 0), son = cizelgeOlustur(veri, y, m0, { saat: () => 0 });
+    expect(say(ilk)).toBeGreaterThan(0);
+    expect(say(son)).toBe(0);
   });
 });

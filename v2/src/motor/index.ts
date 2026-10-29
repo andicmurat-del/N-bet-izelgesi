@@ -14,9 +14,9 @@ import type { Gorevli } from "../veri/tipler";
 import { Baglam, type MotorCizelgesi } from "./baglam";
 import { degisimDenetle as degisimDenetimi, yerineAdaylar, type Degisiklik } from "./degisim";
 import { gunuDenetle as gunDenetimi } from "./denetim";
-import { cizelgeUret } from "./nobet/olustur";
+import { cizelgeUret, type CizelgeSonucu } from "./nobet/olustur";
 import { puantajIzgarasi } from "./puantaj";
-import { acilDenetle as acilDenetimi, calismaListesi, yillikRapor } from "./raporlar";
+import { acilDenetle as acilDenetimi, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
 import { ServisMotoru, type HesapSecenegi } from "./servis/ay";
 import { ybMi, zorMu } from "./servis/liste";
 import { tarihNo } from "./takvim";
@@ -32,7 +32,31 @@ export type { CizelgeSonucu } from "./nobet/olustur";
  * secenek.varyasyon: "farklı dağılım"; secenek.saat: aramanın süre sınırı için saat (testlerde sabit verilir).
  */
 export function cizelgeOlustur(veri: unknown, yil: number, ay: number, secenek: { varyasyon?: number; saat?: () => number } = {}) {
-  return cizelgeUret(new Baglam(veri), yil, ay, secenek.varyasyon || 0, secenek.saat || Date.now);
+  const v = secenek.varyasyon || 0, saat = secenek.saat || Date.now, bas = saat();
+  // uyarısız çizelge bulunamazsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir (önce hata, sonra uyarı,
+  // sonra kırmızı gün sayısı; eşitse ilk bulunan). Her deneme verinin kendi kopyasıyla çalışır. Kadro kurallara
+  // matematiksel olarak yetmiyorsa ek deneme yapılmaz: uyarı sayısı azalsa da farklar büyüyebiliyor (ör. 3 eczacı +
+  // 4 teknikerde bir uyarı eksilirken fazla mesai farkı 32 saatten 64 saate çıkıyordu)
+  let en = cizelgeUret(new Baglam(veri), yil, ay, v, saat), enP = uyariPuani(en);
+  const kapasiteYok = en.warnings.some(w => /matematiksel olarak mümkün değil/.test(w));
+  for (let k = 1; k <= EK_DENEME && !kapasiteYok && enP.some(x => x > 0) && saat() - bas < EK_DENEME_SURE; k++) {
+    const r = cizelgeUret(new Baglam(veri), yil, ay, EK_TOHUM + v * (EK_DENEME + 1) + k, saat), p = uyariPuani(r);
+    if (puanKucuk(p, enP)) { en = r; enP = p; }
+  }
+  return en;
+}
+/** uyarısız çizelge bulunamazsa en fazla bu kadar ek deneme, toplam bu kadar milisaniye içinde */
+const EK_DENEME = 3, EK_DENEME_SURE = 20000;
+/** ek denemelerin "farklı dağılım" numaralarıyla çakışmaması için */
+const EK_TOHUM = 1000000;
+function uyariPuani(r: CizelgeSonucu): number[] {
+  let hata = 0, uyari = 0;
+  r.warnings.forEach(w => { const s = uyariSiniflandir(w).seviye; if (s === "hata") hata++; else if (s === "uyari") uyari++; });
+  return [hata, uyari, (r.days || []).filter(g => g.conflict).length];
+}
+function puanKucuk(a: number[], b: number[]): boolean {
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] < b[i];
+  return false;
 }
 
 /** Elle düzenlenen bir günün kurallarını denetler. sch: ayın çizelgesi (düzenlenen gün eski hâliyle); gun 1'den */
