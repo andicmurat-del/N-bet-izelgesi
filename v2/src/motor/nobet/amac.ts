@@ -75,6 +75,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
   const { gundeVar, tatilGunu, yasak, ihlalSayisi } = kural;
   // hazırlama eşitliği: bu ay en az bir hazırlama gününde yazılabilen eczacı / tekniker
   const ixPrepAdil = prepAday.filter(s => days.some((_, i) => tatilGunu(i) && !yasak(s.id, i))).map(s => hIx[s.id]);
+  const adilIx = new Set(ixPrepAdil), ucluGruplar = [ixEczPrep, ixTekPrep].map(G => G.filter(ix => adilIx.has(ix)));
 
   // ---- sayaçlar: kişi başı bu ayki fazla mesai, nöbet, gün türleri, hazırlama ----
   const sayac = () => new Float64Array(NH);
@@ -182,6 +183,13 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
       let mxE = -1e9, mnT = 1e9;
       for (let q = 0; q < ixPrepAdil.length; q++) { const ix = ixPrepAdil[q], v = hPrp[ix] + onceki.prp[ix]; if (eczIx[ix]) { if (v > mxE) mxE = v; } else if (v < mnT) mnT = v; }
       if (mxE > -1e9 && mnT < 1e9 && mxE > mnT + 1e-6) hzAdil += AGIRLIK.tekOnce * (mxE - mnT);
+    }
+    // Cuma + Cumartesi + Pazar nöbeti olan kişi kendi grubunda (eczacı / tekniker) hazırlamayı en son alır: grubundaki
+    // diğerlerinin en azından fazla hazırlama almaz
+    for (const G of ucluGruplar) {
+      let mnD = 1e9;
+      for (let q = 0; q < G.length; q++) { const ix = G[q]; if (!(hCum[ix] > 0 && hSat[ix] > 0 && hSun[ix] > 0) && hPrp[ix] < mnD) mnD = hPrp[ix]; }
+      if (mnD < 1e9) for (let q = 0; q < G.length; q++) { const ix = G[q]; if (hCum[ix] > 0 && hSat[ix] > 0 && hSun[ix] > 0 && hPrp[ix] > mnD) hzAdil += AGIRLIK.ucluSonHaz * (hPrp[ix] - mnD); }
     }
     // nöbet sayısı: kişiler arasında fark mümkünse en fazla 1, en fazla 2
     if (ixFmKural.length > 1) {
