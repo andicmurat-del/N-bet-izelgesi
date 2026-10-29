@@ -42,3 +42,27 @@ describe("Cuma + Cumartesi + Pazar kesin kural değil", () => {
     Object.values(say).forEach(o => expect(Math.max(...o)).toBeLessThanOrEqual(1));
   });
 });
+
+describe("Cuma + Cumartesi + Pazar nöbeti olan hazırlamayı grubunda en son alır", () => {
+  // Ocak 2027: 10 tatil günü, 20 hazırlama yeri; 3 destek 6'sını alır, kalan 14'ün 8'i teknikerlere, 6'sı eczacılara:
+  // bir eczacı hazırlama almaz, o kişi Cuma + Cumartesi + Pazar nöbeti olanlardan biri olmalı
+  const kadro = [];
+  for (let i = 1; i <= 7; i++) kadro.push({ id: i, name: "E" + i, role: "eczaci" });
+  for (let i = 1; i <= 8; i++) kadro.push({ id: 7 + i, name: "T" + i, role: "teknisyen" });
+  for (let i = 1; i <= 3; i++) kadro.push({ id: 15 + i, name: "D" + i, role: "destek" });
+  const v = { staff: kadro, prefs: {}, manualTatil: {}, arife: {}, settings: {}, schedules: {}, puantaj: {}, acil: {} };
+  test("üçlü nöbetli, grubundaki herkesten fazla hazırlama almaz", () => {
+    const r = cizelgeOlustur(v, 2027, 0, { saat: () => 0 });
+    const gt = d => (new Date(2027, 0, d).getDay() + 6) % 7, o = {};
+    kadro.filter(s => s.role !== "destek").forEach(s => { o[s.id] = { g: s.role, cu: 0, ct: 0, pz: 0, h: 0 }; });
+    r.days.forEach(g => { g.assigned.forEach(p => { const w = gt(g.day); if (w === 4) o[p.id].cu++; if (w === 5) o[p.id].ct++; if (w === 6) o[p.id].pz++; }); g.prep.forEach(p => { if (o[p.id]) o[p.id].h++; }); });
+    const uclu = q => q.cu > 0 && q.ct > 0 && q.pz > 0;
+    let ucluVar = false;
+    for (const g of ["eczaci", "teknisyen"]) {
+      const grup = Object.values(o).filter(q => q.g === g), diger = grup.filter(q => !uclu(q));
+      const enAz = Math.min(...diger.map(q => q.h));
+      grup.filter(uclu).forEach(q => { ucluVar = true; expect(q.h).toBeLessThanOrEqual(enAz); });
+    }
+    expect(ucluVar, "senaryoda Cuma + Cumartesi + Pazar nöbeti olan biri bulunmalı").toBe(true);
+  });
+});
