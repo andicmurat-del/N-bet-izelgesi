@@ -183,7 +183,7 @@ export function yillikRapor(B: Baglam, yil: number) {
 
 // ---- uyarının önemi ve kısa başlığı: hata (kural gevşetildi / eksik), uyarı (sınır aşıldı), bilgi (açıklama) ----
 const UYARI_BASLIK: [RegExp, string][] = [
-  [/matematiksel olarak mümkün değil/i, "Personel kurallara yetmiyor"],
+  [/matematiksel olarak mümkün değil/i, "Personel kurallara yetmiyor"], [/hazırlamanın ertesi günü nöbet/i, "Hazırlama ertesi nöbet"],
   [/^Yıllık gün dağılımı/, "Yıllık gün dağılımı"], [/^Hazırlama farkı/, "Hazırlama farkı"], [/^Nöbet sayısı farkı/, "Nöbet sayısı farkı"], [/^Hafta sonu kuralı/, "Hafta sonu kuralı"],
   [/^KESİN KURAL sağlanamadı: fazla mesai/, "Fazla mesai farkı"], [/KESİN KURAL/i, "Kesin kural"], [/dinlenme kuralı/i, "Zorunlu atama yapılan günler"], [/kural dışı atama/i, "Kural dışı atama"],
   [/hazırlama (personeli bulunamadı|yeri eksik)/i, "Eksik hazırlama"], [/3 ya da daha fazla Cumartesi/i, "3 ya da daha fazla hafta sonu nöbeti"], [/Hafta sonu .*aşan/i, "Hafta sonu sınırı aşıldı"],

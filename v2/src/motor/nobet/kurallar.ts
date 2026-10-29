@@ -2,7 +2,7 @@
 // 5 gün içinde 3 nöbet yok, Perşembe nöbetçisine aynı hafta sonu hazırlama yok, art arda iki gün hazırlama yok.
 import type { Gorevli } from "../../veri/tipler";
 import { eczaciMi } from "../baglam";
-import { HAZ_SAYISI } from "../sabitler";
+import { HAFIF_IHLAL, HAZ_SAYISI } from "../sabitler";
 import { CUMA, CUMARTESI, gunKaydir, PAZAR, PERSEMBE } from "../takvim";
 import type { AramaKurulumu } from "./kurulum";
 import { ucluSikisik } from "./sinir";
@@ -35,16 +35,31 @@ export function kurallarKur(K: AramaKurulumu) {
     if (idx === days.length - 1 && (sinir.sonrakiIlkN.indexOf(id) >= 0 || sinir.sonrakiIlkH.indexOf(id) >= 0)) return true;
     return false;
   }
-  /** hazırlama personeli aynı gün ve önceki/sonraki gün nöbetçi olamaz */
-  function prepKomsu(id: number, idx: number): boolean {
+  /** komsuda, önceki gün hazırlama hariç (hazırlama ertesi gün nöbet ayrıca, hafif ihlal olarak sayılır) */
+  function komsudaSert(id: number, idx: number): boolean {
     for (let k = idx - 1; k <= idx + 1; k++) {
       if (k < 0 || k >= days.length) continue;
-      if (days[k].assigned.some(p => p.id === id)) return true;
+      if (k !== idx && gundeVar(k, id)) return true;
+      if (k === idx - 1) continue;
+      const pr = days[k].prep;
+      if (pr) for (let q = 0; q < pr.length; q++) if (pr[q].id === id) return true;
     }
     if (idx === 0 && sinir.oncekiSonN.indexOf(id) >= 0) return true;
-    if (idx === days.length - 1 && sinir.sonrakiIlkN.indexOf(id) >= 0) return true;
+    if (idx === days.length - 1 && (sinir.sonrakiIlkN.indexOf(id) >= 0 || sinir.sonrakiIlkH.indexOf(id) >= 0)) return true;
     return false;
   }
+  /** hazırlama personeli aynı gün ve önceki gün nöbetçi olamaz (nöbet ertesi gün dinlenir) */
+  function prepKomsuSert(id: number, idx: number): boolean {
+    for (let k = idx - 1; k <= idx; k++) { if (k >= 0 && gundeVar(k, id)) return true; }
+    return idx === 0 && sinir.oncekiSonN.indexOf(id) >= 0;
+  }
+  /** hazırlama personeli ertesi gün nöbetçi (ör. Cumartesi hazırlama, Pazar nöbet): kadro yetmezse ilk esneyen kural */
+  function prepSonrasiNobet(id: number, idx: number): boolean {
+    if (idx + 1 < days.length) return gundeVar(idx + 1, id);
+    return sinir.sonrakiIlkN.indexOf(id) >= 0;
+  }
+  /** hazırlama personeli aynı gün ve önceki/sonraki gün nöbetçi olamaz */
+  function prepKomsu(id: number, idx: number): boolean { return prepKomsuSert(id, idx) || prepSonrasiNobet(id, idx); }
   /** aynı kişiye art arda iki gün hazırlama yazılmaz (Cumartesi + Pazar, ya da bitişik tatil günleri; ay sınırı dahil) */
   function prepBitisik(id: number, idx: number): boolean {
     if (idx - 1 >= 0 && (days[idx - 1].prep || []).some(pp => pp.id === id)) return true;
@@ -76,6 +91,10 @@ export function kurallarKur(K: AramaKurulumu) {
   }
   function prepUygun(id: number, idx: number): boolean {
     return !yasak(id, idx) && !prepKomsu(id, idx) && !persembeNobetliMi(id, idx) && !prepBitisik(id, idx) && !destekSiniriAsildi(id);
+  }
+  /** prepUygun, ertesi gün nöbet hariç: boş kalacak hazırlama yerine ertesi gün nöbetçi olan yazılabilir (hafif ihlal) */
+  function prepUygunGevsek(id: number, idx: number): boolean {
+    return !yasak(id, idx) && !prepKomsuSert(id, idx) && !persembeNobetliMi(id, idx) && !prepBitisik(id, idx) && !destekSiniriAsildi(id);
   }
   /** dışarıdan nöbete gelen iki eczacı aynı gün birlikte nöbetçi olmaz (Cuma ve Cumartesi olabilir; ikisi de eş durumu
    *  zorunluluğuysa da olabilir) */
@@ -128,13 +147,14 @@ export function kurallarKur(K: AramaKurulumu) {
       if (yasak(p.id, idx)) { n++; continue; }
       if (zorunluMu(p.id, idx)) continue;
       if (sonGunEngel(p.id, dy.day)) n++;
-      if (komsuda(p.id, idx)) n++;
+      // önceki gün hazırlama: hafif ihlal, yarısı bu güne yarısı hazırlama gününe (iki gün de işaretli görünür)
+      if (komsudaSert(p.id, idx)) n++; else if (komsuda(p.id, idx)) n += HAFIF_IHLAL / 2;
       if (hsHazirligiVarMi(p.id, idx)) n++;
       if (ucluSikisik(days, sinir, p.id, idx)) n++;
     }
     for (const p of dy.prep || []) {
       if (yasak(p.id, idx)) n++;
-      if (prepKomsu(p.id, idx)) n++;
+      if (prepKomsuSert(p.id, idx)) n++; else if (prepSonrasiNobet(p.id, idx)) n += HAFIF_IHLAL / 2;
       if (persembeNobetliMi(p.id, idx)) n++;
       // destek personelinde art arda hazırlama ihlal sayılmaz (yalnız başka yer yoksa yazılır; eski uygulamada da işaretlenmez)
       if (p.role !== "destek" && prepBitisik(p.id, idx)) n++;
@@ -142,5 +162,5 @@ export function kurallarKur(K: AramaKurulumu) {
     return n;
   }
 
-  return { yasak, zorunluMu, gundeVar, tatilGunu, komsuda, prepKomsu, prepBitisik, persembeNobetliMi, hsHazirligiVarMi, prepUygun, ikiDisaridan, gunGecerli, temelUygun, ihlalSayisi };
+  return { yasak, zorunluMu, gundeVar, tatilGunu, komsuda, prepKomsu, prepKomsuSert, prepSonrasiNobet, prepBitisik, persembeNobetliMi, hsHazirligiVarMi, prepUygun, prepUygunGevsek, ikiDisaridan, gunGecerli, temelUygun, ihlalSayisi };
 }

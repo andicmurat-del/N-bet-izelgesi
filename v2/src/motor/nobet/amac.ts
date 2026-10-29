@@ -153,7 +153,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     for (let q = 0; q < as.length; q++) {
       const pid = as[q].id;
       if (hIx[pid] === undefined) continue;
-      if (pg[pid] === "avoid") z += UYARI;
+      if (pg[pid] === "avoid") z += AGIRLIK.istemiyor;
       if (izinOnceGun[i][pid]) z += UYARI;
     }
     return z;
@@ -182,7 +182,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     {
       let mxE = -1e9, mnT = 1e9;
       for (let q = 0; q < ixPrepAdil.length; q++) { const ix = ixPrepAdil[q], v = hPrp[ix] + onceki.prp[ix]; if (eczIx[ix]) { if (v > mxE) mxE = v; } else if (v < mnT) mnT = v; }
-      if (mxE > -1e9 && mnT < 1e9 && mxE > mnT + 1e-6) hzAdil += AGIRLIK.tekOnce * (mxE - mnT);
+      if (mxE > -1e9 && mnT < 1e9 && mxE > mnT + 1e-6) hzAdil += (AGIRLIK.tekOnceUyari + AGIRLIK.tekOnce) * (mxE - mnT);
     }
     // Cuma + Cumartesi + Pazar nöbeti olan kişi kendi grubunda (eczacı / tekniker) hazırlamayı en son alır: grubundaki
     // diğerlerinin en azından fazla hazırlama almaz
@@ -270,7 +270,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
       gunYilPen = yilCeza(onceki.bPe, hThu) + yilCeza(onceki.bCu, hCum) + yilCeza(onceki.bCmt, hSat) + yilCeza(onceki.bPaz, hSun) + (resmiGunVar ? yilCeza(onceki.bRt, hRc) : 0);
     }
     // fmYil: fazla mesai (saat) eşitliği yıllık — her ay 8 saat kuralının yanında yıl toplamı da eşite yakın
-    return UYARI * (uy + hPrAv) + kesinPen + zPen + AGIRLIK.fmYil * ssIx2(hFm, onceki.fm, ixStaff) + hsYilPen + cuYilPen + peYilPen + nYilPen + cpYilPen + gunYilPen + devirPen
+    return UYARI * uy + AGIRLIK.istemiyor * hPrAv + kesinPen + zPen + AGIRLIK.fmYil * ssIx2(hFm, onceki.fm, ixStaff) + hsYilPen + cuYilPen + peYilPen + nYilPen + cpYilPen + gunYilPen + devirPen
       + AGIRLIK.nobetAy * ssIx(hCnt, ixStaff) + AGIRLIK.haftaSonuIs * ssIx(hWk, ixStaff) + AGIRLIK.prpYil * ssIx2(hPrp, onceki.prp, ixPrep)
       + AGIRLIK.prpGrup * (ssIx2(hPrp, onceki.prp, ixEczPrep) + ssIx2(hPrp, onceki.prp, ixTekPrep)) + (destekVar ? AGIRLIK.destekYil * ssIx2(hPrp, onceki.prp, ixDestek) : 0)
       + destekFazla + hzAdil + hsPen + AGIRLIK.gunTercihCarpani * soft + AGIRLIK.thuFazla * thuFazla + resmiPen;
@@ -280,7 +280,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
   function hesaplaJ(): number {
     sayaclariSifirla();
     let soft = 0, zPen = 0;
-    for (let i = 0; i < GUN_SAY; i++) { zPen += zGun(i) + UYARI * ihlalSayisi(i); katki(i, days[i].assigned, days[i].prep, 1); soft += softGun(i); }
+    for (let i = 0; i < GUN_SAY; i++) { zPen += zGun(i) + AGIRLIK.IHLAL * ihlalSayisi(i); katki(i, days[i].assigned, days[i].prep, 1); soft += softGun(i); }
     return ozetJ(soft, zPen);
   }
 
@@ -297,7 +297,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     for (let i = 0; i < GUN_SAY; i++) {
       tAs[i] = days[i].assigned; tPr[i] = days[i].prep;
       katki(i, tAs[i], tPr[i], 1);
-      bSoftGun[i] = softGun(i); bZGun[i] = zGun(i); bIhlGun[i] = UYARI * ihlalSayisi(i);
+      bSoftGun[i] = softGun(i); bZGun[i] = zGun(i); bIhlGun[i] = AGIRLIK.IHLAL * ihlalSayisi(i);
       bSoft += bSoftGun[i]; bZ += bZGun[i]; bIhl += bIhlGun[i];
     }
   }
@@ -323,7 +323,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
       if (bIhl > 0) for (let j = Math.max(0, g - 4); j <= Math.min(g + 4, GUN_SAY - 1); j++) {
         if (ihlDamga[j] === damga) continue;
         ihlDamga[j] = damga;
-        zPen += UYARI * ihlalSayisi(j) - bIhlGun[j];
+        zPen += AGIRLIK.IHLAL * ihlalSayisi(j) - bIhlGun[j];
       }
     }
     const r = ozetJ(soft, zPen);

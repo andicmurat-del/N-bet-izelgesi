@@ -26,7 +26,7 @@ type Hamle =
 
 export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi: () => number): void {
   const { A, days, staffList, tumHavuz, destekler, destekVar, degisimHavuzu, ayniTur, resmiGunVar, resmiGunDizi, hIx, gunDow } = K;
-  const { zorunluMu, gunGecerli, temelUygun, prepUygun, tatilGunu, yasak, gundeVar, persembeNobetliMi } = kural;
+  const { zorunluMu, gunGecerli, temelUygun, prepUygun, prepUygunGevsek, tatilGunu, yasak, gundeVar, persembeNobetliMi } = kural;
   const { hesaplaJ, tabanKur, jDelta, tabanIhlalli } = amac;
   // hamle sonrası gün kurallara uyuyor mu; gün zaten ihlalliyse temel kurallar korunarak hamle denenebilir (ihlali tek
   // kişiyle gidermek her zaman mümkün değil, ör. aynı iki kişi art arda iki gün): ihlal sayısını amaç fonksiyonu tartar,
@@ -148,7 +148,8 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
           for (const b of degisimHavuzu(eskiP, slot)) {
             if (b.id === eskiP.id || eskiListe.some((pp, ix) => ix !== slot && pp.id === b.id)) continue;
             days[i].prep = slot < eskiListe.length ? eskiListe.map((pp, ix) => (ix === slot ? gn(b) : pp)) : eskiListe.concat([gn(b)]);
-            if (prepUygun(b.id, i) && iyiMi(jDelta(i, -1, false))) enIyi = { tip: "hazKisi", i, slot, b };
+            // boş yere, başka kimse yoksa ertesi gün nöbetçi olan da yazılabilir (hafif ihlal; amaç fonksiyonu tartar)
+            if ((prepUygun(b.id, i) || (slot >= eskiListe.length && prepUygunGevsek(b.id, i))) && iyiMi(jDelta(i, -1, false))) enIyi = { tip: "hazKisi", i, slot, b };
             days[i].prep = eskiListe;
           }
         }

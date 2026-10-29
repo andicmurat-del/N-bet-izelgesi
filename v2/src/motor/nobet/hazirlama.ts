@@ -10,7 +10,7 @@ import type { AramaKurulumu } from "./kurulum";
 export function hazirlamaAta(K: AramaKurulumu, kural: Kurallar): void {
   const { A, days, tumHavuz, destekler, destekVar, DESTEK_AYLIK, prepAday, gunDow, oncekiAyCuma, prefGun, resmiGunDizi, HAZ_SAAT } = K;
   const { devir, resmiDv, sira } = A;
-  const { prepUygun, yasak, prepKomsu, persembeNobetliMi, tatilGunu } = kural;
+  const { prepUygun, prepUygunGevsek, yasak, prepKomsu, persembeNobetliMi, tatilGunu } = kural;
 
   const fmTop: Record<number, number> = {}, prpCnt: Record<number, number> = {}, rhCnt: Record<number, number> = {};
   tumHavuz.forEach(s => { fmTop[s.id] = devir.off[s.id] || 0; prpCnt[s.id] = 0; });
@@ -51,7 +51,12 @@ export function hazirlamaAta(K: AramaKurulumu, kural: Kurallar): void {
       adaylar = prepAday.filter(s => !secilmis.includes(s.id) && prepUygun(s.id, i))
         .sort((a, b) => (tur(a) - tur(b)) || (ist(a) - ist(b)) || (rH(a) - rH(b)) || fmTop[a.id] - fmTop[b.id] || prpAg(a.id) - prpAg(b.id) || sira[a.id] - sira[b.id]);
       if (!adaylar.length) {
-        // başka kimse uygun değilse (yer boş kalmasın): art arda hazırlama kuralı esnetilir, gün uyarılı görünür
+        // başka kimse uygun değilse önce ertesi gün nöbeti olan yazılır (kullanıcının seçtiği ilk esneyen kural)
+        adaylar = prepAday.filter(s => !secilmis.includes(s.id) && prepUygunGevsek(s.id, i))
+          .sort((a, b) => (tur(a) - tur(b)) || (ist(a) - ist(b)) || (rH(a) - rH(b)) || fmTop[a.id] - fmTop[b.id] || prpAg(a.id) - prpAg(b.id) || sira[a.id] - sira[b.id]);
+      }
+      if (!adaylar.length) {
+        // yine kimse yoksa (yer boş kalmasın): art arda hazırlama kuralı esnetilir, gün uyarılı görünür
         adaylar = (slot === 1 && destekVar ? prepAday.concat(destekler) : prepAday)
           .filter(s => !secilmis.includes(s.id) && !yasak(s.id, i) && !prepKomsu(s.id, i) && !persembeNobetliMi(s.id, i) && !(s.role === "destek" && prpCnt[s.id] >= DESTEK_AYLIK))
           .sort((a, b) => (ist(a) - ist(b)) || (rH(a) - rH(b)) || fmTop[a.id] - fmTop[b.id] || prpAg(a.id) - prpAg(b.id) || sira[a.id] - sira[b.id]);
