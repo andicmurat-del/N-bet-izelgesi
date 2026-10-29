@@ -69,7 +69,7 @@ export type Amac = ReturnType<typeof amacKur>;
 
 export function amacKur(K: AramaKurulumu, kural: Kurallar) {
   const { A, days, NH, hIx, GUN_SAY, gunDow, gunFm, resmiGunDizi, resmiGunVar, cuGunDizi, prefGun, izinOnceGun, zorunluGun,
-    oncekiAyPersembe, oncekiAyCuma, ixStaff, ixPrep, ixDestek, ixEczPrep, ixTekPrep, eczIx, ixFmKural, onceki, pv, hsMusait,
+    oncekiAyPersembe, oncekiAyCuma, ixStaff, ixPrep, ixDestek, ixEczPrep, ixTekPrep, eczIx, ixFmKural, ixNobetKural, onceki, pv, hsMusait,
     HS_SIFIR_IZIN, destekTamUyari, destekVar, DESTEK_AYLIK, HAZ_SAAT, prepAday, ayar } = K;
   const { sinir, devir } = A;
   const { gundeVar, tatilGunu, yasak, ihlalSayisi } = kural;
@@ -191,11 +191,16 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
       for (let q = 0; q < G.length; q++) { const ix = G[q]; if (!(hCum[ix] > 0 && hSat[ix] > 0 && hSun[ix] > 0) && hPrp[ix] < mnD) mnD = hPrp[ix]; }
       if (mnD < 1e9) for (let q = 0; q < G.length; q++) { const ix = G[q]; if (hCum[ix] > 0 && hSat[ix] > 0 && hSun[ix] > 0 && hPrp[ix] > mnD) hzAdil += AGIRLIK.ucluSonHaz * (hPrp[ix] - mnD); }
     }
-    // nöbet sayısı: kişiler arasında fark mümkünse en fazla 1, en fazla 2
+    // nöbet sayısı: kişiler arasında fark mümkünse en fazla 1 (ay içinde ayrılan dahil: nöbetleri kalan günlere sığar),
+    // en fazla 2 (kesin; ayın tamamında çalışanlar arasında)
+    if (ixNobetKural.length > 1) {
+      let mx = -1, mn = 1e9;
+      for (let q = 0; q < ixNobetKural.length; q++) { const v = hCnt[ixNobetKural[q]]; if (v > mx) mx = v; if (v < mn) mn = v; }
+      if (mx - mn > 1) hzAdil += AGIRLIK.nobetFark * (mx - mn - 1);
+    }
     if (ixFmKural.length > 1) {
       let mx = -1, mn = 1e9;
       for (let q = 0; q < ixFmKural.length; q++) { const v = hCnt[ixFmKural[q]]; if (v > mx) mx = v; if (v < mn) mn = v; }
-      if (mx - mn > 1) hzAdil += AGIRLIK.nobetFark * (mx - mn - 1);
       if (mx - mn > 2) { hzAdil += KESIN * (mx - mn - 2); uy++; }
     }
     // KESİN: destek personeli ayda tam ayardaki sayı kadar hazırlama alır

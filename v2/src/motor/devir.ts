@@ -12,7 +12,7 @@ export type Fark = Record<number, number>;
 function gunTipiDevir(B: Baglam, y: number, m: number, tipMi: (y: number, m: number, d: number) => boolean): Fark {
   const off: Fark = {};
   for (let mm = 0; mm < m; mm++) {
-    const sc = B.cizelge(y, mm); if (!sc || !Array.isArray(sc.days)) continue;
+    const sc = B.dengeCizelgesi(y, mm); if (!sc || !Array.isArray(sc.days)) continue;
     const gunler = sc.days.filter(d => d && tipMi(y, mm, d.day));
     if (!gunler.length) continue;
     const hv = B.staff.filter(s => yillikEsitRol(s.role) && aktifAydaMi(s, y, mm));
@@ -43,7 +43,7 @@ export const peDevir = (B: Baglam, y: number, m: number) => gunTipiDevir(B, y, m
 export function nobetDevir(B: Baglam, y: number, m: number): Fark {
   const off: Fark = {};
   for (let mm = 0; mm < m; mm++) {
-    const sc = B.cizelge(y, mm); if (!sc || !Array.isArray(sc.days)) continue;
+    const sc = B.dengeCizelgesi(y, mm); if (!sc || !Array.isArray(sc.days)) continue;
     const hv = B.staff.filter(s => yillikEsitRol(s.role) && aktifAydaMi(s, y, mm)); if (!hv.length) continue;
     const c: Fark = {}; hv.forEach(s => { c[s.id] = 0; });
     sc.days.forEach(d => { (d.assigned || []).forEach(p => { if (c[p.id] !== undefined) c[p.id]++; }); });
@@ -58,7 +58,7 @@ export function nobetDevir(B: Baglam, y: number, m: number): Fark {
 export function resmiDevir(B: Baglam, y: number, m: number) {
   const off: Fark = {}, say: Fark = {}, offH: Fark = {}, sayH: Fark = {};
   for (let mm = 0; mm < m; mm++) {
-    const sc = B.cizelge(y, mm); if (!sc || !Array.isArray(sc.days)) continue;
+    const sc = B.dengeCizelgesi(y, mm); if (!sc || !Array.isArray(sc.days)) continue;
     const rg = sc.days.filter(d => d && B.resmiTatilMi(y, mm, d.day)); if (!rg.length) continue;
     const cN: Fark = {}, cH: Fark = {};
     rg.forEach(d => {
@@ -94,8 +94,8 @@ export interface AyDevri {
 export function devirHesapla(B: Baglam, y: number, m: number): AyDevri {
   const cur = y * 12 + m;
   const aylar: { idx: number; y: number; m: number; st: Record<number, AyIstatistigi> }[] = [];
-  Object.keys(B.schedules || {}).forEach(k => {
-    const sch = B.schedules[k];
+  Object.keys(B.dengeSchedules || {}).forEach(k => {
+    const sch = B.dengeSchedules[k];
     if (!sch || !ayVeriVarMi(sch)) return;
     const idx = sch.year * 12 + sch.month;
     if (idx >= cur || sch.year !== y) return;

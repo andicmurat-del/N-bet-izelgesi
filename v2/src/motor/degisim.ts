@@ -142,17 +142,19 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
 function yilGorevSayilari(B: Baglam, y: number) {
   const t: Record<string, { nobet: number; prep: number; fm: number }> = {};
   for (let mm = 0; mm < 12; mm++) {
-    const sc = B.cizelge(y, mm); if (!sc || !Array.isArray(sc.days)) continue;
+    const sc = B.dengeCizelgesi(y, mm); if (!sc || !Array.isArray(sc.days)) continue;
     const st = ayIstatistik(B, sc);
     Object.keys(st).forEach(id => { const a = t[id] || (t[id] = { nobet: 0, prep: 0, fm: 0 }), s = st[Number(id)]; a.nobet += s.nobet || 0; a.prep += s.prep || 0; a.fm += s.fm || 0; });
   }
   return t;
 }
 
-/** Görevden düşen kişinin (cik) yerine geçebilecekler: kurallara uyanlar önce, sonra yıl içinde en az görev alan */
-export function yerineAdaylar(B: Baglam, y: number, m: number, gun: number, cik: number, gorev: "N" | "H") {
-  const G = puantajIzgarasi(B, y, m), g = G.gunler[gun - 1], H = gorev === "H", Y = yilGorevSayilari(B, y);
-  const out: { id: number; ad: string; rol: string; engel: number; uyari: number; yil: number; fm: number; k: DegisimSonucu }[] = [];
+/** Görevden düşen kişinin (cik) yerine geçebilecekler: kurallara uyanlar önce, sonra yıl içinde en az görev alan.
+ *  sirayla (izin/rapor nedeniyle yerine geçme): yerine tutma herkese sırayla gelir — yıl içinde en az yerine tutan,
+ *  eşitse en uzun zamandır tutmayan önce */
+export function yerineAdaylar(B: Baglam, y: number, m: number, gun: number, cik: number, gorev: "N" | "H", sirayla = false) {
+  const G = puantajIzgarasi(B, y, m), g = G.gunler[gun - 1], H = gorev === "H", Y = yilGorevSayilari(B, y), YT = B.yerineTutma(y, gorev);
+  const out: { id: number; ad: string; rol: string; engel: number; uyari: number; yil: number; fm: number; yerine: number; son: number; k: DegisimSonucu }[] = [];
   G.satirlar.forEach(r => {
     const id = r.s.id; if (id === cik) return;
     if (H ? !(hazirlamaRol(r.s.role) || r.s.role === "destek") : !nobetciRol(r.s.role)) return;
@@ -161,8 +163,10 @@ export function yerineAdaylar(B: Baglam, y: number, m: number, gun: number, cik:
     if (B.kesinYasak(id, y, m, gun)) return;
     const k = degisimDenetle(B, { y, m, gorev: H ? "H" : "N", tur: "devir", gun, cik, yer: id });
     const yt = Y[id] || { nobet: 0, prep: 0, fm: 0 };
-    out.push({ id, ad: r.s.name, rol: r.s.role, engel: k.engel.length, uyari: k.uyari.length, yil: H ? yt.prep : yt.nobet, fm: yt.fm, k });
+    const t = YT[id] || { n: 0, son: 0 };
+    out.push({ id, ad: r.s.name, rol: r.s.role, engel: k.engel.length, uyari: k.uyari.length, yil: H ? yt.prep : yt.nobet, fm: yt.fm, yerine: t.n, son: t.son, k });
   });
-  out.sort((a, b) => (Number(a.engel > 0) - Number(b.engel > 0)) || a.uyari - b.uyari || a.yil - b.yil || a.fm - b.fm || a.ad.localeCompare(b.ad, "tr"));
+  out.sort((a, b) => (Number(a.engel > 0) - Number(b.engel > 0)) || (sirayla ? a.yerine - b.yerine : 0) || a.uyari - b.uyari
+    || (sirayla ? a.son - b.son : 0) || a.yil - b.yil || a.fm - b.fm || a.ad.localeCompare(b.ad, "tr"));
   return out;
 }

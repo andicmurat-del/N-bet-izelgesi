@@ -1,7 +1,8 @@
 <script lang="ts">
   // Ay içinde gelişen izin ve rapor: kişi, tür ve tarih aralığı seçilir; puantaja etkisi ve kişinin o aralıktaki
-  // nöbet/hazırlama görevleri gösterilir, her görev için yerine geçecek kişi önerilir (kurallara uyan, yıl içinde
-  // en az görev alan önce). Kaydedilince yerine geçenler çizelgeye ve puantaja işlenir.
+  // nöbet/hazırlama görevleri gösterilir, her görev için yerine geçecek kişi önerilir: kurallara uyanlar arasında yerine
+  // tutma sırayla gelir (yıl içinde en az yerine tutan önce). Kaydedilince yerine geçenler çizelgeye ve puantaja işlenir;
+  // yıllık eşitlikte görev raporlu / izinli kişinin sayılır (telafi gerekmez).
   import { untrack } from "svelte";
   import { depo, aydaCalisanlar } from "../../veri/depo.svelte";
   import { yerineAdaylarHesapla } from "../../motor";
@@ -11,7 +12,7 @@
   import Ikon from "../ortak/Ikon.svelte";
 
   type Kontrol = { engel: string[]; uyari: string[]; bilgi: string[] };
-  type Aday = { id: number; ad: string; rol: string; engel: number; uyari: number; yil: number; fm: number; k: Kontrol };
+  type Aday = { id: number; ad: string; rol: string; engel: number; uyari: number; yil: number; fm: number; yerine: number; k: Kontrol };
 
   const y = $derived(depo.yil), m = $derived(depo.ay), dim = $derived(gunSayisi(y, m));
   const SIRA: Record<string, number> = { eczaci: 0, nobetci: 1, teknisyen: 2, destek: 3, servis: 4 };
@@ -50,7 +51,7 @@
   const adaylar = $derived.by(() => {
     if (!r || !etki) return [] as { gun: number; gorev: Gorev; l: Aday[] }[];
     const v = $state.snapshot(depo.veri);
-    return etki.cakisma.map(cz => ({ ...cz, l: yerineAdaylarHesapla(v, y, m, cz.gun, r.s.id, cz.gorev) as Aday[] }));
+    return etki.cakisma.map(cz => ({ ...cz, l: yerineAdaylarHesapla(v, y, m, cz.gun, r.s.id, cz.gorev, true) as Aday[] }));
   });
   // varsayılan seçim: ilk kural dışı olmayan aday; kullanıcının geçerli seçimi korunur
   $effect(() => {
@@ -77,7 +78,7 @@
     }
     const adi = r.s.name;
     izinUygula(y, m, r.s.id, tur, bas, bit, sec.map(({ gun, gorev, yer }) => ({ gun, gorev, yer })));
-    durum = { tur: "tamam", metin: `${adi}: ${IZIN_AD[tur].toLocaleLowerCase("tr")} kaydedildi${sec.some(s => s.yer) ? "; yerine geçenler çizelgeye ve puantaja işlendi." : "."}` };
+    durum = { tur: "tamam", metin: `${adi}: ${IZIN_AD[tur].toLocaleLowerCase("tr")} kaydedildi${sec.some(s => s.yer) ? "; yerine geçenler çizelgeye ve puantaja işlendi (yıllık eşitlikte görev " + adi + " adına sayılır)." : "."}` };
     kisi = ""; onayAdimi = null;
   }
 
@@ -95,7 +96,7 @@
 <div class="duzen">
   <section class="kart form" aria-labelledby="izin-baslik">
     <h2 id="izin-baslik">Yeni kayıt</h2>
-    <p class="aciklama">Ay içinde gelişen rapor, yıllık izin ve fazla mesai karşılığı nöbet izni buradan girilir. Kişinin o günlerdeki nöbet ve hazırlamaları için yerine geçecek kişi önerilir.</p>
+    <p class="aciklama">Ay içinde gelişen rapor, yıllık izin ve fazla mesai karşılığı nöbet izni buradan girilir. Kişinin o günlerdeki nöbet ve hazırlamaları için yerine geçecek kişi önerilir: yerine tutma sırayla gelir (yıl içinde en az yerine tutan önce). Yıllık eşitlikte görev raporlu / izinli kişinin sayılır; sonradan telafi edilmez.</p>
     <fieldset class="turler">
       <legend>Tür</legend>
       {#each TURLER as t}<label class:secili={tur === t}><input type="radio" name="izin-tur" value={t} bind:group={tur} />{IZIN_AD[t].replace(/ \(.*\)$/, "")}</label>{/each}
@@ -128,7 +129,7 @@
         <p><b>{gunAdi(a.gun)}</b>: {r?.s.name} {a.gorev === "H" ? "hazırlama görevinde" : "nöbetçi"}.</p>
         <label class="alan"><span>Yerine {a.gorev === "H" ? "hazırlama yapacak" : "nöbet tutacak"}</span>
           <select class="girdi" onchange={e => (secim[a.gun] = e.currentTarget.value)}>
-            {#each a.l as x}<option value={String(x.id)} selected={String(x.id) === secim[a.gun]}>{x.ad} · yıl içinde {x.yil} {a.gorev === "H" ? "hazırlama" : "nöbet"}{x.engel ? " · kural dışı" : x.uyari ? " · uyarı var" : ""}</option>{/each}
+            {#each a.l as x}<option value={String(x.id)} selected={String(x.id) === secim[a.gun]}>{x.ad} · yıl içinde {x.yerine ? `${x.yerine} kez yerine tuttu` : "yerine tutmadı"}{x.engel ? " · kural dışı" : x.uyari ? " · uyarı var" : ""}</option>{/each}
             <option value="0" selected={secim[a.gun] === "0"}>Şimdilik boş bırak (sonra nöbet değişimiyle ayarlanır)</option>
           </select>
         </label>

@@ -17,6 +17,8 @@ export interface MotorGunu {
 }
 export interface MotorCizelgesi { year: number; month: number; days: MotorGunu[]; [k: string]: unknown }
 export type PuantajAyi = Record<string, Record<string, string>>;
+/** motorun okuduğu değişim kaydı alanları */
+interface Degisimi { y: number; m: number; gun: number; cik: number; yer: number; cikAd?: string; yerYeni: "N" | "H"; zorunlu?: true; sebep?: string }
 
 type Nesne<T> = Record<string, T>;
 const nesne = <T>(x: unknown): Nesne<T> => (x && typeof x === "object" && !Array.isArray(x) ? (x as Nesne<T>) : {});
@@ -31,6 +33,10 @@ export class Baglam {
   puantaj: Nesne<PuantajAyi>;
   acil: Nesne<Nesne<number[]>>;
   servisKayit: Nesne<any>;
+  /** puantajdaki değişim kayıtları (nöbet değişimi, izin/rapor nedeniyle yerine geçme) */
+  degisimler: Degisimi[];
+  /** yıllık eşitlik için çizelgeler: izin/rapor nedeniyle yerine geçmeler görevden çıkanın sayılır */
+  readonly dengeSchedules: Nesne<MotorCizelgesi>;
 
   /** veri kopyalanır: motorun yaptığı değişiklikler (taslak fazla mesai yenileme, varsayımsal puantaj) girdiye yansımaz */
   constructor(veri: unknown) {
@@ -39,6 +45,39 @@ export class Baglam {
     this.prefs = nesne(v.prefs); this.manualTatil = nesne(v.manualTatil); this.arife = nesne(v.arife);
     this.settings = nesne(v.settings); this.schedules = nesne(v.schedules); this.puantaj = nesne(v.puantaj); this.acil = nesne(v.acil);
     this.servisKayit = nesne(v.servisKayit);
+    this.degisimler = Array.isArray(v.degisimler) ? v.degisimler.filter((z: unknown) => z && typeof z === "object") : [];
+    this.dengeSchedules = this.dengeKur();
+  }
+
+  /** Raporlu / izinli kişinin yerine geçme çizelgeye işlenir (gün gerçekte tutanı gösterir), ama yıllık eşitlikte görev
+   *  çıkanın sayılır: sanki o tutmuş gibi. Yerine tutan fazla, raporlu kişi eksik görünmez; sonraki aylarda telafi
+   *  edilmez. Kayıtlar sondan başa uygulanır: yerine geçen de sonradan raporlanırsa görev ilk kişiye döner. */
+  private dengeKur(): Nesne<MotorCizelgesi> {
+    const zor = this.degisimler.filter(z => z.zorunlu === true);
+    if (!zor.length) return this.schedules;
+    const out: Nesne<MotorCizelgesi> = { ...this.schedules }, kopya = new Set<string>();
+    for (let q = zor.length - 1; q >= 0; q--) {
+      const z = zor[q], k = ayAnahtari(z.y, z.m), sc = this.schedules[k];
+      if (!sc || !Array.isArray(sc.days) || !sc.days[z.gun - 1]) continue;
+      if (!kopya.has(k)) { out[k] = JSON.parse(JSON.stringify(sc)); kopya.add(k); }
+      const g = out[k].days[z.gun - 1], liste = z.yerYeni === "H" ? g.prep : g.assigned;
+      const i = (liste || []).findIndex(p => p.id === z.yer);
+      if (i < 0 || liste.some(p => p.id === z.cik)) continue;
+      const c = this.kisi(z.cik);
+      liste[i] = { id: z.cik, name: c ? c.name : String(z.cikAd || ""), role: c ? c.role : liste[i].role };
+    }
+    return out;
+  }
+  /** yıllık eşitlik hesabının çizelgesi (izin/rapor nedeniyle yerine geçmeler görevden çıkanın) */
+  dengeCizelgesi(y: number, m: number): MotorCizelgesi | undefined { return this.dengeSchedules[ayAnahtari(y, m)]; }
+  /** yıl içinde izin/rapor nedeniyle yerine tutma: kişi başı sayı ve son tarih (görev türüne göre) */
+  yerineTutma(y: number, gorev: "N" | "H"): Record<number, { n: number; son: number }> {
+    const t: Record<number, { n: number; son: number }> = {};
+    this.degisimler.forEach(z => {
+      if (!z.sebep || z.y !== y || z.yerYeni !== gorev) return;
+      const a = (t[z.yer] ??= { n: 0, son: 0 }); a.n++; a.son = Math.max(a.son, z.y * 400 + z.m * 32 + z.gun);
+    });
+    return t;
   }
 
   // ---- ayarlar ----

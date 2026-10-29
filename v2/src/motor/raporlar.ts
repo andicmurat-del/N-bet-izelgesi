@@ -128,12 +128,13 @@ export const DENGE_KOL: { k: DengeAnahtari; t: string; saat?: boolean }[] = [
 type DengeSayilari = Record<DengeAnahtari, number> & { aylar?: number[] };
 
 /** Yıllık denge onaylanan çizelgeden hesaplanır (adalet referansı): puantajdaki gönüllü nöbet değişimleri sayılmaz;
- *  izin/rapor nedeniyle yerine geçmeler çizelgeye işlendiği için sayılır. Fazla mesai = nöbet + hazırlama saatleri. */
+ *  izin/rapor nedeniyle yerine geçmelerde görev raporlu / izinli kişinin sayılır (telafi gerekmez).
+ *  Fazla mesai = nöbet + hazırlama saatleri. */
 function cizelgeYillik(B: Baglam, yil: number) {
   const t: Record<string, DengeSayilari> = {}, aylar: number[] = [], hz = B.sayi("hazSaat");
   const bos = (): DengeSayilari => ({ nobet: 0, cu: 0, cmt: 0, paz: 0, pe: 0, rt: 0, prep: 0, fm: 0 });
   for (let mm = 0; mm < 12; mm++) {
-    const sc = B.cizelge(yil, mm); if (!sc || !Array.isArray(sc.days) || !ayVeriVarMi(sc)) continue;
+    const sc = B.dengeCizelgesi(yil, mm); if (!sc || !Array.isArray(sc.days) || !ayVeriVarMi(sc)) continue;
     aylar.push(mm);
     const dim = ayGunSayisi(yil, mm), kisiAy: Record<string, true> = {};
     sc.days.forEach(d => {
