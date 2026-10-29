@@ -89,3 +89,34 @@ describe("kadro yetmezse önce hazırlama ertesi gün nöbet esner", () => {
     expect(r.warnings.some(w => /hazırlamanın ertesi günü nöbet/.test(w))).toBe(true);
   });
 });
+
+describe("eş durumu isteyenler birlikte yazılamıyorsa biri yazılır", () => {
+  // iki tekniker aynı gün eş durumu isterse ikisi birden yazılınca gün eczacısız kalır: biri yazılır (yıl içinde eş durumu
+  // daha az karşılanan), öbür yer eczacının; diğerine uyarı çıkar
+  const gun = 14, T1 = 9, T2 = 10;
+  const kur = (onceki) => {
+    const prefs = { [T1 + "-" + Y + "-" + M + "-" + gun]: "esVar", [T2 + "-" + Y + "-" + M + "-" + gun]: "esVar" };
+    const schedules = {};
+    if (onceki) {   // Eylül'de T1'in eş durumu bir kez karşılanmış
+      prefs[T1 + "-" + Y + "-" + (M - 1) + "-10"] = "esVar";
+      const days = cizelgeOlustur({ ...veri, prefs }, Y, M - 1, { saat: () => 0 }).days;
+      expect(days[9].assigned.some(p => p.id === T1)).toBe(true);
+      schedules[Y + "-" + (M - 1)] = { year: Y, month: M - 1, days };
+    }
+    const v = { ...veri, prefs, schedules };
+    return { v, r: cizelgeOlustur(v, Y, M, { saat: () => 0 }) };
+  };
+  const bak = ({ v, r }, yazilan, yazilmayan) => {
+    const g = r.days[gun - 1];
+    expect(g.assigned.some(p => ["eczaci", "nobetci"].includes(p.role)), "günde eczacı olmalı").toBe(true);
+    expect(g.assigned.some(p => p.id === yazilan)).toBe(true);
+    expect(g.assigned.some(p => p.id === yazilmayan)).toBe(false);
+    expect(g.conflict).toBe(false);
+    expect(r.warnings.some(w => /birlikte yazılamıyor/.test(w))).toBe(true);
+    // elle düzenleme denetimi de yazılmayan için hata değil uyarı verir
+    const bul = gunuDenetle(v, { year: Y, month: M, days: r.days }, gun, g.assigned, g.prep).filter(b => /eş durumu/.test(b.t));
+    expect(bul.map(b => b.sev)).toEqual(["uyari"]);
+  };
+  test("yıl içinde eşitse ilk sıradaki yazılır", () => bak(kur(false), T1, T2));
+  test("yıl içinde eş durumu daha az karşılanan yazılır", () => bak(kur(true), T2, T1));
+});

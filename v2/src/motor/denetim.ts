@@ -35,8 +35,13 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
   if (nb.length && !nb.some(p => eczaciMi(p.role))) ekle("hata", "Bu günde eczacı yok.");
   if (nb.filter(p => p.role === "nobetci").length > 1 && !ikiDisaridanSerbestMi(y, m, day.day)) ekle("hata", "Dışarıdan nöbete gelen iki eczacı aynı güne birlikte nöbetçi yazılmaz (Cuma ve Cumartesi hariç; biri hazırlama olabilir).");
   if (nb.length < 2) ekle("uyari", "Günde 2 nöbetçi olmalı; ikinci kişi boş.");
-  B.staff.filter(s => nobetciRol(s.role) && B.tercih(s.id, y, m, day.day) === "esVar" && aktifGunMu(s, y, m, day.day) && !nb.some(q => q.id === s.id))
-    .forEach(s => ekle("hata", s.name + " için eş durumu: bu güne nöbetçi yazılması gerekiyor."));
+  // eş durumu: hepsi birlikte yazılamıyorsa (günde 2 nöbetçi, en az 1 eczacı) sığmayanlar için yalnız uyarı
+  const esIstek = B.staff.filter(s => nobetciRol(s.role) && B.tercih(s.id, y, m, day.day) === "esVar" && aktifGunMu(s, y, m, day.day));
+  const esYazilmayan = esIstek.filter(s => !nb.some(q => q.id === s.id));
+  const esSigmaz = Math.max(0, esIstek.length - (esIstek.some(s => eczaciMi(s.role)) ? 2 : 1));
+  esYazilmayan.forEach(s => esYazilmayan.length <= esSigmaz
+    ? ekle("uyari", s.name + " için eş durumu: bu güne istiyor, ama eş durumu isteyenler birlikte yazılamıyor (günde 2 nöbetçi, en az 1 eczacı).")
+    : ekle("hata", s.name + " için eş durumu: bu güne nöbetçi yazılması gerekiyor."));
 
   nb.forEach(p => {
     [-1, 1].forEach(k => {

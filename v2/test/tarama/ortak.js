@@ -84,8 +84,10 @@ export function denetle(veri, y, m, r0, kilitli) {
       if ([i - 1, i, i + 1].some(k => k >= 0 && k < dim && nob[k].has(p.id))) ihlal.push(p.name + " hazırlama komşu nöbet");
       const dw = hg(y, m, d); if (dw === 5 || dw === 6) { const k = i - (dw === 5 ? 2 : 3); if (k >= 0 && nob[k].has(p.id)) ihlal.push(p.name + " Perşembe nöbetçisine hafta sonu hazırlama"); }
     });
-    // eş durumu karşılanmadı
-    B.staff.filter(s => ["eczaci", "teknisyen", "nobetci"].includes(s.role) && zorunlu(s.id) && aktifGunMu(s, y, m, d) && !nob[i].has(s.id)).forEach(s => ihlal.push(s.name + " eş durumu karşılanmadı"));
+    // eş durumu karşılanmadı (hepsi birlikte yazılamıyorsa — günde 2 nöbetçi, en az 1 eczacı — sığmayanlar hariç)
+    const esIstek = B.staff.filter(s => ["eczaci", "teknisyen", "nobetci"].includes(s.role) && zorunlu(s.id) && aktifGunMu(s, y, m, d));
+    const esYok = esIstek.filter(s => !nob[i].has(s.id));
+    if (esYok.length > Math.max(0, esIstek.length - (esIstek.some(s => eczaciMi(s.role)) ? 2 : 1))) esYok.forEach(s => ihlal.push(s.name + " eş durumu karşılanmadı"));
     if (ihlal.length && !g.conflict) hatalar.push(yer + " İŞARETSİZ İHLAL: " + ihlal.join("; "));
   });
   return hatalar;
