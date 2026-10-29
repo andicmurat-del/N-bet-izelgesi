@@ -176,7 +176,7 @@
   {#if calisiyor}
     <div class="kart calisiyor" role="status" aria-live="polite">
       <span class="donen" aria-hidden="true"></span>
-      <div><b>Çizelge hazırlanıyor</b><p>Kurallar ve eşitlik hedefleri için binlerce olasılık deneniyor; birkaç saniye sürer.</p></div>
+      <div><b>Çizelge hazırlanıyor</b><p>Kurallar ve eşitlik hedefleri için binlerce olasılık deneniyor; birkaç saniye sürer. Uyarısız bir çizelge bulunamazsa farklı başlangıçlarla yeniden aranır ve en az uyarılı olan seçilir; bu durumda yarım dakikaya kadar sürebilir.</p></div>
     </div>
   {/if}
 
