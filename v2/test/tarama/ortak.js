@@ -63,7 +63,8 @@ export function denetle(veri, y, m, r0, kilitli) {
     const zorunlu = id => B.tercih(id, y, m, d) === "esVar";
     if (!g.assigned.some(p => eczaciMi(p.role))) ihlal.push("eczacı yok");
     if (g.assigned.length < 2) ihlal.push("2 nöbetçi yok");
-    if (g.assigned.filter(p => p.role === "nobetci").length > 1 && !g.assigned.every(p => zorunlu(p.id))) ihlal.push("iki dışarıdan");
+    // dışarıdan gelen iki eczacı aynı gün birlikte olmaz (Cuma ve Cumartesi olabilir)
+    if (g.assigned.filter(p => p.role === "nobetci").length > 1 && !g.assigned.every(p => zorunlu(p.id)) && hg(y, m, d) !== 4 && hg(y, m, d) !== 5) ihlal.push("iki dışarıdan");
     g.assigned.forEach(p => {
       if (B.kesinYasak(p.id, y, m, d)) ihlal.push(p.name + " yasaklı günde nöbet");
       if (zorunlu(p.id)) return;

@@ -1,7 +1,7 @@
 // Elle gün düzenlemede anlık kural denetimi (gün penceresi): seçilen nöbetçiler ve hazırlama personeli için
 // hata / uyarı / bilgi listesi.
 import type { Gorevli } from "../veri/tipler";
-import { aktifGunMu, eczaciMi, nobetciRol, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
+import { aktifGunMu, eczaciMi, ikiDisaridanSerbestMi, nobetciRol, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
 import { fmKuralKisileri, hsKuralIhlali, hsSayilari } from "./istatistik";
 import { DURUM_AD, FM_MAX_FARK } from "./sabitler";
 import { AYLAR, ayGunSayisi, CUMA, CUMARTESI, haftaGunu, isoNo, oncekiAy, PAZAR, PERSEMBE, sonrakiAy, tarihNo } from "./takvim";
@@ -33,7 +33,7 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
   const thuHaftaSonu = B.ayar("thuHaftaSonu");
 
   if (nb.length && !nb.some(p => eczaciMi(p.role))) ekle("hata", "Bu günde eczacı yok.");
-  if (nb.filter(p => p.role === "nobetci").length > 1) ekle("hata", "Dışarıdan nöbete gelen iki eczacı aynı güne birlikte nöbetçi yazılmaz (biri hazırlama olabilir).");
+  if (nb.filter(p => p.role === "nobetci").length > 1 && !ikiDisaridanSerbestMi(y, m, day.day)) ekle("hata", "Dışarıdan nöbete gelen iki eczacı aynı güne birlikte nöbetçi yazılmaz (Cuma ve Cumartesi hariç; biri hazırlama olabilir).");
   if (nb.length < 2) ekle("uyari", "Günde 2 nöbetçi olmalı; ikinci kişi boş.");
   B.staff.filter(s => nobetciRol(s.role) && B.tercih(s.id, y, m, day.day) === "esVar" && aktifGunMu(s, y, m, day.day) && !nb.some(q => q.id === s.id))
     .forEach(s => ekle("hata", s.name + " için eş durumu: bu güne nöbetçi yazılması gerekiyor."));
@@ -81,10 +81,10 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
     });
     if (dw === CUMA) {
       const gg = days[idx + 2];
-      if (gg && gg.assigned.some(q => q.id === p.id)) ekle("uyari", p.name + " Cuma nöbetçisi; aynı hafta Pazar (" + gg.day + ". gün) de nöbetçi.");
-      if (gg && (gg.prep || []).some(q => q.id === p.id)) ekle("uyari", p.name + " Cuma nöbetçisi; aynı hafta Pazar (" + gg.day + ". gün) hazırlama görevinde.");
+      if (gg && gg.assigned.some(q => q.id === p.id)) ekle("bilgi", p.name + " Cuma nöbetçisi; aynı hafta Pazar (" + gg.day + ". gün) de nöbetçi (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).");
+      if (gg && (gg.prep || []).some(q => q.id === p.id)) ekle("bilgi", p.name + " Cuma nöbetçisi; aynı hafta Pazar (" + gg.day + ". gün) hazırlama görevinde (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).");
     }
-    if (dw === PAZAR) { const gg = days[idx - 2]; if (gg && gg.assigned.some(q => q.id === p.id)) ekle("uyari", p.name + " aynı haftanın Cuma günü (" + gg.day + ". gün) nöbetçi; Cuma ve Pazar aynı kişiye yazılmamalı."); }
+    if (dw === PAZAR) { const gg = days[idx - 2]; if (gg && gg.assigned.some(q => q.id === p.id)) ekle("bilgi", p.name + " aynı haftanın Cuma günü (" + gg.day + ". gün) de nöbetçi (kural dışı değil; eşitlik gerekmiyorsa kaçınılır)."); }
     if ((dw === CUMARTESI || dw === PAZAR) && thuHaftaSonu) { const gg = days[idx - (dw === CUMARTESI ? 2 : 3)]; if (gg && gg.assigned.some(q => q.id === p.id)) ekle("uyari", p.name + " aynı haftanın Perşembe günü (" + gg.day + ". gün) nöbetçi."); }
     if (dw === CUMARTESI || dw === PAZAR) {
       hs++;
