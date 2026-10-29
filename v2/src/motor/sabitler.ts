@@ -77,7 +77,7 @@ export const AGIRLIK = Object.freeze({
   destekYil: 25,                           // destek personeli yıllık hazırlama dengesi (kare sapma)
   haftaSonuIs: 20,                         // aylık hafta sonu nöbeti + hazırlama sayısı dengesi (kare sapma)
   istiyor: 5,                              // "istiyor" işaretli güne nöbet (ödül; etkin: ×3 = 15)
-  cuPaz: 2,                                // Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması (etkin: ×3 = 6); yalnız eşitliği
+  cuPaz: 2000,                                // Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması (etkin: ×3 = 6); yalnız eşitliği
                                            // bozmuyorsa kaçınılır (art arda gün kuralı zaten var)
   araGun: 1,                               // iki nöbet arası ayardaki en az günden kısa (etkin: ×3 = 3)
   gunTercihCarpani: 3,                     // günlük tercih toplamının (thuHs, cuPaz, istiyor, araGun) çarpanı
