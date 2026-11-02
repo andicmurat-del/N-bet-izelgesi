@@ -196,3 +196,20 @@ describe("acil eşitliği günlük eczanedeki gibi: izinli günler düşülür, 
     expect(Math.max(...l2) - Math.min(...l2)).toBeLessThanOrEqual(1);
   });
 });
+
+describe("acil eşitliği gün türlerine göre (günlük eczanedeki gibi)", () => {
+  test("yıl boyunca Perşembe, Cuma, Cumartesi, Pazar ayrı ayrı eşit", () => {
+    const v = JSON.parse(JSON.stringify({ ...veri, prefs: {} }));
+    const kadro = [1, 2, 13, 14, 15, 16], n = {};
+    kadro.forEach(id => { n[id] = { top: 0, pe: 0, cu: 0, cmt: 0, paz: 0 }; });
+    for (let m = 0; m < 6; m++) {
+      const r = acilHesapla(v, Y, m);
+      v.acil[`${Y}-${m}`] = Object.fromEntries(r.gunler.map(g => [g.gun, g.ids]));
+      r.gunler.forEach(g => {
+        const dw = (new Date(Y, m, g.gun).getDay() + 6) % 7;
+        g.ids.forEach(id => { n[id].top++; if (dw === 3) n[id].pe++; if (dw === 4) n[id].cu++; if (dw === 5) n[id].cmt++; if (dw === 6) n[id].paz++; });
+      });
+    }
+    for (const t of ["top", "pe", "cu", "cmt", "paz"]) expect(fark(kadro.map(id => n[id][t])), t).toBeLessThanOrEqual(1);
+  });
+});

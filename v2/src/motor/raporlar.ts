@@ -90,12 +90,16 @@ export function acilAdaylari(B: Baglam, y: number, m: number, g: number, ids: nu
 /** Yılın acil eczane ve öğlen nöbeti dağılımı: kişi başı ay ay sayılar, yıl toplamı; acilde hafta sonu / tatil,
  *  öğlende Cuma ayrıca. Kayıt olan ya da yıl içinde o kadroda çalışan herkes listelenir. */
 export function acilOglenRaporu(B: Baglam, yil: number) {
-  const acil = new Map<number, { aylar: number[]; tatil: number }>(), oglen = new Map<number, { aylar: number[]; cuma: number }>();
-  const ac = (id: number) => { if (!acil.has(id)) acil.set(id, { aylar: Array(12).fill(0), tatil: 0 }); return acil.get(id)!; };
+  const acil = new Map<number, { aylar: number[]; tatil: number; pe: number; cu: number; cmt: number; paz: number; resmi: number }>(), oglen = new Map<number, { aylar: number[]; cuma: number }>();
+  const ac = (id: number) => { if (!acil.has(id)) acil.set(id, { aylar: Array(12).fill(0), tatil: 0, pe: 0, cu: 0, cmt: 0, paz: 0, resmi: 0 }); return acil.get(id)!; };
   const og = (id: number) => { if (!oglen.has(id)) oglen.set(id, { aylar: Array(12).fill(0), cuma: 0 }); return oglen.get(id)!; };
   for (let m = 0; m < 12; m++) {
     B.staff.forEach(s => { if (!aktifAydaMi(s, yil, m)) return; if (acilKadrosunda(s)) ac(s.id); if (s.role === "eczaci" || s.role === "teknisyen") og(s.id); });
-    for (const [gun, l] of Object.entries(B.acil[ayAnahtari(yil, m)] || {})) l.forEach(id => { const r = ac(id); r.aylar[m]++; if (B.tatilMi(yil, m, Number(gun))) r.tatil++; });
+    for (const [gun, l] of Object.entries(B.acil[ayAnahtari(yil, m)] || {})) l.forEach(id => {
+      const r = ac(id), d = Number(gun), dw = haftaGunu(yil, m, d), resmi = B.resmiTatilMi(yil, m, d);
+      r.aylar[m]++; if (B.tatilMi(yil, m, d)) r.tatil++;
+      if (dw === PERSEMBE && !resmi) r.pe++; if (dw === CUMA && !resmi) r.cu++; if (dw === CUMARTESI) r.cmt++; if (dw === PAZAR) r.paz++; if (resmi) r.resmi++;
+    });
     for (const [gun, k] of Object.entries(B.oglen[ayAnahtari(yil, m)] || {})) [...k.e, ...k.t].forEach(id => { const r = og(id); r.aylar[m]++; if (haftaGunu(yil, m, Number(gun)) === CUMA) r.cuma++; });
   }
   const satir = <T extends { aylar: number[] }>(id: number, r: T) => { const s = B.kisi(id); return { id, ad: s?.name ?? "(silinmiş kişi)", rol: s?.role ?? "", ...r, top: r.aylar.reduce((t, x) => t + x, 0) }; };

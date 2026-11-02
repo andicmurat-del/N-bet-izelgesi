@@ -1,14 +1,14 @@
 // Acil eczane nöbet listesi: her gün 2 nöbetçi (24 saat). Eczane nöbet çizelgesinden bağımsız oluşturulur; hazırlama ve
 // "her gün en az bir eczacı" kuralı yoktur. Nöbet tutanlar: acil servis personeli ve Personel'de "acilde nöbet tutar"
 // işaretli eczacılar (görevi eczacı kalır; günlük eczanede mesai yapar, eczane nöbeti ve hazırlaması tutmaz). Kurallar eczane nöbetindeki gibi: izinli / eş durumu yok / çalışma dönemi
-// dışındaki güne yazılmaz, art arda iki gün ve 5 günde 3 nöbet olmaz, mümkünse en az 3 gün ara, ayda en fazla bir
+// dışındaki güne yazılmaz, art arda iki gün ve 5 günde 3 nöbet olmaz, mümkünse 2 gün aradan kaçınılır, ayda en fazla bir
 // Cumartesi ve bir Pazar; izin, rapor (puantaj), eş durumu ve istiyor / istemiyor tercihleri eczane nöbetindeki gibi
-// (eş durumu var: o gün yazılır; istemiyor: mümkünse yazılmaz; ertesi gün izne çıkana mümkünse yazılmaz); eşitlik ayrı (yalnız acil nöbetleri) ve yıl boyunca: toplam nöbet ve hafta sonu / resmi tatil
-// nöbeti; herkesin payı yazılabildiği gün sayısına göredir (izinli / raporlu günler düşülür, telafi istenmez). Kişinin aynı gün ya da komşu günde eczane nöbeti / hazırlaması varsa o güne yazılmaz (iki liste çakışmaz).
+// (eş durumu var: o gün yazılır; istemiyor: mümkünse yazılmaz; ertesi gün izne çıkana mümkünse yazılmaz); eşitlik ayrı (yalnız acil nöbetleri) ve yıl boyunca: toplam nöbet ile Perşembe, Cuma, Cumartesi, Pazar
+// ve resmi tatil nöbetleri ayrı ayrı (günlük eczanedeki gibi); herkesin payı yazılabildiği gün sayısına göredir (izinli / raporlu günler düşülür, telafi istenmez). Kişinin aynı gün ya da komşu günde eczane nöbeti / hazırlaması varsa o güne yazılmaz (iki liste çakışmaz).
 // Elle düzenlenen günler korunur.
 import type { Kisi } from "../veri/tipler";
 import { aktifAydaMi, aktifGunMu, type Baglam } from "./baglam";
-import { ayAnahtari, ayGunSayisi, AYLAR, CUMARTESI, gunKaydir, haftaGunu, PAZAR } from "./takvim";
+import { ayAnahtari, ayGunSayisi, AYLAR, CUMA, CUMARTESI, gunKaydir, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
 
 /** acil nöbetine yazılabilir mi: acil servis personeli ya da "acilde nöbet tutar" işaretli eczacı / kemoterapi eczacısı */
 export const acilKadrosunda = (s: { role: string; acilTutar?: true }) => s.role === "servis" || ((s.role === "eczaci" || s.role === "nobetci") && !!s.acilTutar);
@@ -16,7 +16,7 @@ export const acilKadrosunda = (s: { role: string; acilTutar?: true }) => s.role 
 export const ACIL_GUNLUK = 2;
 
 /** amaç ağırlıkları (küçük daha iyi) */
-const W = { ardArda: 1000, ucBes: 500, eksik: 5000, hsFazla: 60, araIki: 3, toplam: 6, hs: 3, istemiyor: 20, istiyor: 1, esVar: 300, izinOnce: 200 };
+const W = { ardArda: 1000, ucBes: 500, eksik: 5000, hsFazla: 60, araIki: 3, toplam: 6, tur: 3, istemiyor: 20, istiyor: 1, esVar: 300, izinOnce: 200 };
 
 export interface AcilSonucu { gunler: { gun: number; ids: number[]; elle?: true }[]; uyarilar: string[] }
 
@@ -37,46 +37,64 @@ export function acilNobetiYakin(B: Baglam, id: number, y: number, m: number, d: 
   return false;
 }
 
-/** Kişinin ayın nöbetinden payı (günlük eczanedeki gibi): o ay yazılabildiği gün sayısına göre. İzinli, raporlu, eş durumu
- *  yok, çalışma dönemi dışı günler kişiden düşülür; bu günler için sonradan telafi istenmez. Toplam ve hafta sonu / tatil
- *  günleri ayrı (oranların toplamı 1; müsait günü olmayanın payı 0). */
-function acilPaylari(B: Baglam, y: number, m: number, havuz: Kisi[]) {
-  const mus: Record<number, number> = {}, musH: Record<number, number> = {}; let t = 0, tH = 0;
-  for (const s of havuz) {
-    mus[s.id] = 0; musH[s.id] = 0;
-    for (let d = 1; d <= ayGunSayisi(y, m); d++) {
-      if (!aktifGunMu(s, y, m, d) || B.kesinYasak(s.id, y, m, d)) continue;
-      mus[s.id]++; t++;
-      if (B.tatilMi(y, m, d)) { musH[s.id]++; tH++; }
-    }
-  }
-  const pay: Record<number, number> = {}, payH: Record<number, number> = {};
-  for (const s of havuz) { pay[s.id] = t ? mus[s.id] / t : 0; payH[s.id] = tH ? musH[s.id] / tH : 0; }
-  return { pay, payH };
+/** Eşitlenen gün türleri (günlük eczanedeki gibi, her biri yıl boyunca ayrı): toplam nöbet, Perşembe, Cuma (resmi tatil
+ *  olmayan), Cumartesi, Pazar, resmi tatil. */
+const TURLER = ["top", "pe", "cu", "cmt", "paz", "resmi"] as const;
+type Tur = (typeof TURLER)[number];
+type TurSayi = Record<Tur, Record<number, number>>;
+const bosTur = (): TurSayi => ({ top: {}, pe: {}, cu: {}, cmt: {}, paz: {}, resmi: {} });
+/** günün girdiği türler (toplam her gün) */
+function gunTurleri(B: Baglam, y: number, m: number, d: number): Tur[] {
+  const dw = haftaGunu(y, m, d), resmi = B.resmiTatilMi(y, m, d), l: Tur[] = ["top"];
+  if (dw === PERSEMBE && !resmi) l.push("pe");
+  if (dw === CUMA && !resmi) l.push("cu");
+  if (dw === CUMARTESI) l.push("cmt");
+  if (dw === PAZAR) l.push("paz");
+  if (resmi) l.push("resmi");
+  return l;
 }
 
-/** yılın önceki aylarından kişi başı fark: tutulan acil nöbeti − o ayki payı (yazılabildiği güne göre); toplam ve
- *  hafta sonu / tatil. İzin / rapor ayları telafi ettirilmez; ay ortası başlayan / ayrılan çalıştığı gün kadar pay alır. */
-function acilDevir(B: Baglam, y: number, m: number) {
-  const top: Record<number, number> = {}, hs: Record<number, number> = {};
+/** Kişinin ayın nöbetinden payı (günlük eczanedeki gibi): her gün türünde o ay yazılabildiği gün sayısına göre. İzinli,
+ *  raporlu, eş durumu yok, çalışma dönemi dışı günler kişiden düşülür; bu günler için sonradan telafi istenmez
+ *  (her türde oranların toplamı 1; o türden müsait günü olmayanın payı 0). */
+function acilPaylari(B: Baglam, y: number, m: number, havuz: Kisi[]): TurSayi {
+  const mus = bosTur(), top: Record<string, number> = {}, pay = bosTur();
+  for (const s of havuz) for (const t of TURLER) mus[t][s.id] = 0;
+  for (let d = 1; d <= ayGunSayisi(y, m); d++) {
+    const tl = gunTurleri(B, y, m, d);
+    for (const s of havuz) {
+      if (!aktifGunMu(s, y, m, d) || B.kesinYasak(s.id, y, m, d)) continue;
+      for (const t of tl) { mus[t][s.id]++; top[t] = (top[t] || 0) + 1; }
+    }
+  }
+  for (const t of TURLER) for (const s of havuz) pay[t][s.id] = top[t] ? mus[t][s.id] / top[t] : 0;
+  return pay;
+}
+
+/** yılın önceki aylarından kişi başı fark, her gün türünde: tutulan acil nöbeti − o ayki payı (yazılabildiği güne göre).
+ *  İzin / rapor ayları telafi ettirilmez; ay ortası başlayan / ayrılan çalıştığı gün kadar pay alır. */
+function acilDevir(B: Baglam, y: number, m: number): TurSayi {
+  const off = bosTur();
   for (let mm = 0; mm < m; mm++) {
     const kayit = B.acil[ayAnahtari(y, mm)]; if (!kayit) continue;
     const havuz = B.staff.filter(s => acilKadrosunda(s) && aktifAydaMi(s, y, mm)); if (!havuz.length) continue;
-    const c: Record<number, number> = {}, h: Record<number, number> = {};
-    havuz.forEach(s => { c[s.id] = 0; h[s.id] = 0; });
-    let T = 0, TH = 0;
-    for (const [gun, l] of Object.entries(kayit)) l.forEach(id => { if (c[id] === undefined) return; c[id]++; T++; if (B.tatilMi(y, mm, Number(gun))) { h[id]++; TH++; } });
-    const { pay, payH } = acilPaylari(B, y, mm, havuz);
-    havuz.forEach(s => { top[s.id] = (top[s.id] || 0) + c[s.id] - T * pay[s.id]; hs[s.id] = (hs[s.id] || 0) + h[s.id] - TH * payH[s.id]; });
+    const c = bosTur(), T: Record<string, number> = {};
+    for (const t of TURLER) havuz.forEach(s => { c[t][s.id] = 0; });
+    for (const [gun, l] of Object.entries(kayit)) {
+      const tl = gunTurleri(B, y, mm, Number(gun));
+      l.forEach(id => { if (c.top[id] === undefined) return; for (const t of tl) { c[t][id]++; T[t] = (T[t] || 0) + 1; } });
+    }
+    const pay = acilPaylari(B, y, mm, havuz);
+    for (const t of TURLER) havuz.forEach(s => { off[t][s.id] = (off[t][s.id] || 0) + c[t][s.id] - (T[t] || 0) * pay[t][s.id]; });
   }
-  return { top, hs };
+  return off;
 }
 
 /** Ayın acil nöbet listesini oluşturur (aynı veriyle her zaman aynı sonuç). elle: elle düzenlenen günler (korunur). */
 export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string, true> = {}): AcilSonucu {
   const dim = ayGunSayisi(y, m), uyarilar: string[] = [], kayit = B.acil[ayAnahtari(y, m)] || {};
   const havuz = B.staff.filter(s => acilKadrosunda(s) && aktifAydaMi(s, y, m));
-  const devir = acilDevir(B, y, m), { pay, payH } = acilPaylari(B, y, m, havuz);
+  const devir = acilDevir(B, y, m), pay = acilPaylari(B, y, m, havuz);
   // ay sınırı: önceki ayın son 4 günü ve sonraki ayın ilk 4 günündeki acil nöbetleri (art arda / 5 günde 3 için)
   const disGun: Record<number, number[]> = {};
   for (const k of [-3, -2, -1, 0, dim + 1, dim + 2, dim + 3, dim + 4]) {
@@ -91,20 +109,19 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
     sabit.push(false); sec.push([]);
     if (ca.length < ACIL_GUNLUK) uyarilar.push(d + " " + AYLAR[m] + ": acil nöbeti için " + ACIL_GUNLUK + " kişi gerekli, yazılabilen " + ca.length + " kişi var (izin ya da aynı / komşu günde eczane nöbeti).");
   }
-  const dw = Array.from({ length: dim }, (_, i) => haftaGunu(y, m, i + 1)), tatil = Array.from({ length: dim }, (_, i) => B.tatilMi(y, m, i + 1));
+  const dw = Array.from({ length: dim }, (_, i) => haftaGunu(y, m, i + 1)), turler = Array.from({ length: dim }, (_, i) => gunTurleri(B, y, m, i + 1));
   const tercih = (id: number, i: number) => B.tercih(id, y, m, i + 1);
   // ertesi gün izne çıkana nöbet yazılmaz (nöbet ertesi izni izne denk gelir); başka kimse yoksa yazılır
   const izinOnce = Array.from({ length: dim }, (_, i) => new Set(havuz.filter(s => B.izinOncesiMi(s.id, y, m, i + 1)).map(s => s.id)));
   const var_ = (id: number, d: number) => (d >= 1 && d <= dim ? sec[d - 1].includes(id) : (disGun[d] || []).includes(id));
   const J = (): number => {
     let j = 0;
-    const top: Record<number, number> = {}, hs: Record<number, number> = {}, cmt: Record<number, number> = {}, paz: Record<number, number> = {};
+    const say = bosTur(), cmt: Record<number, number> = {}, paz: Record<number, number> = {};
     for (let i = 0; i < dim; i++) {
       if (!sabit[i]) j += W.eksik * Math.max(0, Math.min(ACIL_GUNLUK, aday[i].length) - sec[i].length);
       const d = i + 1;
       for (const id of sec[i]) {
-        top[id] = (top[id] || 0) + 1;
-        if (tatil[i]) hs[id] = (hs[id] || 0) + 1;
+        for (const t of turler[i]) say[t][id] = (say[t][id] || 0) + 1;
         if (dw[i] === CUMARTESI) cmt[id] = (cmt[id] || 0) + 1;
         if (dw[i] === PAZAR) paz[id] = (paz[id] || 0) + 1;
         // ileriye bakan çiftler bir kez sayılır; ay başında önceki ayla olanlar da
@@ -122,11 +139,13 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
       for (const id of aday[i]) if (tercih(id, i) === "esVar" && !sec[i].includes(id)) j += W.esVar;
     }
     // bu ayın payı da yazılabildiği güne göre: izinli / raporlu olan o ay daha az alır, sonra telafi etmez
-    let N = 0, NH = 0;
-    for (const s of havuz) { N += top[s.id] || 0; NH += hs[s.id] || 0; }
+    for (const t of TURLER) {
+      let N = 0;
+      for (const s of havuz) N += say[t][s.id] || 0;
+      const w = t === "top" ? W.toplam : W.tur;
+      for (const s of havuz) { const a = (say[t][s.id] || 0) - N * pay[t][s.id] + (devir[t][s.id] || 0); j += w * a * a; }
+    }
     for (const s of havuz) {
-      const a = (top[s.id] || 0) - N * pay[s.id] + (devir.top[s.id] || 0), b = (hs[s.id] || 0) - NH * payH[s.id] + (devir.hs[s.id] || 0);
-      j += W.toplam * a * a + W.hs * b * b;
       if ((cmt[s.id] || 0) > 1) j += W.hsFazla * ((cmt[s.id] || 0) - 1);
       if ((paz[s.id] || 0) > 1) j += W.hsFazla * ((paz[s.id] || 0) - 1);
     }
