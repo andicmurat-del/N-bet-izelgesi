@@ -2,6 +2,7 @@
 // hata / uyarı / bilgi listesi.
 import type { Gorevli } from "../veri/tipler";
 import { aktifGunMu, eczaciMi, ikiDisaridanSerbestMi, nobetciRol, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
+import { acilNobetiYakin } from "./acil";
 import { cumaHaftaSonuUclu, fmKuralKisileri, hsKuralIhlali, hsSayilari } from "./istatistik";
 import { DURUM_AD, FM_MAX_FARK } from "./sabitler";
 import { AYLAR, ayGunSayisi, CUMA, CUMARTESI, haftaGunu, isoNo, oncekiAy, PAZAR, PERSEMBE, sonrakiAy, tarihNo } from "./takvim";
@@ -43,6 +44,8 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
     ? ekle("uyari", s.name + " için eş durumu: bu güne istiyor, ama eş durumu isteyenler birlikte yazılamıyor (günde 2 nöbetçi, en az 1 eczacı).")
     : ekle("hata", s.name + " için eş durumu: bu güne nöbetçi yazılması gerekiyor."));
 
+  // acil nöbeti olan kişi o gün ve komşu günlerde eczanede görev almaz
+  [...nb, ...pr].forEach(p => { if (acilNobetiYakin(B, p.id, y, m, day.day)) ekle("hata", p.name + " aynı ya da komşu günde acil eczane nöbetçisi."); });
   nb.forEach(p => {
     [-1, 1].forEach(k => {
       const gg = g(k); if (!gg) return;

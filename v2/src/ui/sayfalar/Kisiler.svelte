@@ -24,9 +24,9 @@
   // düzenleme penceresi
   let duzenleAcik = $state(false);
   let duzenlenen = $state<Kisi | null>(null);
-  let dAd = $state(""), dRol = $state<Rol>("eczaci"), dBas = $state(""), dBit = $state(""), dCuma = $state(false), dHata = $state("");
+  let dAd = $state(""), dRol = $state<Rol>("eczaci"), dBas = $state(""), dBit = $state(""), dCuma = $state(false), dAcil = $state(false), dHata = $state("");
   function duzenle(k: Kisi) {
-    duzenlenen = k; dAd = k.name; dRol = k.role; dBas = k.baslangic ?? ""; dBit = k.bitis ?? ""; dCuma = !!k.cumaMuaf; dHata = ""; silOnayi = false;
+    duzenlenen = k; dAd = k.name; dRol = k.role; dBas = k.baslangic ?? ""; dBit = k.bitis ?? ""; dCuma = !!k.cumaMuaf; dAcil = !!k.acilTutar; dHata = ""; silOnayi = false;
     duzenleAcik = true;
   }
   function kaydet() {
@@ -34,7 +34,7 @@
     const ad = dAd.trim();
     if (!ad) { dHata = "Ad soyad boş olamaz."; return; }
     if (dBas && dBit && dBit < dBas) { dHata = "Ayrılış tarihi işe başlama tarihinden önce olamaz."; return; }
-    kisiGuncelle(duzenlenen.id, { name: gorunenAd(ad), role: dRol, baslangic: dBas || undefined, bitis: dBit || undefined, cumaMuaf: dCuma && (dRol === "eczaci" || dRol === "servis" || dRol === "teknisyen") ? true : undefined });
+    kisiGuncelle(duzenlenen.id, { name: gorunenAd(ad), role: dRol, baslangic: dBas || undefined, bitis: dBit || undefined, cumaMuaf: dCuma && (dRol === "eczaci" || dRol === "servis" || dRol === "teknisyen") ? true : undefined, acilTutar: dAcil && dRol === "eczaci" ? true : undefined });
     duzenleAcik = false;
   }
   let silOnayi = $state(false);
@@ -78,6 +78,7 @@
                   <b>{k.name}</b>
                   {#if k.baslangic || k.bitis}<small>{k.baslangic ? "Başlangıç " + tarihMetni(k.baslangic) : ""}{k.baslangic && k.bitis ? " · " : ""}{k.bitis ? "Ayrılış " + tarihMetni(k.bitis) : ""}</small>{/if}
                   {#if k.cumaMuaf}<small>Öğlen nöbeti: Cuma'dan muaf</small>{/if}
+                  {#if k.acilTutar}<small>Acilde de nöbet tutar</small>{/if}
                 </div>
                 <button class="dugme sade kucuk" onclick={() => duzenle(k)} aria-label="{k.name}: düzenle"><Ikon ad="duzenle" />Düzenle</button>
               </li>
@@ -101,6 +102,9 @@
   </div>
   {#if dRol === "eczaci" || dRol === "servis" || dRol === "teknisyen"}
     <label class="secim"><input type="checkbox" bind:checked={dCuma} /><span>Cuma günleri öğlen nöbeti tutmaz (Cuma'dan muaf)</span></label>
+  {/if}
+  {#if dRol === "eczaci"}
+    <label class="secim"><input type="checkbox" bind:checked={dAcil} /><span>Acilde de nöbet tutar (acil eczane nöbet listesine yazılır; görevi eczacı kalır)</span></label>
   {/if}
   {#if dHata}<p class="hata" role="alert">{dHata}</p>{/if}
   {#if silOnayi}

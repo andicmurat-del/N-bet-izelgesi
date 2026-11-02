@@ -12,6 +12,8 @@ export interface Kisi {
   bitis?: string;
   /** Cuma günleri öğlen nöbeti yazılmaz (eczacı, acil servis eczacısı, tekniker) */
   cumaMuaf?: true;
+  /** eczacı: görevi eczacı kalır, acil eczane nöbet listesine de yazılır */
+  acilTutar?: true;
 }
 
 /** Kişinin bir güne işaretlenen tercihi ya da izni */
@@ -75,6 +77,8 @@ export interface Veri {
   puantaj: Record<string, Record<string, Record<string, PuantajKodu>>>;
   /** "yil-ay" → gün → acil serviste nöbetçi kişi id'leri (en çok 2); puantajda nöbet (24 saat) sayılır */
   acil: Record<string, Record<string, number[]>>;
+  /** "yil-ay" → elle düzenlenen acil nöbet günleri (otomatik oluşturma bu günlere dokunmaz) */
+  acilElle: Record<string, Record<string, true>>;
   /** "yil-ay" → gün → öğlen nöbetçileri: e eczacılar, t teknikerler (kişi id'leri); elle: elle düzenlendi */
   oglen: Record<string, Record<string, OglenGunu>>;
   /** puantajdaki nöbet değişimleri ve izin/rapor nedeniyle yerine geçmeler (geri alınabilsin diye önceki kodlarla) */
