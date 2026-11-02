@@ -1,7 +1,7 @@
 // Elle gün düzenlemede anlık kural denetimi (gün penceresi): seçilen nöbetçiler ve hazırlama personeli için
 // hata / uyarı / bilgi listesi.
 import type { Gorevli } from "../veri/tipler";
-import { aktifGunMu, eczaciMi, ikiDisaridanSerbestMi, nobetciRol, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
+import { eczaneNobetcisi, aktifGunMu, eczaciMi, ikiDisaridanSerbestMi, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
 import { acilNobetiYakin } from "./acil";
 import { cumaHaftaSonuUclu, fmKuralKisileri, hsKuralIhlali, hsSayilari } from "./istatistik";
 import { DURUM_AD, FM_MAX_FARK } from "./sabitler";
@@ -37,7 +37,7 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
   if (nb.filter(p => p.role === "nobetci").length > 1 && !ikiDisaridanSerbestMi(y, m, day.day)) ekle("hata", "Dışarıdan nöbete gelen iki eczacı aynı güne birlikte nöbetçi yazılmaz (Cuma ve Cumartesi hariç; biri hazırlama olabilir).");
   if (nb.length < 2) ekle("uyari", "Günde 2 nöbetçi olmalı; ikinci kişi boş.");
   // eş durumu: hepsi birlikte yazılamıyorsa (günde 2 nöbetçi, en az 1 eczacı) sığmayanlar için yalnız uyarı
-  const esIstek = B.staff.filter(s => nobetciRol(s.role) && B.tercih(s.id, y, m, day.day) === "esVar" && aktifGunMu(s, y, m, day.day));
+  const esIstek = B.staff.filter(s => eczaneNobetcisi(s) && B.tercih(s.id, y, m, day.day) === "esVar" && aktifGunMu(s, y, m, day.day));
   const esYazilmayan = esIstek.filter(s => !nb.some(q => q.id === s.id));
   const esSigmaz = Math.max(0, esIstek.length - (esIstek.some(s => eczaciMi(s.role)) ? 2 : 1));
   esYazilmayan.forEach(s => esYazilmayan.length <= esSigmaz
@@ -131,7 +131,7 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
     (gg.prep || []).forEach(p => { if (top[p.id] !== undefined) top[p.id] += hz; });
   });
   nb.forEach(p => { top[p.id] += day.fazlaMesai; }); pr.forEach(p => { top[p.id] += hz; });
-  const duty = B.staff.filter(s => nobetciRol(s.role));
+  const duty = B.staff.filter(s => eczaneNobetcisi(s));
   const ort = duty.length ? duty.reduce((a, s) => a + top[s.id], 0) / duty.length : 0;
   {
     const kk = fmKuralKisileri(B, y, m);

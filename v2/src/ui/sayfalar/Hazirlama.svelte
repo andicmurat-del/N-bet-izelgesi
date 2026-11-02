@@ -5,18 +5,23 @@
   import GunlukDagitim from "../hazirlama/GunlukDagitim.svelte";
   import ServisAyarlari from "../hazirlama/ServisAyarlari.svelte";
 
-  let { git }: { git: (ad: "cizelge" | "kisiler") => void } = $props();
+  // gomulu: Günlük Eczane sayfasının alt sekmesi olarak (başlık ve ay seçici üst sayfada)
+  let { git, gomulu = false }: { git: (ad: "cizelge" | "kisiler") => void; gomulu?: boolean } = $props();
   const GORUNUMLER = [{ ad: "gun", baslik: "Günlük dağıtım", kisa: "Dağıtım", ikon: "katman" }, { ad: "servis", baslik: "Servisler", ikon: "ayarlar" }] as const;
   let gorunum = $state<(typeof GORUNUMLER)[number]["ad"]>("gun");
 </script>
 
+{#if !gomulu}
 <header class="sayfa-bas">
   <div>
-    <h1>Servis hazırlama</h1>
+    <h1>Hazırlama listesi</h1>
     <p>O gün çalışan teknikerlere servisler zorluk ve hasta sayısına göre dengeli dağıtılır; aylar boyunca kişi başı yük, YB ve zor servis sayısı eşitlenir.</p>
   </div>
   <AySecici />
 </header>
+{:else}
+<p class="gomulu-aciklama">O gün çalışan teknikerlere servisler zorluk ve hasta sayısına göre dengeli dağıtılır; aylar boyunca kişi başı yük, YB ve zor servis sayısı eşitlenir.</p>
+{/if}
 
 <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Hazırlama görünümü" />
 {#if gorunum === "servis"}<ServisAyarlari />{:else}<GunlukDagitim {git} />{/if}
@@ -25,4 +30,5 @@
   .sayfa-bas { display: flex; flex-wrap: wrap; gap: var(--b4); align-items: flex-end; justify-content: space-between; margin-bottom: var(--b4); }
   .sayfa-bas > div { max-width: 70ch; }
   .sayfa-bas p { color: var(--yazi-2); margin-top: var(--b2); }
+  .gomulu-aciklama { font-size: var(--f-sm); color: var(--soluk); margin-bottom: var(--b3); max-width: 80ch; }
 </style>

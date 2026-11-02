@@ -1,6 +1,6 @@
 // Acil eczane nöbet listesi: her gün 2 nöbetçi (24 saat). Eczane nöbet çizelgesinden bağımsız oluşturulur; hazırlama ve
-// "her gün en az bir eczacı" kuralı yoktur. Nöbet tutanlar: acil servis eczacıları ve Personel'de "acilde de nöbet tutar"
-// işaretli eczacılar (görevi eczacı kalır). Kurallar eczane nöbetindeki gibi: izinli / eş durumu yok / çalışma dönemi
+// "her gün en az bir eczacı" kuralı yoktur. Nöbet tutanlar: acil servis eczacıları ve Personel'de "acilde nöbet tutar"
+// işaretli eczacılar (görevi eczacı kalır; günlük eczanede mesai yapar, eczane nöbeti ve hazırlaması tutmaz). Kurallar eczane nöbetindeki gibi: izinli / eş durumu yok / çalışma dönemi
 // dışındaki güne yazılmaz, art arda iki gün ve 5 günde 3 nöbet olmaz, mümkünse en az 3 gün ara, ayda en fazla bir
 // Cumartesi ve bir Pazar; izin, rapor (puantaj), eş durumu ve istiyor / istemiyor tercihleri eczane nöbetindeki gibi
 // (eş durumu var: o gün yazılır; istemiyor: mümkünse yazılmaz; ertesi gün izne çıkana mümkünse yazılmaz); eşitlik ayrı (yalnız acil nöbetleri) ve yıl boyunca: toplam nöbet ve hafta sonu / resmi tatil
@@ -9,7 +9,7 @@
 import { aktifAydaMi, type Baglam } from "./baglam";
 import { ayAnahtari, ayGunSayisi, AYLAR, CUMARTESI, gunKaydir, haftaGunu, PAZAR } from "./takvim";
 
-/** acil nöbetine yazılabilir mi: acil servis eczacısı ya da "acilde de nöbet tutar" işaretli eczacı */
+/** acil nöbetine yazılabilir mi: acil servis eczacısı ya da "acilde nöbet tutar" işaretli eczacı */
 export const acilKadrosunda = (s: { role: string; acilTutar?: true }) => s.role === "servis" || (s.role === "eczaci" && !!s.acilTutar);
 /** günde acil nöbetçi sayısı */
 export const ACIL_GUNLUK = 2;

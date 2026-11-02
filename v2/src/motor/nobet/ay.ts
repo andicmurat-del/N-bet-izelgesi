@@ -1,5 +1,5 @@
 // Bir ayın çizelgesi oluşturulurken bütün adımların ortak girdisi: kadro, yıllık devirler, ay sınırı, kişi sırası.
-import { aktifAydaMi, aktifGunMu, eczaciMi, type Baglam, type MotorGunu } from "../baglam";
+import { acildeTutanEczaci, aktifAydaMi, aktifGunMu, eczaciMi, type Baglam, type MotorGunu } from "../baglam";
 import { cmtDevir, cuDevir, devirHesapla, hsDevir, nobetDevir, pazDevir, peDevir, resmiDevir, type AyDevri, type Fark } from "../devir";
 import type { Kisi } from "../../veri/tipler";
 import { ayGunSayisi } from "../takvim";
@@ -91,7 +91,7 @@ export function ayBilgisi(B: Baglam, y: number, m: number, varyasyon: number, ec
 /** ayda çalışan eczacılar (dışarıdan gelen eczacı dahil) ve teknikerler */
 export function nobetKadrosu(B: Baglam, y: number, m: number) {
   return {
-    eczacilar: B.staff.filter(s => eczaciMi(s.role) && aktifAydaMi(s, y, m)),
+    eczacilar: B.staff.filter(s => eczaciMi(s.role) && !acildeTutanEczaci(s) && aktifAydaMi(s, y, m)),
     teknisyenler: B.staff.filter(s => s.role === "teknisyen" && aktifAydaMi(s, y, m)),
   };
 }

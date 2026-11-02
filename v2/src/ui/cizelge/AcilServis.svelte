@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Acil eczane nöbet listesi: günde 2 kişi; acil servis eczacıları ve "acilde de nöbet tutar" işaretli eczacılar arasından
+  // Acil eczane nöbet listesi: günde 2 kişi; acil servis eczacıları ve "acilde nöbet tutar" işaretli eczacılar arasından
   // otomatik oluşturulur (eczane çizelgesiyle çakışmadan), günler elle de düzenlenebilir (elle günler korunur).
   // Puantajda bu günler nöbet (24 saat) sayılır; ertesi gün mesai günüyse nöbet izni (Nİ), tatilse çalışılmadı (B) yazılır.
   import { depo, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, acilKaydet, acilElleMi, resmiTatilMi, tatilMi } from "../../veri/depo.svelte";
@@ -62,7 +62,7 @@
 {#if !adaylar.length && !dolu}
   <section class="kart bos">
     <h2>Acilde nöbet tutan yok</h2>
-    <p>Acil eczane nöbet listesi, görevi "Acil servis eczacısı" olanlar ile Personel bölümünde "Acilde de nöbet tutar" işaretli eczacılar arasından oluşturulur. Önce bu kişileri ekleyin ya da işaretleyin. Puantajda acil nöbetleri 24 saat, ertesi mesai günü nöbet izni olarak işlenir.</p>
+    <p>Acil eczane nöbet listesi, görevi "Acil servis eczacısı" olanlar ile Personel bölümünde "Acilde nöbet tutar" işaretli eczacılar arasından oluşturulur. Önce bu kişileri ekleyin ya da işaretleyin. Puantajda acil nöbetleri 24 saat, ertesi mesai günü nöbet izni olarak işlenir.</p>
     <div><button class="dugme ana" onclick={() => git("kisiler")}><Ikon ad="kisiler" />Personel ekle</button></div>
   </section>
 {:else}
@@ -80,7 +80,7 @@
       {/if}
     </div>
   </div>
-  <p class="aciklama">Her gün 2 kişi; acil servis eczacıları ve "Acilde de nöbet tutar" işaretli eczacılar arasından eşit dağıtılır (eczane nöbetinden ayrı, yıl boyunca). Aynı ya da komşu günde eczane nöbeti olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.</p>
+  <p class="aciklama">Her gün 2 kişi; acil servis eczacıları ve "Acilde nöbet tutar" işaretli eczacılar arasından eşit dağıtılır (eczane nöbetinden ayrı, yıl boyunca). Aynı ya da komşu günde eczane nöbeti olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.</p>
   {#each uyarilar as u}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 

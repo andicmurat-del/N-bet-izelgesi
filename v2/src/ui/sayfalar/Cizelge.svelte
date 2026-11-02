@@ -1,7 +1,7 @@
 <script lang="ts">
   import { depo, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, ornekKadroYukle, tumVeriyiSil, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import { arkaPlandaOlustur } from "../../motor/istemci";
-  import { uyariSiniflandir } from "../../motor";
+  import { acilKadrosunda, uyariSiniflandir } from "../../motor";
   import { cizelgeKitabi } from "../../disa/cizelgeXlsx";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR, ayAdi } from "../../veri/tarih";
@@ -11,23 +11,31 @@
   import Uyarilar from "../cizelge/Uyarilar.svelte";
   import KisiOzeti from "../cizelge/KisiOzeti.svelte";
   import GunPenceresi from "../cizelge/GunPenceresi.svelte";
-  import AcilServis from "../cizelge/AcilServis.svelte";
+  import Hazirlama from "./Hazirlama.svelte";
+  import Puantaj from "./Puantaj.svelte";
+  import Izinler from "./Izinler.svelte";
+  import type { GunlukGorunum } from "./sayfaTipleri";
   import OglenNobeti from "../cizelge/OglenNobeti.svelte";
   import CalismaListesi from "../cizelge/CalismaListesi.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
 
-  let { git }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void } = $props();
+  // Günlük Eczane: nöbet listesi, çalışma listesi, öğlen nöbeti, hazırlama listesi, puantaj ve izinler alt sekmeleri
+  // (acil eczane ayrı sayfada). gorunum dışarıdan da seçilebilir (başka sayfadan gelen bağlantı).
+  let { git, gorunum = $bindable("nobet") }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; gorunum?: GunlukGorunum } = $props();
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
-  // acil servis eczacıları eczane çizelgesine girmez; onların nöbetleri Acil servis görünümündedir
-  const kisiler = $derived(aydaCalisanlar(depo.yil, depo.ay).filter(k => k.role !== "servis"));
+  // acilde nöbet tutanlar (acil servis personeli, acilde tutan eczacılar) eczane çizelgesine girmez; nöbetleri Acil Eczane'de
+  const kisiler = $derived(aydaCalisanlar(depo.yil, depo.ay).filter(k => !acilKadrosunda(k)));
   const nobetci = $derived(kisiler.filter(k => k.role !== "destek"));
   const eczaci = $derived(kisiler.filter(k => k.role === "eczaci" || k.role === "nobetci"));
   const eskime = $derived(c ? eskimeNedenleri(depo.yil, depo.ay) : []);
 
   // görünüm: eczane nöbet çizelgesi, günlük çalışma listesi ya da acil servis nöbetleri
-  const GORUNUMLER = [{ ad: "nobet", baslik: "Günlük Eczane Nöbet Listesi", ikon: "takvim" }, { ad: "liste", baslik: "Aylık Çalışma Listesi", ikon: "liste" }, { ad: "acil", baslik: "Acil Eczane Nöbet Listesi", ikon: "acil" }, { ad: "oglen", baslik: "Öğlen Nöbet Listesi", ikon: "saat" }] as const;
-  let gorunum = $state<(typeof GORUNUMLER)[number]["ad"]>("nobet");
+  const GORUNUMLER = [
+    { ad: "nobet", baslik: "Günlük Eczane Nöbet Listesi", ikon: "takvim" }, { ad: "liste", baslik: "Aylık Çalışma Listesi", ikon: "liste" },
+    { ad: "oglen", baslik: "Öğlen Nöbet Listesi", ikon: "saat" }, { ad: "hazirlama", baslik: "Hazırlama Listesi", ikon: "katman" },
+    { ad: "puantaj", baslik: "Puantaj", ikon: "tablo" }, { ad: "izinler", baslik: "İzinler", ikon: "izin" },
+  ] as const;
 
   let calisiyor = $state(false);
   let hata = $state("");
@@ -93,7 +101,7 @@
 
 <header class="sayfa-bas">
   <div class="baslik">
-    <h1>Nöbet çizelgesi</h1>
+    <h1>Günlük Eczane</h1>
     {#if depo.veri.kurum.ad}<p>{depo.veri.kurum.ad}</p>{/if}
   </div>
   <AySecici />
@@ -123,8 +131,12 @@
 {:else}
   <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Görünüm" telefonSutun={2} />
 
-  {#if gorunum === "acil"}
-    <AcilServis {git} />
+  {#if gorunum === "hazirlama"}
+    <Hazirlama {git} gomulu />
+  {:else if gorunum === "puantaj"}
+    <Puantaj {git} gomulu />
+  {:else if gorunum === "izinler"}
+    <Izinler {git} gomulu kimler={k => !acilKadrosunda(k)} />
   {:else if gorunum === "oglen"}
     <OglenNobeti git={ad => (ad === "nobet" ? (gorunum = "nobet") : git(ad))} />
   {:else if gorunum === "liste"}

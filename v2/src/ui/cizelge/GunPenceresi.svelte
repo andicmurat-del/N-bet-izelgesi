@@ -1,6 +1,6 @@
 <script lang="ts">
   // Bir günü elle düzenleme: nöbetçiler ve (tatil günüyse) hazırlama. Seçim değiştikçe kurallar anında denetlenir.
-  import { gunuDenetle } from "../../motor";
+  import { gunuDenetle, acilKadrosunda } from "../../motor";
   import { depo, gunuGuncelle, gunKilidiniKaldir, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import type { AyCizelgesi, Gorevli, Kisi } from "../../veri/tipler";
   import { ROL_AD } from "../../veri/tipler";
@@ -14,7 +14,7 @@
   const onayli = $derived(!!c.onay);
   const iso = $derived(isoTarih(c.year, c.month, gun));
   const calisiyor = (k: Kisi) => !(k.baslangic && iso < k.baslangic) && !(k.bitis && iso > k.bitis);
-  const tum = $derived(aydaCalisanlar(c.year, c.month).filter(k => k.role !== "servis" && calisiyor(k)).sort((a, b) => a.name.localeCompare(b.name, "tr")));
+  const tum = $derived(aydaCalisanlar(c.year, c.month).filter(k => !acilKadrosunda(k) && calisiyor(k)).sort((a, b) => a.name.localeCompare(b.name, "tr")));
   const nobetAday = $derived(tum.filter(k => k.role !== "destek"));
   const hazAday = $derived(tum);
 

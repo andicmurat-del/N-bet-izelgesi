@@ -1,7 +1,7 @@
 // Raporlar: günlük çalışma listesi, acil servis denetimi, yılın raporu (ay ay puantaj özeti ve yıllık denge),
 // uyarıların önem sınıfı.
 import { eczaneGoreviYakin } from "./acil";
-import { aktifAydaMi, ayrildiMi, nobetciRol, type Baglam } from "./baglam";
+import { eczaneNobetcisi, aktifAydaMi, ayrildiMi, type Baglam } from "./baglam";
 import { ayVeriVarMi } from "./istatistik";
 import { puantajIzgarasi, ROL_SIRA, type PuantajIzgarasi } from "./puantaj";
 import { ayAnahtari, ayGunSayisi, AY_KISA, CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
@@ -162,7 +162,7 @@ function cizelgeYillik(B: Baglam, yil: number) {
 function dengeVerisi(B: Baglam, V: YilVerisi) {
   const CZ = cizelgeYillik(B, V.yil);
   const kayitliAy = CZ.aylar;
-  const kisiler = V.kisiler.filter(k => nobetciRol(k.role)).map(k => {
+  const kisiler = V.kisiler.filter(k => eczaneNobetcisi(k)).map(k => {
     const st = B.kisi(k.id), t = CZ.t[k.id] || CZ.bos();
     const ay = kayitliAy.filter(i => (st ? aktifAydaMi(st, V.yil, i) : (t.aylar || []).indexOf(i) >= 0)).length;
     return { k, t, ay } as { k: typeof k; t: DengeSayilari; ay: number; fark: Record<string, number>; bek: Record<string, number>; kismi: boolean };

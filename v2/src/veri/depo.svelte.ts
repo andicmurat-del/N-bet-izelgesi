@@ -494,16 +494,17 @@ export function tumVeriyiSil() {
   depo.veri = bosVeri();
 }
 
-/** Uygulamayı denemek için örnek kadro: 6 eczacı (ikisi acilde de nöbet tutar), 6 tekniker, 4 acil servis eczacısı.
+/** Uygulamayı denemek için örnek kadro: 8 eczacı (ikisi acilde nöbet tutar, eczanede yalnız mesai yapar), 6 tekniker,
+ *  4 acil servis personeli.
  *  Ekranda "örnek" diye belirtilir. */
 export function ornekKadroYukle() {
   const v = bosVeri();
   v.ornek = true;
   v.kurum.ad = "Örnek Hastane Eczanesi";
-  const ecz = ["Ayşe Yılmaz", "Mehmet Kaya", "Zeynep Demir", "Ali Çelik", "Elif Şahin", "Murat Arslan"];
+  const ecz = ["Ayşe Yılmaz", "Mehmet Kaya", "Zeynep Demir", "Ali Çelik", "Elif Şahin", "Murat Arslan", "Gül Aksoy", "Cem Yalçın"];
   const tek = ["Fatma Koç", "Emre Aydın", "Selin Öztürk", "Burak Yıldız", "Hülya Kurt", "Can Polat"];
-  ecz.forEach((name, i) => v.staff.push({ id: i + 1, name, role: "eczaci", ...(i >= 4 ? { acilTutar: true as const } : {}) }));
-  tek.forEach((name, i) => v.staff.push({ id: i + 7, name, role: "teknisyen" }));
-  ["Deniz Acar", "Okan Tekin", "Seda Er", "Kemal Uz"].forEach((name, i) => v.staff.push({ id: i + 13, name, role: "servis" }));
+  ecz.forEach((name, i) => v.staff.push({ id: i + 1, name, role: "eczaci", ...(i >= 6 ? { acilTutar: true as const } : {}) }));
+  tek.forEach((name, i) => v.staff.push({ id: i + 9, name, role: "teknisyen" }));
+  ["Deniz Acar", "Okan Tekin", "Seda Er", "Kemal Uz"].forEach((name, i) => v.staff.push({ id: i + 15, name, role: "servis" }));
   depo.veri = v;
 }
