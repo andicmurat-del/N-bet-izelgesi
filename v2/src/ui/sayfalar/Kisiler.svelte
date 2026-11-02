@@ -24,9 +24,9 @@
   // düzenleme penceresi
   let duzenleAcik = $state(false);
   let duzenlenen = $state<Kisi | null>(null);
-  let dAd = $state(""), dRol = $state<Rol>("eczaci"), dBas = $state(""), dBit = $state(""), dHata = $state("");
+  let dAd = $state(""), dRol = $state<Rol>("eczaci"), dBas = $state(""), dBit = $state(""), dCuma = $state(false), dHata = $state("");
   function duzenle(k: Kisi) {
-    duzenlenen = k; dAd = k.name; dRol = k.role; dBas = k.baslangic ?? ""; dBit = k.bitis ?? ""; dHata = ""; silOnayi = false;
+    duzenlenen = k; dAd = k.name; dRol = k.role; dBas = k.baslangic ?? ""; dBit = k.bitis ?? ""; dCuma = !!k.cumaMuaf; dHata = ""; silOnayi = false;
     duzenleAcik = true;
   }
   function kaydet() {
@@ -34,7 +34,7 @@
     const ad = dAd.trim();
     if (!ad) { dHata = "Ad soyad boş olamaz."; return; }
     if (dBas && dBit && dBit < dBas) { dHata = "Ayrılış tarihi işe başlama tarihinden önce olamaz."; return; }
-    kisiGuncelle(duzenlenen.id, { name: gorunenAd(ad), role: dRol, baslangic: dBas || undefined, bitis: dBit || undefined });
+    kisiGuncelle(duzenlenen.id, { name: gorunenAd(ad), role: dRol, baslangic: dBas || undefined, bitis: dBit || undefined, cumaMuaf: dCuma && (dRol === "eczaci" || dRol === "servis") ? true : undefined });
     duzenleAcik = false;
   }
   let silOnayi = $state(false);
@@ -77,6 +77,7 @@
                 <div class="kim">
                   <b>{k.name}</b>
                   {#if k.baslangic || k.bitis}<small>{k.baslangic ? "Başlangıç " + tarihMetni(k.baslangic) : ""}{k.baslangic && k.bitis ? " · " : ""}{k.bitis ? "Ayrılış " + tarihMetni(k.bitis) : ""}</small>{/if}
+                  {#if k.cumaMuaf}<small>Öğlen nöbeti: Cuma'dan muaf</small>{/if}
                 </div>
                 <button class="dugme sade kucuk" onclick={() => duzenle(k)} aria-label="{k.name}: düzenle"><Ikon ad="duzenle" />Düzenle</button>
               </li>
@@ -98,6 +99,9 @@
     <label class="alan"><span>İşe başlama</span><input class="girdi" type="date" bind:value={dBas} /><small>Boş: her zaman çalışıyor</small></label>
     <label class="alan"><span>Ayrılış (son gün)</span><input class="girdi" type="date" bind:value={dBit} /><small>Ayrılan kişiyi silmek yerine bu tarihi girin</small></label>
   </div>
+  {#if dRol === "eczaci" || dRol === "servis"}
+    <label class="secim"><input type="checkbox" bind:checked={dCuma} /><span>Cuma günleri öğlen nöbeti tutmaz (Cuma'dan muaf)</span></label>
+  {/if}
   {#if dHata}<p class="hata" role="alert">{dHata}</p>{/if}
   {#if silOnayi}
     <div class="sil-uyari" role="alert">
@@ -141,4 +145,6 @@
     .ekle { grid-template-columns: 1fr; }
     .iki { grid-template-columns: 1fr; }
   }
+  .secim { display: flex; align-items: center; gap: var(--b2); min-height: 32px; cursor: pointer; font-size: var(--f-sm); }
+  .secim input { width: 18px; height: 18px; accent-color: var(--vurgu); }
 </style>

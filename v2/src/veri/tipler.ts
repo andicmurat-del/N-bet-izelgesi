@@ -10,6 +10,8 @@ export interface Kisi {
   baslangic?: string;
   /** ayrılış tarihi (son çalışma günü), YYYY-AA-GG */
   bitis?: string;
+  /** Cuma günleri öğlen nöbeti yazılmaz (eczacı, acil servis eczacısı) */
+  cumaMuaf?: true;
 }
 
 /** Kişinin bir güne işaretlenen tercihi ya da izni */
@@ -70,6 +72,8 @@ export interface Veri {
   puantaj: Record<string, Record<string, Record<string, PuantajKodu>>>;
   /** "yil-ay" → gün → acil serviste nöbetçi kişi id'leri (en çok 2); puantajda nöbet (24 saat) sayılır */
   acil: Record<string, Record<string, number[]>>;
+  /** "yil-ay" → gün → öğlen nöbetçileri: e eczacılar, t teknikerler (kişi id'leri) */
+  oglen: Record<string, Record<string, { e: number[]; t: number[] }>>;
   /** puantajdaki nöbet değişimleri ve izin/rapor nedeniyle yerine geçmeler (geri alınabilsin diye önceki kodlarla) */
   degisimler: Degisim[];
   /** servis hazırlama ayarları: servis adına göre zorluk/hasta/çok günlük/hazırlanıyor; elle eklenen servisler */

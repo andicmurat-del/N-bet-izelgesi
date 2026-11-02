@@ -12,6 +12,7 @@
   import KisiOzeti from "../cizelge/KisiOzeti.svelte";
   import GunPenceresi from "../cizelge/GunPenceresi.svelte";
   import AcilServis from "../cizelge/AcilServis.svelte";
+  import OglenNobeti from "../cizelge/OglenNobeti.svelte";
   import CalismaListesi from "../cizelge/CalismaListesi.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
 
@@ -25,7 +26,7 @@
   const eskime = $derived(c ? eskimeNedenleri(depo.yil, depo.ay) : []);
 
   // görünüm: eczane nöbet çizelgesi, günlük çalışma listesi ya da acil servis nöbetleri
-  const GORUNUMLER = [{ ad: "nobet", baslik: "Eczane nöbeti", kisa: "Nöbet", ikon: "takvim" }, { ad: "liste", baslik: "Çalışma listesi", kisa: "Liste", ikon: "liste" }, { ad: "acil", baslik: "Acil servis", kisa: "Acil", ikon: "acil" }] as const;
+  const GORUNUMLER = [{ ad: "nobet", baslik: "Eczane nöbeti", kisa: "Nöbet", ikon: "takvim" }, { ad: "liste", baslik: "Çalışma listesi", kisa: "Liste", ikon: "liste" }, { ad: "acil", baslik: "Acil servis", kisa: "Acil", ikon: "acil" }, { ad: "oglen", baslik: "Öğlen nöbeti", kisa: "Öğlen", ikon: "saat" }] as const;
   let gorunum = $state<(typeof GORUNUMLER)[number]["ad"]>("nobet");
 
   let calisiyor = $state(false);
@@ -124,6 +125,8 @@
 
   {#if gorunum === "acil"}
     <AcilServis {git} />
+  {:else if gorunum === "oglen"}
+    <OglenNobeti git={ad => (ad === "nobet" ? (gorunum = "nobet") : git(ad))} />
   {:else if gorunum === "liste"}
     {#if c}<CalismaListesi />
     {:else}

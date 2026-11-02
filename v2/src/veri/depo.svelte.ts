@@ -18,6 +18,7 @@ export function bosVeri(): Veri {
     schedules: {},
     puantaj: {},
     acil: {},
+    oglen: {},
     degisimler: [],
     servisAyar: { svc: {}, ekstra: [] },
     servisKayit: {},
@@ -43,6 +44,7 @@ export function veriyiDogrula(ham: unknown): Veri {
       role: roller.includes(k.role) ? k.role : "eczaci",
       ...(iso(k.baslangic) ? { baslangic: iso(k.baslangic) } : {}),
       ...(iso(k.bitis) ? { bitis: iso(k.bitis) } : {}),
+      ...(k.cumaMuaf === true ? { cumaMuaf: true as const } : {}),
     }));
   const tercihler: Tercih[] = ["izinli", "want", "avoid", "esVar", "esYok"];
   for (const [k, t] of Object.entries(nesne(o.prefs))) if (tercihler.includes(t)) v.prefs[k] = t;
@@ -69,6 +71,14 @@ export function veriyiDogrula(ham: unknown): Veri {
       const l = (Array.isArray(ids) ? ids : []).filter((id: unknown): id is number => Number.isInteger(id) && kisiIdleri.has(id as number));
       const tek = [...new Set(l)].slice(0, 2);
       if (/^\d{1,2}$/.test(gun) && tek.length) (v.acil[ayK] ??= {})[gun] = tek;
+    }
+  }
+  for (const [ayK, gunler] of Object.entries(nesne(o.oglen))) {
+    if (!/^\d{4}-\d{1,2}$/.test(ayK)) continue;
+    const ids = (l: unknown) => [...new Set((Array.isArray(l) ? l : []).filter((id: unknown): id is number => Number.isInteger(id) && kisiIdleri.has(id as number)))];
+    for (const [gun, g] of Object.entries(nesne(gunler))) {
+      const x = nesne(g), e = ids(x.e), t = ids(x.t);
+      if (/^\d{1,2}$/.test(gun) && (e.length || t.length)) (v.oglen[ayK] ??= {})[gun] = { e, t };
     }
   }
   for (const [k, c] of Object.entries(nesne(o.schedules))) {
@@ -234,6 +244,7 @@ function enBuyukKisiNo(): number {
   for (const c of Object.values(v.schedules)) for (const g of c.days) for (const p of [...g.assigned, ...g.prep]) al(p.id);
   for (const a of Object.values(v.puantaj)) Object.keys(a).forEach(al);
   for (const a of Object.values(v.acil)) for (const l of Object.values(a)) l.forEach(al);
+  for (const a of Object.values(v.oglen)) for (const g of Object.values(a)) [...g.e, ...g.t].forEach(al);
   for (const d of v.degisimler) { al(d.cik); al(d.yer); }
   for (const R of Object.values(v.servisKayit)) { Object.keys(R.ad ?? {}).forEach(al); for (const g of Object.values(R.gun ?? {})) (g.k ?? []).forEach(al); }
   return n;
@@ -252,6 +263,7 @@ export function kisiGuncelle(id: number, alanlar: Partial<Omit<Kisi, "id">>) {
   Object.assign(k, alanlar);
   if (!k.baslangic) delete k.baslangic;
   if (!k.bitis) delete k.bitis;
+  if (!k.cumaMuaf) delete k.cumaMuaf;
   // çizelgelerdeki ad ve görev de güncellenir (eski aylar dahil)
   for (const c of Object.values(depo.veri.schedules))
     for (const g of c.days) for (const p of [...g.assigned, ...g.prep]) if (p.id === id) { p.name = k.name; p.role = k.role; }
@@ -283,6 +295,11 @@ export function kisiSil(id: number): boolean {
   for (const [ayK, a] of Object.entries(depo.veri.acil)) {
     for (const [g, l] of Object.entries(a)) { a[g] = l.filter(x => x !== id); if (!a[g].length) delete a[g]; }
     if (!Object.keys(a).length) delete depo.veri.acil[ayK];
+  }
+  for (const [ayK, a] of Object.entries(depo.veri.oglen)) {
+    if (depo.veri.schedules[ayK]?.onay) continue;
+    for (const [g, x] of Object.entries(a)) { x.e = x.e.filter(i => i !== id); x.t = x.t.filter(i => i !== id); if (!x.e.length && !x.t.length) delete a[g]; }
+    if (!Object.keys(a).length) delete depo.veri.oglen[ayK];
   }
   // geri alınacak kişisi kalmayan değişim kayıtları (onaysız aylar) da gider
   depo.veri.degisimler = depo.veri.degisimler.filter(d => (d.cik !== id && d.yer !== id) || !!depo.veri.schedules[ayAnahtari(d.y, d.m)]?.onay);
@@ -369,6 +386,15 @@ export function acilGunuAyarla(y: number, m: number, gun: number, ids: number[])
   if (!Object.keys(a).length) delete depo.veri.acil[ayK];
 }
 export function acilAyiniSil(y: number, m: number) { delete depo.veri.acil[ayAnahtari(y, m)]; }
+
+// ---------- öğlen nöbeti ----------
+export const oglenAyi = (y: number, m: number) => depo.veri.oglen[ayAnahtari(y, m)];
+export function oglenKaydet(y: number, m: number, gunler: { gun: number; e: number[]; t: number[] }[]) {
+  const a: Record<string, { e: number[]; t: number[] }> = {};
+  gunler.forEach(g => { if (g.e.length || g.t.length) a[g.gun] = { e: g.e.slice(), t: g.t.slice() }; });
+  if (Object.keys(a).length) depo.veri.oglen[ayAnahtari(y, m)] = a; else delete depo.veri.oglen[ayAnahtari(y, m)];
+}
+export function oglenAyiniSil(y: number, m: number) { delete depo.veri.oglen[ayAnahtari(y, m)]; }
 
 // ---------- puantaj ----------
 export function puantajKoduAyarla(y: number, m: number, id: number, gun: number, kod: PuantajKodu | null) {

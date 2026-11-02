@@ -15,6 +15,7 @@ import { Baglam, type MotorCizelgesi } from "./baglam";
 import { degisimDenetle as degisimDenetimi, yerineAdaylar, type Degisiklik } from "./degisim";
 import { gunuDenetle as gunDenetimi } from "./denetim";
 import { cizelgeUret, type CizelgeSonucu } from "./nobet/olustur";
+import { oglenOlustur, oglenYillik } from "./oglen";
 import { puantajIzgarasi } from "./puantaj";
 import { acilDenetle as acilDenetimi, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
 import { ServisMotoru, type HesapSecenegi } from "./servis/ay";
@@ -24,6 +25,7 @@ import { tarihNo } from "./takvim";
 export { AGIRLIK, FM_MAX_FARK, AYAR_VARSAYILAN } from "./sabitler";
 export { PUANTAJ_KODLARI } from "./puantaj";
 export { uyariSiniflandir } from "./raporlar";
+export { OGLEN_GEREK, oglenGrubu } from "./oglen";
 export { ZOR_ESIK as SERVIS_ZOR_ESIK } from "./servis/liste";
 export type { CizelgeSonucu } from "./nobet/olustur";
 
@@ -195,3 +197,8 @@ export function servisYillik(veri: unknown, yil: number, bugun?: number) {
   const kisi = Y.ids.map(id => { const k = Y.kisi[id]; return { id, ad: adlar[id], ay: k.ay, gun: k.gun, l: k.l, fl: k.fl, w: k.w, y: k.y, adet: k.adet, sapma: yukSapma(k) }; });
   return { kayitlar, kayitli: Y.kayitli, bosAy: Y.aylar.map(r => !r.length), kisi, matris: { servisler, gun } };
 }
+
+/** Ayın öğlen nöbeti çizelgesi: hafta içi mesaide çalışanlardan, yıl boyu eşit (Cuma ayrıca) */
+export function oglenHesapla(veri: unknown, y: number, m: number) { return oglenOlustur(new Baglam(veri), y, m); }
+/** yıl başından bu aya kişi başı öğlen nöbeti sayıları (toplam, Cuma; bu ay) */
+export function oglenYillikHesapla(veri: unknown, y: number, m: number) { return oglenYillik(new Baglam(veri), y, m); }
