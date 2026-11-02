@@ -58,7 +58,7 @@
     try {
       const m = await import("../../disa/puantajCikti");
       const ad = `${acil ? "acil-" : ""}puantaj-${depo.yil}-${String(depo.ay + 1).padStart(2, "0")}.${tur}`;
-      const blob = tur === "xlsx" ? m.puantajKitabi(G, depo.yil, depo.ay, depo.veri.kurum.ad) : m.puantajPdf(G, depo.yil, depo.ay, depo.veri.kurum.ad, c?.onay ?? null);
+      const blob = tur === "xlsx" ? m.puantajKitabi(G, depo.yil, depo.ay, depo.veri.kurum.ad, acil) : m.puantajPdf(G, depo.yil, depo.ay, depo.veri.kurum.ad, c?.onay ?? null);
       durum = (await dosyaKaydet(ad, blob, blob.type || "application/pdf")) ? (tur === "pdf" ? "PDF" : "Excel dosyası") + " kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }
   }
@@ -142,10 +142,10 @@
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
     <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Aylık özet">
       <table class="ozet-tablo">
-        <thead><tr><th scope="col">Ad soyad</th><th scope="col">Görev</th><th scope="col">Nöbet</th><th scope="col">Perşembe</th><th scope="col">Cuma</th><th scope="col">Cumartesi</th><th scope="col">Pazar</th><th scope="col">Hazırlama</th><th scope="col">Resmi tatil</th><th scope="col">Yıllık izin</th><th scope="col">Rapor</th><th scope="col">Fazla mesai</th></tr></thead>
+        <thead><tr><th scope="col">Ad soyad</th><th scope="col">Görev</th><th scope="col">Nöbet</th><th scope="col">Perşembe</th><th scope="col">Cuma</th><th scope="col">Cumartesi</th><th scope="col">Pazar</th>{#if !acil}<th scope="col">Hazırlama</th>{/if}<th scope="col">Resmi tatil</th><th scope="col">Yıllık izin</th><th scope="col">Rapor</th><th scope="col">Fazla mesai</th></tr></thead>
         <tbody>
           {#each G.satirlar as r (r.s.id)}
-            <tr><th scope="row">{r.s.name}</th><td class="sol">{ROL_AD[r.s.role]}</td><td>{r.n}</td><td>{r.thu}</td><td>{r.cu}</td><td>{r.cmt}</td><td>{r.paz}</td><td>{r.h}</td><td>{r.rt}</td><td>{r.yi}</td><td>{r.rd}</td><td class="fm">{r.fm} sa</td></tr>
+            <tr><th scope="row">{r.s.name}</th><td class="sol">{ROL_AD[r.s.role]}</td><td>{r.n}</td><td>{r.thu}</td><td>{r.cu}</td><td>{r.cmt}</td><td>{r.paz}</td>{#if !acil}<td>{r.h}</td>{/if}<td>{r.rt}</td><td>{r.yi}</td><td>{r.rd}</td><td class="fm">{r.fm} sa</td></tr>
           {/each}
         </tbody>
       </table>
