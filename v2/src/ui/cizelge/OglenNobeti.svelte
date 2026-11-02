@@ -94,16 +94,31 @@
   function otomatik() { if (onay) return; const k = kayit?.[gun]; oglenGunuAyarla(y, m, gun, k?.e ?? [], k?.t ?? [], false); acik = false; }
 
   let durum = $state("");
+  // haftalık PDF: ayın hafta içi günleri haftalara bölünür (Pzt–Cuma); seçilen hafta tek sayfa
+  const pdfHaftalari = $derived.by(() => {
+    const out: { bas: number; bit: number }[] = [];
+    for (let d = 1; d <= gunSayisi(y, m); d++) {
+      const dw = haftaGunu(y, m, d);
+      if (dw > 4) continue;
+      if (!out.length || dw === 0) out.push({ bas: d, bit: d }); else out[out.length - 1].bit = d;
+    }
+    return out;
+  });
+  let pdfHafta = $state(0);
+  $effect(() => { y; m; const b = new Date(); const g = b.getFullYear() === y && b.getMonth() === m ? b.getDate() : 0;
+    const i = pdfHaftalari.findIndex(h => g >= h.bas && g <= h.bit + 2); pdfHafta = i >= 0 ? i : 0; });
+  const haftaMetni = (h: { bas: number; bit: number }) => h.bas === h.bit ? `${h.bas} ${AYLAR[m]}` : `${h.bas}–${h.bit} ${AYLAR[m]}`;
   async function pdf() {
     durum = "";
     try {
       const { oglenPdf } = await import("../../disa/oglenCikti");
+      const h = pdfHaftalari[pdfHafta];
       const blob = oglenPdf({
-        y, m, kurum: depo.veri.kurum.ad,
-        haftalar: haftalar.map(h => h.map(s => ({ gun: s.gun, dw: s.dw, e: s.e.map(ad), t: s.t.map(ad) }))),
-        ozet: ozet.map(o => ({ ad: o.k.name, rol: ROL_KISA[o.k.role] ?? "", ay: o.ay, ayCuma: o.k.cumaMuaf ? null : o.ayCuma, yil: o.top, yilCuma: o.k.cumaMuaf ? null : o.cuma })),
+        y, m, kurum: depo.veri.kurum.ad, donem: haftaMetni(h) + " " + y,
+        haftalar: haftalar.map(w => w.filter(s => s.gun >= h.bas && s.gun <= h.bit).map(s => ({ gun: s.gun, dw: s.dw, e: s.e.map(ad), t: s.t.map(ad) }))).filter(w => w.length),
+        ozet: [],
       });
-      const ok = await dosyaKaydet(`oglen-nobeti-${y}-${String(m + 1).padStart(2, "0")}.pdf`, blob, "application/pdf");
+      const ok = await dosyaKaydet(`oglen-nobeti-${y}-${String(m + 1).padStart(2, "0")}-${String(h.bas).padStart(2, "0")}.pdf`, blob, "application/pdf");
       durum = ok ? "PDF kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "PDF oluşturulamadı."); }
   }
@@ -127,7 +142,12 @@
         <button class="dugme{kayit ? '' : ' ana'}" onclick={olustur}><Ikon ad={kayit ? "yenile" : "saat"} />{kayit ? "Yeniden oluştur" : "Öğlen nöbetini oluştur"}</button>
         {#if kayit}<button class="dugme ana" onclick={() => listeyiOnayla("oglen", y, m)}><Ikon ad="tamam" />Onayla</button>{/if}
       {/if}
-      {#if kayit}<button class="dugme" onclick={pdf}><Ikon ad="indir" />PDF</button>{/if}
+      {#if kayit && pdfHaftalari.length}
+        <span class="pdf-hafta">
+          <select class="girdi" bind:value={pdfHafta} aria-label="PDF için hafta">{#each pdfHaftalari as h, i}<option value={i}>{haftaMetni(h)}</option>{/each}</select>
+          <button class="dugme" onclick={pdf}><Ikon ad="indir" />Haftalık PDF</button>
+        </span>
+      {/if}
       {#if kayit && !onay}<button class="dugme sade tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, ayın öğlen nöbetini sil" : "Sil"}</button>{/if}
     </div>
   </div>
@@ -142,9 +162,9 @@
   {:else}
     <section class="kart takvim-kutu" aria-label="{ayAdi(y, m)} öğlen nöbeti">
       <div class="takvim">
-        {#each GUN_KISA as g}<div class="bas" aria-hidden="true">{g}</div>{/each}
-        {#each { length: haftaGunu(y, m, 1) } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
-        {#each gunlerTum as d (d)}
+        {#each GUN_KISA.slice(0, 5) as g}<div class="bas" aria-hidden="true">{g}</div>{/each}
+        {#each { length: haftaGunu(y, m, 1) <= 4 ? haftaGunu(y, m, 1) : 0 } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
+        {#each gunlerTum.filter(d => haftaGunu(y, m, d) <= 4) as d (d)}
           {@const k = kayit[d]}
           {@const dw = haftaGunu(y, m, d)}
           {#if k}
@@ -158,7 +178,7 @@
               </span>
             </button>
           {:else}
-            <div class="gun bos-gun" class:hafta-sonu={dw >= 5} aria-hidden="true"><span class="ust"><span class="no rakam">{d}</span></span>{#if dw < 5}<span class="yok">{bilgi(d)}</span>{/if}</div>
+            <div class="gun bos-gun" aria-hidden="true"><span class="ust"><span class="no rakam">{d}</span></span><span class="yok">{bilgi(d)}</span></div>
           {/if}
         {/each}
       </div>
@@ -233,7 +253,8 @@
   .bant { padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; background: var(--vurgu-zemin); color: var(--vurgu); }
   .bant.bilgi { background: var(--bilgi-zemin); color: var(--bilgi); }
   .takvim-kutu { padding: var(--b3); display: grid; gap: var(--b3); }
-  .takvim { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  /* yalnız hafta içi (Pzt–Cuma): 5 sütun, adlara daha çok yer */
+  .takvim { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
   .bas { text-align: center; font-size: var(--f-xs); font-weight: 600; color: var(--soluk); padding-bottom: 2px; }
   .gun { display: flex; flex-direction: column; gap: 5px; min-height: 104px; padding: 8px 9px; text-align: left; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); min-width: 0; font: inherit; color: inherit; }
   button.gun { cursor: pointer; }
@@ -242,7 +263,6 @@
   .gun.sorunlu { border-color: var(--hata); }
   .gun.bugun { box-shadow: inset 0 0 0 2px var(--odak); }
   .bos-gun { background: transparent; border-style: dashed; }
-  .bos-gun.hafta-sonu { background: var(--tatil-zemin); border-style: solid; border-color: transparent; opacity: .6; }
   .ust { display: flex; align-items: center; gap: 6px; }
   .no { font-weight: 600; font-size: var(--f-sm); color: var(--yazi-2); }
   .elle { margin-left: auto; font-size: 11px; color: var(--soluk); }
@@ -263,13 +283,15 @@
     .no { font-size: 12px; }
     .elle { font-size: 9px; }
     .kisiler { gap: 1px; }
-    .kisi { font-size: 10.5px; gap: 2px; font-weight: 600; }
-    .kisi .isaret { transform: scale(.7); }
-    .kisi .ad { display: none; }
-    .ad-kisa { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .kisi { font-size: 11px; gap: 2px; font-weight: 600; line-height: 1.2; }
+    .kisi .isaret { display: none; }
+    /* 5 sütunda telefonda da tam ad (gerekirse alt satıra kayar) */
+    .kisi .ad { overflow-wrap: anywhere; }
     .nb { font-size: 8px; }
     .yok { font-size: 9px; }
   }
+  .pdf-hafta { display: inline-flex; gap: var(--b2); align-items: center; }
+  .pdf-hafta select { width: auto; min-width: 9.5em; }
   .iki { display: grid; grid-template-columns: 1fr 1fr; gap: var(--b3); }
   .alanlar { display: grid; gap: var(--b2); align-content: start; }
   .not { padding: var(--b2) var(--b3); border-radius: var(--r-kucuk); font-size: var(--f-sm); background: var(--yuzey-2); color: var(--yazi-2); }
