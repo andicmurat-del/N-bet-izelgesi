@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { depo, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, ornekKadroYukle, tumVeriyiSil, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
+  import { depo, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import { arkaPlandaOlustur } from "../../motor/istemci";
   import { acilKadrosunda, uyariSiniflandir } from "../../motor";
   import { cizelgeKitabi } from "../../disa/cizelgeXlsx";
@@ -107,13 +107,6 @@
   <AySecici />
 </header>
 
-{#if depo.veri.ornek}
-  <div class="ornek-serit" role="note">
-    <span><b>Örnek kadroyla deniyorsunuz.</b> Kişiler ve çizelgeler örnektir. Kendi personelinizi girmeden önce örnek verileri silin.</span>
-    <button class="dugme kucuk" onclick={tumVeriyiSil}>Örnek verileri sil</button>
-  </div>
-{/if}
-
 {#if !depo.veri.staff.length}
   <section class="kart karsilama">
     <h2>Nöbet çizelgesine hoş geldiniz</h2>
@@ -125,7 +118,6 @@
     </ol>
     <div class="dugmeler">
       <button class="dugme ana" onclick={() => git("kisiler")}><Ikon ad="kisiler" />Personel ekle</button>
-      <button class="dugme" onclick={ornekKadroYukle}>Örnek kadroyla dene</button>
     </div>
   </section>
 {:else}
@@ -224,7 +216,6 @@
 <style>
   .sayfa-bas { display: flex; flex-wrap: wrap; gap: var(--b4); align-items: flex-end; justify-content: space-between; margin-bottom: var(--b4); }
   .baslik p { color: var(--soluk); margin-top: 2px; }
-  .ornek-serit { display: flex; flex-wrap: wrap; align-items: center; gap: var(--b3); justify-content: space-between; padding: var(--b3) var(--b4); margin-bottom: var(--b4); border-radius: var(--r); background: var(--dikkat-zemin); color: var(--yazi); border: 1px dashed var(--dikkat); font-size: var(--f-sm); }
   .karsilama { padding: var(--b6); display: grid; gap: var(--b4); max-width: 760px; }
   .karsilama p { color: var(--yazi-2); max-width: 64ch; }
   .adimlar { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--b3); counter-reset: adim; }

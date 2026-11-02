@@ -3,6 +3,7 @@
 // acil listesine yalnız acil kadrosu, günde en çok 2 kişi, aynı kişi iki kez yok, izinli / çalışma dönemi dışı güne yazılmaz;
 // acil kadrosu eczane nöbeti / hazırlaması almaz; acil nöbeti olan kişi aynı / komşu günde eczanede görev almaz; öğlen
 // nöbetine yalnız o gün mesaide olan eczacı ve tekniker yazılır; puantajda acil nöbeti 24 saat; aynı girdi aynı sonuç.
+// Eşitlik: acilde aylık fazla mesai farkı (6+ kişide en çok 8 saat), öğlende sayı (en çok 2) ve Cuma (en çok 1) farkı.
 //   N=200 npx vitest run test/tarama-acil.test.js
 import { test, expect } from "vitest";
 import * as M from "../src/motor";
@@ -76,6 +77,24 @@ for (let s = BAS; s < BAS + N; s++) test("acil/öğlen senaryo " + s, () => {
       });
       Object.entries(veri.acil[ayK]).forEach(([d, ids]) => ids.forEach(i => { const c = hucre(i, +d); if (c && !c.ov && !(c.kod === "N" && c.acil) && !B.kesinYasak(i, y, m, +d)) bulgu.push(d + ": puantajda acil nöbeti yok " + i + " " + c.kod); }));
       P.satirlar.forEach(rw => { const top = rw.cells.reduce((t, c) => t + c.saat, 0); if (Math.abs(top - rw.toplam) > 1e-9) bulgu.push("puantaj toplam " + rw.s.name); });
+      // eşitlik (ay içinde tamamen yazılabilen kişiler arasında): acilde fazla mesai saati, öğlende sayı ve Cuma
+      const tam = st => { for (let d = 1; d <= dim; d++) if (B.kesinYasak(st.id, y, m, d)) return false; return true; };
+      const fark = l => (l.length >= 2 ? Math.max(...l) - Math.min(...l) : 0);
+      const acilTam = veri.staff.filter(st => M.acilKadrosunda(st) && tam(st));
+      if (!ra.uyarilar.length && !Object.keys(sabit).length) {
+        const f = fark(acilTam.map(st => P.satirlar.find(x => x.s.id === st.id)?.fm ?? 0));
+        // günde 2 kişi: 6+ kişilik kadroda en çok 8 saat; 4–5 kişide nöbet gün aşırı düşer, Cuma / hafta sonu
+        // nöbetinin kime denk geleceği bu sıkı düzende pek seçilemez (ölçülen en kötü: 32 saat)
+        const sinir = acilTam.length >= 6 ? 8 : 32;
+        if (f > sinir) bulgu.push(`acil fazla mesai farkı ${f} saat (${acilTam.length} kişi, sınır ${sinir})`);
+      }
+      const og = {}, ogCu = {};
+      ro.gunler.forEach(g => [...g.e, ...g.t].forEach(i => { og[i] = (og[i] || 0) + 1; if (g.dw === 4) ogCu[i] = (ogCu[i] || 0) + 1; }));
+      for (const rol of ro.uyarilar.length ? [] : ["eczaci", "teknisyen"]) {   // kadro yetmeyince (uyarılı) eşitlik aranmaz
+        const l = veri.staff.filter(st => st.role === rol && tam(st));
+        if (fark(l.filter(st => !st.cumaMuaf).map(st => og[st.id] || 0)) > 2) bulgu.push(`öğlen ${rol} sayı farkı 2'yi aşıyor`);
+        if (fark(l.filter(st => !st.cumaMuaf).map(st => ogCu[st.id] || 0)) > 1) bulgu.push(`öğlen ${rol} Cuma farkı 1'i aşıyor`);
+      }
       M.calismaListesiHesapla(veri, y, m); M.yillikRaporHesapla(veri, y); M.oglenYillikHesapla(veri, y, m);
       M.oglenOnarimlariHesapla(veri, y * 10000 + (m + 1) * 100 + 10);
       ra.gunler.slice(0, 5).forEach(g => M.acilDenetle(veri, y, m, g.gun, g.ids));

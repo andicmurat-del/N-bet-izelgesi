@@ -11,11 +11,36 @@ export interface OglenVerisi {
   ozet: { ad: string; rol: string; ay: number; ayCuma: number | null; yil: number; yilCuma: number | null }[];
 }
 
+/** Haftalık öğlen nöbeti: yalnız tablo, adlar ortalı; sayfa tablonun boyunda (A4 değil). */
+function haftalikPdf(v: OglenVerisi): Blob {
+  const satirlar = v.haftalar.flat();
+  const EN = 200, K = 4;
+  const ciz = (doc: ReturnType<typeof yeniPdf>) => {
+    doc.setProperties({ title: `${v.donem} öğlen nöbeti`, creator: "Nöbet Çizelgesi" });
+    autoTable(doc, {
+      startY: K, margin: { left: K, right: K, top: K, bottom: K },
+      head: [["Gün", "1. eczacı", "2. eczacı", "3. eczacı", "1. tekniker", "2. tekniker"]],
+      body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, ...[0, 1, 2].map(i => buyukAd(g.e[i] ?? "")), ...[0, 1].map(i => buyukAd(g.t[i] ?? ""))]),
+      theme: "grid",
+      styles: { font: "CizelgeSans", fontSize: 12, cellPadding: 4, halign: "center", valign: "middle", textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.2 },
+      headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 232, 238], fontSize: 10.5 },
+      columnStyles: { 0: { cellWidth: 34, fontStyle: "bold" }, 4: { lineWidth: { left: 0.6, right: 0.2, top: 0.2, bottom: 0.2 } } },
+      didParseCell: h => { if (h.section === "body" && satirlar[h.row.index].dw === 4) h.cell.styles.fillColor = [244, 246, 248]; },
+    });
+    return (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 100;
+  };
+  // önce ölçülür, sonra tablonun boyunda sayfaya çizilir
+  const boy = ciz(yeniPdf("portrait", [EN, 400])) + K;
+  const doc = yeniPdf(EN > boy ? "landscape" : "portrait", [EN, boy]);
+  ciz(doc);
+  return doc.output("blob");
+}
+
 export function oglenPdf(v: OglenVerisi): Blob {
+  if (v.donem) return haftalikPdf(v);
   const doc = yeniPdf("portrait");
   const W = 210, K = 12;
   const donem = v.donem ?? `${AYLAR[v.m]} ${v.y}`;
-  const haftalik = !!v.donem;
   const baslik = `${v.kurum ? buyukAd(v.kurum) + " · " : ""}${donem} öğlen nöbeti`;
   doc.setProperties({ title: `${donem} öğlen nöbeti`, creator: "Nöbet Çizelgesi" });
   doc.setFont("CizelgeSans", "bold"); doc.setFontSize(14); doc.setTextColor(19, 33, 44);
@@ -27,10 +52,9 @@ export function oglenPdf(v: OglenVerisi): Blob {
     head: [["Gün", "1. eczacı", "2. eczacı", "3. eczacı", "1. tekniker", "2. tekniker"]],
     body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, ...[0, 1, 2].map(i => buyukAd(g.e[i] ?? "")), ...[0, 1].map(i => buyukAd(g.t[i] ?? ""))]),
     theme: "grid",
-    // haftalık çıktı (az satır): daha büyük yazı ve aralık, okunaklı asılır
-    styles: { font: "CizelgeSans", fontSize: haftalik ? 12 : 8.5, cellPadding: haftalik ? 4 : 1.8, textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.15 },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 232, 238], fontSize: haftalik ? 10.5 : 8.5 },
-    columnStyles: { 0: { cellWidth: haftalik ? 34 : 26, fontStyle: "bold" }, 4: { lineWidth: { left: 0.6, right: 0.15, top: 0.15, bottom: 0.15 } } },
+    styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 1.8, textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.15 },
+    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 232, 238] },
+    columnStyles: { 0: { cellWidth: 26, fontStyle: "bold" }, 4: { lineWidth: { left: 0.6, right: 0.15, top: 0.15, bottom: 0.15 } } },
     didParseCell: h => {
       if (h.section !== "body") return;
       const g = satirlar[h.row.index];
