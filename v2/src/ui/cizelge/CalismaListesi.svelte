@@ -22,6 +22,7 @@
 
 <p class="aciklama">Puantaja göre her gün çalışanlar. Mesai günlerinde eczacılar onayda, teknikerler hazırlamada; hafta sonu ve tatilde onaycılar eczane nöbetçileri, hazırlamacılar o günün hazırlamacılarıdır. Bir güne dokunup adları görün.</p>
 
+<p class="lejant" aria-hidden="true"><span class="s onay"><i></i>Onay / onaycı</span><span class="s haz"><i></i>Hazırlama</span><span class="s dst"><i></i>Destek</span><span class="s yok"><i></i>Yok (izin, rapor)</span></p>
 <section class="kart takvim-kutu" aria-label="Çalışma listesi">
   <div class="takvim">
     {#each GUN_KISA as d}<div class="bas" aria-hidden="true">{d}</div>{/each}
@@ -31,10 +32,10 @@
         aria-label="{gunMetni(y, m, x.gun)}: {x.onay.length} {x.tatil ? 'onaycı' : 'onay'}, {x.haz.length} {x.tatil ? 'hazırlamacı' : 'hazırlama'}{x.dst.length ? ', ' + x.dst.length + ' destek' : ''}{x.yok.length ? ', ' + x.yok.length + ' kişi yok' : ''}">
         <span class="ust"><span class="no rakam">{x.gun}</span><span class="gunadi">{GUN_UZUN[x.dw]}</span></span>
         <span class="sayilar">
-          <span class="s onay"><i></i>{x.tatil ? "Onaycı" : "Onay"}<b class="rakam">{x.onay.length}</b></span>
-          <span class="s haz"><i></i>{x.tatil ? "Hazırlamacı" : "Hazırlama"}<b class="rakam">{x.haz.length}</b></span>
-          {#if x.dst.length}<span class="s dst"><i></i>Destek<b class="rakam">{x.dst.length}</b></span>{/if}
-          {#if x.yok.length}<span class="s yok"><i></i>Yok<b class="rakam">{x.yok.length}</b></span>{/if}
+          <span class="s onay"><i></i><span class="etk">{x.tatil ? "Onaycı" : "Onay"}</span><b class="rakam">{x.onay.length}</b></span>
+          <span class="s haz"><i></i><span class="etk">{x.tatil ? "Hazırlamacı" : "Hazırlama"}</span><b class="rakam">{x.haz.length}</b></span>
+          {#if x.dst.length}<span class="s dst"><i></i><span class="etk">Destek</span><b class="rakam">{x.dst.length}</b></span>{/if}
+          {#if x.yok.length}<span class="s yok"><i></i><span class="etk">Yok</span><b class="rakam">{x.yok.length}</b></span>{/if}
         </span>
       </button>
     {/each}
@@ -81,6 +82,7 @@
   .haz i, .nokta.haz { background: var(--haz); }
   .dst i, .nokta.dst { background: var(--destek); }
   .yok i, .nokta.yok { background: transparent; box-shadow: inset 0 0 0 1.5px var(--soluk); }
+  .lejant { display: none; flex-wrap: wrap; gap: 4px 12px; margin-bottom: var(--b2); }
   .grup { display: grid; gap: var(--b2); }
   .grup h3 { display: flex; align-items: center; gap: var(--b2); font-size: var(--f-sm); font-weight: 600; }
   .grup h3 .rakam { color: var(--soluk); font-weight: 500; }
@@ -89,14 +91,16 @@
   li span { font-weight: 500; }
   li small { font-size: var(--f-xs); color: var(--soluk); }
 
+  /* telefon: aynı 7 sütunlu takvim; hücrede renkli işaret ve sayı (adlar güne dokununca) */
   @media (max-width: 720px) {
-    .takvim-kutu { padding: 0; overflow: hidden; }
-    .takvim { grid-template-columns: 1fr; gap: 0; }
-    .bas, .bosluk { display: none; }
-    .gun { flex-direction: row; align-items: center; min-height: 0; padding: 10px 12px; border-radius: 0; border-width: 0 0 1px; gap: 12px; }
-    .ust { flex-direction: column; align-items: flex-start; gap: 0; width: 76px; flex: none; }
-    .no { font-size: var(--f-lg); color: var(--yazi); }
-    .gunadi { display: block; font-size: var(--f-xs); color: var(--soluk); }
-    .sayilar { flex: 1; grid-template-columns: 1fr 1fr; gap: 2px 14px; }
+    .takvim-kutu { padding: 6px; }
+    .takvim { gap: 3px; }
+    .bas { font-size: 11px; }
+    .gun { min-height: 70px; padding: 4px 4px 5px; gap: 3px; border-radius: 6px; }
+    .no { font-size: 12px; }
+    .s { gap: 4px; }
+    .s .etk { display: none; }
+    .lejant { display: flex; }
+    .s b { font-size: 12px; }
   }
 </style>

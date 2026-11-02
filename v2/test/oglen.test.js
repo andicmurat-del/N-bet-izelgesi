@@ -6,7 +6,7 @@ import { cizelgeOlustur, oglenHesapla, oglenOnarimlariHesapla, oglenYillikHesapl
 const staff = [];
 for (let i = 1; i <= 7; i++) staff.push({ id: i, name: "E" + i, role: "eczaci", ...(i === 7 ? { cumaMuaf: true } : {}) });
 staff.push({ id: 8, name: "A1", role: "servis" });
-for (let i = 1; i <= 5; i++) staff.push({ id: 8 + i, name: "T" + i, role: "teknisyen" });
+for (let i = 1; i <= 5; i++) staff.push({ id: 8 + i, name: "T" + i, role: "teknisyen", ...(i === 5 ? { cumaMuaf: true } : {}) });
 const veri = { staff, prefs: {}, manualTatil: {}, arife: {}, settings: {}, schedules: {}, puantaj: {}, acil: {}, oglen: {} };
 // E2 Kasım'ın ikinci haftası yıllık izinde; 20 Kasım arife
 for (let d = 9; d <= 13; d++) veri.prefs[`2-2026-10-${d}`] = "izinli";
@@ -41,7 +41,7 @@ describe("öğlen nöbeti", () => {
       [...g.e, ...g.t].forEach(id => expect(["M", "N"]).toContain(hucre(id, g.gun).kod));
       g.e.forEach(id => expect(["eczaci", "servis"]).toContain(staff.find(s => s.id === id).role));
       g.t.forEach(id => expect(staff.find(s => s.id === id).role).toBe("teknisyen"));
-      if (g.dw === 4) expect(g.e).not.toContain(7);
+      if (g.dw === 4) { expect(g.e).not.toContain(7); expect(g.t).not.toContain(13); }
     });
     // izinli haftasında E2 yok
     r.gunler.filter(g => g.gun >= 9 && g.gun <= 13).forEach(g => expect(g.e).not.toContain(2));
@@ -62,8 +62,9 @@ describe("öğlen nöbeti", () => {
     expect(fark(say([1, 2, 3, 4, 5, 6, 7, 8]))).toBeLessThanOrEqual(1);
     expect(fark(say([9, 10, 11, 12, 13]))).toBeLessThanOrEqual(1);
     expect(fark([1, 2, 3, 4, 5, 6, 8].map(id => Yl[id].cuma))).toBeLessThanOrEqual(1);
-    expect(fark([9, 10, 11, 12, 13].map(id => Yl[id].cuma))).toBeLessThanOrEqual(1);
+    expect(fark([9, 10, 11, 12].map(id => Yl[id].cuma))).toBeLessThanOrEqual(1);
     expect(Yl[7].cuma).toBe(0);
+    expect(Yl[13].cuma).toBe(0);
   });
 
   test("aynı veriyle aynı sonuç", () => {

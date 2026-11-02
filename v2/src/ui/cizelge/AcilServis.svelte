@@ -4,7 +4,7 @@
   import { depo, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, resmiTatilMi, tatilMi } from "../../veri/depo.svelte";
   import { acilDenetle } from "../../motor";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
-  import { GUN_KISA, GUN_UZUN, gunMetni, gunSayisi, haftaGunu, ayAdi } from "../../veri/tarih";
+  import { GUN_KISA, GUN_UZUN, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
 
@@ -14,6 +14,7 @@
   const adaylar = $derived(aydaCalisanlar(y, m).filter(k => k.role === "servis").sort((a, b) => a.name.localeCompare(b.name, "tr")));
   const gunler = $derived(Array.from({ length: gunSayisi(y, m) }, (_, i) => i + 1));
   const ad = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş kişi)";
+  const kisa = (id: number) => kisaAd(ad(id), depo.veri.staff.map(k => k.name));
   const dolu = $derived(gunler.filter(g => acilGunu(y, m, g).length).length);
   const ozet = $derived.by(() => {
     const o = new Map<number, number[]>();
@@ -83,7 +84,7 @@
           aria-label="{gunMetni(y, m, g)}: acil servis nöbetçisi {l.map(ad).join(' ve ') || 'yok'}">
           <span class="ust"><span class="no rakam">{g}</span><span class="gunadi">{GUN_UZUN[haftaGunu(y, m, g)]}</span>{#if resmiTatilMi(y, m, g)}<span class="etiket">Resmi tatil</span>{/if}</span>
           <span class="kisiler">
-            {#each l as id}<span class="kisi"><span class="isaret servis"></span>{ad(id)}</span>{:else}<span class="yok">Nöbetçi yok</span>{/each}
+            {#each l as id}<span class="kisi"><span class="isaret servis"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span></span>{:else}<span class="yok"><span class="ad">Nöbetçi yok</span><span class="ad-kisa" aria-hidden="true">–</span></span>{/each}
           </span>
         </button>
       {/each}
@@ -167,17 +168,21 @@
   .not { padding: var(--b2) var(--b3); border-radius: var(--r-kucuk); font-size: var(--f-sm); font-weight: 500; background: var(--yuzey-2); color: var(--yazi-2); }
   .not.hata { background: var(--hata-zemin); color: var(--hata); }
 
+  .ad-kisa { display: none; }
+  /* telefon: aynı 7 sütunlu takvim, kısa adlar */
   @media (max-width: 720px) {
-    .takvim-kutu { padding: 0; overflow: hidden; }
-    .takvim { grid-template-columns: 1fr; gap: 0; }
-    .bas, .bosluk { display: none; }
-    .gun { flex-direction: row; align-items: center; min-height: 0; padding: 10px 12px; border-radius: 0; border-width: 0 0 1px; gap: 12px; }
-    .gun.dolu { border-left-width: 3px; }
-    .ust { flex-direction: column; align-items: flex-start; gap: 0; width: 76px; flex: none; }
-    .no { font-size: var(--f-lg); color: var(--yazi); }
-    .gunadi { display: block; font-size: var(--f-xs); color: var(--soluk); }
-    .kisiler { flex: 1; }
-    .kisi { font-size: var(--f-sm); }
+    .takvim-kutu { padding: 6px; }
+    .takvim { gap: 3px; }
+    .bas { font-size: 11px; }
+    .gun { min-height: 62px; padding: 4px 3px 5px; gap: 3px; border-radius: 6px; }
+    .gun.dolu { border-left-width: 2px; }
+    .no { font-size: 12px; }
+    .etiket { display: none; }
+    .kisi { font-size: 10.5px; gap: 2px; font-weight: 600; }
+    .kisi .isaret { display: none; }
+    .kisi .ad { display: none; }
+    .ad-kisa { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .yok { font-size: 10px; }
     .iki { grid-template-columns: 1fr; }
   }
 </style>

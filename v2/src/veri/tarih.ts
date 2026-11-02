@@ -22,4 +22,10 @@ export function gorunenAd(ad: string): string {
     .map(w => /[AEIİOÖUÜaeıioöuü]/.test(w) ? w.charAt(0).toLocaleUpperCase("tr-TR") + w.slice(1).toLocaleLowerCase("tr-TR") : w)
     .join("");
 }
+/** Dar takvim hücresi için kısa ad: ad; aynı adı taşıyan başka kişi varsa soyadının baş harfi de ("Ayşe Y.") */
+export function kisaAd(ad: string, tumAdlar: string[]): string {
+  const p = String(ad || "").trim().split(/\s+/), ilk = p[0] || "";
+  const ayni = tumAdlar.filter(x => String(x || "").trim().split(/\s+/)[0] === ilk).length > 1;
+  return ayni && p.length > 1 ? `${ilk} ${p[p.length - 1].charAt(0)}.` : ilk;
+}
 export const buyukAd = (ad: string) => String(ad || "").trim().replace(/\s+/g, " ").toLocaleUpperCase("tr-TR");
