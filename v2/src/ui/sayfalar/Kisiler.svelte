@@ -79,7 +79,7 @@
                   {#if k.baslangic || k.bitis}<small>{k.baslangic ? "Başlangıç " + tarihMetni(k.baslangic) : ""}{k.baslangic && k.bitis ? " · " : ""}{k.bitis ? "Ayrılış " + tarihMetni(k.bitis) : ""}</small>{/if}
                   {#if k.cumaMuaf}<small>Öğlen nöbeti: Cuma'dan muaf</small>{/if}
                   {#if k.role === "nobetci"}<small>Nöbet: {k.acilTutar ? "acil eczane" : "günlük eczane"}</small>
-                  {:else if k.acilTutar}<small>Nöbet: acil eczane (günlük eczanede mesai)</small>{/if}
+                  {:else if k.acilTutar}<small>Nöbet: acil eczane</small>{/if}
                 </div>
                 <button class="dugme sade kucuk" onclick={() => duzenle(k)} aria-label="{k.name}: düzenle"><Ikon ad="duzenle" />Düzenle</button>
               </li>
@@ -107,8 +107,8 @@
   {#if dRol === "eczaci" || dRol === "nobetci"}
     <fieldset class="yer">
       <legend>Nöbet tuttuğu yer</legend>
-      <label class="secim"><input type="radio" name="nobetYeri" checked={!dAcil} onchange={() => (dAcil = false)} /><span>Günlük eczane{dRol === "eczaci" ? " (nöbet ve hazırlama)" : " (Günlük Eczane Nöbet Listesi)"}</span></label>
-      <label class="secim"><input type="radio" name="nobetYeri" checked={dAcil} onchange={() => (dAcil = true)} /><span>Acil eczane{dRol === "eczaci" ? " (günlük eczanede mesai yapar; eczane nöbeti ve hazırlama tutmaz)" : " (Acil Eczane Nöbet Listesi; günlük eczanede nöbet tutmaz)"}</span></label>
+      <label class="secim"><input type="radio" name="nobetYeri" checked={!dAcil} onchange={() => (dAcil = false)} /><span>Günlük eczane</span></label>
+      <label class="secim"><input type="radio" name="nobetYeri" checked={dAcil} onchange={() => (dAcil = true)} /><span>Acil eczane</span></label>
     </fieldset>
   {/if}
   {#if dHata}<p class="hata" role="alert">{dHata}</p>{/if}
