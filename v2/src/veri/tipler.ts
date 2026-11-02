@@ -90,8 +90,6 @@ export interface Veri {
   servisAyar: ServisAyar;
   /** "yil-ay" → servis hazırlama dağıtımı (motorun ay kaydı; gün gün kişiler ve servisleri, elle değişiklikler) */
   servisKayit: Record<string, ServisAyKaydi>;
-  /** örnek kadroyla deneniyor: ekranda belirtilir, tek düğmeyle silinir */
-  ornek?: true;
 }
 
 /** Puantajda bir günün görevi bir kişiden ötekine geçti (yerine tutma ya da takasın bir yarısı) */
