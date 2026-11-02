@@ -1,7 +1,7 @@
 // Veri katmanı: yedek doğrulama, kişi numarası, silme koruması, izin/rapor ve nöbet değişimi (geri alma dahil).
 // .svelte.ts dosyaları vitest'te sunucu kipinde derlenir: $state düz nesnedir, $effect çalışmaz (kayıt yapılmaz).
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import { depo, bosVeri, veriyiDogrula, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla } from "../src/veri/depo.svelte.ts";
+import { depo, bosVeri, veriyiDogrula, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenAyiniSil, oglenKaydet } from "../src/veri/depo.svelte.ts";
 import { degisimUygula, degisimGeriAl, izinUygula, puantajIzgarasi } from "../src/veri/degisim.svelte.ts";
 
 const Y = 2026, M = 9, AY = `${Y}-${M}`;
@@ -156,5 +156,45 @@ describe("geri al / yinele", () => {
     geriAl();
     expect(depo.veri.kurum.ad).toBe("");
     expect(depo.veri.servisKayit[AY]).toBeTruthy();
+  });
+});
+
+describe("acil ve öğlen listesi onayı", () => {
+  beforeEach(() => {
+    depo.veri = ornekVeri();
+    depo.veri.staff.push({ id: 9, name: "A1", role: "servis" }, { id: 10, name: "A2", role: "servis" }, { id: 11, name: "A3", role: "servis" });
+    depo.veri.acil[AY] = { 5: [9, 10], 6: [11, 9] };
+    depo.veri.oglen[AY] = { 5: { e: [1, 2], t: [5] } };
+    gecmisiSifirla();
+  });
+  test("onaylı acil ayı değiştirilemez, silinemez, yeniden kaydedilemez; onay kaldırılınca açılır", () => {
+    listeyiOnayla("acil", Y, M);
+    acilGunuAyarla(Y, M, 5, [11]); acilKaydet(Y, M, [{ gun: 1, ids: [9] }]); acilAyiniSil(Y, M);
+    expect(depo.veri.acil[AY]).toEqual({ 5: [9, 10], 6: [11, 9] });
+    // sonradan izin alanın yerine yazma (onaylı düzeltme) yapılabilir
+    acilGunuAyarla(Y, M, 6, [11, 10], true, true);
+    expect(depo.veri.acil[AY][6]).toEqual([11, 10]);
+    listeOnayiniKaldir("acil", Y, M);
+    acilGunuAyarla(Y, M, 5, [11]);
+    expect(depo.veri.acil[AY][5]).toEqual([11]);
+  });
+  test("onaylı öğlen ayı elle değiştirilemez ama izin / rapor onarımı yazılır", () => {
+    listeyiOnayla("oglen", Y, M);
+    oglenGunuAyarla(Y, M, 5, [3], [6]); oglenAyiniSil(Y, M); oglenKaydet(Y, M, [{ gun: 5, e: [4], t: [7] }]);
+    expect(depo.veri.oglen[AY][5]).toEqual({ e: [1, 2], t: [5] });
+    oglenKaydet(Y, M, [{ gun: 5, e: [1, 3], t: [5] }], true);
+    expect(depo.veri.oglen[AY][5]).toEqual({ e: [1, 3], t: [5] });
+  });
+  test("onay yedekte korunur, geri alma onayı ve onaylı listeyi değiştirmez; onaylı listedeki kişi silinmez", () => {
+    depo.veri.acil[AY][5] = [9, 10]; gecmiseIsle();
+    listeyiOnayla("acil", Y, M);
+    const metin = yedekVerisi(); depo.veri = bosVeri(); yedektenYukle(metin);
+    expect(depo.veri.listeOnay.acil[AY].zaman).toBeGreaterThan(0);
+    expect(onayliGoreviVar(11)).toContain(AY);
+    expect(kisiSil(11)).toBe(false);
+    gecmisiSifirla(); depo.veri.oglen[AY][5].e = [3, 4]; gecmiseIsle();
+    expect(geriAl()).toBe(true);
+    expect(depo.veri.listeOnay.acil[AY]).toBeTruthy();
+    expect(depo.veri.acil[AY][6]).toEqual([11, 9]);
   });
 });
