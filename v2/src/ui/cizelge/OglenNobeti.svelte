@@ -1,9 +1,9 @@
 <script lang="ts">
   // Öğlen nöbeti: hafta içi öğle arasında eczanede kalanlar (Pzt–Prş 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker).
   // O günün çalışma listesinden (puantaj) yazılır; yıl boyunca toplam ve Cuma sayısı eşit tutulur.
-  import { depo, aydaCalisanlar, ayCizelgesi, oglenAyi, oglenKaydet, oglenAyiniSil, oglenGunuAyarla } from "../../veri/depo.svelte";
+  import { depo, aydaCalisanlar, ayCizelgesi, oglenAyi, oglenKaydet, oglenAyiniSil, oglenGunuAyarla, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import { OGLEN_GEREK, oglenGrubu, oglenHesapla, oglenYillikHesapla, puantajHesapla } from "../../motor";
-  import { AYLAR, GUN_UZUN, ayAdi, gunMetni, gunSayisi, haftaGunu } from "../../veri/tarih";
+  import { AYLAR, GUN_KISA, ayAdi, gunMetni, gunSayisi, haftaGunu, kisaAd } from "../../veri/tarih";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Pencere from "../ortak/Pencere.svelte";
   import type { Rol } from "../../veri/tipler";
@@ -15,6 +15,11 @@
   const c = $derived(ayCizelgesi(y, m));
   const kayit = $derived(oglenAyi(y, m));
   const ad = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş kişi)";
+  const kisa = (id: number) => kisaAd(ad(id), depo.veri.staff.map(k => k.name));
+  const gunlerTum = $derived(Array.from({ length: gunSayisi(y, m) }, (_, i) => i + 1));
+  const bilgi = (d: number) => (resmiTatilMi(y, m, d) ? "Resmi tatil" : arifeMi(y, m, d) ? "Arife" : "");
+  const bugun = new Date();
+  const bugunMu = (d: number) => bugun.getFullYear() === y && bugun.getMonth() === m && bugun.getDate() === d;
   const kisiler = $derived(aydaCalisanlar(y, m).filter(k => oglenGrubu(k.role)));
   let uyarilar = $state<string[]>([]);
   let silOnayi = $state(false);
@@ -35,8 +40,6 @@
   const nobetciMi = (id: number, d: number) => hucre(id, d)?.kod === "N";
 
   type Satir = { gun: number; dw: number; e: number[]; t: number[]; elle: boolean };
-  // her kişi ayrı sütunda: 3 eczacı, 2 tekniker (Pzt–Prş'de boş kalan sütun boş görünür)
-  const sutunlar = (s: Satir) => [{ l: s.e, n: OGLEN_GEREK.cuma.e }, { l: s.t, n: OGLEN_GEREK.cuma.t }];
   const haftalar = $derived.by(() => {
     if (!kayit) return [] as Satir[][];
     const out: Satir[][] = []; let cur: Satir[] = [];
@@ -128,25 +131,29 @@
   {#if !kayit}
     <section class="kart bos"><p>Bu ay için öğlen nöbeti henüz oluşturulmadı.</p></section>
   {:else}
-    <section class="kart tablo-kap" aria-label="{ayAdi(y, m)} öğlen nöbeti">
-      <table>
-        <thead><tr><th class="sol">Gün</th>{#each { length: OGLEN_GEREK.cuma.e } as _, i}<th class="sol">{i + 1}. eczacı</th>{/each}{#each { length: OGLEN_GEREK.cuma.t } as _, i}<th class="sol" class:ayrac={i === 0}>{i + 1}. tekniker</th>{/each}</tr></thead>
-        {#each haftalar as h}
-          <tbody>
-            {#each h as s (s.gun)}
-              <tr class:cuma={s.dw === 4} class="tikla" onclick={() => gunAc(s)}>
-                <th class="sol"><button class="gun-dugme" onclick={e => { e.stopPropagation(); gunAc(s); }} aria-label="{gunMetni(y, m, s.gun)}: düzenle"><span class="rakam">{s.gun}</span> {GUN_UZUN[s.dw]}</button>{#if s.elle}<small> · elle</small>{/if}</th>
-                {#each sutunlar(s) as { l, n }, gi}
-                  {#each { length: Math.max(n, l.length) } as _, i}
-                    {@const id = l[i]}
-                    <td class="sol" class:ayrac={gi === 1 && i === 0}>{#if id !== undefined}<span class:sorun={!calisiyor(id, s.gun)}>{ad(id)}</span>{#if nobetciMi(id, s.gun)}{" "}<small>(nöbetçi)</small>{/if}{/if}</td>
-                  {/each}
-                {/each}
-              </tr>
-            {/each}
-          </tbody>
+    <section class="kart takvim-kutu" aria-label="{ayAdi(y, m)} öğlen nöbeti">
+      <div class="takvim">
+        {#each GUN_KISA as g}<div class="bas" aria-hidden="true">{g}</div>{/each}
+        {#each { length: haftaGunu(y, m, 1) } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
+        {#each gunlerTum as d (d)}
+          {@const k = kayit[d]}
+          {@const dw = haftaGunu(y, m, d)}
+          {#if k}
+            {@const s = { gun: d, dw, e: k.e, t: k.t, elle: !!k.elle }}
+            <button class="gun" class:cuma={dw === 4} class:sorunlu={[...k.e, ...k.t].some(id => !calisiyor(id, d))} class:bugun={bugunMu(d)} onclick={() => gunAc(s)}
+              aria-label="{gunMetni(y, m, d)}: eczacı {k.e.map(ad).join(', ') || 'yok'}; tekniker {k.t.map(ad).join(', ') || 'yok'}{k.elle ? ', elle düzenlendi' : ''}">
+              <span class="ust"><span class="no rakam">{d}</span>{#if k.elle}<span class="elle" title="Elle düzenlendi">elle</span>{/if}</span>
+              <span class="kisiler">
+                {#each k.e as id}<span class="kisi" class:sorun={!calisiyor(id, d)}><span class="isaret"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span>{#if nobetciMi(id, d)}<span class="nb" title="O günün nöbetçisi">N</span>{/if}</span>{/each}
+                {#each k.t as id}<span class="kisi" class:sorun={!calisiyor(id, d)}><span class="isaret teknisyen"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span>{#if nobetciMi(id, d)}<span class="nb" title="O günün nöbetçisi">N</span>{/if}</span>{/each}
+              </span>
+            </button>
+          {:else}
+            <div class="gun bos-gun" class:hafta-sonu={dw >= 5} aria-hidden="true"><span class="ust"><span class="no rakam">{d}</span></span>{#if dw < 5}<span class="yok">{bilgi(d)}</span>{/if}</div>
+          {/if}
         {/each}
-      </table>
+      </div>
+      <p class="lejant"><span><span class="isaret"></span>Eczacı</span><span><span class="isaret teknisyen"></span>Tekniker</span><span><b class="nb">N</b> o günün nöbetçisi</span><span>Gölgeli: Cuma</span></p>
     </section>
   {/if}
 
@@ -206,21 +213,50 @@
   th, td { padding: 8px 12px; border-bottom: 1px solid var(--cizgi-acik); text-align: right; white-space: nowrap; }
   thead th { font-size: var(--f-xs); color: var(--soluk); font-weight: 600; background: var(--yuzey-2); }
   tbody th { font-weight: 500; }
-  tbody + tbody tr:first-child > * { border-top: 2px solid var(--cizgi); }
-  tr.cuma { background: var(--yuzey-2); }
   .sol { text-align: left; }
-  td.sol { white-space: normal; }
   small { color: var(--soluk); font-weight: 400; }
-  .sorun { color: var(--hata); text-decoration: line-through; }
   .blok { margin-top: var(--b5); display: grid; gap: var(--b2); }
   .blok h2 { font-size: var(--f-lg); }
   .blok .aciklama { margin-bottom: 0; }
   .bant { padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; background: var(--vurgu-zemin); color: var(--vurgu); }
-  tr.tikla { cursor: pointer; }
-  .ayrac { border-left: 2px solid var(--cizgi); }
-  tr.tikla:hover { background: var(--vurgu-zemin); }
-  .gun-dugme { all: unset; cursor: pointer; font-weight: 500; }
-  .gun-dugme:focus-visible { outline: 2px solid var(--odak); outline-offset: 2px; border-radius: 4px; }
+  .takvim-kutu { padding: var(--b3); display: grid; gap: var(--b3); }
+  .takvim { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  .bas { text-align: center; font-size: var(--f-xs); font-weight: 600; color: var(--soluk); padding-bottom: 2px; }
+  .gun { display: flex; flex-direction: column; gap: 5px; min-height: 104px; padding: 8px 9px; text-align: left; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); min-width: 0; font: inherit; color: inherit; }
+  button.gun { cursor: pointer; }
+  button.gun:hover { border-color: var(--soluk); }
+  .gun.cuma { background: var(--yuzey-2); }
+  .gun.sorunlu { border-color: var(--hata); }
+  .gun.bugun { box-shadow: inset 0 0 0 2px var(--odak); }
+  .bos-gun { background: transparent; border-style: dashed; }
+  .bos-gun.hafta-sonu { background: var(--tatil-zemin); border-style: solid; border-color: transparent; opacity: .6; }
+  .ust { display: flex; align-items: center; gap: 6px; }
+  .no { font-weight: 600; font-size: var(--f-sm); color: var(--yazi-2); }
+  .elle { margin-left: auto; font-size: 11px; color: var(--soluk); }
+  .kisiler { display: grid; gap: 2px; min-width: 0; }
+  .kisi { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1.3; font-weight: 500; min-width: 0; }
+  .kisi .ad { min-width: 0; overflow-wrap: anywhere; }
+  .kisi.sorun { color: var(--hata); text-decoration: line-through; }
+  .nb { font-size: 10px; font-weight: 700; color: var(--hata); flex: none; }
+  .yok { font-size: var(--f-xs); color: var(--soluk); }
+  .ad-kisa { display: none; }
+  .lejant { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: var(--f-sm); color: var(--yazi-2); }
+  .lejant > span { display: inline-flex; align-items: center; gap: 6px; }
+  @media (max-width: 720px) {
+    .takvim-kutu { padding: 6px; }
+    .takvim { gap: 3px; }
+    .bas { font-size: 11px; }
+    .gun { min-height: 70px; padding: 4px 3px 5px; gap: 3px; border-radius: 6px; }
+    .no { font-size: 12px; }
+    .elle { font-size: 9px; }
+    .kisiler { gap: 1px; }
+    .kisi { font-size: 10.5px; gap: 2px; font-weight: 600; }
+    .kisi .isaret { transform: scale(.7); }
+    .kisi .ad { display: none; }
+    .ad-kisa { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .nb { font-size: 8px; }
+    .yok { font-size: 9px; }
+  }
   .iki { display: grid; grid-template-columns: 1fr 1fr; gap: var(--b3); }
   .alanlar { display: grid; gap: var(--b2); align-content: start; }
   .not { padding: var(--b2) var(--b3); border-radius: var(--r-kucuk); font-size: var(--f-sm); background: var(--yuzey-2); color: var(--yazi-2); }
