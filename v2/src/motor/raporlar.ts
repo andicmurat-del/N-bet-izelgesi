@@ -59,6 +59,8 @@ export function acilDenetle(B: Baglam, y: number, m: number, g: number, ids: num
     const s = B.kisi(id); if (!s) return;
     if (B.kesinYasak(id, y, m, g)) out.push({ sev: "uyari", t: s.name + " bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında." });
     [-1, 1].forEach(k => { if ((ay[g + k] || []).indexOf(id) >= 0) out.push({ sev: "uyari", t: s.name + ", " + (g + k) + ". gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir)." }); });
+    const ara = B.sayi("acilMinAra") || 3;
+    for (let k = 2; k < ara; k++) [-k, k].forEach(kk => { if ((ay[g + kk] || []).indexOf(id) >= 0) out.push({ sev: "uyari", t: s.name + ", " + (g + kk) + ". gün de acil eczanede nöbetçi (en az " + ara + " gün ara önerilir)." }); });
     if (sch && sch.days[g - 1] && sch.days[g - 1].assigned.some(p => p.id === id)) out.push({ sev: "uyari", t: s.name + " aynı gün eczane nöbetçisi." });
     else if (eczaneGoreviYakin(B, id, y, m, g)) out.push({ sev: "uyari", t: s.name + " komşu günde eczane nöbeti ya da hazırlaması var." });
     const t = B.tercih(id, y, m, g);

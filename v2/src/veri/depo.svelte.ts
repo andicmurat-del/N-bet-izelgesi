@@ -5,7 +5,7 @@ import { oglenOnarimlariHesapla } from "../motor";
 
 const ANAHTAR = "nobet-cizelgesi-v2";
 
-export const AYAR_VARSAYILAN: Ayarlar = { minAra: 3, destekAylik: 2, arifeSaat: 3 };
+export const AYAR_VARSAYILAN: Ayarlar = { minAra: 3, acilMinAra: 3, destekAylik: 2, arifeSaat: 3 };
 
 export function bosVeri(): Veri {
   return {
@@ -58,6 +58,7 @@ export function veriyiDogrula(ham: unknown): Veri {
   const sayi = (x: unknown, a: number, b: number, vars: number) => (x !== null && x !== "" && Number.isFinite(Number(x)) && Number(x) >= a && Number(x) <= b ? Number(x) : vars);
   v.settings = {
     minAra: sayi(s.minAra, 2, 6, AYAR_VARSAYILAN.minAra),
+    acilMinAra: sayi(s.acilMinAra, 2, 6, AYAR_VARSAYILAN.acilMinAra),
     destekAylik: sayi(s.destekAylik, 0, 8, AYAR_VARSAYILAN.destekAylik),
     arifeSaat: sayi(s.arifeSaat, 0, 8, AYAR_VARSAYILAN.arifeSaat),
   };

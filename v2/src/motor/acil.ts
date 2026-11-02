@@ -95,9 +95,9 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
   const dim = ayGunSayisi(y, m), uyarilar: string[] = [], kayit = B.acil[ayAnahtari(y, m)] || {};
   const havuz = B.staff.filter(s => acilKadrosunda(s) && aktifAydaMi(s, y, m));
   const devir = acilDevir(B, y, m), pay = acilPaylari(B, y, m, havuz);
-  // ay sınırı: önceki ayın son 4 günü ve sonraki ayın ilk 4 günündeki acil nöbetleri (art arda / 5 günde 3 için)
+  // ay sınırı: önceki ayın son 6 günü ve sonraki ayın ilk 6 günündeki acil nöbetleri (art arda / 5 günde 3 için)
   const disGun: Record<number, number[]> = {};
-  for (const k of [-3, -2, -1, 0, dim + 1, dim + 2, dim + 3, dim + 4]) {
+  for (const k of [-5, -4, -3, -2, -1, 0, dim + 1, dim + 2, dim + 3, dim + 4, dim + 5, dim + 6]) {
     const [a, b, c] = gunKaydir(y, m, 1, k - 1);
     disGun[k] = B.acil[ayAnahtari(a, b)]?.[c] || [];
   }
@@ -114,6 +114,8 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
   // ertesi gün izne çıkana nöbet yazılmaz (nöbet ertesi izni izne denk gelir); başka kimse yoksa yazılır
   const izinOnce = Array.from({ length: dim }, (_, i) => new Set(havuz.filter(s => B.izinOncesiMi(s.id, y, m, i + 1)).map(s => s.id)));
   const var_ = (id: number, d: number) => (d >= 1 && d <= dim ? sec[d - 1].includes(id) : (disGun[d] || []).includes(id));
+  // iki acil nöbeti arasında önerilen en az gün (Ayarlar > Acil eczane): daha yakın her nöbet çifti hafif cezalı
+  const ara = Math.max(2, Math.min(6, B.sayi("acilMinAra") || 3));
   const J = (): number => {
     let j = 0;
     const say = bosTur(), cmt: Record<number, number> = {}, paz: Record<number, number> = {};
@@ -126,10 +128,10 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
         if (dw[i] === PAZAR) paz[id] = (paz[id] || 0) + 1;
         // ileriye bakan çiftler bir kez sayılır; ay başında önceki ayla olanlar da
         if (var_(id, d + 1)) j += W.ardArda;
-        if (var_(id, d + 2)) j += W.araIki;
+        for (let k = 2; k < ara; k++) if (var_(id, d + k)) j += W.araIki;
         if (var_(id, d + 2) && var_(id, d + 4)) j += W.ucBes;
         if (d === 1 && var_(id, 0)) j += W.ardArda;
-        if (d <= 2 && var_(id, d - 2)) j += W.araIki;
+        for (let k = 2; k < ara; k++) if (d <= k && var_(id, d - k)) j += W.araIki;
         if (d <= 4 && var_(id, d - 2) && var_(id, d - 4)) j += W.ucBes;
         if (d <= 2 && var_(id, d - 2) && var_(id, d + 2)) j += W.ucBes;
         const t = tercih(id, i);

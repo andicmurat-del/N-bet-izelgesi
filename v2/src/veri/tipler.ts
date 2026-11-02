@@ -48,11 +48,12 @@ export interface AyCizelgesi {
 }
 
 export interface Ayarlar {
-  /** iki nöbet arasında önerilen en az gün */
+  /** günlük eczane: iki nöbet arasında önerilen en az gün */
   minAra: number;
+  /** acil eczane: iki acil nöbeti arasında önerilen en az gün */
+  acilMinAra: number;
   /** destek personeli başına aylık hazırlama */
   destekAylik: number;
-  /** hazırlama eşitliği ile fazla mesai saati çakışırsa öncelik: 1 hazırlama, 2 saat */
   /** arife günü normal mesai saati */
   arifeSaat: number;
 }

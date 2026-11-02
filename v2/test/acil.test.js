@@ -213,3 +213,27 @@ describe("acil eşitliği gün türlerine göre (günlük eczanedeki gibi)", () 
     for (const t of ["top", "pe", "cu", "cmt", "paz"]) expect(fark(kadro.map(id => n[id][t])), t).toBeLessThanOrEqual(1);
   });
 });
+
+describe("Ayarlar > Acil eczane: iki acil nöbeti arasında önerilen en az gün", () => {
+  const araSay = (r, k) => { let n = 0; r.gunler.forEach((g, i) => g.ids.forEach(id => { if (r.gunler[i + k]?.ids.includes(id)) n++; })); return n; };
+  test("4 gün seçilince 3 gün arayla nöbet azalır; 2 gün seçilince 2 gün ara cezasız", () => {
+    const v = JSON.parse(JSON.stringify(veri));
+    const r3 = acilHesapla(v, Y, M);
+    v.settings = { ...v.settings, acilMinAra: 4 };
+    const r4 = acilHesapla(v, Y, M);
+    expect(araSay(r4, 3)).toBeLessThan(araSay(r3, 3));
+    v.settings = { ...v.settings, acilMinAra: 2 };
+    const r2 = acilHesapla(v, Y, M);
+    expect(araSay(r2, 2)).toBeGreaterThanOrEqual(araSay(r3, 2));
+    [r2, r3, r4].forEach(r => expect(araSay(r, 1)).toBe(0));
+  });
+  test("denetim, önerilen aradan yakın acil nöbetini uyarır", async () => {
+    const v = JSON.parse(JSON.stringify(veri));
+    v.settings = { acilMinAra: 4 };
+    v.acil[`${Y}-${M}`] = { 5: [13, 14], 8: [13, 15] };
+    const { acilDenetle } = await import("../src/motor");
+    expect(acilDenetle(v, Y, M, 8, [13, 15]).some(x => /5\. gün de acil eczanede nöbetçi \(en az 4 gün ara/.test(x.t))).toBe(true);
+    v.settings = { acilMinAra: 3 };
+    expect(acilDenetle(v, Y, M, 8, [13, 15]).some(x => /en az/.test(x.t))).toBe(false);
+  });
+});
