@@ -56,10 +56,10 @@
     .map(id => `${s.gun} ${AYLAR[m]}: ${ad(id)} o gün artık mesaide değil (izin ya da rapor sonradan girilmiş); yeniden oluşturun ya da bilerek bırakın.`)));
 
   const yillik = $derived(oglenYillikHesapla($state.snapshot(depo.veri), y, m) as Record<number, { top: number; cuma: number; ay: number; ayCuma: number }>);
-  const SIRA: Partial<Record<Rol, number>> = { eczaci: 0, servis: 1, teknisyen: 2 };
+  const SIRA: Partial<Record<Rol, number>> = { eczaci: 0, teknisyen: 1 };
   const ozet = $derived(kisiler.slice().sort((a, b) => (SIRA[a.role] ?? 9) - (SIRA[b.role] ?? 9) || a.name.localeCompare(b.name, "tr"))
     .map(k => ({ k, ...(yillik[k.id] ?? { top: 0, cuma: 0, ay: 0, ayCuma: 0 }) })));
-  const ROL_KISA: Partial<Record<Rol, string>> = { eczaci: "eczacı", servis: "acil servis eczacısı", teknisyen: "tekniker" };
+  const ROL_KISA: Partial<Record<Rol, string>> = { eczaci: "eczacı", teknisyen: "tekniker" };
 
   // elle düzenleme: bir güne dokunulur, eczacı ve tekniker yerleri seçilir; bu gün otomatik oluşturmada korunur
   let acik = $state(false), gun = $state(1), se = $state<string[]>([]), st = $state<string[]>([]);
