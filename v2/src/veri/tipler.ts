@@ -148,7 +148,7 @@ export const ROL_ACIKLAMA: Record<Rol, string> = {
   eczaci: "Nöbet ve hazırlama tutar; her gün en az bir eczacı nöbetçidir.",
   teknisyen: "Nöbet ve hazırlama tutar.",
   destek: "Nöbet tutmaz; tatil günlerinde ikinci hazırlama görevini alır.",
-  nobetci: "Günlük eczanede ya da (\"Acilde nöbet tutar\" işaretliyse) acil eczanede nöbet tutar; eczacı yerine sayılır.",
+  nobetci: "Hafta içi mesai ve öğlen nöbeti yoktur; nöbetini günlük eczanede ya da acil eczanede tutar (Düzenle > Nöbet tuttuğu yer). Günlük eczanede eczacı yerine sayılır.",
   servis: "Günlük eczanede nöbet, hazırlama ve öğlen nöbeti tutmaz; nöbetleri Acil Eczane Nöbet Listesi'ne yazılır. Hafta içi normal mesai yapar.",
 };
 
