@@ -34,7 +34,7 @@
     const ad = dAd.trim();
     if (!ad) { dHata = "Ad soyad boş olamaz."; return; }
     if (dBas && dBit && dBit < dBas) { dHata = "Ayrılış tarihi işe başlama tarihinden önce olamaz."; return; }
-    kisiGuncelle(duzenlenen.id, { name: gorunenAd(ad), role: dRol, baslangic: dBas || undefined, bitis: dBit || undefined, cumaMuaf: dCuma && (dRol === "eczaci" || dRol === "servis" || dRol === "teknisyen") ? true : undefined, acilTutar: dAcil && dRol === "eczaci" ? true : undefined });
+    kisiGuncelle(duzenlenen.id, { name: gorunenAd(ad), role: dRol, baslangic: dBas || undefined, bitis: dBit || undefined, cumaMuaf: dCuma && (dRol === "eczaci" || dRol === "servis" || dRol === "teknisyen") ? true : undefined, acilTutar: dAcil && (dRol === "eczaci" || dRol === "nobetci") ? true : undefined });
     duzenleAcik = false;
   }
   let silOnayi = $state(false);
@@ -103,8 +103,8 @@
   {#if dRol === "eczaci" || dRol === "servis" || dRol === "teknisyen"}
     <label class="secim"><input type="checkbox" bind:checked={dCuma} /><span>Cuma günleri öğlen nöbeti tutmaz (Cuma'dan muaf)</span></label>
   {/if}
-  {#if dRol === "eczaci"}
-    <label class="secim"><input type="checkbox" bind:checked={dAcil} /><span>Acilde nöbet tutar (günlük eczanede mesai yapar, eczane nöbeti ve hazırlama tutmaz; nöbetleri acil eczane listesinde)</span></label>
+  {#if dRol === "eczaci" || dRol === "nobetci"}
+    <label class="secim"><input type="checkbox" bind:checked={dAcil} /><span>Acilde nöbet tutar (eczane nöbeti ve hazırlama tutmaz; nöbetleri acil eczane listesinde)</span></label>
   {/if}
   {#if dHata}<p class="hata" role="alert">{dHata}</p>{/if}
   {#if silOnayi}

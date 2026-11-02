@@ -9,8 +9,8 @@
 import { aktifAydaMi, type Baglam } from "./baglam";
 import { ayAnahtari, ayGunSayisi, AYLAR, CUMARTESI, gunKaydir, haftaGunu, PAZAR } from "./takvim";
 
-/** acil nöbetine yazılabilir mi: acil servis eczacısı ya da "acilde nöbet tutar" işaretli eczacı */
-export const acilKadrosunda = (s: { role: string; acilTutar?: true }) => s.role === "servis" || (s.role === "eczaci" && !!s.acilTutar);
+/** acil nöbetine yazılabilir mi: acil servis personeli ya da "acilde nöbet tutar" işaretli eczacı / kemoterapi eczacısı */
+export const acilKadrosunda = (s: { role: string; acilTutar?: true }) => s.role === "servis" || ((s.role === "eczaci" || s.role === "nobetci") && !!s.acilTutar);
 /** günde acil nöbetçi sayısı */
 export const ACIL_GUNLUK = 2;
 

@@ -97,3 +97,14 @@ describe("acilde nöbet tutan eczacı günlük eczanede nöbet tutmaz", () => {
     days.forEach(g => [...g.assigned, ...g.prep].forEach(p => expect([1, 2, 13, 14, 15, 16]).not.toContain(p.id)));
   });
 });
+
+describe("kemoterapi eczacısı nöbeti günlükte ya da acilde tutar (seçilir)", () => {
+  test("acilde tutar işaretliyse acil listesine girer, eczaneye girmez; değilse yalnız eczanede", () => {
+    const v = JSON.parse(JSON.stringify(veri));
+    v.staff.push({ id: 30, name: "K1", role: "nobetci", acilTutar: true }, { id: 31, name: "K2", role: "nobetci" });
+    const acil = acilHesapla(v, Y, M), ecz = cizelgeOlustur(v, Y, M, { saat: () => 0 }).days;
+    const acilde = new Set(acil.gunler.flatMap(g => g.ids)), eczanede = new Set(ecz.flatMap(g => [...g.assigned, ...g.prep].map(p => p.id)));
+    expect(acilde.has(30)).toBe(true); expect(eczanede.has(30)).toBe(false);
+    expect(acilde.has(31)).toBe(false); expect(eczanede.has(31)).toBe(true);
+  });
+});
