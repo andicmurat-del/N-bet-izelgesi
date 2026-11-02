@@ -1,7 +1,7 @@
 // Elle gün düzenlemede anlık kural denetimi (gün penceresi): seçilen nöbetçiler ve hazırlama personeli için
 // hata / uyarı / bilgi listesi.
 import type { Gorevli } from "../veri/tipler";
-import { eczaneNobetcisi, aktifGunMu, eczaciMi, ikiDisaridanSerbestMi, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
+import { eczaneHazirlamacisi, eczaneNobetcisi, aktifGunMu, eczaciMi, ikiDisaridanSerbestMi, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
 import { acilNobetiYakin } from "./acil";
 import { cumaHaftaSonuUclu, fmKuralKisileri, hsKuralIhlali, hsSayilari } from "./istatistik";
 import { DURUM_AD, FM_MAX_FARK } from "./sabitler";
@@ -34,7 +34,7 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
   const thuHaftaSonu = B.ayar("thuHaftaSonu");
 
   if (nb.length && !nb.some(p => eczaciMi(p.role))) ekle("hata", "Bu günde eczacı yok.");
-  if (nb.filter(p => p.role === "nobetci").length > 1 && !ikiDisaridanSerbestMi(y, m, day.day)) ekle("hata", "Dışarıdan nöbete gelen iki eczacı aynı güne birlikte nöbetçi yazılmaz (Cuma ve Cumartesi hariç; biri hazırlama olabilir).");
+  if (nb.filter(p => p.role === "nobetci").length > 1 && !ikiDisaridanSerbestMi(y, m, day.day)) ekle("hata", "İki kemoterapi eczacısı aynı güne birlikte nöbetçi yazılmaz (Cuma ve Cumartesi hariç; biri hazırlama olabilir).");
   if (nb.length < 2) ekle("uyari", "Günde 2 nöbetçi olmalı; ikinci kişi boş.");
   // eş durumu: hepsi birlikte yazılamıyorsa (günde 2 nöbetçi, en az 1 eczacı) sığmayanlar için yalnız uyarı
   const esIstek = B.staff.filter(s => eczaneNobetcisi(s) && B.tercih(s.id, y, m, day.day) === "esVar" && aktifGunMu(s, y, m, day.day));
@@ -44,6 +44,10 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
     ? ekle("uyari", s.name + " için eş durumu: bu güne istiyor, ama eş durumu isteyenler birlikte yazılamıyor (günde 2 nöbetçi, en az 1 eczacı).")
     : ekle("hata", s.name + " için eş durumu: bu güne nöbetçi yazılması gerekiyor."));
 
+  // acil kadrosundaki kişi (acil servis personeli, "acilde nöbet tutar" işaretli eczacı) günlük eczanede nöbet / hazırlama tutmaz
+  // (çizelge oluşturulduktan sonra işaretlenen kişi için)
+  nb.forEach(p => { const s = B.kisi(p.id); if (s && !eczaneNobetcisi(s)) ekle("hata", p.name + " günlük eczanede nöbet tutmaz (acil eczane kadrosunda ya da nöbet tutmayan görevde)."); });
+  pr.forEach(p => { const s = B.kisi(p.id); if (s && s.role !== "destek" && !eczaneHazirlamacisi(s)) ekle("hata", p.name + " günlük eczanede hazırlama tutmaz (acil eczane kadrosunda ya da hazırlama tutmayan görevde)."); });
   // acil nöbeti olan kişi o gün ve komşu günlerde eczanede görev almaz
   [...nb, ...pr].forEach(p => { if (acilNobetiYakin(B, p.id, y, m, day.day)) ekle("hata", p.name + " aynı ya da komşu günde acil eczane nöbetçisi."); });
   nb.forEach(p => {

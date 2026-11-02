@@ -5,7 +5,7 @@ export interface PuantajSatiri {
   s: { id: number; name: string; role: Rol };
   cells: { kod: string; saat: number; ov: boolean; acil?: boolean }[];
   toplam: number;
-  /** aylık normal mesai; normal mesaisi olmayanlarda (dışarıdan nöbetçi, destek) null */
+  /** aylık normal mesai; normal mesaisi olmayanlarda (kemoterapi eczacısı, destek) null */
   aylik: number | null;
   fm: number; fmGunduz: number; fmGece: number;
   n: number; h: number; thu: number; cu: number; cmt: number; paz: number; rt: number; yi: number; rd: number; ni: number;

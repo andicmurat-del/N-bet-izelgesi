@@ -105,7 +105,7 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     const n = ad(id), et = gun + " " + ay, sonGun = gun === G1.gunler.length;
     if (!st || !r1 || !r2) return;
     const c2 = (i: number) => r2.cells[i];
-    if (!(st.role === "eczaci" || st.role === "teknisyen" || st.role === "destek" || st.role === "nobetci")) out.engel.push(n + " hazırlama görevi almaz (yalnızca eczacı, dışarıdan gelen eczacı, tekniker ve destek personeli).");
+    if (!(st.role === "eczaci" || st.role === "teknisyen" || st.role === "destek" || st.role === "nobetci")) out.engel.push(n + " hazırlama görevi almaz (yalnızca eczacı, kemoterapi eczacısı, tekniker ve destek personeli).");
     const once = ortak(id, gun, r1, n, et);
     if (once === "N") out.engel.push(n + " " + et + " nöbetçi; aynı gün hazırlama yapamaz.");
     else if (once === "H") out.engel.push(n + " " + et + " zaten hazırlama görevinde.");
@@ -124,7 +124,7 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
   const gunEczaci = (gun: number) => {
     const nb = G2.satirlar.filter(r => r.cells[gun - 1].kod === "N");
     if (nb.length && !nb.some(r => eczaciMi(r.s.role))) out.engel.push(gun + " " + ay + " günü nöbette eczacı kalmıyor.");
-    if (nb.filter(r => r.s.role === "nobetci").length > 1 && !ikiDisaridanSerbestMi(y, m, gun)) out.engel.push(gun + " " + ay + " günü iki dışarıdan gelen eczacı birlikte nöbetçi olur (Cuma ve Cumartesi dışında aynı güne yalnızca biri nöbet yazılır; hazırlama olabilir).");
+    if (nb.filter(r => r.s.role === "nobetci").length > 1 && !ikiDisaridanSerbestMi(y, m, gun)) out.engel.push(gun + " " + ay + " günü iki kemoterapi eczacısı birlikte nöbetçi olur (Cuma ve Cumartesi dışında aynı güne yalnızca biri nöbet yazılır; hazırlama olabilir).");
   };
   if (HZ) hazirlamaKontrol(d.yer, d.gun); else { nobetKontrol(d.yer, d.gun); gunEczaci(d.gun); }
   if (takas) { if (KOD2 === "H") hazirlamaKontrol(d.cik, d.gun2!); else { nobetKontrol(d.cik, d.gun2!); gunEczaci(d.gun2!); } }

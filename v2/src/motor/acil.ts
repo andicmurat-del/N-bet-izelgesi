@@ -166,8 +166,12 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
     for (const id of aday[i]) if (tercih(id, i) === "esVar" && !sec[i].includes(id)) uyarilar.push((i + 1) + " " + AYLAR[m] + ": " + ad(id) + " için eş durumu isteği acil listesinde karşılanamadı.");
     for (const id of sec[i]) if (tercih(id, i) === "avoid") uyarilar.push((i + 1) + " " + AYLAR[m] + ": " + ad(id) + " nöbet istemiyordu, başka uygun kişi olmadığı için yazıldı.");
   }
+  const artArda: string[] = [];
   for (let i = 0; i < dim; i++) for (const id of sec[i]) {
-    if (var_(id, i + 2)) uyarilar.push(ad(id) + ": " + (i + 1) + " ve " + (i + 2) + " " + AYLAR[m] + " art arda acil nöbeti (personel yetmiyor).");
+    if (var_(id, i + 2)) artArda.push(ad(id) + ": " + (i + 1) + " ve " + (i + 2) + " " + AYLAR[m] + " art arda acil nöbeti (personel yetmiyor).");
   }
+  // çok sayıda art arda nöbet kadronun yetmediğini gösterir: tek tek yerine tek satır
+  if (artArda.length > 5) uyarilar.push(AYLAR[m] + ": acil kadrosu yetmiyor; " + artArda.length + " kez art arda acil nöbeti yazıldı (günde " + ACIL_GUNLUK + " kişi için art arda gün olmadan en az " + 2 * ACIL_GUNLUK + " kişi gerekir).");
+  else uyarilar.push(...artArda);
   return { gunler: sec.map((ids, i) => ({ gun: i + 1, ids: sabit[i] ? ids : ids.slice().sort((a, b) => a - b), ...(sabit[i] ? { elle: true as const } : {}) })), uyarilar };
 }

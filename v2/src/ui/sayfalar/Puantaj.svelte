@@ -2,7 +2,7 @@
   // Aylık puantaj cetveli: çizelgeden gelen nöbet/hazırlama, nöbet ertesi izin ve izinler; hücre elle değiştirilebilir.
   import { puantajHesapla } from "../../motor";
   import { depo, ayCizelgesi, puantajKoduAyarla, puantajElleKodu } from "../../veri/depo.svelte";
-  import type { PuantajKodu } from "../../veri/tipler";
+  import type { Kisi, PuantajKodu } from "../../veri/tipler";
   import { ROL_AD } from "../../veri/tipler";
   import { GUN_KISA, gunMetni } from "../../veri/tarih";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
@@ -14,17 +14,22 @@
   import IzinRapor from "../puantaj/IzinRapor.svelte";
   import NobetDegisimi from "../puantaj/NobetDegisimi.svelte";
 
-  // gomulu: Günlük Eczane sayfasının alt sekmesi olarak (başlık ve ay seçici üst sayfada)
-  let { git, gomulu = false }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; gomulu?: boolean } = $props();
+  // gomulu: Günlük Eczane / Acil Eczane sayfasının alt sekmesi olarak (başlık ve ay seçici üst sayfada).
+  // kimler: cetvelde ve izin/rapor kaydında görünen kişiler (o bölümün kadrosu); acil: Acil Eczane puantajı
+  // (eczane nöbet değişimi sekmesi yok; acil nöbeti Acil Eczane Nöbet Listesi'nden değiştirilir)
+  let { git, gomulu = false, kimler = () => true, acil = false }: {
+    git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; gomulu?: boolean; kimler?: (k: Kisi) => boolean; acil?: boolean;
+  } = $props();
 
-  const GORUNUMLER = [{ ad: "cetvel", baslik: "Cetvel", ikon: "tablo" }, { ad: "izin", baslik: "İzin ve rapor", kisa: "İzin", ikon: "izin" }, { ad: "degisim", baslik: "Nöbet değişimi", kisa: "Değişim", ikon: "karisik" }] as const;
-  let gorunum = $state<(typeof GORUNUMLER)[number]["ad"]>("cetvel");
+  const TUM_GORUNUMLER = [{ ad: "cetvel", baslik: "Cetvel", ikon: "tablo" }, { ad: "izin", baslik: "İzin ve rapor", kisa: "İzin", ikon: "izin" }, { ad: "degisim", baslik: "Nöbet değişimi", kisa: "Değişim", ikon: "karisik" }] as const;
+  const GORUNUMLER = $derived(acil ? TUM_GORUNUMLER.filter(g => g.ad !== "degisim") : TUM_GORUNUMLER);
+  let gorunum = $state<(typeof TUM_GORUNUMLER)[number]["ad"]>("cetvel");
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
-  const G = $derived(puantajHesapla($state.snapshot(depo.veri), depo.yil, depo.ay) as Izgara);
+  const G = $derived.by(() => { const t = puantajHesapla($state.snapshot(depo.veri), depo.yil, depo.ay) as Izgara; return { ...t, satirlar: t.satirlar.filter(r => kimler(r.s as Kisi)) }; });
   const elleSayisi = $derived(Object.values(depo.veri.puantaj[`${depo.yil}-${depo.ay}`] ?? {}).reduce((t, a) => t + Object.keys(a).length, 0));
 
-  const grupAd: Record<string, string> = { eczaci: "Eczacılar", nobetci: "Dışarıdan nöbetçi eczacılar", teknisyen: "Teknikerler", destek: "Destek personeli", servis: "Acil servis eczacıları" };
+  const grupAd: Record<string, string> = { eczaci: "Eczacılar", nobetci: "Kemoterapi eczacıları", teknisyen: "Teknikerler", destek: "Destek personeli", servis: "Acil servis personeli" };
 
   // hücre düzenleme
   let acik = $state(false);
@@ -52,7 +57,7 @@
     durum = "";
     try {
       const m = await import("../../disa/puantajCikti");
-      const ad = `puantaj-${depo.yil}-${String(depo.ay + 1).padStart(2, "0")}.${tur}`;
+      const ad = `${acil ? "acil-" : ""}puantaj-${depo.yil}-${String(depo.ay + 1).padStart(2, "0")}.${tur}`;
       const blob = tur === "xlsx" ? m.puantajKitabi(G, depo.yil, depo.ay, depo.veri.kurum.ad) : m.puantajPdf(G, depo.yil, depo.ay, depo.veri.kurum.ad, c?.onay ?? null);
       durum = (await dosyaKaydet(ad, blob, blob.type || "application/pdf")) ? (tur === "pdf" ? "PDF" : "Excel dosyası") + " kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }
@@ -75,7 +80,7 @@
   <div class="kart bos"><h2>Bu ayda çalışan personel yok</h2><button class="dugme ana" onclick={() => git("kisiler")}>Personel ekle</button></div>
 {:else}
   <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Puantaj görünümü" />
-  {#if gorunum === "izin"}<IzinRapor />
+  {#if gorunum === "izin"}<IzinRapor {kimler} />
   {:else if gorunum === "degisim"}<NobetDegisimi />
   {:else}
   <div class="arac-cubugu">
@@ -92,7 +97,7 @@
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
   <p class="lejant">
-    <span><i class="k">8</i>Normal mesai</span><span><i class="k k-N">24</i>Nöbet</span><span><i class="k k-N acil">24</i>Acil servis nöbeti</span><span><i class="k k-H">8</i>Hazırlama</span>
+    <span><i class="k">8</i>Normal mesai</span><span><i class="k k-N">24</i>Nöbet</span><span><i class="k k-N acil">24</i>Acil eczane nöbeti</span><span><i class="k k-H">8</i>Hazırlama</span>
     <span><i class="k k-NI">Nİ</i>Nöbet izni</span><span><i class="k k-YI">Yİ</i>Yıllık izin</span><span><i class="k k-R">R</i>Rapor</span>
     <span><i class="k k-P">–</i>Çalışma dönemi dışında</span><span><i class="k ov-ornek"></i>Elle değiştirildi</span>
   </p>
@@ -118,7 +123,7 @@
             {#each r.cells as h, i}
               {@const g = G.gunler[i]}
               <td class="k-{h.kod}" class:tatil={g.tatil} class:ov={h.ov} class:acil={h.acil}>
-                <button onclick={() => hucreAc(r, i)} aria-label="{r.s.name}, {gunMetni(depo.yil, depo.ay, g.gun)}: {h.acil ? 'Acil servis nöbeti (24 saat)' : (KOD_AD[h.kod] ?? h.kod)}{h.ov ? ' (elle)' : ''}">{kodMetni(h.kod, h.saat, g.arife)}</button>
+                <button onclick={() => hucreAc(r, i)} aria-label="{r.s.name}, {gunMetni(depo.yil, depo.ay, g.gun)}: {h.acil ? 'Acil eczane nöbeti (24 saat)' : (KOD_AD[h.kod] ?? h.kod)}{h.ov ? ' (elle)' : ''}">{kodMetni(h.kod, h.saat, g.arife)}</button>
               </td>
             {/each}
             <td class="ozet ilk rakam">{r.toplam}</td>
@@ -145,7 +150,7 @@
         </tbody>
       </table>
     </div>
-    <p class="dipnot">Fazla mesai = toplam çalışma (yıllık izin ve rapor günleri o günün mesaisi kadar sayılır) − aylık normal mesai. Ayın son günü tutulan nöbetin ertesi gün izni bu aydan düşülür. Nöbet ertesi izin (Nİ) önce o günün 08:00-20:00 diliminden düşülür; bu dilim yetmezse kalanı 20:00-08:00 diliminden düşülür. Dışarıdan nöbetçi eczacıda nöbet günü ve ertesi günün mesaisi düşülür; destek personelinde hazırlama saatleri aynen yazılır.</p>
+    <p class="dipnot">Fazla mesai = toplam çalışma (yıllık izin ve rapor günleri o günün mesaisi kadar sayılır) − aylık normal mesai. Ayın son günü tutulan nöbetin ertesi gün izni bu aydan düşülür. Nöbet ertesi izin (Nİ) önce o günün 08:00-20:00 diliminden düşülür; bu dilim yetmezse kalanı 20:00-08:00 diliminden düşülür. Kemoterapi eczacısında nöbet günü ve ertesi günün mesaisi düşülür; destek personelinde hazırlama saatleri aynen yazılır.</p>
   </section>
   {/if}
 {/if}
