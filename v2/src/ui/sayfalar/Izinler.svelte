@@ -1,10 +1,15 @@
 <script lang="ts">
+  import type { Kisi } from "../../veri/tipler";
   import { depo, tercihAl, tercihAyarla, resmiTatilMi, arifeMi, resmiTatilAyarla, arifeAyarla, aydaCalisanlar, ayCizelgesi } from "../../veri/depo.svelte";
   import { TERCIH_ACIKLAMA, TERCIH_AD, ROL_AD, type Tercih } from "../../veri/tipler";
   import { GUN_KISA, gunMetni, gunSayisi, haftaGunu, haftaSonuMu, isoTarih } from "../../veri/tarih";
   import AySecici from "../ortak/AySecici.svelte";
 
-  let { git }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void } = $props();
+  // gomulu: Günlük Eczane / Acil Eczane sayfasının alt sekmesi olarak; kimler: listelenecek kişiler (o kadronun
+  // nöbet tutanları); onayKilidi: eczane çizelgesi onaylıysa işaretler kilitlensin mi (acil listesinde onay yok)
+  let { git, gomulu = false, kimler = () => true, onayKilidi = true }: {
+    git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; gomulu?: boolean; kimler?: (k: Kisi) => boolean; onayKilidi?: boolean;
+  } = $props();
 
   type Mod = "kisi" | "tatil";
   let mod = $state<Mod>("kisi");
@@ -13,12 +18,12 @@
   type TatilArac = "resmi" | "arife" | "temizle";
   let tatilArac = $state<TatilArac>("resmi");
 
-  const kisiler = $derived(aydaCalisanlar(depo.yil, depo.ay).sort((a, b) => a.name.localeCompare(b.name, "tr")));
+  const kisiler = $derived(aydaCalisanlar(depo.yil, depo.ay).filter(k => kimler(k)).sort((a, b) => a.name.localeCompare(b.name, "tr")));
   let seciliId = $state<number | null>(null);
   $effect(() => { if (seciliId === null || !kisiler.some(k => k.id === seciliId)) seciliId = kisiler[0]?.id ?? null; });
   const secili = $derived(kisiler.find(k => k.id === seciliId) ?? null);
 
-  const onayli = $derived(!!ayCizelgesi(depo.yil, depo.ay)?.onay);
+  const onayli = $derived(onayKilidi && !!ayCizelgesi(depo.yil, depo.ay)?.onay);
   const gunler = $derived.by(() => {
     const y = depo.yil, m = depo.ay, n = gunSayisi(y, m), bos = haftaGunu(y, m, 1);
     return { bos, liste: Array.from({ length: n }, (_, i) => i + 1) };
@@ -54,6 +59,7 @@
 
 <svelte:window onpointerup={birak} onpointercancel={birak} />
 
+{#if !gomulu}
 <header class="sayfa-bas">
   <div>
     <h1>İzin ve tercihler</h1>
@@ -61,6 +67,9 @@
   </div>
   <AySecici />
 </header>
+{:else}
+<p class="gomulu-aciklama">Bir işaret seçip takvimdeki günlere dokunun; basılı tutup gezdirerek birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır.</p>
+{/if}
 
 {#if !depo.veri.staff.length}
   <div class="kart bos-durum">
@@ -201,4 +210,5 @@
     .gun.ar .no::after { content: " A"; color: var(--arife); font-size: var(--f-xs); }
     .izgara { gap: 4px; }
   }
+  .gomulu-aciklama { font-size: var(--f-sm); color: var(--soluk); margin-bottom: var(--b3); max-width: 80ch; }
 </style>

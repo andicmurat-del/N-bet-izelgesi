@@ -14,7 +14,8 @@
   import IzinRapor from "../puantaj/IzinRapor.svelte";
   import NobetDegisimi from "../puantaj/NobetDegisimi.svelte";
 
-  let { git }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void } = $props();
+  // gomulu: Günlük Eczane sayfasının alt sekmesi olarak (başlık ve ay seçici üst sayfada)
+  let { git, gomulu = false }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; gomulu?: boolean } = $props();
 
   const GORUNUMLER = [{ ad: "cetvel", baslik: "Cetvel", ikon: "tablo" }, { ad: "izin", baslik: "İzin ve rapor", kisa: "İzin", ikon: "izin" }, { ad: "degisim", baslik: "Nöbet değişimi", kisa: "Değişim", ikon: "karisik" }] as const;
   let gorunum = $state<(typeof GORUNUMLER)[number]["ad"]>("cetvel");
@@ -58,6 +59,7 @@
   }
 </script>
 
+{#if !gomulu}
 <header class="sayfa-bas">
   <div>
     <h1>Puantaj</h1>
@@ -65,6 +67,9 @@
   </div>
   <AySecici />
 </header>
+{:else}
+<p class="gomulu-aciklama">Gerçekleşen çalışma: çizelgedeki nöbet ve hazırlamalar, nöbet ertesi izinler, yıllık izin ve raporlar. Ay içinde gelişen izin ve raporları, nöbet değişimlerini ilgili sekmeden girin; tek bir günü değiştirmek için cetveldeki hücreye dokunun.</p>
+{/if}
 
 {#if !G.satirlar.length}
   <div class="kart bos"><h2>Bu ayda çalışan personel yok</h2><button class="dugme ana" onclick={() => git("kisiler")}>Personel ekle</button></div>
@@ -220,4 +225,5 @@
   .secenek b { font-weight: 500; }
   .secenek small { font-size: var(--f-xs); color: var(--soluk); }
   .not { font-size: var(--f-sm); color: var(--soluk); }
+  .gomulu-aciklama { font-size: var(--f-sm); color: var(--soluk); margin-bottom: var(--b3); max-width: 80ch; }
 </style>

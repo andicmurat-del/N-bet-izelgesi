@@ -3,18 +3,17 @@
   import { depo, gecmis, geriAl, yinele } from "./veri/depo.svelte";
   import Ikon from "./ui/ortak/Ikon.svelte";
   import Cizelge from "./ui/sayfalar/Cizelge.svelte";
-  import Izinler from "./ui/sayfalar/Izinler.svelte";
-  import Puantaj from "./ui/sayfalar/Puantaj.svelte";
+  import AcilEczane from "./ui/sayfalar/AcilEczane.svelte";
   import Raporlar from "./ui/sayfalar/Raporlar.svelte";
-  import Hazirlama from "./ui/sayfalar/Hazirlama.svelte";
+  import type { AcilGorunum, GunlukGorunum } from "./ui/sayfalar/sayfaTipleri";
   import Kisiler from "./ui/sayfalar/Kisiler.svelte";
   import Ayarlar from "./ui/sayfalar/Ayarlar.svelte";
 
+  // ana bölümler: Günlük Eczane (nöbet, çalışma, öğlen, hazırlama listeleri, puantaj, izinler), Acil Eczane (nöbet
+  // listesi, izinler), raporlar, personel, ayarlar
   const SAYFALAR = [
-    { ad: "cizelge", baslik: "Çizelge", ikon: "takvim" },
-    { ad: "puantaj", baslik: "Puantaj", ikon: "tablo" },
-    { ad: "hazirlama", baslik: "Servis hazırlama", kisa: "Hazırlama", ikon: "katman" },
-    { ad: "izinler", baslik: "İzin ve tercihler", kisa: "İzinler", ikon: "izin" },
+    { ad: "gunluk", baslik: "Günlük Eczane", kisa: "Günlük", ikon: "takvim" },
+    { ad: "acil", baslik: "Acil Eczane", kisa: "Acil", ikon: "acil" },
     { ad: "raporlar", baslik: "Raporlar", ikon: "grafik" },
     { ad: "kisiler", baslik: "Personel", ikon: "kisiler" },
     { ad: "ayarlar", baslik: "Ayarlar", ikon: "ayarlar" },
@@ -24,9 +23,17 @@
   const DIGER: SayfaAdi[] = ["kisiler", "ayarlar"];
   let digerAcik = $state(false);
 
+  // eski bölüm adları (önceki sürümlerin bağlantıları ve sayfa içi düğmeler) Günlük Eczane'nin alt sekmelerine gider
+  type Hedef = SayfaAdi | "cizelge" | "puantaj" | "hazirlama" | "izinler";
+  const ESKI: Record<string, GunlukGorunum> = { cizelge: "nobet", puantaj: "puantaj", hazirlama: "hazirlama", izinler: "izinler" };
+  let gunlukAlt = $state<GunlukGorunum>("nobet"), acilAlt = $state<AcilGorunum>("acil");
+  const GUNLUK_ALT: GunlukGorunum[] = ["nobet", "liste", "oglen", "hazirlama", "puantaj", "izinler"];
   const hashOku = (): SayfaAdi => {
-    const h = location.hash.slice(1);
-    return (SAYFALAR.find(s => s.ad === h)?.ad ?? "cizelge") as SayfaAdi;
+    const [h, alt] = location.hash.slice(1).split("/");
+    if (ESKI[h]) { gunlukAlt = ESKI[h]; return "gunluk"; }
+    if (h === "gunluk" && GUNLUK_ALT.includes(alt as GunlukGorunum)) gunlukAlt = alt as GunlukGorunum;
+    if (h === "acil" && (alt === "acil" || alt === "izinler")) acilAlt = alt;
+    return (SAYFALAR.find(s => s.ad === h)?.ad ?? "gunluk") as SayfaAdi;
   };
   let sayfa = $state<SayfaAdi>(hashOku());
   onMount(() => {
@@ -49,7 +56,9 @@
     else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); ileri(); }
   }
 
-  function git(ad: SayfaAdi) {
+  function git(hedef: Hedef) {
+    const ad: SayfaAdi = ESKI[hedef] ? "gunluk" : (hedef as SayfaAdi);
+    if (ESKI[hedef]) gunlukAlt = ESKI[hedef];
     sayfa = ad;
     try { history.replaceState(null, "", "#" + ad); } catch { /* çerçeve izin vermezse yalnız durum değişir */ }
     document.getElementById("icerik")?.focus({ preventScroll: true });
@@ -86,10 +95,8 @@
       <button class="dugme sade kucuk" onclick={ileri} disabled={!gecmis.ileri.length} aria-label="Geri alınanı yinele"><Ikon ad="ileri" />Yinele</button>
     </div>
     {#if depo.kayitSorunu}<div class="kayit-sorunu" role="alert"><Ikon ad="uyari" />{depo.kayitSorunu}</div>{/if}
-    {#if sayfa === "cizelge"}<Cizelge {git} />
-    {:else if sayfa === "puantaj"}<Puantaj {git} />
-    {:else if sayfa === "izinler"}<Izinler {git} />
-    {:else if sayfa === "hazirlama"}<Hazirlama {git} />
+    {#if sayfa === "gunluk"}<Cizelge {git} bind:gorunum={gunlukAlt} />
+    {:else if sayfa === "acil"}<AcilEczane {git} bind:gorunum={acilAlt} />
     {:else if sayfa === "raporlar"}<Raporlar />
     {:else if sayfa === "kisiler"}<Kisiler />
     {:else}<Ayarlar />{/if}
@@ -143,7 +150,7 @@
     .tel-ust { display: flex; justify-content: flex-end; gap: var(--b1); margin: calc(-1 * var(--b2)) 0 var(--b2); }
     .geri-durum { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
     main { padding-block: var(--b4) calc(84px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-    .alt { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--yuzey); border-top: 1px solid var(--cizgi);
+    .alt { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--yuzey); border-top: 1px solid var(--cizgi);
       padding: 6px max(4px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
     .alt button { display: grid; justify-items: center; gap: 2px; min-height: 52px; min-width: 0; padding: 0 1px; border: 0; background: transparent; color: var(--soluk); font-size: var(--f-xs); font-weight: 500; border-radius: var(--r); cursor: pointer; }
     .alt button.secili { color: var(--vurgu); background: var(--vurgu-zemin); font-weight: 600; }
