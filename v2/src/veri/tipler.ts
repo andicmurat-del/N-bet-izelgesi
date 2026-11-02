@@ -10,7 +10,7 @@ export interface Kisi {
   baslangic?: string;
   /** ayrılış tarihi (son çalışma günü), YYYY-AA-GG */
   bitis?: string;
-  /** Cuma günleri öğlen nöbeti yazılmaz (eczacı, acil servis eczacısı, tekniker) */
+  /** Cuma günleri öğlen nöbeti yazılmaz (eczacı, acil servis personeli, tekniker) */
   cumaMuaf?: true;
   /** eczacı: görevi eczacı kalır, acil eczane nöbet listesine de yazılır */
   acilTutar?: true;
@@ -139,7 +139,7 @@ export const ROL_AD: Record<Rol, string> = {
   teknisyen: "Tekniker",
   destek: "Destek personeli",
   nobetci: "Dışarıdan nöbetçi eczacı",
-  servis: "Acil servis eczacısı",
+  servis: "Acil servis personeli",
 };
 
 export const ROL_ACIKLAMA: Record<Rol, string> = {

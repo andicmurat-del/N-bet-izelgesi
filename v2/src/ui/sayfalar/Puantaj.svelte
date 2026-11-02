@@ -23,7 +23,7 @@
   const G = $derived(puantajHesapla($state.snapshot(depo.veri), depo.yil, depo.ay) as Izgara);
   const elleSayisi = $derived(Object.values(depo.veri.puantaj[`${depo.yil}-${depo.ay}`] ?? {}).reduce((t, a) => t + Object.keys(a).length, 0));
 
-  const grupAd: Record<string, string> = { eczaci: "Eczacılar", nobetci: "Dışarıdan nöbetçi eczacılar", teknisyen: "Teknikerler", destek: "Destek personeli", servis: "Acil servis eczacıları" };
+  const grupAd: Record<string, string> = { eczaci: "Eczacılar", nobetci: "Dışarıdan nöbetçi eczacılar", teknisyen: "Teknikerler", destek: "Destek personeli", servis: "Acil servis personeli" };
 
   // hücre düzenleme
   let acik = $state(false);

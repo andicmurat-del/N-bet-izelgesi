@@ -1,6 +1,6 @@
 // Öğlen nöbeti: hafta içi öğle arasında diğerleri yemeğe giderken eczanede kalanlar. Nöbet ya da fazla mesai değildir,
 // sırayla yapılan bir iştir. Pazartesi–Perşembe 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker. Eczacı: eczacı ve
-// acil servis eczacısı; Cuma'dan muaf işaretli kişiler (eczacı ya da tekniker) Cuma yazılmaz. O gün mesaide çalışanlardan yazılır (puantaja
+// acil servis personeli; Cuma'dan muaf işaretli kişiler (eczacı ya da tekniker) Cuma yazılmaz. O gün mesaide çalışanlardan yazılır (puantaja
 // göre: izinli, raporlu, nöbet ertesi izinli olan yazılmaz); resmi tatil ve arife günü öğlen nöbeti yoktur.
 // Hedefler (önem sırasıyla): herkese haftada bir (kişi yetmezse iki), yıl boyunca toplam sayı eşit, Cuma sayısı Cuma
 // yazılabilenler arasında ayrıca eşit, mümkünse o günün eczane / acil servis nöbetçisine yazılmaz (eşitlik bozulmuyorsa).
@@ -17,7 +17,7 @@ export interface OglenGunu { e: number[]; t: number[]; elle?: true }
 export const OGLEN_GEREK = { hafta: { e: 2, t: 1 }, cuma: { e: 3, t: 2 } };
 type Grup = "e" | "t";
 const GRUPLAR: Grup[] = ["e", "t"];
-/** öğlen nöbetinde kişinin grubu: eczacı (eczacı, acil servis eczacısı) ya da tekniker; diğerleri yazılmaz */
+/** öğlen nöbetinde kişinin grubu: eczacı (eczacı, acil servis personeli) ya da tekniker; diğerleri yazılmaz */
 export const oglenGrubu = (rol: string): Grup | null => (rol === "eczaci" || rol === "servis" ? "e" : rol === "teknisyen" ? "t" : null);
 
 /** amaç ağırlıkları (küçük daha iyi): haftada üçüncü kez çok ağır; haftada ikinci kez her seferinde ceza (kişi
