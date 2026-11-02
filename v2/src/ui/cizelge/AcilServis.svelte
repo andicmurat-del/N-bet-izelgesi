@@ -1,8 +1,9 @@
 <script lang="ts">
-  // Acil servis nöbet çizelgesi: acil servis eczacılarının nöbetleri elle girilir (günde en çok 2 kişi).
+  // Acil eczane nöbet listesi: günde 2 kişi; acil servis eczacıları ve "acilde de nöbet tutar" işaretli eczacılar arasından
+  // otomatik oluşturulur (eczane çizelgesiyle çakışmadan), günler elle de düzenlenebilir (elle günler korunur).
   // Puantajda bu günler nöbet (24 saat) sayılır; ertesi gün mesai günüyse nöbet izni (Nİ), tatilse çalışılmadı (B) yazılır.
-  import { depo, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, resmiTatilMi, tatilMi } from "../../veri/depo.svelte";
-  import { acilDenetle } from "../../motor";
+  import { depo, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, acilKaydet, acilElleMi, resmiTatilMi, tatilMi } from "../../veri/depo.svelte";
+  import { acilDenetle, acilHesapla, acilKadrosunda } from "../../motor";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { GUN_KISA, GUN_UZUN, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
@@ -11,7 +12,14 @@
   let { git }: { git: (ad: "kisiler") => void } = $props();
 
   const y = $derived(depo.yil), m = $derived(depo.ay);
-  const adaylar = $derived(aydaCalisanlar(y, m).filter(k => k.role === "servis").sort((a, b) => a.name.localeCompare(b.name, "tr")));
+  const adaylar = $derived(aydaCalisanlar(y, m).filter(k => acilKadrosunda(k)).sort((a, b) => a.name.localeCompare(b.name, "tr")));
+  let uyarilar = $state<string[]>([]);
+  $effect(() => { y; m; uyarilar = []; });
+  function olustur() {
+    const r = acilHesapla($state.snapshot(depo.veri), y, m) as { gunler: { gun: number; ids: number[] }[]; uyarilar: string[] };
+    acilKaydet(y, m, r.gunler);
+    uyarilar = r.uyarilar;
+  }
   const gunler = $derived(Array.from({ length: gunSayisi(y, m) }, (_, i) => i + 1));
   const ad = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş kişi)";
   const kisa = (id: number) => kisaAd(ad(id), depo.veri.staff.map(k => k.name));
@@ -53,17 +61,18 @@
 
 {#if !adaylar.length && !dolu}
   <section class="kart bos">
-    <h2>Acil servis eczacısı yok</h2>
-    <p>Acil servis nöbetleri bu çizelgede elle girilir. Önce Personel bölümünde görevi "Acil servis eczacısı" olan kişileri ekleyin. Bu kişiler eczane nöbet çizelgesine yazılmaz; puantajda acil nöbetleri 24 saat, ertesi mesai günü nöbet izni olarak işlenir.</p>
+    <h2>Acilde nöbet tutan yok</h2>
+    <p>Acil eczane nöbet listesi, görevi "Acil servis eczacısı" olanlar ile Personel bölümünde "Acilde de nöbet tutar" işaretli eczacılar arasından oluşturulur. Önce bu kişileri ekleyin ya da işaretleyin. Puantajda acil nöbetleri 24 saat, ertesi mesai günü nöbet izni olarak işlenir.</p>
     <div><button class="dugme ana" onclick={() => git("kisiler")}><Ikon ad="kisiler" />Personel ekle</button></div>
   </section>
 {:else}
   <div class="arac">
     <div class="durumlar">
       <span class="rozet notr rakam">{dolu}/{gunler.length} gün girildi</span>
-      <span class="rozet notr rakam">{adaylar.length} acil servis eczacısı</span>
+      <span class="rozet notr rakam">{adaylar.length} kişi acilde nöbet tutuyor</span>
     </div>
     <div class="dugmeler">
+      {#if adaylar.length}<button class="dugme ana" onclick={olustur}><Ikon ad={dolu ? "yenile" : "takvim"} />{dolu ? "Yeniden oluştur" : "Acil nöbet listesini oluştur"}</button>{/if}
       {#if dolu}
         <button class="dugme" onclick={() => cikti("pdf")}><Ikon ad="indir" />PDF</button>
         <button class="dugme" onclick={() => cikti("xlsx")}><Ikon ad="indir" />Excel</button>
@@ -71,7 +80,8 @@
       {/if}
     </div>
   </div>
-  <p class="aciklama">Bir güne dokunup o günün acil servis nöbetçilerini seçin (en çok 2 kişi). Puantajda bu günler nöbet (24 saat) sayılır; ertesi gün mesai günüyse nöbet izni yazılır.</p>
+  <p class="aciklama">Her gün 2 kişi; acil servis eczacıları ve "Acilde de nöbet tutar" işaretli eczacılar arasından eşit dağıtılır (eczane nöbetinden ayrı, yıl boyunca). Aynı ya da komşu günde eczane nöbeti olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.</p>
+  {#each uyarilar as u}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
   <section class="kart takvim-kutu" aria-label="{ayAdi(y, m)} acil servis nöbetleri">
@@ -82,7 +92,7 @@
         {@const l = acilGunu(y, m, g)}
         <button class="gun" class:tatil={tatilMi(y, m, g)} class:bugun={bugunMu(g)} class:dolu={l.length} onclick={() => gunAc(g)}
           aria-label="{gunMetni(y, m, g)}: acil servis nöbetçisi {l.map(ad).join(' ve ') || 'yok'}">
-          <span class="ust"><span class="no rakam">{g}</span><span class="gunadi">{GUN_UZUN[haftaGunu(y, m, g)]}</span>{#if resmiTatilMi(y, m, g)}<span class="etiket">Resmi tatil</span>{/if}</span>
+          <span class="ust"><span class="no rakam">{g}</span>{#if acilElleMi(y, m, g)}<span class="elle" title="Elle düzenlendi; yeniden oluşturmada korunur">elle</span>{/if}<span class="gunadi">{GUN_UZUN[haftaGunu(y, m, g)]}</span>{#if resmiTatilMi(y, m, g)}<span class="etiket">Resmi tatil</span>{/if}</span>
           <span class="kisiler">
             {#each l as id}<span class="kisi"><span class="isaret servis"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span></span>{:else}<span class="yok"><span class="ad">Nöbetçi yok</span><span class="ad-kisa" aria-hidden="true">–</span></span>{/each}
           </span>
@@ -109,8 +119,8 @@
   </section>
 {/if}
 
-<Pencere bind:acik baslik={gunMetni(y, m, gun)} altBaslik="Acil servis nöbeti · en çok 2 kişi">
-  {#if !gunAday.length}<p class="not">Bu gün çalışan acil servis eczacısı yok.</p>{/if}
+<Pencere bind:acik baslik={gunMetni(y, m, gun)} altBaslik="Acil eczane nöbeti · günde 2 kişi · kaydedilen gün elle düzenlenmiş sayılır">
+  {#if !gunAday.length}<p class="not">Bu gün acilde nöbet tutabilecek kimse yok.</p>{/if}
   <div class="iki">
     <label class="alan"><span>1. nöbetçi</span><select class="girdi" bind:value={s1}><option value="">Seçilmedi</option>{#each gunAday as k}<option value={String(k.id)}>{k.name}</option>{/each}</select></label>
     <label class="alan"><span>2. nöbetçi</span><select class="girdi" bind:value={s2}><option value="">Seçilmedi</option>{#each gunAday as k}<option value={String(k.id)}>{k.name}</option>{/each}</select></label>
@@ -169,6 +179,7 @@
   .not.hata { background: var(--hata-zemin); color: var(--hata); }
 
   .ad-kisa { display: none; }
+  .elle { margin-left: auto; font-size: 11px; color: var(--soluk); }
   /* telefon: aynı 7 sütunlu takvim, kısa adlar */
   @media (max-width: 720px) {
     .takvim-kutu { padding: 6px; }

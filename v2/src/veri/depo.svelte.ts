@@ -19,6 +19,7 @@ export function bosVeri(): Veri {
     schedules: {},
     puantaj: {},
     acil: {},
+    acilElle: {},
     oglen: {},
     degisimler: [],
     servisAyar: { svc: {}, ekstra: [] },
@@ -46,6 +47,7 @@ export function veriyiDogrula(ham: unknown): Veri {
       ...(iso(k.baslangic) ? { baslangic: iso(k.baslangic) } : {}),
       ...(iso(k.bitis) ? { bitis: iso(k.bitis) } : {}),
       ...(k.cumaMuaf === true ? { cumaMuaf: true as const } : {}),
+      ...(k.acilTutar === true && k.role === "eczaci" ? { acilTutar: true as const } : {}),
     }));
   const tercihler: Tercih[] = ["izinli", "want", "avoid", "esVar", "esYok"];
   for (const [k, t] of Object.entries(nesne(o.prefs))) if (tercihler.includes(t)) v.prefs[k] = t;
@@ -73,6 +75,10 @@ export function veriyiDogrula(ham: unknown): Veri {
       const tek = [...new Set(l)].slice(0, 2);
       if (/^\d{1,2}$/.test(gun) && tek.length) (v.acil[ayK] ??= {})[gun] = tek;
     }
+  }
+  for (const [ayK, gunler] of Object.entries(nesne(o.acilElle))) {
+    if (!/^\d{4}-\d{1,2}$/.test(ayK)) continue;
+    for (const [gun, x] of Object.entries(nesne(gunler))) if (/^\d{1,2}$/.test(gun) && x === true) (v.acilElle[ayK] ??= {})[gun] = true;
   }
   for (const [ayK, gunler] of Object.entries(nesne(o.oglen))) {
     if (!/^\d{4}-\d{1,2}$/.test(ayK)) continue;
@@ -276,6 +282,7 @@ export function kisiGuncelle(id: number, alanlar: Partial<Omit<Kisi, "id">>) {
   if (!k.baslangic) delete k.baslangic;
   if (!k.bitis) delete k.bitis;
   if (!k.cumaMuaf) delete k.cumaMuaf;
+  if (!k.acilTutar || k.role !== "eczaci") delete k.acilTutar;
   // çizelgelerdeki ad ve görev de güncellenir (eski aylar dahil)
   for (const c of Object.values(depo.veri.schedules))
     for (const g of c.days) for (const p of [...g.assigned, ...g.prep]) if (p.id === id) { p.name = k.name; p.role = k.role; }
@@ -389,15 +396,25 @@ export function onayiKaldir(y: number, m: number) {
 
 // ---------- acil servis nöbeti ----------
 export const acilGunu = (y: number, m: number, gun: number): number[] => depo.veri.acil[ayAnahtari(y, m)]?.[gun] ?? [];
-export function acilGunuAyarla(y: number, m: number, gun: number, ids: number[]) {
+/** acil nöbet gününü elle ayarlar; elle: gün otomatik oluşturmada korunur (temizlenen gün korunmaz) */
+export function acilGunuAyarla(y: number, m: number, gun: number, ids: number[], elle = true) {
   const ayK = ayAnahtari(y, m), tek = [...new Set(ids)].slice(0, 2);
+  if (elle && tek.length) (depo.veri.acilElle[ayK] ??= {})[gun] = true;
+  else if (depo.veri.acilElle[ayK]) { delete depo.veri.acilElle[ayK][gun]; if (!Object.keys(depo.veri.acilElle[ayK]).length) delete depo.veri.acilElle[ayK]; }
   if (tek.length) { (depo.veri.acil[ayK] ??= {})[gun] = tek; return; }
   const a = depo.veri.acil[ayK];
   if (!a) return;
   delete a[gun];
   if (!Object.keys(a).length) delete depo.veri.acil[ayK];
 }
-export function acilAyiniSil(y: number, m: number) { delete depo.veri.acil[ayAnahtari(y, m)]; }
+export function acilAyiniSil(y: number, m: number) { delete depo.veri.acil[ayAnahtari(y, m)]; delete depo.veri.acilElle[ayAnahtari(y, m)]; }
+export const acilElleMi = (y: number, m: number, gun: number) => !!depo.veri.acilElle[ayAnahtari(y, m)]?.[gun];
+/** otomatik oluşturulan acil nöbet listesini kaydeder (elle günler olduğu gibi gelir) */
+export function acilKaydet(y: number, m: number, gunler: { gun: number; ids: number[] }[]) {
+  const a: Record<string, number[]> = {};
+  gunler.forEach(g => { if (g.ids.length) a[g.gun] = g.ids.slice(0, 2); });
+  if (Object.keys(a).length) depo.veri.acil[ayAnahtari(y, m)] = a; else delete depo.veri.acil[ayAnahtari(y, m)];
+}
 
 // ---------- öğlen nöbeti ----------
 export const oglenAyi = (y: number, m: number) => depo.veri.oglen[ayAnahtari(y, m)];
@@ -477,15 +494,16 @@ export function tumVeriyiSil() {
   depo.veri = bosVeri();
 }
 
-/** Uygulamayı denemek için örnek kadro: 6 eczacı, 6 tekniker, 2 acil servis eczacısı. Ekranda "örnek" diye belirtilir. */
+/** Uygulamayı denemek için örnek kadro: 6 eczacı (ikisi acilde de nöbet tutar), 6 tekniker, 4 acil servis eczacısı.
+ *  Ekranda "örnek" diye belirtilir. */
 export function ornekKadroYukle() {
   const v = bosVeri();
   v.ornek = true;
   v.kurum.ad = "Örnek Hastane Eczanesi";
   const ecz = ["Ayşe Yılmaz", "Mehmet Kaya", "Zeynep Demir", "Ali Çelik", "Elif Şahin", "Murat Arslan"];
   const tek = ["Fatma Koç", "Emre Aydın", "Selin Öztürk", "Burak Yıldız", "Hülya Kurt", "Can Polat"];
-  ecz.forEach((name, i) => v.staff.push({ id: i + 1, name, role: "eczaci" }));
+  ecz.forEach((name, i) => v.staff.push({ id: i + 1, name, role: "eczaci", ...(i >= 4 ? { acilTutar: true as const } : {}) }));
   tek.forEach((name, i) => v.staff.push({ id: i + 7, name, role: "teknisyen" }));
-  ["Deniz Acar", "Okan Tekin"].forEach((name, i) => v.staff.push({ id: i + 13, name, role: "servis" }));
+  ["Deniz Acar", "Okan Tekin", "Seda Er", "Kemal Uz"].forEach((name, i) => v.staff.push({ id: i + 13, name, role: "servis" }));
   depo.veri = v;
 }

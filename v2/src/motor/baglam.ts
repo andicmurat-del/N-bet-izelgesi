@@ -32,6 +32,7 @@ export class Baglam {
   schedules: Nesne<MotorCizelgesi>;
   puantaj: Nesne<PuantajAyi>;
   acil: Nesne<Nesne<number[]>>;
+  acilElle: Nesne<Nesne<true>>;
   oglen: Nesne<Nesne<{ e: number[]; t: number[]; elle?: true }>>;
   servisKayit: Nesne<any>;
   /** puantajdaki değişim kayıtları (nöbet değişimi, izin/rapor nedeniyle yerine geçme) */
@@ -44,7 +45,7 @@ export class Baglam {
     const v = JSON.parse(JSON.stringify(veri || {}));
     this.staff = Array.isArray(v.staff) ? v.staff : [];
     this.prefs = nesne(v.prefs); this.manualTatil = nesne(v.manualTatil); this.arife = nesne(v.arife);
-    this.settings = nesne(v.settings); this.schedules = nesne(v.schedules); this.puantaj = nesne(v.puantaj); this.acil = nesne(v.acil); this.oglen = nesne(v.oglen);
+    this.settings = nesne(v.settings); this.schedules = nesne(v.schedules); this.puantaj = nesne(v.puantaj); this.acil = nesne(v.acil); this.acilElle = nesne(v.acilElle); this.oglen = nesne(v.oglen);
     this.servisKayit = nesne(v.servisKayit);
     this.degisimler = Array.isArray(v.degisimler) ? v.degisimler.filter((z: unknown) => z && typeof z === "object") : [];
     this.dengeSchedules = this.dengeKur();

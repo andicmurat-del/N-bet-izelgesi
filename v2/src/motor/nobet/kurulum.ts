@@ -1,6 +1,7 @@
 // Aramanın sabit girdileri: ilk yerleştirmeden sonra bir kez hesaplanır, arama boyunca değişmez (hız için diziler).
 // Kişiler aramada sıra numarasıyla (hIx) tutulur; sayaçlar Float64Array'dir.
 import { aktifAydaMi, aktifGunMu, eczaciMi, hazirlamaRol, type MotorGunu } from "../baglam";
+import { acilNobetiYakin } from "../acil";
 import { fmKuralKisileri, nobetKuralKisileri, yilGunSayilari } from "../istatistik";
 import type { Kisi } from "../../veri/tipler";
 import { AGIRLIK } from "../sabitler";
@@ -38,7 +39,8 @@ export function aramaKur(A: AyBilgisi, days: MotorGunu[]) {
   tumHavuz.forEach((s, ix) => { hIx[s.id] = ix; });
   const gunluk = <T>(f: (id: number, d: number) => T) => days.map(dy => { const o: Record<number, T> = {}; tumHavuz.forEach(s => { o[s.id] = f(s.id, dy.day); }); return o; });
   const prefGun = gunluk((id, d) => B.tercih(id, y, m, d));
-  const yasakGun = gunluk((id, d) => B.kesinYasak(id, y, m, d));
+  // acil nöbeti olan kişi o gün ve komşu günlerde eczane nöbetine / hazırlamaya yazılmaz (iki liste çakışmaz)
+  const yasakGun = gunluk((id, d) => B.kesinYasak(id, y, m, d) || acilNobetiYakin(B, id, y, m, d));
   const izinOnceGun = gunluk((id, d) => B.izinOncesiMi(id, y, m, d));
   // ayın ilk hafta sonu: önceki ayın son Perşembe günü nöbet tutanlar (Perşembe → aynı hafta sonu kuralı ay sınırında da geçerli)
   const oncekiAyGorevlileri = (dy: MotorGunu, k: number) => {

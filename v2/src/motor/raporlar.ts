@@ -1,5 +1,6 @@
 // Raporlar: günlük çalışma listesi, acil servis denetimi, yılın raporu (ay ay puantaj özeti ve yıllık denge),
 // uyarıların önem sınıfı.
+import { eczaneGoreviYakin } from "./acil";
 import { aktifAydaMi, ayrildiMi, nobetciRol, type Baglam } from "./baglam";
 import { ayVeriVarMi } from "./istatistik";
 import { puantajIzgarasi, ROL_SIRA, type PuantajIzgarasi } from "./puantaj";
@@ -57,6 +58,10 @@ export function acilDenetle(B: Baglam, y: number, m: number, g: number, ids: num
     if (B.kesinYasak(id, y, m, g)) out.push({ sev: "uyari", t: s.name + " bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında." });
     [-1, 1].forEach(k => { if ((ay[g + k] || []).indexOf(id) >= 0) out.push({ sev: "uyari", t: s.name + ", " + (g + k) + ". gün de acil serviste nöbetçi (nöbet ertesi gün izin gerekir)." }); });
     if (sch && sch.days[g - 1] && sch.days[g - 1].assigned.some(p => p.id === id)) out.push({ sev: "uyari", t: s.name + " aynı gün eczane nöbetçisi." });
+    else if (eczaneGoreviYakin(B, id, y, m, g)) out.push({ sev: "uyari", t: s.name + " komşu günde eczane nöbeti ya da hazırlaması var." });
+    const t = B.tercih(id, y, m, g);
+    if (t === "avoid") out.push({ sev: "uyari", t: s.name + " bu gün nöbet istemiyor olarak işaretli." });
+    if (B.izinOncesiMi(id, y, m, g)) out.push({ sev: "uyari", t: s.name + " ertesi gün izinde; nöbet ertesi izni izne denk gelir." });
   });
   return out;
 }

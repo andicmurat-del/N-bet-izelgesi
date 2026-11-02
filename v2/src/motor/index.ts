@@ -15,6 +15,7 @@ import { Baglam, type MotorCizelgesi } from "./baglam";
 import { degisimDenetle as degisimDenetimi, yerineAdaylar, type Degisiklik } from "./degisim";
 import { gunuDenetle as gunDenetimi } from "./denetim";
 import { cizelgeUret, type CizelgeSonucu } from "./nobet/olustur";
+import { acilOlustur } from "./acil";
 import { oglenOlustur, oglenOnarimlari, oglenYillik } from "./oglen";
 import { puantajIzgarasi } from "./puantaj";
 import { acilDenetle as acilDenetimi, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
@@ -26,6 +27,7 @@ export { AGIRLIK, FM_MAX_FARK, AYAR_VARSAYILAN } from "./sabitler";
 export { PUANTAJ_KODLARI } from "./puantaj";
 export { uyariSiniflandir } from "./raporlar";
 export { OGLEN_GEREK, oglenGrubu } from "./oglen";
+export { ACIL_GUNLUK, acilKadrosunda } from "./acil";
 export { ZOR_ESIK as SERVIS_ZOR_ESIK } from "./servis/liste";
 export type { CizelgeSonucu } from "./nobet/olustur";
 
@@ -204,3 +206,6 @@ export function oglenHesapla(veri: unknown, y: number, m: number) { const B = ne
 export function oglenOnarimlariHesapla(veri: unknown, bugun: number) { return oglenOnarimlari(new Baglam(veri), bugun); }
 /** yıl başından bu aya kişi başı öğlen nöbeti sayıları (toplam, Cuma; bu ay) */
 export function oglenYillikHesapla(veri: unknown, y: number, m: number) { return oglenYillik(new Baglam(veri), y, m); }
+
+/** Ayın acil eczane nöbet listesi: acil kadrosundan günde 2 kişi, eczane çizelgesiyle çakışmadan; elle günler korunur */
+export function acilHesapla(veri: unknown, y: number, m: number) { const B = new Baglam(veri); return acilOlustur(B, y, m, B.acilElle[y + "-" + m] || {}); }
