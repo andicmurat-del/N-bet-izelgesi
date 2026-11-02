@@ -78,7 +78,8 @@
                   <b>{k.name}</b>
                   {#if k.baslangic || k.bitis}<small>{k.baslangic ? "Başlangıç " + tarihMetni(k.baslangic) : ""}{k.baslangic && k.bitis ? " · " : ""}{k.bitis ? "Ayrılış " + tarihMetni(k.bitis) : ""}</small>{/if}
                   {#if k.cumaMuaf}<small>Öğlen nöbeti: Cuma'dan muaf</small>{/if}
-                  {#if k.acilTutar}<small>Acilde nöbet tutar (eczanede mesai)</small>{/if}
+                  {#if k.role === "nobetci"}<small>Nöbet: {k.acilTutar ? "acil eczane" : "günlük eczane"}</small>
+                  {:else if k.acilTutar}<small>Nöbet: acil eczane</small>{/if}
                 </div>
                 <button class="dugme sade kucuk" onclick={() => duzenle(k)} aria-label="{k.name}: düzenle"><Ikon ad="duzenle" />Düzenle</button>
               </li>
@@ -104,7 +105,11 @@
     <label class="secim"><input type="checkbox" bind:checked={dCuma} /><span>Cuma günleri öğlen nöbeti tutmaz (Cuma'dan muaf)</span></label>
   {/if}
   {#if dRol === "eczaci" || dRol === "nobetci"}
-    <label class="secim"><input type="checkbox" bind:checked={dAcil} /><span>Acilde nöbet tutar (eczane nöbeti ve hazırlama tutmaz; nöbetleri acil eczane listesinde)</span></label>
+    <fieldset class="yer">
+      <legend>Nöbet tuttuğu yer</legend>
+      <label class="secim"><input type="radio" name="nobetYeri" checked={!dAcil} onchange={() => (dAcil = false)} /><span>Günlük eczane</span></label>
+      <label class="secim"><input type="radio" name="nobetYeri" checked={dAcil} onchange={() => (dAcil = true)} /><span>Acil eczane</span></label>
+    </fieldset>
   {/if}
   {#if dHata}<p class="hata" role="alert">{dHata}</p>{/if}
   {#if silOnayi}
@@ -151,4 +156,6 @@
   }
   .secim { display: flex; align-items: center; gap: var(--b2); min-height: 32px; cursor: pointer; font-size: var(--f-sm); }
   .secim input { width: 18px; height: 18px; accent-color: var(--vurgu); }
+  .yer { border: 0; padding: 0; margin: 0; display: grid; gap: 2px; }
+  .yer legend { font-size: var(--f-sm); font-weight: 600; color: var(--yazi-2); margin-bottom: 2px; }
 </style>

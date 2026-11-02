@@ -7,14 +7,15 @@
   import { AYLAR } from "../../veri/tarih";
 
   let { yil }: { yil: number } = $props();
-  type Satir = { id: number; ad: string; rol: string; aylar: number[]; top: number; tatil?: number; cuma?: number };
+  type Satir = { id: number; ad: string; rol: string; aylar: number[]; top: number; tatil?: number; cuma?: number; pe?: number; cu?: number; cmt?: number; paz?: number; resmi?: number };
+  type Ek = "tatil" | "cuma" | "pe" | "cu" | "cmt" | "paz" | "resmi";
   const R = $derived(acilOglenRaporuHesapla($state.snapshot(depo.veri), yil) as { acil: Satir[]; oglen: Satir[]; acilAylar: boolean[]; oglenAylar: boolean[] });
   const ay3 = AYLAR.map(a => a.slice(0, 3));
-  const fark = (l: Satir[], k: "top" | "tatil" | "cuma") => (l.length ? Math.max(...l.map(x => x[k] ?? 0)) - Math.min(...l.map(x => x[k] ?? 0)) : 0);
+  const fark = (l: Satir[], k: "top" | Ek) => (l.length ? Math.max(...l.map(x => x[k] ?? 0)) - Math.min(...l.map(x => x[k] ?? 0)) : 0);
   const bolumler = $derived([
-    { baslik: "Acil eczane nöbeti", l: R.acil, aylar: R.acilAylar, ek: "tatil" as const, ekAd: "Hafta sonu / tatil",
-      bos: "Bu yıl acil eczane nöbet listesi yok.", not: "Acil kadrosu: acil servis personeli ve \"Acilde nöbet tutar\" işaretli eczacılar. Eşitlik yıl boyunca: izin vb. nedeniyle bir ay az tutan sonraki aylarda tamamlar." },
-    { baslik: "Öğlen nöbeti", l: R.oglen, aylar: R.oglenAylar, ek: "cuma" as const, ekAd: "Cuma",
+    { baslik: "Acil eczane nöbeti", l: R.acil, aylar: R.acilAylar, ekler: [["pe", "Prş"], ["cu", "Cuma"], ["cmt", "Cmt"], ["paz", "Paz"], ["resmi", "Resmi tatil"]] as [Ek, string][],
+      bos: "Bu yıl acil eczane nöbet listesi yok.", not: "Acil kadrosu: acil servis personeli ile nöbet yeri \"Acil eczane\" olan eczacılar ve kemoterapi eczacıları. Eşitlik yıl boyunca ve günlük eczanedeki gibi: toplam ile Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı; herkesin payı yazılabildiği gün sayısına göredir; izinli / raporlu günler düşülür, telafi istenmez (izinli ay az görünür)." },
+    { baslik: "Öğlen nöbeti", l: R.oglen, aylar: R.oglenAylar, ekler: [["cuma", "Cuma"]] as [Ek, string][],
       bos: "Bu yıl öğlen nöbet listesi yok.", not: "Eczacılar ve teknikerler. Cuma ayrıca sayılır; Cuma'dan muaf olanlarda Cuma sayısı 0'dır." },
   ]);
 </script>
@@ -25,17 +26,17 @@
     {#if !b.aylar.some(Boolean)}
       <div class="kart bos"><p>{b.bos}</p></div>
     {:else}
-      <p class="aciklama">{b.not} En çok − en az: toplamda <b class="rakam">{fark(b.l, "top")}</b>, {b.ekAd.toLocaleLowerCase("tr")} için <b class="rakam">{fark(b.l, b.ek)}</b>. Soluk sütunlar: listesi olmayan aylar.</p>
+      <p class="aciklama">{b.not} En çok − en az: toplamda <b class="rakam">{fark(b.l, "top")}</b>{#each b.ekler as [k, a]}, {a} <b class="rakam">{fark(b.l, k)}</b>{/each}. Soluk sütunlar: listesi olmayan aylar.</p>
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
       <div class="kart tablo-kap" tabindex="0" role="region" aria-label="{yil} {b.baslik.toLocaleLowerCase('tr')} dağılımı">
         <table>
-          <thead><tr><th class="sol" scope="col">Kişi</th>{#each ay3 as a, i}<th scope="col" class:bos-ay={!b.aylar[i]}>{a}</th>{/each}<th scope="col">Yıl</th><th scope="col">{b.ekAd}</th></tr></thead>
+          <thead><tr><th class="sol" scope="col">Kişi</th>{#each ay3 as a, i}<th scope="col" class:bos-ay={!b.aylar[i]}>{a}</th>{/each}<th scope="col">Yıl</th>{#each b.ekler as [, a]}<th scope="col">{a}</th>{/each}</tr></thead>
           <tbody>
             {#each b.l as s (s.id)}
               <tr>
                 <th class="sol" scope="row">{s.ad} <small>{ROL_AD[s.rol as Rol] ?? ""}</small></th>
                 {#each s.aylar as n, i}<td class:bos-ay={!b.aylar[i]}>{b.aylar[i] ? n : "–"}</td>{/each}
-                <td class="vurgu">{s.top}</td><td>{s[b.ek] ?? 0}</td>
+                <td class="vurgu">{s.top}</td>{#each b.ekler as [k]}<td>{s[k] ?? 0}</td>{/each}
               </tr>
             {/each}
           </tbody>
