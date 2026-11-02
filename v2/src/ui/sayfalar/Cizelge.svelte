@@ -134,7 +134,7 @@
   {#if gorunum === "hazirlama"}
     <Hazirlama {git} gomulu />
   {:else if gorunum === "puantaj"}
-    <Puantaj {git} gomulu kimler={k => k.role !== "servis"} />
+    <Puantaj {git} gomulu kimler={k => !acilKadrosunda(k)} />
   {:else if gorunum === "izinler"}
     <Izinler {git} gomulu kimler={k => !acilKadrosunda(k)} />
   {:else if gorunum === "oglen"}

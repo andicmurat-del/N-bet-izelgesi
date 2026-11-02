@@ -9,7 +9,8 @@ import { AYLAR, GUN_KISA, buyukAd } from "../veri/tarih";
 const baslik = (y: number, m: number, kurum: string) => `${kurum ? buyukAd(kurum) + " · " : ""}${AYLAR[m]} ${y} puantaj cetveli`;
 const ONEK: Record<string, string> = { eczaci: "Ecz. ", nobetci: "Ecz. ", teknisyen: "Ecz. Tek. ", destek: "", servis: "Ecz. " };
 
-export function puantajKitabi(G: Izgara, y: number, m: number, kurum: string): Blob {
+/** hazirlamasiz: acil eczane puantajı (aylık özette hazırlama sütunu yok; acilde hazırlama tutulmaz) */
+export function puantajKitabi(G: Izgara, y: number, m: number, kurum: string, hazirlamasiz = false): Blob {
   const gunBas: Hucre[] = G.gunler.map(g => ({ v: `${g.gun} ${GUN_KISA[g.dw]}`, s: g.tatil ? "baslikTatil" : "baslik" }));
   const cetvel: Hucre[][] = [
     [{ v: baslik(y, m, kurum), s: "kalin" }],
@@ -26,8 +27,8 @@ export function puantajKitabi(G: Izgara, y: number, m: number, kurum: string): B
   const ozet: Hucre[][] = [
     [{ v: baslik(y, m, kurum) + " · aylık özet", s: "kalin" }],
     [],
-    ["Ad soyad", "Görev", "Nöbet", "Perşembe", "Cuma", "Cumartesi", "Pazar", "Hazırlama", "Resmi tatil", "Yıllık izin", "Rapor", "Toplam saat", "Fazla mesai", "08:00-20:00", "20:00-08:00"].map(v => ({ v, s: "baslik" as const })),
-    ...G.satirlar.map(r => [buyukAd(r.s.name), ROL_AD[r.s.role], r.n, r.thu, r.cu, r.cmt, r.paz, r.h, r.rt, r.yi, r.rd, r.toplam, r.fm, r.fmGunduz, r.fmGece]),
+    ["Ad soyad", "Görev", "Nöbet", "Perşembe", "Cuma", "Cumartesi", "Pazar", ...(hazirlamasiz ? [] : ["Hazırlama"]), "Resmi tatil", "Yıllık izin", "Rapor", "Toplam saat", "Fazla mesai", "08:00-20:00", "20:00-08:00"].map(v => ({ v, s: "baslik" as const })),
+    ...G.satirlar.map(r => [buyukAd(r.s.name), ROL_AD[r.s.role], r.n, r.thu, r.cu, r.cmt, r.paz, ...(hazirlamasiz ? [] : [r.h]), r.rt, r.yi, r.rd, r.toplam, r.fm, r.fmGunduz, r.fmGece]),
   ];
   return xlsxKitap([
     { ad: "Puantaj", satirlar: cetvel, genislik: [6, 28, ...G.gunler.map(() => 5.2), 10, 10, 10, 10, 10], dondur: { satir: 3, sutun: 2 } },
