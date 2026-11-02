@@ -1,7 +1,7 @@
-// Acil eczane nöbet listesi: günde 2 kişi; acil servis eczacıları ve "acilde de nöbet tutar" işaretli eczacılar;
+// Acil eczane nöbet listesi: günde 2 kişi; acil servis personeli ve "acilde nöbet tutar" işaretli eczacılar (kemoterapi dahil);
 // eczane çizelgesiyle çakışmaz (aynı / komşu gün); art arda gün yok; eşitlik ayrı ve yıl boyunca; elle günler korunur.
 import { describe, test, expect } from "vitest";
-import { acilHesapla, cizelgeOlustur, gunuDenetle } from "../src/motor";
+import { acilHesapla, calismaListesiHesapla, cizelgeOlustur, gunuDenetle } from "../src/motor";
 
 const staff = [];
 for (let i = 1; i <= 7; i++) staff.push({ id: i, name: "E" + i, role: "eczaci", ...(i <= 2 ? { acilTutar: true } : {}) });
@@ -106,5 +106,30 @@ describe("kemoterapi eczacısı nöbeti günlükte ya da acilde tutar (seçilir)
     const acilde = new Set(acil.gunler.flatMap(g => g.ids)), eczanede = new Set(ecz.flatMap(g => [...g.assigned, ...g.prep].map(p => p.id)));
     expect(acilde.has(30)).toBe(true); expect(eczanede.has(30)).toBe(false);
     expect(acilde.has(31)).toBe(false); expect(eczanede.has(31)).toBe(true);
+  });
+});
+
+describe("sonradan değişen kadro ve az kadro", () => {
+  test("çizelgeden sonra 'acilde tutar' işaretlenen eczacı eczanede kalırsa gün denetimi hata verir; destek hazırlamada hata yok", () => {
+    const v = JSON.parse(JSON.stringify(eczaneli));
+    const sch = v.schedules[`${Y}-${M}`], i = sch.days.findIndex(g => g.assigned.some(p => p.id === 3));
+    v.staff.find(s => s.id === 3).acilTutar = true;
+    v.staff.push({ id: 40, name: "D1", role: "destek" });
+    const b = gunuDenetle(v, sch, i + 1, sch.days[i].assigned, [{ id: 40, name: "D1", role: "destek" }]);
+    expect(b.some(x => x.sev === "hata" && /E3 günlük eczanede nöbet tutmaz/.test(x.t))).toBe(true);
+    expect(b.some(x => /D1 günlük eczanede hazırlama tutmaz/.test(x.t))).toBe(false);
+  });
+
+  test("kadro yetmezse art arda nöbet uyarısı tek satırda toplanır", () => {
+    const v = { ...veri, staff: [...veri.staff.filter(s => s.role !== "servis"), { id: 13, name: "A1", role: "servis" }] };
+    const r = acilHesapla(v, Y, M);
+    r.gunler.forEach(g => expect(g.ids.length).toBe(2));
+    expect(r.uyarilar.filter(w => /art arda/.test(w)).length).toBe(1);
+    expect(r.uyarilar[0]).toMatch(/acil kadrosu yetmiyor/);
+  });
+
+  test("acil servis personeli günlük eczane çalışma listesinde görünmez", () => {
+    const L = calismaListesiHesapla(eczaneli, Y, M);
+    L.forEach(g => [...g.onay, ...g.haz, ...g.dst, ...g.gel, ...g.yok].forEach(x => expect(x.s.role).not.toBe("servis")));
   });
 });

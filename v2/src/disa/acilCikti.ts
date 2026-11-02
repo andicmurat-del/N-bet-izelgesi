@@ -10,7 +10,7 @@ export interface AcilVerisi {
   ozet: { ad: string; gunler: number[]; tatil: number }[];
 }
 
-const baslik = (v: AcilVerisi) => `${v.kurum ? buyukAd(v.kurum) + " · " : ""}${AYLAR[v.m]} ${v.y} acil servis nöbet çizelgesi`;
+const baslik = (v: AcilVerisi) => `${v.kurum ? buyukAd(v.kurum) + " · " : ""}${AYLAR[v.m]} ${v.y} acil eczane nöbet listesi`;
 const iki = (n: number) => String(n).padStart(2, "0");
 
 export function acilKitabi(v: AcilVerisi): Blob {
@@ -28,7 +28,7 @@ export function acilKitabi(v: AcilVerisi): Blob {
     ...v.ozet.map(o => [buyukAd(o.ad), o.gunler.length, o.tatil, o.gunler.join(", ")]),
   ];
   return xlsxKitap([
-    { ad: "Acil servis", satirlar: liste, genislik: [13, 13, 13, 26, 26], dondur: { satir: 3, sutun: 0 } },
+    { ad: "Acil eczane", satirlar: liste, genislik: [13, 13, 13, 26, 26], dondur: { satir: 3, sutun: 0 } },
     { ad: "Kişi özeti", satirlar: ozet, genislik: [26, 9, 17, 50], dondur: { satir: 3, sutun: 0 } },
   ]);
 }
@@ -36,7 +36,7 @@ export function acilKitabi(v: AcilVerisi): Blob {
 export function acilPdf(v: AcilVerisi): Blob {
   const doc = yeniPdf();
   const W = 297, K = 10;
-  doc.setProperties({ title: `${AYLAR[v.m]} ${v.y} acil servis`, creator: "Nöbet Çizelgesi" });
+  doc.setProperties({ title: `${AYLAR[v.m]} ${v.y} acil eczane nöbet listesi`, creator: "Nöbet Çizelgesi" });
   doc.setFont("CizelgeSans", "bold"); doc.setFontSize(14); doc.setTextColor(19, 33, 44);
   doc.text(baslik(v), K, 14);
   // takvim: haftalar satır, günler sütun
@@ -70,7 +70,7 @@ export function acilPdf(v: AcilVerisi): Blob {
     });
   }
   doc.setFontSize(8); doc.setTextColor(88, 105, 120);
-  doc.text("Gölgeli günler: hafta sonu ve resmi tatil. Acil servis nöbeti puantajda 24 saat sayılır; ertesi gün mesai günüyse nöbet izni.", K, 200);
+  doc.text("Gölgeli günler: hafta sonu ve resmi tatil. Acil eczane nöbeti puantajda 24 saat sayılır; ertesi gün mesai günüyse nöbet izni.", K, 200);
   doc.setTextColor(19, 33, 44);
   doc.text("Düzenleyen: ________________________          Onaylayan: ________________________", W - K, 205, { align: "right" });
   return doc.output("blob");

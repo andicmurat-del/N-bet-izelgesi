@@ -11,6 +11,8 @@ type ListeKisisi = { s: PuantajIzgarasi["satirlar"][number]["s"]; kod: string; s
 function gunlukListe(G: PuantajIzgarasi, d: number) {
   const var_: ListeKisisi[] = [], yok: { s: ListeKisisi["s"]; neden: string }[] = [], tatil = !!G.gunler[d - 1].tatil;
   G.satirlar.forEach(r => {
+    // acil servis personeli günlük eczane çalışma listesinde görünmez (acil eczane kadrosu)
+    if (r.s.role === "servis") return;
     const c = r.cells[d - 1], kod = c.kod;
     const calisiyor = kod === "M" || kod === "N" || kod === "H" || (kod && kod.indexOf("S:") === 0 && c.saat > 0);
     if (calisiyor) { var_.push({ s: r.s, kod, saat: c.saat, acil: !!c.acil }); return; }
@@ -23,7 +25,7 @@ function gunlukListe(G: PuantajIzgarasi, d: number) {
   if (tatil) {
     // Hafta sonu/tatil: nöbetçiler onay görevinde; 2 hazırlamacı rolü ne olursa olsun hazırlama görevinde. Acil serviste
     // nöbet tutan eczacılar hafta sonu / tatil listesinde gösterilmez: yalnız günlük eczanede nöbet tutanlar onaycıdır.
-    const acilMi = (x: ListeKisisi) => x.acil || x.s.role === "servis";
+    const acilMi = (x: ListeKisisi) => x.acil;
     const hazMi = (x: ListeKisisi) => x.kod === "H" && !acilMi(x);
     const onayMi = (x: ListeKisisi) => x.kod === "N" && !acilMi(x);
     onay = var_.filter(onayMi);
@@ -35,7 +37,7 @@ function gunlukListe(G: PuantajIzgarasi, d: number) {
       if (x.s.role === "eczaci") onay.push(x); else haz.push(x);
     });
   } else {
-    onay = var_.filter(x => x.s.role === "eczaci" || x.s.role === "servis");
+    onay = var_.filter(x => x.s.role === "eczaci");
     haz = var_.filter(x => x.s.role === "teknisyen");
     dst = var_.filter(x => x.s.role === "destek");
   }
@@ -56,7 +58,7 @@ export function acilDenetle(B: Baglam, y: number, m: number, g: number, ids: num
   [...new Set(ids)].forEach(id => {
     const s = B.kisi(id); if (!s) return;
     if (B.kesinYasak(id, y, m, g)) out.push({ sev: "uyari", t: s.name + " bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında." });
-    [-1, 1].forEach(k => { if ((ay[g + k] || []).indexOf(id) >= 0) out.push({ sev: "uyari", t: s.name + ", " + (g + k) + ". gün de acil serviste nöbetçi (nöbet ertesi gün izin gerekir)." }); });
+    [-1, 1].forEach(k => { if ((ay[g + k] || []).indexOf(id) >= 0) out.push({ sev: "uyari", t: s.name + ", " + (g + k) + ". gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir)." }); });
     if (sch && sch.days[g - 1] && sch.days[g - 1].assigned.some(p => p.id === id)) out.push({ sev: "uyari", t: s.name + " aynı gün eczane nöbetçisi." });
     else if (eczaneGoreviYakin(B, id, y, m, g)) out.push({ sev: "uyari", t: s.name + " komşu günde eczane nöbeti ya da hazırlaması var." });
     const t = B.tercih(id, y, m, g);

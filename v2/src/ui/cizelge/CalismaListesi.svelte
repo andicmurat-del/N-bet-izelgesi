@@ -17,7 +17,7 @@
 
   let acik = $state(false), secili = $state(1);
   const g = $derived(L[secili - 1]);
-  const gorev = (k: Kayit, tatil: boolean) => k.kod === "N" ? (k.acil ? "Acil servis nöbeti" : "Nöbetçi") : k.kod === "H" ? "Hazırlama" : tatil ? "" : ROL_AD[k.s.role];
+  const gorev = (k: Kayit, tatil: boolean) => k.kod === "N" ? (k.acil ? "Acil eczane nöbeti" : "Nöbetçi") : k.kod === "H" ? "Hazırlama" : tatil ? "" : ROL_AD[k.s.role];
 </script>
 
 <p class="aciklama">Puantaja göre her gün çalışanlar. Mesai günlerinde eczacılar onayda, teknikerler hazırlamada; hafta sonu ve tatilde onaycılar eczane nöbetçileri, hazırlamacılar o günün hazırlamacılarıdır. Bir güne dokunup adları görün.</p>
@@ -44,7 +44,7 @@
 
 {#if g}
   <Pencere bind:acik baslik={gunMetni(y, m, g.gun)} altBaslik="{g.tatil ? 'Hafta sonu / tatil' : 'Mesai günü'} · {g.toplam} kişi çalışıyor">
-    {#each [{ ad: g.tatil ? "Onaycılar" : "Onay", l: g.onay, c: "onay" }, { ad: g.tatil ? "Hazırlamacılar" : "Hazırlama", l: g.haz, c: "haz" }, { ad: "Destek", l: g.dst, c: "dst" }, { ad: "Dışarıdan gelen nöbetçi", l: g.gel, c: "onay" }] as grup}
+    {#each [{ ad: g.tatil ? "Onaycılar" : "Onay", l: g.onay, c: "onay" }, { ad: g.tatil ? "Hazırlamacılar" : "Hazırlama", l: g.haz, c: "haz" }, { ad: "Destek", l: g.dst, c: "dst" }, { ad: "Kemoterapi eczacısı (nöbetçi)", l: g.gel, c: "onay" }] as grup}
       {#if grup.l.length}
         <section class="grup">
           <h3><span class="nokta {grup.c}"></span>{grup.ad}<span class="rakam">{grup.l.length}</span></h3>

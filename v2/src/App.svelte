@@ -32,7 +32,7 @@
     const [h, alt] = location.hash.slice(1).split("/");
     if (ESKI[h]) { gunlukAlt = ESKI[h]; return "gunluk"; }
     if (h === "gunluk" && GUNLUK_ALT.includes(alt as GunlukGorunum)) gunlukAlt = alt as GunlukGorunum;
-    if (h === "acil" && (alt === "acil" || alt === "izinler")) acilAlt = alt;
+    if (h === "acil" && (alt === "acil" || alt === "puantaj" || alt === "izinler")) acilAlt = alt;
     return (SAYFALAR.find(s => s.ad === h)?.ad ?? "gunluk") as SayfaAdi;
   };
   let sayfa = $state<SayfaAdi>(hashOku());

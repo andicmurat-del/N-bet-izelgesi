@@ -34,7 +34,7 @@
     const ad = dAd.trim();
     if (!ad) { dHata = "Ad soyad boş olamaz."; return; }
     if (dBas && dBit && dBit < dBas) { dHata = "Ayrılış tarihi işe başlama tarihinden önce olamaz."; return; }
-    kisiGuncelle(duzenlenen.id, { name: gorunenAd(ad), role: dRol, baslangic: dBas || undefined, bitis: dBit || undefined, cumaMuaf: dCuma && (dRol === "eczaci" || dRol === "servis" || dRol === "teknisyen") ? true : undefined, acilTutar: dAcil && (dRol === "eczaci" || dRol === "nobetci") ? true : undefined });
+    kisiGuncelle(duzenlenen.id, { name: gorunenAd(ad), role: dRol, baslangic: dBas || undefined, bitis: dBit || undefined, cumaMuaf: dCuma && (dRol === "eczaci" || dRol === "teknisyen") ? true : undefined, acilTutar: dAcil && (dRol === "eczaci" || dRol === "nobetci") ? true : undefined });
     duzenleAcik = false;
   }
   let silOnayi = $state(false);
@@ -91,7 +91,7 @@
     {/if}
   {/each}
 </div>
-<p class="ipucu">Destek personeli ya da dışarıdan nöbetçi eczacı eklediğinizde kendi grupları burada görünür.</p>
+<p class="ipucu">Destek personeli, kemoterapi eczacısı ya da acil servis personeli eklediğinizde kendi grupları burada görünür.</p>
 
 <Pencere bind:acik={duzenleAcik} baslik={duzenlenen ? duzenlenen.name : ""} altBaslik="Bilgileri düzenle">
   <label class="alan"><span>Ad soyad</span><input class="girdi" bind:value={dAd} maxlength="60" /></label>
@@ -100,7 +100,7 @@
     <label class="alan"><span>İşe başlama</span><input class="girdi" type="date" bind:value={dBas} /><small>Boş: her zaman çalışıyor</small></label>
     <label class="alan"><span>Ayrılış (son gün)</span><input class="girdi" type="date" bind:value={dBit} /><small>Ayrılan kişiyi silmek yerine bu tarihi girin</small></label>
   </div>
-  {#if dRol === "eczaci" || dRol === "servis" || dRol === "teknisyen"}
+  {#if dRol === "eczaci" || dRol === "teknisyen"}
     <label class="secim"><input type="checkbox" bind:checked={dCuma} /><span>Cuma günleri öğlen nöbeti tutmaz (Cuma'dan muaf)</span></label>
   {/if}
   {#if dRol === "eczaci" || dRol === "nobetci"}

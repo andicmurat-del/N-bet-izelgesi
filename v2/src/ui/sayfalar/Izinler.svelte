@@ -83,7 +83,7 @@
     <button role="tab" aria-selected={mod === "tatil"} class:secili={mod === "tatil"} onclick={() => (mod = "tatil")}>Resmi tatil ve arife</button>
   </div>
 
-  {#if onayli}<p class="onay-not" role="status">Bu ayın çizelgesi onaylı; işaretler değiştirilemez. Değiştirmek için önce Çizelge'de onayı kaldırın.</p>{/if}
+  {#if onayli}<p class="onay-not" role="status">Bu ayın çizelgesi onaylı; işaretler değiştirilemez. Değiştirmek için önce Günlük Eczane Nöbet Listesi'nde onayı kaldırın.</p>{/if}
 
   <div class="duzen">
     <aside class="kart yan">

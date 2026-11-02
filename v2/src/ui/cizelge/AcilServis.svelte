@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Acil eczane nöbet listesi: günde 2 kişi; acil servis eczacıları ve "acilde nöbet tutar" işaretli eczacılar arasından
+  // Acil eczane nöbet listesi: günde 2 kişi; acil servis personeli ve "acilde nöbet tutar" işaretli eczacılar (kemoterapi dahil) arasından
   // otomatik oluşturulur (eczane çizelgesiyle çakışmadan), günler elle de düzenlenebilir (elle günler korunur).
   // Puantajda bu günler nöbet (24 saat) sayılır; ertesi gün mesai günüyse nöbet izni (Nİ), tatilse çalışılmadı (B) yazılır.
   import { depo, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, acilKaydet, acilElleMi, resmiTatilMi, tatilMi } from "../../veri/depo.svelte";
@@ -38,7 +38,7 @@
   const secim = $derived([s1, s2].filter(Boolean).map(Number));
   const ayni = $derived(!!s1 && s1 === s2);
   const denetim = $derived(acik ? (acilDenetle($state.snapshot(depo.veri), y, m, gun, secim) as { sev: "hata" | "uyari"; t: string }[]).filter(x => x.sev !== "hata") : []);
-  // seçenekler: o gün çalışma dönemi içinde olan acil servis eczacıları
+  // seçenekler: o gün çalışma dönemi içinde olan acil kadrosu
   const gunAday = $derived(adaylar.filter(k => { const t = `${y}-${String(m + 1).padStart(2, "0")}-${String(gun).padStart(2, "0")}`; return !(k.baslangic && t < k.baslangic) && !(k.bitis && t > k.bitis); }));
   function kaydet() { if (ayni) return; acilGunuAyarla(y, m, gun, secim); acik = false; }
   function temizle() { acilGunuAyarla(y, m, gun, []); acik = false; }
@@ -62,7 +62,7 @@
 {#if !adaylar.length && !dolu}
   <section class="kart bos">
     <h2>Acilde nöbet tutan yok</h2>
-    <p>Acil eczane nöbet listesi, görevi "Acil servis eczacısı" olanlar ile Personel bölümünde "Acilde nöbet tutar" işaretli eczacılar arasından oluşturulur. Önce bu kişileri ekleyin ya da işaretleyin. Puantajda acil nöbetleri 24 saat, ertesi mesai günü nöbet izni olarak işlenir.</p>
+    <p>Acil eczane nöbet listesi, görevi "Acil servis personeli" olanlar ile Personel bölümünde "Acilde nöbet tutar" işaretlenen eczacılar (kemoterapi eczacıları dahil) arasından oluşturulur. Önce bu kişileri ekleyin ya da işaretleyin. Puantajda acil nöbetleri 24 saat, ertesi mesai günü nöbet izni olarak işlenir.</p>
     <div><button class="dugme ana" onclick={() => git("kisiler")}><Ikon ad="kisiler" />Personel ekle</button></div>
   </section>
 {:else}
@@ -80,18 +80,18 @@
       {/if}
     </div>
   </div>
-  <p class="aciklama">Her gün 2 kişi; acil servis eczacıları ve "Acilde nöbet tutar" işaretli eczacılar arasından eşit dağıtılır (eczane nöbetinden ayrı, yıl boyunca). Aynı ya da komşu günde eczane nöbeti olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.</p>
+  <p class="aciklama">Her gün 2 kişi; acil servis personeli ve "Acilde nöbet tutar" işaretli eczacılar (kemoterapi eczacıları dahil) arasından eşit dağıtılır (eczane nöbetinden ayrı, yıl boyunca). Aynı ya da komşu günde eczane nöbeti olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.</p>
   {#each uyarilar as u}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
-  <section class="kart takvim-kutu" aria-label="{ayAdi(y, m)} acil servis nöbetleri">
+  <section class="kart takvim-kutu" aria-label="{ayAdi(y, m)} acil eczane nöbetleri">
     <div class="takvim">
       {#each GUN_KISA as g}<div class="bas" aria-hidden="true">{g}</div>{/each}
       {#each { length: haftaGunu(y, m, 1) } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
       {#each gunler as g (g)}
         {@const l = acilGunu(y, m, g)}
         <button class="gun" class:tatil={tatilMi(y, m, g)} class:bugun={bugunMu(g)} class:dolu={l.length} onclick={() => gunAc(g)}
-          aria-label="{gunMetni(y, m, g)}: acil servis nöbetçisi {l.map(ad).join(' ve ') || 'yok'}">
+          aria-label="{gunMetni(y, m, g)}: acil eczane nöbetçisi {l.map(ad).join(' ve ') || 'yok'}">
           <span class="ust"><span class="no rakam">{g}</span>{#if acilElleMi(y, m, g)}<span class="elle" title="Elle düzenlendi; yeniden oluşturmada korunur">elle</span>{/if}<span class="gunadi">{GUN_UZUN[haftaGunu(y, m, g)]}</span>{#if resmiTatilMi(y, m, g)}<span class="etiket">Resmi tatil</span>{/if}</span>
           <span class="kisiler">
             {#each l as id}<span class="kisi"><span class="isaret servis"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span></span>{:else}<span class="yok"><span class="ad">Nöbetçi yok</span><span class="ad-kisa" aria-hidden="true">–</span></span>{/each}
@@ -105,7 +105,7 @@
     <h2>Kişi özeti</h2>
     {#if ozet.length}
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
-      <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Acil servis kişi özeti">
+      <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Acil eczane kişi özeti">
         <table>
           <thead><tr><th class="sol" scope="col">Ad soyad</th><th scope="col">Nöbet</th><th scope="col">Hafta sonu / tatil</th><th class="sol" scope="col">Nöbet günleri</th></tr></thead>
           <tbody>
@@ -114,7 +114,7 @@
         </table>
       </div>
     {:else}
-      <p class="aciklama">Bu ay için henüz acil servis nöbeti girilmedi.</p>
+      <p class="aciklama">Bu ay için henüz acil eczane nöbet listesi oluşturulmadı.</p>
     {/if}
   </section>
 {/if}

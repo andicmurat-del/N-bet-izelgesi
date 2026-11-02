@@ -15,9 +15,9 @@ const veri = { staff, prefs: {}, manualTatil: {}, arife: {}, settings: {}, sched
 const Y = 2026, M = 9;   // Ekim 2026: 1 Perşembe, 2 Cuma, 3 Cumartesi, 4 Pazar, 5 Pazartesi
 const sch = { year: Y, month: M, days: cizelgeOlustur(veri, Y, M, { saat: () => 0 }).days };
 const ikiDisaridan = gun => gunuDenetle(veri, sch, gun, [staff[6], staff[7]].map(s => ({ id: s.id, name: s.name, role: s.role })), [])
-  .filter(b => b.sev === "hata" && /Dışarıdan/.test(b.t));
+  .filter(b => b.sev === "hata" && /İki kemoterapi eczacısı/.test(b.t));
 
-describe("dışarıdan gelen iki eczacı aynı gün", () => {
+describe("iki kemoterapi eczacısı aynı gün", () => {
   test("Cuma ve Cumartesi birlikte nöbetçi olabilir", () => {
     expect(ikiDisaridan(2)).toEqual([]);
     expect(ikiDisaridan(3)).toEqual([]);
