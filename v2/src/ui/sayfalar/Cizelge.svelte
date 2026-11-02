@@ -26,7 +26,7 @@
   const eskime = $derived(c ? eskimeNedenleri(depo.yil, depo.ay) : []);
 
   // görünüm: eczane nöbet çizelgesi, günlük çalışma listesi ya da acil servis nöbetleri
-  const GORUNUMLER = [{ ad: "nobet", baslik: "Eczane nöbeti", kisa: "Nöbet", ikon: "takvim" }, { ad: "liste", baslik: "Çalışma listesi", kisa: "Liste", ikon: "liste" }, { ad: "acil", baslik: "Acil servis", kisa: "Acil", ikon: "acil" }, { ad: "oglen", baslik: "Öğlen nöbeti", kisa: "Öğlen", ikon: "saat" }] as const;
+  const GORUNUMLER = [{ ad: "nobet", baslik: "Günlük Eczane Nöbet Listesi", ikon: "takvim" }, { ad: "liste", baslik: "Aylık Çalışma Listesi", ikon: "liste" }, { ad: "acil", baslik: "Acil Eczane Nöbet Listesi", ikon: "acil" }, { ad: "oglen", baslik: "Öğlen Nöbet Listesi", ikon: "saat" }] as const;
   let gorunum = $state<(typeof GORUNUMLER)[number]["ad"]>("nobet");
 
   let calisiyor = $state(false);
@@ -121,7 +121,7 @@
     </div>
   </section>
 {:else}
-  <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Görünüm" />
+  <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Görünüm" telefonSutun={2} />
 
   {#if gorunum === "acil"}
     <AcilServis {git} />
@@ -133,7 +133,7 @@
       <section class="kart bos-ay">
         <h2>{ayAdi(depo.yil, depo.ay)} çizelgesi henüz yok</h2>
         <p>Çalışma listesi bu ayın nöbet çizelgesi ve puantajından hazırlanır. Önce çizelgeyi oluşturun.</p>
-        <div class="dugmeler"><button class="dugme ana" onclick={() => (gorunum = "nobet")}><Ikon ad="takvim" />Eczane nöbeti</button></div>
+        <div class="dugmeler"><button class="dugme ana" onclick={() => (gorunum = "nobet")}><Ikon ad="takvim" />Günlük Eczane Nöbet Listesi</button></div>
       </section>
     {/if}
   {:else}

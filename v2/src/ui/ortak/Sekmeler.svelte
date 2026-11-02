@@ -2,10 +2,11 @@
   // Sayfa içi görünüm seçici (sekme çubuğu). Telefonda eşit genişlikte; varsa kısa adlar gösterilir.
   import Ikon from "./Ikon.svelte";
   type Secenek = { ad: T; baslik: string; kisa?: string; ikon?: string };
-  let { secenekler, secili = $bindable(), etiket }: { secenekler: readonly Secenek[]; secili: T; etiket: string } = $props();
+  // telefonSutun: uzun adlı sekmeler telefonda kaç sütunda dizilsin (varsayılan: hepsi tek satırda)
+  let { secenekler, secili = $bindable(), etiket, telefonSutun }: { secenekler: readonly Secenek[]; secili: T; etiket: string; telefonSutun?: number } = $props();
 </script>
 
-<div class="sekmeler" role="tablist" aria-label={etiket} style="--n:{secenekler.length}">
+<div class="sekmeler" role="tablist" aria-label={etiket} style="--n:{telefonSutun ?? secenekler.length}" class:sarili={!!telefonSutun}>
   {#each secenekler as s}
     <button role="tab" aria-label={s.baslik} aria-selected={secili === s.ad} class:secili={secili === s.ad} onclick={() => (secili = s.ad)}>
       {#if s.ikon}<Ikon ad={s.ikon as any} boyut={16} />{/if}<span class="uzun">{s.baslik}</span><span class="kisa">{s.kisa ?? s.baslik}</span>
@@ -23,5 +24,6 @@
     .sekmeler { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); width: 100%; }
     button { justify-content: center; padding: 0 var(--b2); }
     .uzun { display: none; } .kisa { display: inline; }
+    .sarili button { justify-content: flex-start; white-space: normal; text-align: left; line-height: 1.2; padding: 6px var(--b2); font-size: var(--f-sm); }
   }
 </style>

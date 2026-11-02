@@ -110,7 +110,7 @@
   <section class="kart bos">
     <h2>{ayAdi(y, m)} çizelgesi henüz yok</h2>
     <p>Öğlen nöbeti o günün çalışma listesinden yazılır: kimin izinli, nöbetçi ya da nöbet ertesi izinli olduğu nöbet çizelgesinden ve puantajdan gelir. Önce bu ayın nöbet çizelgesini oluşturun.</p>
-    <div><button class="dugme ana" onclick={() => git("nobet")}><Ikon ad="takvim" />Eczane nöbeti</button></div>
+    <div><button class="dugme ana" onclick={() => git("nobet")}><Ikon ad="takvim" />Günlük Eczane Nöbet Listesi</button></div>
   </section>
 {:else}
   <div class="arac">
