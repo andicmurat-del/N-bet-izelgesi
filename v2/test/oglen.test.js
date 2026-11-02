@@ -39,7 +39,7 @@ describe("öğlen nöbeti", () => {
   test("o gün mesaide çalışanlardan; Cuma'dan muaf Cuma yazılmaz; doğru gruptan", () => {
     r.gunler.forEach(g => {
       [...g.e, ...g.t].forEach(id => expect(["M", "N"]).toContain(hucre(id, g.gun).kod));
-      g.e.forEach(id => expect(["eczaci", "servis"]).toContain(staff.find(s => s.id === id).role));
+      g.e.forEach(id => expect(staff.find(s => s.id === id).role).toBe("eczaci"));
       g.t.forEach(id => expect(staff.find(s => s.id === id).role).toBe("teknisyen"));
       if (g.dw === 4) { expect(g.e).not.toContain(7); expect(g.t).not.toContain(13); }
     });
@@ -59,9 +59,10 @@ describe("öğlen nöbeti", () => {
     ay(11);
     const Yl = oglenYillikHesapla(veri, Y, 11);
     const say = ids => ids.map(id => (Yl[id] || { top: 0 }).top);
-    expect(fark(say([1, 2, 3, 4, 5, 6, 7, 8]))).toBeLessThanOrEqual(1);
+    expect(fark(say([1, 2, 3, 4, 5, 6, 7]))).toBeLessThanOrEqual(1);
+    expect(Yl[8]).toBeUndefined();   // acil servis personeli öğlen nöbetine yazılmaz
     expect(fark(say([9, 10, 11, 12, 13]))).toBeLessThanOrEqual(1);
-    expect(fark([1, 2, 3, 4, 5, 6, 8].map(id => Yl[id].cuma))).toBeLessThanOrEqual(1);
+    expect(fark([1, 2, 3, 4, 5, 6].map(id => Yl[id].cuma))).toBeLessThanOrEqual(1);
     expect(fark([9, 10, 11, 12].map(id => Yl[id].cuma))).toBeLessThanOrEqual(1);
     expect(Yl[7].cuma).toBe(0);
     expect(Yl[13].cuma).toBe(0);

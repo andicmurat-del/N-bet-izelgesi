@@ -47,7 +47,7 @@ export function veriyiDogrula(ham: unknown): Veri {
       ...(iso(k.baslangic) ? { baslangic: iso(k.baslangic) } : {}),
       ...(iso(k.bitis) ? { bitis: iso(k.bitis) } : {}),
       ...(k.cumaMuaf === true ? { cumaMuaf: true as const } : {}),
-      ...(k.acilTutar === true && k.role === "eczaci" ? { acilTutar: true as const } : {}),
+      ...(k.acilTutar === true && (k.role === "eczaci" || k.role === "nobetci") ? { acilTutar: true as const } : {}),
     }));
   const tercihler: Tercih[] = ["izinli", "want", "avoid", "esVar", "esYok"];
   for (const [k, t] of Object.entries(nesne(o.prefs))) if (tercihler.includes(t)) v.prefs[k] = t;
@@ -282,7 +282,7 @@ export function kisiGuncelle(id: number, alanlar: Partial<Omit<Kisi, "id">>) {
   if (!k.baslangic) delete k.baslangic;
   if (!k.bitis) delete k.bitis;
   if (!k.cumaMuaf) delete k.cumaMuaf;
-  if (!k.acilTutar || k.role !== "eczaci") delete k.acilTutar;
+  if (!k.acilTutar || !(k.role === "eczaci" || k.role === "nobetci")) delete k.acilTutar;
   // çizelgelerdeki ad ve görev de güncellenir (eski aylar dahil)
   for (const c of Object.values(depo.veri.schedules))
     for (const g of c.days) for (const p of [...g.assigned, ...g.prep]) if (p.id === id) { p.name = k.name; p.role = k.role; }

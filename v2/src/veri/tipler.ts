@@ -12,7 +12,7 @@ export interface Kisi {
   bitis?: string;
   /** Cuma günleri öğlen nöbeti yazılmaz (eczacı, acil servis eczacısı, tekniker) */
   cumaMuaf?: true;
-  /** eczacı: görevi eczacı kalır, acil eczane nöbet listesine de yazılır */
+  /** eczacı ya da kemoterapi eczacısı: eczane nöbeti yerine acil eczane nöbeti tutar (görevi değişmez) */
   acilTutar?: true;
 }
 
@@ -138,7 +138,7 @@ export const ROL_AD: Record<Rol, string> = {
   eczaci: "Eczacı",
   teknisyen: "Tekniker",
   destek: "Destek personeli",
-  nobetci: "Dışarıdan nöbetçi eczacı",
+  nobetci: "Kemoterapi eczacısı",
   servis: "Acil servis personeli",
 };
 
@@ -146,7 +146,7 @@ export const ROL_ACIKLAMA: Record<Rol, string> = {
   eczaci: "Nöbet ve hazırlama tutar; her gün en az bir eczacı nöbetçidir.",
   teknisyen: "Nöbet ve hazırlama tutar.",
   destek: "Nöbet tutmaz; tatil günlerinde ikinci hazırlama görevini alır.",
-  nobetci: "Kurum dışından nöbete gelen eczacı; eczacı yerine sayılır.",
+  nobetci: "Günlük eczanede ya da (\"Acilde nöbet tutar\" işaretliyse) acil eczanede nöbet tutar; eczacı yerine sayılır.",
   servis: "Eczane nöbetine yazılmaz; acil servis nöbetleri ayrı çizelgede elle girilir. Hafta içi normal mesai yapar.",
 };
 

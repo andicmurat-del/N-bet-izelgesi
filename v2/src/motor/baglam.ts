@@ -218,8 +218,8 @@ export const hazirlamaRol = (r: string) => r === "eczaci" || r === "teknisyen" |
 /** yıllık gün türü eşitliğine girenler (eczacı, dışarıdan gelen eczacı, tekniker) */
 export const yillikEsitRol = (r: string) => eczaciMi(r) || r === "teknisyen";
 export const gorevli = (s: Kisi | Gorevli): Gorevli => ({ id: s.id, name: s.name, role: s.role });
-/** acilde nöbet tutan eczacı: günlük eczanede yalnız mesai yapar; eczane nöbeti ve hazırlaması tutmaz */
-export const acildeTutanEczaci = (s: { role: string; acilTutar?: true }) => s.role === "eczaci" && !!s.acilTutar;
+/** acilde nöbet tutan eczacı ya da kemoterapi eczacısı: eczane nöbeti ve hazırlaması tutmaz */
+export const acildeTutanEczaci = (s: { role: string; acilTutar?: true }) => (s.role === "eczaci" || s.role === "nobetci") && !!s.acilTutar;
 /** günlük eczane nöbet çizelgesindekiler: nöbet / hazırlama tutanlar ve yıllık gün türü eşitliğine girenler */
 export const eczaneNobetcisi = (s: { role: string; acilTutar?: true }) => nobetciRol(s.role) && !acildeTutanEczaci(s);
 export const eczaneHazirlamacisi = (s: { role: string; acilTutar?: true }) => hazirlamaRol(s.role) && !acildeTutanEczaci(s);
