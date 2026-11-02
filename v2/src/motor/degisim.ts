@@ -1,6 +1,6 @@
 // Puantajda nöbet değişimi (yerine tutma, karşılıklı takas) ve izin/rapor nedeniyle yerine geçme: değişim yapılırsa
 // hangi kurallar bozulur (engel / uyarı) ve kim yerine geçebilir.
-import { eczaciMi, hazirlamaRol, ikiDisaridanSerbestMi, nobetciRol, type Baglam } from "./baglam";
+import { acildeTutanEczaci, eczaciMi, hazirlamaRol, ikiDisaridanSerbestMi, nobetciRol, type Baglam } from "./baglam";
 import { ayIstatistik } from "./istatistik";
 import { oncekiAySonKodu, puantajIzgarasi, type PuantajIzgarasi } from "./puantaj";
 import { AYLAR, ayAnahtari, CUMA, CUMARTESI, PAZAR, PERSEMBE, sonrakiAy } from "./takvim";
@@ -157,7 +157,7 @@ export function yerineAdaylar(B: Baglam, y: number, m: number, gun: number, cik:
   const out: { id: number; ad: string; rol: string; engel: number; uyari: number; yil: number; fm: number; yerine: number; son: number; k: DegisimSonucu }[] = [];
   G.satirlar.forEach(r => {
     const id = r.s.id; if (id === cik) return;
-    if (H ? !(hazirlamaRol(r.s.role) || r.s.role === "destek") : !nobetciRol(r.s.role)) return;
+    if (acildeTutanEczaci(r.s) || (H ? !(hazirlamaRol(r.s.role) || r.s.role === "destek") : !nobetciRol(r.s.role))) return;
     const c = r.cells[gun - 1]; if (!c || c.kod === "N" || c.kod === "H") return;
     if (["YI", "R", "DI", "NI", "P"].indexOf(c.kod) >= 0 || (c.kod === "B" && !g.tatil)) return;
     if (B.kesinYasak(id, y, m, gun)) return;

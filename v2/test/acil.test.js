@@ -90,3 +90,10 @@ describe("acil nöbetinde izin, rapor, eş durumu, istiyor / istemiyor", () => {
     for (let d = 23; d <= 27; d++) expect(gun(d)).not.toContain(14);
   });
 });
+
+describe("acilde nöbet tutan eczacı günlük eczanede nöbet tutmaz", () => {
+  test("eczane nöbet çizelgesine ve hazırlamaya yazılmaz", () => {
+    const days = cizelgeOlustur(veri, Y, M, { saat: () => 0 }).days;
+    days.forEach(g => [...g.assigned, ...g.prep].forEach(p => expect([1, 2, 13, 14, 15, 16]).not.toContain(p.id)));
+  });
+});

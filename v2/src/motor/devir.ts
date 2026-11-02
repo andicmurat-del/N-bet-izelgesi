@@ -1,7 +1,7 @@
 // Yıllık devir: aynı yılın önceki aylarının çizelgelerinden kişi başı "payına göre fazla / eksik" sayıları.
 // Bu ayın çizelgesi önceki ayların farkını kapatacak şekilde aranır. Her takvim yılı kendi içinde değerlendirilir:
 // önceki yılların nöbetleri yeni yılı bağlamaz, Ocak'ta sayım sıfırdan başlar.
-import { aktifAydaMi, aktifGunMu, hazirlamaRol, nobetciRol, yillikEsitRol, type Baglam } from "./baglam";
+import { eczaneHazirlamacisi, eczaneNobetcisi, eczaneYillikEsit, aktifAydaMi, aktifGunMu, type Baglam } from "./baglam";
 import { ayIstatistik, ayVeriVarMi, type AyIstatistigi } from "./istatistik";
 import { CUMARTESI, haftaGunu, haftaSonuMu, PAZAR, PERSEMBE } from "./takvim";
 
@@ -15,7 +15,7 @@ function gunTipiDevir(B: Baglam, y: number, m: number, tipMi: (y: number, m: num
     const sc = B.dengeCizelgesi(y, mm); if (!sc || !Array.isArray(sc.days)) continue;
     const gunler = sc.days.filter(d => d && tipMi(y, mm, d.day));
     if (!gunler.length) continue;
-    const hv = B.staff.filter(s => yillikEsitRol(s.role) && aktifAydaMi(s, y, mm));
+    const hv = B.staff.filter(s => eczaneYillikEsit(s) && aktifAydaMi(s, y, mm));
     if (!hv.length) continue;
     const say: Fark = {}, mus: Fark = {}; let top = 0, musTop = 0;
     hv.forEach(s => { say[s.id] = 0; mus[s.id] = 0; });
@@ -44,7 +44,7 @@ export function nobetDevir(B: Baglam, y: number, m: number): Fark {
   const off: Fark = {};
   for (let mm = 0; mm < m; mm++) {
     const sc = B.dengeCizelgesi(y, mm); if (!sc || !Array.isArray(sc.days)) continue;
-    const hv = B.staff.filter(s => yillikEsitRol(s.role) && aktifAydaMi(s, y, mm)); if (!hv.length) continue;
+    const hv = B.staff.filter(s => eczaneYillikEsit(s) && aktifAydaMi(s, y, mm)); if (!hv.length) continue;
     const c: Fark = {}; hv.forEach(s => { c[s.id] = 0; });
     sc.days.forEach(d => { (d.assigned || []).forEach(p => { if (c[p.id] !== undefined) c[p.id]++; }); });
     const ort = hv.reduce((t, s) => t + c[s.id], 0) / hv.length;
@@ -66,8 +66,8 @@ export function resmiDevir(B: Baglam, y: number, m: number) {
       (d.prep || []).forEach(p => { cH[p.id] = (cH[p.id] || 0) + 1; });
     });
     const havuzlar: [typeof B.staff, Fark, Fark, Fark][] = [
-      [B.staff.filter(s => nobetciRol(s.role) && aktifAydaMi(s, y, mm)), cN, off, say],
-      [B.staff.filter(s => hazirlamaRol(s.role) && aktifAydaMi(s, y, mm)), cH, offH, sayH],
+      [B.staff.filter(s => eczaneNobetcisi(s) && aktifAydaMi(s, y, mm)), cN, off, say],
+      [B.staff.filter(s => eczaneHazirlamacisi(s) && aktifAydaMi(s, y, mm)), cH, offH, sayH],
       [B.staff.filter(s => s.role === "destek" && aktifAydaMi(s, y, mm)), cH, offH, sayH],
     ];
     havuzlar.forEach(([hv, c, o, sy]) => {
@@ -113,12 +113,12 @@ export function devirHesapla(B: Baglam, y: number, m: number): AyDevri {
   const sapma: Fark = {}, prepSapma: Fark = {};
   let oncekiAy: Record<number, AyIstatistigi> | null = null;
   aylar.forEach(a => {
-    const duty = B.staff.filter(s => nobetciRol(s.role) && varMi(s, a));
+    const duty = B.staff.filter(s => eczaneNobetcisi(s) && varMi(s, a));
     if (duty.length) {
       const v = duty.map(s => (a.st[s.id] || { fm: 0 }).fm), ort = v.reduce((x, z) => x + z, 0) / duty.length;
       duty.forEach((s, i) => { sapma[s.id] = (sapma[s.id] || 0) + (v[i] - ort); });
     }
-    [B.staff.filter(s => hazirlamaRol(s.role) && varMi(s, a)), B.staff.filter(s => s.role === "destek" && varMi(s, a))].forEach(h => {
+    [B.staff.filter(s => eczaneHazirlamacisi(s) && varMi(s, a)), B.staff.filter(s => s.role === "destek" && varMi(s, a))].forEach(h => {
       if (!h.length) return;
       const v = h.map(s => (a.st[s.id] || { prep: 0 }).prep), ort = v.reduce((x, z) => x + z, 0) / h.length;
       h.forEach((s, i) => { prepSapma[s.id] = (prepSapma[s.id] || 0) + (v[i] - ort); });
@@ -129,6 +129,6 @@ export function devirHesapla(B: Baglam, y: number, m: number): AyDevri {
   B.staff.forEach(s => { off[s.id] = sapma[s.id] || 0; prepOff[s.id] = prepSapma[s.id] || 0; });
   const prev: AyDevri["prev"] = {};
   const onceki = oncekiAy as Record<number, AyIstatistigi> | null;
-  B.staff.filter(s => nobetciRol(s.role)).forEach(s => { prev[s.id] = onceki && onceki[s.id] ? onceki[s.id] : { thu: 0, sat: 0, sun: 0 }; });
+  B.staff.filter(s => eczaneNobetcisi(s)).forEach(s => { prev[s.id] = onceki && onceki[s.id] ? onceki[s.id] : { thu: 0, sat: 0, sun: 0 }; });
   return { off, prepOff, prev, havePrev: !!onceki };
 }

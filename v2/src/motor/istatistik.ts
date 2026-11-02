@@ -1,12 +1,12 @@
 // Bir ayın çizelgesinden sayımlar: kişi başı fazla mesai, gün türleri, hafta sonu kuralı, yıllık gün türü sayıları.
-import { aktifAydaMi, aktifGunMu, nobetciRol, yillikEsitRol, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
+import { eczaneNobetcisi, eczaneYillikEsit, aktifAydaMi, aktifGunMu, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
 import type { YilGunTipi } from "./sabitler";
 import { ayGunSayisi, CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
 
 /** fazla mesai kuralına giren kişiler: ayın tamamında çalışan eczacı, tekniker ve dışarıdan gelen eczacı */
 export function fmKuralKisileri(B: Baglam, y: number, m: number) {
   const dim = ayGunSayisi(y, m);
-  return B.staff.filter(s => nobetciRol(s.role) && aktifGunMu(s, y, m, 1) && aktifGunMu(s, y, m, dim));
+  return B.staff.filter(s => eczaneNobetcisi(s) && aktifGunMu(s, y, m, 1) && aktifGunMu(s, y, m, dim));
 }
 /** ay içinde ayrılan kişi en az bu kadar gün çalışıyorsa nöbetleri ayrılmadan önceki günlere sığdırılır */
 export const AYRILAN_EN_AZ_GUN = 15;
@@ -16,7 +16,7 @@ export const AYRILAN_EN_AZ_GUN = 15;
 export function nobetKuralKisileri(B: Baglam, y: number, m: number) {
   const dim = ayGunSayisi(y, m);
   return B.staff.filter(s => {
-    if (!nobetciRol(s.role) || !aktifGunMu(s, y, m, 1)) return false;
+    if (!eczaneNobetcisi(s) || !aktifGunMu(s, y, m, 1)) return false;
     let gun = 0; for (let d = 1; d <= dim; d++) if (aktifGunMu(s, y, m, d)) gun++;
     return gun === dim || gun >= AYRILAN_EN_AZ_GUN;
   });
@@ -95,7 +95,7 @@ export function yilGunSayilari(B: Baglam, y: number, m: number, curDays: MotorGu
   const sifir = (): GunTipiSayilari => ({ pe: 0, cu: 0, cmt: 0, paz: 0, rt: 0 });
   const kayit = (id: number) => r[id] || (r[id] = { ...sifir(), ham: sifir() });
   const ay = (mm: number, gunler: MotorGunu[]) => {
-    const hv = B.staff.filter(s => yillikEsitRol(s.role) && aktifAydaMi(s, y, mm)); if (!hv.length) return;
+    const hv = B.staff.filter(s => eczaneYillikEsit(s) && aktifAydaMi(s, y, mm)); if (!hv.length) return;
     const c: Record<number, GunTipiSayilari> = {}; hv.forEach(s => { c[s.id] = sifir(); });
     gunler.forEach(d => {
       if (!d) return;

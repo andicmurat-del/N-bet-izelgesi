@@ -78,7 +78,7 @@
                   <b>{k.name}</b>
                   {#if k.baslangic || k.bitis}<small>{k.baslangic ? "Başlangıç " + tarihMetni(k.baslangic) : ""}{k.baslangic && k.bitis ? " · " : ""}{k.bitis ? "Ayrılış " + tarihMetni(k.bitis) : ""}</small>{/if}
                   {#if k.cumaMuaf}<small>Öğlen nöbeti: Cuma'dan muaf</small>{/if}
-                  {#if k.acilTutar}<small>Acilde de nöbet tutar</small>{/if}
+                  {#if k.acilTutar}<small>Acilde nöbet tutar (eczanede mesai)</small>{/if}
                 </div>
                 <button class="dugme sade kucuk" onclick={() => duzenle(k)} aria-label="{k.name}: düzenle"><Ikon ad="duzenle" />Düzenle</button>
               </li>
@@ -104,7 +104,7 @@
     <label class="secim"><input type="checkbox" bind:checked={dCuma} /><span>Cuma günleri öğlen nöbeti tutmaz (Cuma'dan muaf)</span></label>
   {/if}
   {#if dRol === "eczaci"}
-    <label class="secim"><input type="checkbox" bind:checked={dAcil} /><span>Acilde de nöbet tutar (acil eczane nöbet listesine yazılır; görevi eczacı kalır)</span></label>
+    <label class="secim"><input type="checkbox" bind:checked={dAcil} /><span>Acilde nöbet tutar (günlük eczanede mesai yapar, eczane nöbeti ve hazırlama tutmaz; nöbetleri acil eczane listesinde)</span></label>
   {/if}
   {#if dHata}<p class="hata" role="alert">{dHata}</p>{/if}
   {#if silOnayi}
