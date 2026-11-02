@@ -1,4 +1,4 @@
-// Öğlen nöbeti çizelgesi: PDF (A4 dikey; hafta hafta gün listesi + kişi başı sayılar). Resmi çıktı: adlar büyük harf.
+// Öğlen nöbeti çizelgesi: PDF (A4 dikey; hafta hafta gün listesi, her kişi ayrı sütunda + kişi başı sayılar). Resmi çıktı: adlar büyük harf.
 import { autoTable } from "jspdf-autotable";
 import { yeniPdf } from "./pdfOrtak";
 import { AYLAR, GUN_UZUN, buyukAd } from "../veri/tarih";
@@ -20,12 +20,12 @@ export function oglenPdf(v: OglenVerisi): Blob {
   v.haftalar.forEach(h => h.forEach((g, i) => satirlar.push({ ...g, ilk: i === 0 })));
   autoTable(doc, {
     startY: 21, margin: { left: K, right: K, bottom: 22 },
-    head: [["Gün", "Eczacılar", "Tekniker"]],
-    body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, g.e.map(buyukAd).join(", "), g.t.map(buyukAd).join(", ")]),
+    head: [["Gün", "1. eczacı", "2. eczacı", "3. eczacı", "1. tekniker", "2. tekniker"]],
+    body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, ...[0, 1, 2].map(i => buyukAd(g.e[i] ?? "")), ...[0, 1].map(i => buyukAd(g.t[i] ?? ""))]),
     theme: "grid",
-    styles: { font: "CizelgeSans", fontSize: 9.5, cellPadding: 2, textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.15 },
+    styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 1.8, textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.15 },
     headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 232, 238] },
-    columnStyles: { 0: { cellWidth: 32, fontStyle: "bold" }, 2: { cellWidth: 55 } },
+    columnStyles: { 0: { cellWidth: 26, fontStyle: "bold" }, 4: { lineWidth: { left: 0.6, right: 0.15, top: 0.15, bottom: 0.15 } } },
     didParseCell: h => {
       if (h.section !== "body") return;
       const g = satirlar[h.row.index];

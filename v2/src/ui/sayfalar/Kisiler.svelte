@@ -34,7 +34,7 @@
     const ad = dAd.trim();
     if (!ad) { dHata = "Ad soyad boş olamaz."; return; }
     if (dBas && dBit && dBit < dBas) { dHata = "Ayrılış tarihi işe başlama tarihinden önce olamaz."; return; }
-    kisiGuncelle(duzenlenen.id, { name: gorunenAd(ad), role: dRol, baslangic: dBas || undefined, bitis: dBit || undefined, cumaMuaf: dCuma && (dRol === "eczaci" || dRol === "servis") ? true : undefined });
+    kisiGuncelle(duzenlenen.id, { name: gorunenAd(ad), role: dRol, baslangic: dBas || undefined, bitis: dBit || undefined, cumaMuaf: dCuma && (dRol === "eczaci" || dRol === "servis" || dRol === "teknisyen") ? true : undefined });
     duzenleAcik = false;
   }
   let silOnayi = $state(false);
@@ -99,7 +99,7 @@
     <label class="alan"><span>İşe başlama</span><input class="girdi" type="date" bind:value={dBas} /><small>Boş: her zaman çalışıyor</small></label>
     <label class="alan"><span>Ayrılış (son gün)</span><input class="girdi" type="date" bind:value={dBit} /><small>Ayrılan kişiyi silmek yerine bu tarihi girin</small></label>
   </div>
-  {#if dRol === "eczaci" || dRol === "servis"}
+  {#if dRol === "eczaci" || dRol === "servis" || dRol === "teknisyen"}
     <label class="secim"><input type="checkbox" bind:checked={dCuma} /><span>Cuma günleri öğlen nöbeti tutmaz (Cuma'dan muaf)</span></label>
   {/if}
   {#if dHata}<p class="hata" role="alert">{dHata}</p>{/if}

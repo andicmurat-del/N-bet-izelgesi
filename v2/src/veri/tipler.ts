@@ -10,7 +10,7 @@ export interface Kisi {
   baslangic?: string;
   /** ayrılış tarihi (son çalışma günü), YYYY-AA-GG */
   bitis?: string;
-  /** Cuma günleri öğlen nöbeti yazılmaz (eczacı, acil servis eczacısı) */
+  /** Cuma günleri öğlen nöbeti yazılmaz (eczacı, acil servis eczacısı, tekniker) */
   cumaMuaf?: true;
 }
 

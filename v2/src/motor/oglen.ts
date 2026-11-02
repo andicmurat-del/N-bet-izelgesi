@@ -1,6 +1,6 @@
 // Öğlen nöbeti: hafta içi öğle arasında diğerleri yemeğe giderken eczanede kalanlar. Nöbet ya da fazla mesai değildir,
 // sırayla yapılan bir iştir. Pazartesi–Perşembe 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker. Eczacı: eczacı ve
-// acil servis eczacısı; Cuma'dan muaf işaretli eczacılar Cuma yazılmaz. O gün mesaide çalışanlardan yazılır (puantaja
+// acil servis eczacısı; Cuma'dan muaf işaretli kişiler (eczacı ya da tekniker) Cuma yazılmaz. O gün mesaide çalışanlardan yazılır (puantaja
 // göre: izinli, raporlu, nöbet ertesi izinli olan yazılmaz); resmi tatil ve arife günü öğlen nöbeti yoktur.
 // Hedefler (önem sırasıyla): herkese haftada bir (kişi yetmezse iki), yıl boyunca toplam sayı eşit, Cuma sayısı Cuma
 // yazılabilenler arasında ayrıca eşit, mümkünse o günün eczane / acil servis nöbetçisine yazılmaz (eşitlik bozulmuyorsa).
@@ -20,8 +20,9 @@ const GRUPLAR: Grup[] = ["e", "t"];
 /** öğlen nöbetinde kişinin grubu: eczacı (eczacı, acil servis eczacısı) ya da tekniker; diğerleri yazılmaz */
 export const oglenGrubu = (rol: string): Grup | null => (rol === "eczaci" || rol === "servis" ? "e" : rol === "teknisyen" ? "t" : null);
 
-/** amaç ağırlıkları (küçük daha iyi): haftada üçüncü kez çok ağır; eşitlik nöbetçiden kaçınmaktan önce gelir */
-const W = { hafta3: 1000, hafta: 4, toplam: 1, cuma: 3, nobetci: 0.5, ardArda: 0.2 };
+/** amaç ağırlıkları (küçük daha iyi): haftada üçüncü kez çok ağır; haftada ikinci kez her seferinde ceza (kişi
+ *  yetiyorsa herkes bir kez); eşitlik nöbetçiden kaçınmaktan önce gelir */
+const W = { hafta3: 1000, hafta: 3, toplam: 1, cuma: 3, nobetci: 0.5, ardArda: 0.2 };
 
 export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[]; elle?: true }
 export interface OglenSonucu { gunler: OglenGunSonucu[]; uyarilar: string[] }
@@ -39,7 +40,7 @@ function oglenDevir(B: Baglam, y: number, m: number) {
     const kayit = B.oglen[ayAnahtari(y, mm)]; if (!kayit) continue;
     for (const g of GRUPLAR) {
       const havuz = B.staff.filter(s => oglenGrubu(s.role) === g && aktifAydaMi(s, y, mm)); if (!havuz.length) continue;
-      const cHavuz = havuz.filter(s => !(g === "e" && s.cumaMuaf));
+      const cHavuz = havuz.filter(s => !s.cumaMuaf);
       const c: Record<number, number> = {}, f: Record<number, number> = {};
       havuz.forEach(s => { c[s.id] = 0; f[s.id] = 0; });
       for (const [gun, k] of Object.entries(kayit)) {
@@ -66,7 +67,7 @@ function gunAdaylari(B: Baglam, G: ReturnType<typeof puantajIzgarasi>, y: number
     // o gün mesaide: normal mesai ya da nöbet (eczane / acil servis nöbetçisi gün içinde de çalışır)
     if (!(c.kod === "M" || c.kod === "N" || (c.kod.indexOf("S:") === 0 && c.saat > 0))) return;
     if (c.kod === "N") nobetci.push(r.s.id);
-    if (cu && g === "e" && r.s.cumaMuaf) return;
+    if (cu && r.s.cumaMuaf) return;
     ca[g].push(r.s.id);
   });
   return { ca, nobetci };
@@ -111,7 +112,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
     if (tam) continue;
     const gunAd = d + " " + AYLAR[m];
     if (ca.e.length < ger.e) uyarilar.push(gunAd + ": öğlen nöbeti için " + ger.e + " eczacı gerekli, o gün çalışan " + ca.e.length + " eczacı var" + (cu ? " (Cuma'dan muaf olanlar hariç)" : "") + ".");
-    if (ca.t.length < ger.t) uyarilar.push(gunAd + ": öğlen nöbeti için " + ger.t + " tekniker gerekli, o gün çalışan " + ca.t.length + " tekniker var.");
+    if (ca.t.length < ger.t) uyarilar.push(gunAd + ": öğlen nöbeti için " + ger.t + " tekniker gerekli, o gün çalışan " + ca.t.length + " tekniker var" + (cu ? " (Cuma'dan muaf olanlar hariç)" : "") + ".");
   }
 
   const N = gunler.length, nobetciMi = gunler.map(x => new Set(x.nobetci));
@@ -119,7 +120,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
   const haftaNo = gunler.map(x => hafta(x.gun)), cumaMi = gunler.map(x => x.dw === CUMA);
   for (const g of GRUPLAR) {
     const havuz = B.staff.filter(s => oglenGrubu(s.role) === g && aktifAydaMi(s, y, m));
-    const cumaHavuz = havuz.filter(s => !(g === "e" && s.cumaMuaf));
+    const cumaHavuz = havuz.filter(s => !s.cumaMuaf);
     const sec: number[][] = gunler.map((_, i) => sabit[g][i].slice());
     // değişmez yerler: sabit kişiler listenin başında durur, arama yalnız sonrasına dokunur
     const ilkSerbest = sabit[g].map(l => l.length);
@@ -137,7 +138,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
       cumaHavuz.forEach(s => { const v = (cu[s.id] || 0) + (devir.cuma[s.id] || 0); j += W.cuma * v * v; });
       for (const [k, v0] of Object.entries(hf)) {
         const v = v0 + (k.startsWith("0:") ? oncekiHafta[Number(k.slice(2))] || 0 : 0);
-        j += W.hafta * v * v + (v > 2 ? W.hafta3 * (v - 2) : 0);
+        j += (v > 1 ? W.hafta * (v - 1) : 0) + (v > 2 ? W.hafta3 * (v - 2) : 0);
       }
       return j;
     };

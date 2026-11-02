@@ -35,6 +35,8 @@
   const nobetciMi = (id: number, d: number) => hucre(id, d)?.kod === "N";
 
   type Satir = { gun: number; dw: number; e: number[]; t: number[]; elle: boolean };
+  // her kişi ayrı sütunda: 3 eczacı, 2 tekniker (Pzt–Prş'de boş kalan sütun boş görünür)
+  const sutunlar = (s: Satir) => [{ l: s.e, n: OGLEN_GEREK.cuma.e }, { l: s.t, n: OGLEN_GEREK.cuma.t }];
   const haftalar = $derived.by(() => {
     if (!kayit) return [] as Satir[][];
     const out: Satir[][] = []; let cur: Satir[] = [];
@@ -118,7 +120,7 @@
       {#if kayit}<button class="dugme sade tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, ayın öğlen nöbetini sil" : "Sil"}</button>{/if}
     </div>
   </div>
-  <p class="aciklama">O gün mesaide çalışanlardan yazılır; resmi tatil ve arife günü öğlen nöbeti yoktur. Herkese haftada bir (kişi yetmezse iki); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz. Cuma'dan muaf eczacılar Personel bölümünde işaretlenir. Bir güne dokunup kişileri elle değiştirebilirsiniz; sonradan girilen izin ve raporlarda boşalan yerler kendiliğinden doldurulur (elle düzenlenen ve geçmiş günler değişmez).</p>
+  <p class="aciklama">O gün mesaide çalışanlardan yazılır; resmi tatil ve arife günü öğlen nöbeti yoktur. Herkese haftada bir (kişi yetmezse iki); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz. Cuma'dan muaf kişiler (eczacı ya da tekniker) Personel bölümünde işaretlenir. Bir güne dokunup kişileri elle değiştirebilirsiniz; sonradan girilen izin ve raporlarda boşalan yerler kendiliğinden doldurulur (elle düzenlenen ve geçmiş günler değişmez).</p>
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
   {#each [...uyarilar, ...sorunlar] as u}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}
@@ -128,16 +130,17 @@
   {:else}
     <section class="kart tablo-kap" aria-label="{ayAdi(y, m)} öğlen nöbeti">
       <table>
-        <thead><tr><th class="sol">Gün</th><th class="sol">Eczacılar</th><th class="sol">Tekniker</th></tr></thead>
+        <thead><tr><th class="sol">Gün</th>{#each { length: OGLEN_GEREK.cuma.e } as _, i}<th class="sol">{i + 1}. eczacı</th>{/each}{#each { length: OGLEN_GEREK.cuma.t } as _, i}<th class="sol" class:ayrac={i === 0}>{i + 1}. tekniker</th>{/each}</tr></thead>
         {#each haftalar as h}
           <tbody>
             {#each h as s (s.gun)}
               <tr class:cuma={s.dw === 4} class="tikla" onclick={() => gunAc(s)}>
                 <th class="sol"><button class="gun-dugme" onclick={e => { e.stopPropagation(); gunAc(s); }} aria-label="{gunMetni(y, m, s.gun)}: düzenle"><span class="rakam">{s.gun}</span> {GUN_UZUN[s.dw]}</button>{#if s.elle}<small> · elle</small>{/if}</th>
-                {#each [s.e, s.t] as l}
-                  <td class="sol">
-                    {#each l as id, i}<span class:sorun={!calisiyor(id, s.gun)}>{ad(id)}{#if nobetciMi(id, s.gun)}<small> (nöbetçi)</small>{/if}</span>{#if i < l.length - 1}{", "}{/if}{/each}
-                  </td>
+                {#each sutunlar(s) as { l, n }, gi}
+                  {#each { length: Math.max(n, l.length) } as _, i}
+                    {@const id = l[i]}
+                    <td class="sol" class:ayrac={gi === 1 && i === 0}>{#if id !== undefined}<span class:sorun={!calisiyor(id, s.gun)}>{ad(id)}</span>{#if nobetciMi(id, s.gun)}{" "}<small>(nöbetçi)</small>{/if}{/if}</td>
+                  {/each}
                 {/each}
               </tr>
             {/each}
@@ -214,6 +217,7 @@
   .blok .aciklama { margin-bottom: 0; }
   .bant { padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; background: var(--vurgu-zemin); color: var(--vurgu); }
   tr.tikla { cursor: pointer; }
+  .ayrac { border-left: 2px solid var(--cizgi); }
   tr.tikla:hover { background: var(--vurgu-zemin); }
   .gun-dugme { all: unset; cursor: pointer; font-weight: 500; }
   .gun-dugme:focus-visible { outline: 2px solid var(--odak); outline-offset: 2px; border-radius: 4px; }
