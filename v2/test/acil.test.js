@@ -1,7 +1,7 @@
 // Acil eczane nöbet listesi: günde 2 kişi; acil servis personeli ve "acilde nöbet tutar" işaretli eczacılar (kemoterapi dahil);
 // eczane çizelgesiyle çakışmaz (aynı / komşu gün); art arda gün yok; eşitlik ayrı ve yıl boyunca; elle günler korunur.
 import { describe, test, expect } from "vitest";
-import { acilHesapla, calismaListesiHesapla, cizelgeOlustur, gunuDenetle } from "../src/motor";
+import { acilHesapla, calismaListesiHesapla, cizelgeOlustur, gunuDenetle, puantajHesapla } from "../src/motor";
 
 const staff = [];
 for (let i = 1; i <= 7; i++) staff.push({ id: i, name: "E" + i, role: "eczaci", ...(i <= 2 ? { acilTutar: true } : {}) });
@@ -182,9 +182,13 @@ describe("acil eşitliği günlük eczanedeki gibi: izinli günler düşülür, 
     expect(n13).toBeLessThan(Math.min(...diger));                 // payı 20/30 gün
     expect(Math.abs(n13 - 60 * 20 / 170)).toBeLessThanOrEqual(1.5);
     v.acil[`${Y}-${M}`] = Object.fromEntries(r1.gunler.map(g => [g.gun, g.ids]));
-    const r2 = acilHesapla(v, Y, M + 1);                           // Aralık: herkes tam ay
+    const r2 = acilHesapla(v, Y, M + 1);                           // Aralık: herkes tam ay; telafi yok
     const l2 = [1, 2, 13, 14, 15, 16].map(id => say(r2, id));
-    expect(Math.max(...l2) - Math.min(...l2)).toBeLessThanOrEqual(1);
+    expect(Math.max(...l2) - Math.min(...l2)).toBeLessThanOrEqual(2);   // fazla mesai saati de eşitlendiği için sayı ±1
+    expect(say(r2, 13)).toBeLessThanOrEqual(Math.max(...l2.filter((_, i) => i !== 2)));   // izinli ay için fazladan almaz
+    v.acil[`${Y}-${M + 1}`] = Object.fromEntries(r2.gunler.map(g => [g.gun, g.ids]));
+    const fm = puantajHesapla(v, Y, M + 1).satirlar.filter(x => [1, 2, 13, 14, 15, 16].includes(x.s.id)).map(x => x.fm);
+    expect(Math.max(...fm) - Math.min(...fm)).toBeLessThanOrEqual(8);
   });
   test("ay ortasında başlayan çalıştığı gün kadar pay alır", () => {
     const v = v0();
@@ -193,7 +197,7 @@ describe("acil eşitliği günlük eczanedeki gibi: izinli günler düşülür, 
     expect(Math.abs(n - 60 * 15 / 165)).toBeLessThanOrEqual(1.5);
     v.acil[`${Y}-${M}`] = Object.fromEntries(r.gunler.map(g => [g.gun, g.ids]));
     const r2 = acilHesapla(v, Y, M + 1), l2 = [1, 2, 13, 14, 15, 16].map(id => say(r2, id));
-    expect(Math.max(...l2) - Math.min(...l2)).toBeLessThanOrEqual(1);
+    expect(Math.max(...l2) - Math.min(...l2)).toBeLessThanOrEqual(2);
   });
 });
 
@@ -235,5 +239,16 @@ describe("Ayarlar > Acil eczane: iki acil nöbeti arasında önerilen en az gün
     expect(acilDenetle(v, Y, M, 8, [13, 15]).some(x => /5\. gün de acil eczanede nöbetçi \(en az 4 gün ara/.test(x.t))).toBe(true);
     v.settings = { acilMinAra: 3 };
     expect(acilDenetle(v, Y, M, 8, [13, 15]).some(x => /en az/.test(x.t))).toBe(false);
+  });
+});
+
+describe("acil eşitliği fazla mesai saatine göre de (günlük eczanedeki gibi)", () => {
+  test("ayda kişiler arası fazla mesai farkı en çok 8 saat (Cuma / hafta sonu nöbeti daha çok saat yazar)", () => {
+    const v = JSON.parse(JSON.stringify({ ...veri, prefs: {} }));
+    for (let m = 8; m <= 11; m++) {
+      const r = acilHesapla(v, Y, m); v.acil[`${Y}-${m}`] = Object.fromEntries(r.gunler.map(g => [g.gun, g.ids]));
+      const fm = puantajHesapla(v, Y, m).satirlar.filter(x => [1, 2, 13, 14, 15, 16].includes(x.s.id)).map(x => x.fm);
+      expect(Math.max(...fm) - Math.min(...fm), "ay " + m).toBeLessThanOrEqual(8);
+    }
   });
 });

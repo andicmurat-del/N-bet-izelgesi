@@ -4,7 +4,7 @@
 // dışındaki güne yazılmaz, art arda iki gün ve 5 günde 3 nöbet olmaz, mümkünse 2 gün aradan kaçınılır, ayda en fazla bir
 // Cumartesi ve bir Pazar; izin, rapor (puantaj), eş durumu ve istiyor / istemiyor tercihleri eczane nöbetindeki gibi
 // (eş durumu var: o gün yazılır; istemiyor: mümkünse yazılmaz; ertesi gün izne çıkana mümkünse yazılmaz); eşitlik ayrı (yalnız acil nöbetleri) ve yıl boyunca: toplam nöbet ile Perşembe, Cuma, Cumartesi, Pazar
-// ve resmi tatil nöbetleri ayrı ayrı (günlük eczanedeki gibi); herkesin payı yazılabildiği gün sayısına göredir (izinli / raporlu günler düşülür, telafi istenmez). Kişinin aynı gün ya da komşu günde eczane nöbeti / hazırlaması varsa o güne yazılmaz (iki liste çakışmaz).
+// ve resmi tatil nöbetleri ayrı ayrı (günlük eczanedeki gibi), fazla mesai saati de her ay kişiler arasında; herkesin payı yazılabildiği gün sayısına göredir (izinli / raporlu günler düşülür, telafi istenmez). Kişinin aynı gün ya da komşu günde eczane nöbeti / hazırlaması varsa o güne yazılmaz (iki liste çakışmaz).
 // Elle düzenlenen günler korunur.
 import type { Kisi } from "../veri/tipler";
 import { aktifAydaMi, aktifGunMu, type Baglam } from "./baglam";
@@ -16,7 +16,7 @@ export const acilKadrosunda = (s: { role: string; acilTutar?: true }) => s.role 
 export const ACIL_GUNLUK = 2;
 
 /** amaç ağırlıkları (küçük daha iyi) */
-const W = { ardArda: 1000, ucBes: 500, eksik: 5000, hsFazla: 60, araIki: 3, toplam: 6, tur: 3, istemiyor: 20, istiyor: 1, esVar: 300, izinOnce: 200 };
+const W = { ardArda: 1000, ucBes: 500, eksik: 5000, hsFazla: 60, araIki: 3, toplam: 6, tur: 3, fm: 8, istemiyor: 20, istiyor: 1, esVar: 300, izinOnce: 200 };
 
 export interface AcilSonucu { gunler: { gun: number; ids: number[]; elle?: true }[]; uyarilar: string[] }
 
@@ -39,18 +39,21 @@ export function acilNobetiYakin(B: Baglam, id: number, y: number, m: number, d: 
 
 /** Eşitlenen gün türleri (günlük eczanedeki gibi, her biri yıl boyunca ayrı): toplam nöbet, Perşembe, Cuma (resmi tatil
  *  olmayan), Cumartesi, Pazar, resmi tatil. */
-const TURLER = ["top", "pe", "cu", "cmt", "paz", "resmi"] as const;
+const TURLER = ["top", "pe", "cu", "cmt", "paz", "resmi", "fm"] as const;
 type Tur = (typeof TURLER)[number];
 type TurSayi = Record<Tur, Record<number, number>>;
-const bosTur = (): TurSayi => ({ top: {}, pe: {}, cu: {}, cmt: {}, paz: {}, resmi: {} });
-/** günün girdiği türler (toplam her gün) */
-function gunTurleri(B: Baglam, y: number, m: number, d: number): Tur[] {
-  const dw = haftaGunu(y, m, d), resmi = B.resmiTatilMi(y, m, d), l: Tur[] = ["top"];
-  if (dw === PERSEMBE && !resmi) l.push("pe");
-  if (dw === CUMA && !resmi) l.push("cu");
-  if (dw === CUMARTESI) l.push("cmt");
-  if (dw === PAZAR) l.push("paz");
-  if (resmi) l.push("resmi");
+const bosTur = (): TurSayi => ({ top: {}, pe: {}, cu: {}, cmt: {}, paz: {}, resmi: {}, fm: {} });
+/** günün girdiği türler ve ağırlıkları (toplam her gün 1). "fm": nöbetin puantajdaki fazla mesaisi, 8 saat = 1
+ *  (24 − o günün mesaisi − ertesi günün mesaisi): Cuma / hafta sonu nöbeti hafta içi nöbetinden fazla yazar; fazla
+ *  mesai saati de kişiler arasında eşitlenir (günlük eczanedeki gibi). */
+function gunTurleri(B: Baglam, y: number, m: number, d: number): [Tur, number][] {
+  const dw = haftaGunu(y, m, d), resmi = B.resmiTatilMi(y, m, d), l: [Tur, number][] = [["top", 1]];
+  if (dw === PERSEMBE && !resmi) l.push(["pe", 1]);
+  if (dw === CUMA && !resmi) l.push(["cu", 1]);
+  if (dw === CUMARTESI) l.push(["cmt", 1]);
+  if (dw === PAZAR) l.push(["paz", 1]);
+  if (resmi) l.push(["resmi", 1]);
+  l.push(["fm", B.fazlaMesai(y, m, d, ayGunSayisi(y, m)) / 8]);
   return l;
 }
 
@@ -64,7 +67,7 @@ function acilPaylari(B: Baglam, y: number, m: number, havuz: Kisi[]): TurSayi {
     const tl = gunTurleri(B, y, m, d);
     for (const s of havuz) {
       if (!aktifGunMu(s, y, m, d) || B.kesinYasak(s.id, y, m, d)) continue;
-      for (const t of tl) { mus[t][s.id]++; top[t] = (top[t] || 0) + 1; }
+      for (const [t, a] of tl) { mus[t][s.id] += a; top[t] = (top[t] || 0) + a; }
     }
   }
   for (const t of TURLER) for (const s of havuz) pay[t][s.id] = top[t] ? mus[t][s.id] / top[t] : 0;
@@ -82,7 +85,7 @@ function acilDevir(B: Baglam, y: number, m: number): TurSayi {
     for (const t of TURLER) havuz.forEach(s => { c[t][s.id] = 0; });
     for (const [gun, l] of Object.entries(kayit)) {
       const tl = gunTurleri(B, y, mm, Number(gun));
-      l.forEach(id => { if (c.top[id] === undefined) return; for (const t of tl) { c[t][id]++; T[t] = (T[t] || 0) + 1; } });
+      l.forEach(id => { if (c.top[id] === undefined) return; for (const [t, a] of tl) { c[t][id] += a; T[t] = (T[t] || 0) + a; } });
     }
     const pay = acilPaylari(B, y, mm, havuz);
     for (const t of TURLER) havuz.forEach(s => { off[t][s.id] = (off[t][s.id] || 0) + c[t][s.id] - (T[t] || 0) * pay[t][s.id]; });
@@ -123,7 +126,7 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
       if (!sabit[i]) j += W.eksik * Math.max(0, Math.min(ACIL_GUNLUK, aday[i].length) - sec[i].length);
       const d = i + 1;
       for (const id of sec[i]) {
-        for (const t of turler[i]) say[t][id] = (say[t][id] || 0) + 1;
+        for (const [t, a] of turler[i]) say[t][id] = (say[t][id] || 0) + a;
         if (dw[i] === CUMARTESI) cmt[id] = (cmt[id] || 0) + 1;
         if (dw[i] === PAZAR) paz[id] = (paz[id] || 0) + 1;
         // ileriye bakan çiftler bir kez sayılır; ay başında önceki ayla olanlar da
@@ -144,8 +147,9 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
     for (const t of TURLER) {
       let N = 0;
       for (const s of havuz) N += say[t][s.id] || 0;
-      const w = t === "top" ? W.toplam : W.tur;
-      for (const s of havuz) { const a = (say[t][s.id] || 0) - N * pay[t][s.id] + (devir[t][s.id] || 0); j += w * a * a; }
+      const w = t === "top" ? W.toplam : t === "fm" ? W.fm : W.tur;
+      // fazla mesai saati her ay kendi içinde eşitlenir (günlük eczanedeki gibi aylık); diğer türler yıl boyunca
+      for (const s of havuz) { const a = (say[t][s.id] || 0) - N * pay[t][s.id] + (t === "fm" ? 0 : devir[t][s.id] || 0); j += w * a * a; }
     }
     for (const s of havuz) {
       if ((cmt[s.id] || 0) > 1) j += W.hsFazla * ((cmt[s.id] || 0) - 1);
