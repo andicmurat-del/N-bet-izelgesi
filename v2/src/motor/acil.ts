@@ -2,7 +2,8 @@
 // "her gün en az bir eczacı" kuralı yoktur. Nöbet tutanlar: acil servis eczacıları ve Personel'de "acilde de nöbet tutar"
 // işaretli eczacılar (görevi eczacı kalır). Kurallar eczane nöbetindeki gibi: izinli / eş durumu yok / çalışma dönemi
 // dışındaki güne yazılmaz, art arda iki gün ve 5 günde 3 nöbet olmaz, mümkünse en az 3 gün ara, ayda en fazla bir
-// Cumartesi ve bir Pazar; eşitlik ayrı (yalnız acil nöbetleri) ve yıl boyunca: toplam nöbet ve hafta sonu / resmi tatil
+// Cumartesi ve bir Pazar; izin, rapor (puantaj), eş durumu ve istiyor / istemiyor tercihleri eczane nöbetindeki gibi
+// (eş durumu var: o gün yazılır; istemiyor: mümkünse yazılmaz; ertesi gün izne çıkana mümkünse yazılmaz); eşitlik ayrı (yalnız acil nöbetleri) ve yıl boyunca: toplam nöbet ve hafta sonu / resmi tatil
 // nöbeti. Kişinin aynı gün ya da komşu günde eczane nöbeti / hazırlaması varsa o güne yazılmaz (iki liste çakışmaz).
 // Elle düzenlenen günler korunur.
 import { aktifAydaMi, type Baglam } from "./baglam";
@@ -14,7 +15,7 @@ export const acilKadrosunda = (s: { role: string; acilTutar?: true }) => s.role 
 export const ACIL_GUNLUK = 2;
 
 /** amaç ağırlıkları (küçük daha iyi) */
-const W = { ardArda: 1000, ucBes: 500, eksik: 5000, hsFazla: 60, araIki: 3, toplam: 6, hs: 3, istemiyor: 20, istiyor: 1, esVar: 300 };
+const W = { ardArda: 1000, ucBes: 500, eksik: 5000, hsFazla: 60, araIki: 3, toplam: 6, hs: 3, istemiyor: 20, istiyor: 1, esVar: 300, izinOnce: 200 };
 
 export interface AcilSonucu { gunler: { gun: number; ids: number[]; elle?: true }[]; uyarilar: string[] }
 
@@ -71,6 +72,8 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
   }
   const dw = Array.from({ length: dim }, (_, i) => haftaGunu(y, m, i + 1)), tatil = Array.from({ length: dim }, (_, i) => B.tatilMi(y, m, i + 1));
   const tercih = (id: number, i: number) => B.tercih(id, y, m, i + 1);
+  // ertesi gün izne çıkana nöbet yazılmaz (nöbet ertesi izni izne denk gelir); başka kimse yoksa yazılır
+  const izinOnce = Array.from({ length: dim }, (_, i) => new Set(havuz.filter(s => B.izinOncesiMi(s.id, y, m, i + 1)).map(s => s.id)));
   const var_ = (id: number, d: number) => (d >= 1 && d <= dim ? sec[d - 1].includes(id) : (disGun[d] || []).includes(id));
   const J = (): number => {
     let j = 0;
@@ -93,6 +96,7 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
         if (d <= 2 && var_(id, d - 2) && var_(id, d + 2)) j += W.ucBes;
         const t = tercih(id, i);
         if (t === "avoid") j += W.istemiyor; else if (t === "want") j -= W.istiyor;
+        if (izinOnce[i].has(id)) j += W.izinOnce;
       }
       for (const id of aday[i]) if (tercih(id, i) === "esVar" && !sec[i].includes(id)) j += W.esVar;
     }
@@ -155,8 +159,13 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
     }
     if (!iyi) break;
   }
-  // personel yetmediği için kalan art arda nöbetler bildirilir
+  // personel yetmediği için kalan art arda nöbetler ve karşılanamayan eş durumu / istemiyor bildirilir
   const ad = (id: number) => B.kisi(id)?.name ?? "";
+  for (let i = 0; i < dim; i++) {
+    if (sabit[i]) continue;
+    for (const id of aday[i]) if (tercih(id, i) === "esVar" && !sec[i].includes(id)) uyarilar.push((i + 1) + " " + AYLAR[m] + ": " + ad(id) + " için eş durumu isteği acil listesinde karşılanamadı.");
+    for (const id of sec[i]) if (tercih(id, i) === "avoid") uyarilar.push((i + 1) + " " + AYLAR[m] + ": " + ad(id) + " nöbet istemiyordu, başka uygun kişi olmadığı için yazıldı.");
+  }
   for (let i = 0; i < dim; i++) for (const id of sec[i]) {
     if (var_(id, i + 2)) uyarilar.push(ad(id) + ": " + (i + 1) + " ve " + (i + 2) + " " + AYLAR[m] + " art arda acil nöbeti (personel yetmiyor).");
   }

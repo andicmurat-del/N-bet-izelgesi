@@ -71,3 +71,22 @@ describe("acil eczane nöbet listesi", () => {
     expect(fark(Object.values(n))).toBeLessThanOrEqual(1);
   });
 });
+
+describe("acil nöbetinde izin, rapor, eş durumu, istiyor / istemiyor", () => {
+  test("eczane nöbetindeki gibi uygulanır", () => {
+    const v = JSON.parse(JSON.stringify(veri));
+    const k = (id, d) => `${id}-${Y}-${M}-${d}`;
+    v.prefs[k(14, 8)] = "avoid";                       // istemiyor
+    v.prefs[k(15, 11)] = "esVar";                      // eş durumu var: o gün yazılır
+    v.prefs[k(16, 15)] = "esYok";                      // eş durumu yok: yazılmaz
+    v.puantaj[`${Y}-${M}`] = { 13: { 18: "R", 19: "R" } };   // raporlu
+    for (let d = 23; d <= 27; d++) v.prefs[k(14, d)] = "izinli";   // 22'de izin öncesi
+    const r = acilHesapla(v, Y, M), gun = d => r.gunler[d - 1].ids;
+    expect(gun(8)).not.toContain(14);
+    expect(gun(11)).toContain(15);
+    expect(gun(15)).not.toContain(16);
+    expect(gun(18)).not.toContain(13); expect(gun(19)).not.toContain(13);
+    expect(gun(22)).not.toContain(14);
+    for (let d = 23; d <= 27; d++) expect(gun(d)).not.toContain(14);
+  });
+});
