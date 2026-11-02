@@ -250,7 +250,7 @@
     .yan { position: static; max-height: none; }
   }
   @media (max-width: 720px) {
-    .takvim-kutu { padding: 0; overflow: hidden; }
+    .takvim-kutu { padding: 6px; }
     .lejant { padding: var(--b2) var(--b3) var(--b3); }
     .karsilama { padding: var(--b5) var(--b4); }
     .adimlar { grid-template-columns: 1fr; }

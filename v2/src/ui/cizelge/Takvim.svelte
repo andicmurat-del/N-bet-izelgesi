@@ -1,13 +1,15 @@
 <script lang="ts">
-  // Ayın çizelgesi: masaüstünde 7 sütunlu ay ızgarası, telefonda gün gün liste (aynı öğeler, farklı yerleşim).
+  // Ayın çizelgesi: 7 sütunlu ay ızgarası; telefonda da takvim (dar hücrelerde kısa adlar).
   import type { AyCizelgesi, Gorevli } from "../../veri/tipler";
-  import { GUN_KISA, GUN_UZUN, gunMetni, haftaGunu } from "../../veri/tarih";
-  import { resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
+  import { GUN_KISA, GUN_UZUN, gunMetni, haftaGunu, kisaAd } from "../../veri/tarih";
+  import { depo, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import Ikon from "../ortak/Ikon.svelte";
 
   let { c, vurgu = null, gunAc }: { c: AyCizelgesi; vurgu?: number | null; gunAc: (gun: number) => void } = $props();
 
   const bos = $derived(haftaGunu(c.year, c.month, 1));
+  const tumAdlar = $derived(depo.veri.staff.map(k => k.name));
+  const kisa = (ad: string) => kisaAd(ad, tumAdlar);
   const eczaciOnce = (l: Gorevli[]) => [...l].sort((a, b) => Number(b.role === "eczaci" || b.role === "nobetci") - Number(a.role === "eczaci" || a.role === "nobetci"));
   const bugun = new Date();
   const bugunMu = (d: number) => bugun.getFullYear() === c.year && bugun.getMonth() === c.month && bugun.getDate() === d;
@@ -37,10 +39,10 @@
       </span>
       <span class="kisiler">
         {#each eczaciOnce(g.assigned) as p}
-          <span class="nobetci" class:ben={p.id === vurgu}><span class="isaret {p.role}"></span><span class="ad">{p.name}</span></span>
+          <span class="nobetci" class:ben={p.id === vurgu}><span class="isaret {p.role}"></span><span class="ad">{p.name}</span><span class="ad-kisa">{kisa(p.name)}</span></span>
         {/each}
         {#each g.prep as p, i}
-          <span class="haz" class:ben={p.id === vurgu}><b>H{i + 1}</b><span class="ad">{p.name}</span></span>
+          <span class="haz" class:ben={p.id === vurgu}><b>H{i + 1}</b><span class="ad">{p.name}</span><span class="ad-kisa">{kisa(p.name)}</span></span>
         {/each}
       </span>
     </button>
@@ -75,18 +77,22 @@
   .ben { background: var(--vurgu-zemin); box-shadow: 0 0 0 2px var(--vurgu-zemin); }
 
   /* telefon: gün gün liste */
+  .ad-kisa { display: none; }
+  /* telefon: aynı 7 sütunlu takvim, sıkı hücreler ve kısa adlar */
   @media (max-width: 720px) {
-    .takvim { grid-template-columns: 1fr; gap: 0; }
-    .bas, .bosluk { display: none; }
-    .gun { flex-direction: row; align-items: flex-start; min-height: 0; padding: 10px 12px; border-radius: 0; border-width: 0 0 1px; gap: 12px; }
-    .gun:first-of-type { border-top-left-radius: var(--r); border-top-right-radius: var(--r); }
-    .gun.sorun { border-left: 3px solid var(--hata); border-bottom-color: var(--cizgi); }
-    .ust { flex-direction: column; align-items: flex-start; gap: 0; width: 76px; flex: none; }
-    .no { font-size: var(--f-lg); color: var(--yazi); }
-    .gunadi { display: block; font-size: var(--f-xs); color: var(--soluk); }
-    .simgeler { margin: 2px 0 0; }
-    .kisiler { flex: 1; grid-template-columns: 1fr 1fr; gap: 2px 10px; }
-    .nobetci, .haz { font-size: var(--f-sm); }
+    .takvim { gap: 3px; }
+    .bas { font-size: 11px; }
+    .gun { min-height: 70px; padding: 4px 3px 5px; gap: 3px; border-radius: 6px; }
+    .ust { gap: 2px; min-height: 0; }
+    .no { font-size: 12px; }
+    .etiket { display: none; }
+    .simgeler :global(svg) { width: 11px; height: 11px; }
+    .kisiler { gap: 1px; }
+    .nobetci, .haz { font-size: 10.5px; gap: 2px; line-height: 1.25; }
+    .nobetci .isaret { transform: scale(.7); flex: none; align-self: center; }
+    .haz b { font-size: 9px; }
+    .ad { display: none; }
+    .ad-kisa { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .nobetci .ad-kisa { font-weight: 600; }
   }
-  @media (max-width: 380px) { .kisiler { grid-template-columns: 1fr; } }
 </style>
