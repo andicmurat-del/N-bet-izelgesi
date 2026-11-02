@@ -19,7 +19,7 @@
   let { git }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void } = $props();
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
-  // acil servis personeli eczane çizelgesine girmez; onların nöbetleri Acil servis görünümündedir
+  // acil servis eczacıları eczane çizelgesine girmez; onların nöbetleri Acil servis görünümündedir
   const kisiler = $derived(aydaCalisanlar(depo.yil, depo.ay).filter(k => k.role !== "servis"));
   const nobetci = $derived(kisiler.filter(k => k.role !== "destek"));
   const eczaci = $derived(kisiler.filter(k => k.role === "eczaci" || k.role === "nobetci"));

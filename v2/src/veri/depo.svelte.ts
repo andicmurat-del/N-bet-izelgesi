@@ -494,7 +494,7 @@ export function tumVeriyiSil() {
   depo.veri = bosVeri();
 }
 
-/** Uygulamayı denemek için örnek kadro: 6 eczacı (ikisi acilde de nöbet tutar), 6 tekniker, 4 acil servis personeli.
+/** Uygulamayı denemek için örnek kadro: 6 eczacı (ikisi acilde de nöbet tutar), 6 tekniker, 4 acil servis eczacısı.
  *  Ekranda "örnek" diye belirtilir. */
 export function ornekKadroYukle() {
   const v = bosVeri();
