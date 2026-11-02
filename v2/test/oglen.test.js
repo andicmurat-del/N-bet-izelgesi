@@ -1,7 +1,7 @@
 // Öğlen nöbeti: hafta içi, mesaide çalışanlardan; Pzt–Prş 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker; Cuma'dan
 // muaf olan Cuma yazılmaz; haftada en fazla 2; yıl boyunca toplam ve Cuma sayısı eşit; nöbetçiye mümkünse yazılmaz.
 import { describe, test, expect } from "vitest";
-import { cizelgeOlustur, oglenHesapla, oglenYillikHesapla, puantajHesapla } from "../src/motor";
+import { cizelgeOlustur, oglenHesapla, oglenOnarimlariHesapla, oglenYillikHesapla, puantajHesapla } from "../src/motor";
 
 const staff = [];
 for (let i = 1; i <= 7; i++) staff.push({ id: i, name: "E" + i, role: "eczaci", ...(i === 7 ? { cumaMuaf: true } : {}) });
@@ -68,5 +68,41 @@ describe("öğlen nöbeti", () => {
 
   test("aynı veriyle aynı sonuç", () => {
     expect(JSON.stringify(oglenHesapla(veri, Y, 11))).toBe(JSON.stringify(oglenHesapla(veri, Y, 11)));
+  });
+});
+
+describe("öğlen nöbeti: elle düzenleme ve sonradan izin / rapor", () => {
+  const kopya = x => JSON.parse(JSON.stringify(x));
+  const ayK = `${Y}-10`;
+
+  test("elle düzenlenen gün yeniden oluşturmada korunur", () => {
+    const v = kopya(veri);
+    v.oglen[ayK][3] = { e: [5, 6], t: [13], elle: true };
+    const r = oglenHesapla(v, Y, 10), g = r.gunler.find(x => x.gun === 3);
+    expect([g.e, g.t, g.elle]).toEqual([[5, 6], [13], true]);
+  });
+
+  test("sonradan izin girilen kişinin yeri doldurulur, diğer günler değişmez", () => {
+    const v = kopya(veri), kayit = v.oglen[ayK];
+    const gun = Number(Object.keys(kayit).find(d => Number(d) >= 16 && kayit[d].e.length)), kim = kayit[gun].e[0];
+    v.prefs[`${kim}-${Y}-10-${gun}`] = "izinli";
+    const o = oglenOnarimlariHesapla(v, 20261101);
+    expect(o.map(x => x.m)).toEqual([10]);
+    const yeni = Object.fromEntries(o[0].gunler.map(g => [g.gun, { e: g.e, t: g.t }]));
+    expect(yeni[gun].e).not.toContain(kim);
+    expect(yeni[gun].e.length).toBe(kayit[gun].e.length);
+    for (const d of Object.keys(kayit)) if (Number(d) !== gun) expect(yeni[d]).toEqual({ e: kayit[d].e, t: kayit[d].t });
+    // onarılmış hâl yeniden onarım gerektirmez
+    v.oglen[ayK] = yeni;
+    expect(oglenOnarimlariHesapla(v, 20261101)).toEqual([]);
+  });
+
+  test("geçmiş günler ve elle düzenlenen günler onarılmaz", () => {
+    const v = kopya(veri), kayit = v.oglen[ayK];
+    const kim = kayit[3].e[0];
+    v.prefs[`${kim}-${Y}-10-3`] = "izinli";
+    expect(oglenOnarimlariHesapla(v, 20261110)).toEqual([]);   // 3 Kasım geçmişte
+    kayit[3].elle = true;
+    expect(oglenOnarimlariHesapla(v, 20261101)).toEqual([]);   // elle düzenlenmiş
   });
 });

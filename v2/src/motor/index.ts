@@ -15,7 +15,7 @@ import { Baglam, type MotorCizelgesi } from "./baglam";
 import { degisimDenetle as degisimDenetimi, yerineAdaylar, type Degisiklik } from "./degisim";
 import { gunuDenetle as gunDenetimi } from "./denetim";
 import { cizelgeUret, type CizelgeSonucu } from "./nobet/olustur";
-import { oglenOlustur, oglenYillik } from "./oglen";
+import { oglenOlustur, oglenOnarimlari, oglenYillik } from "./oglen";
 import { puantajIzgarasi } from "./puantaj";
 import { acilDenetle as acilDenetimi, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
 import { ServisMotoru, type HesapSecenegi } from "./servis/ay";
@@ -198,7 +198,9 @@ export function servisYillik(veri: unknown, yil: number, bugun?: number) {
   return { kayitlar, kayitli: Y.kayitli, bosAy: Y.aylar.map(r => !r.length), kisi, matris: { servisler, gun } };
 }
 
-/** Ayın öğlen nöbeti çizelgesi: hafta içi mesaide çalışanlardan, yıl boyu eşit (Cuma ayrıca) */
-export function oglenHesapla(veri: unknown, y: number, m: number) { return oglenOlustur(new Baglam(veri), y, m); }
+/** Ayın öğlen nöbeti çizelgesi: hafta içi mesaide çalışanlardan, yıl boyu eşit (Cuma ayrıca); elle düzenlenen günler korunur */
+export function oglenHesapla(veri: unknown, y: number, m: number) { const B = new Baglam(veri); return oglenOlustur(B, y, m, B.oglen[y + "-" + m] || {}); }
+/** sonradan bozulan öğlen nöbeti aylarının onarılmış hâli (bugun: YYYYAAGG) */
+export function oglenOnarimlariHesapla(veri: unknown, bugun: number) { return oglenOnarimlari(new Baglam(veri), bugun); }
 /** yıl başından bu aya kişi başı öğlen nöbeti sayıları (toplam, Cuma; bu ay) */
 export function oglenYillikHesapla(veri: unknown, y: number, m: number) { return oglenYillik(new Baglam(veri), y, m); }

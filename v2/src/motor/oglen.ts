@@ -7,10 +7,11 @@
 // Hangi gün tutulduğu eşitlikte önemsizdir; yalnız Cuma ayrıca sayılır.
 import { aktifAydaMi, type Baglam } from "./baglam";
 import { puantajIzgarasi } from "./puantaj";
-import { ayAnahtari, ayGunSayisi, AYLAR, CUMA, gunKaydir, haftaGunu, oncekiAy } from "./takvim";
+import { ayAnahtari, ayGunSayisi, AYLAR, CUMA, gunKaydir, haftaGunu, oncekiAy, tarihNo } from "./takvim";
 
-/** bir günün öğlen nöbetçileri (kişi id'leri): eczacılar, teknikerler */
-export interface OglenGunu { e: number[]; t: number[] }
+/** bir günün öğlen nöbetçileri (kişi id'leri): eczacılar, teknikerler; elle: elle düzenlendi (yeniden oluşturma ve
+ *  otomatik onarım dokunmaz) */
+export interface OglenGunu { e: number[]; t: number[]; elle?: true }
 
 /** günde gereken kişi: Pazartesi–Perşembe, Cuma */
 export const OGLEN_GEREK = { hafta: { e: 2, t: 1 }, cuma: { e: 3, t: 2 } };
@@ -22,7 +23,7 @@ export const oglenGrubu = (rol: string): Grup | null => (rol === "eczaci" || rol
 /** amaç ağırlıkları (küçük daha iyi): haftada üçüncü kez çok ağır; eşitlik nöbetçiden kaçınmaktan önce gelir */
 const W = { hafta3: 1000, hafta: 4, toplam: 1, cuma: 3, nobetci: 0.5, ardArda: 0.2 };
 
-export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[] }
+export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[]; elle?: true }
 export interface OglenSonucu { gunler: OglenGunSonucu[]; uyarilar: string[] }
 
 /** öğlen nöbeti yazılan günler: hafta içi, resmi tatil ve arife değil */
@@ -56,8 +57,28 @@ function oglenDevir(B: Baglam, y: number, m: number) {
   return { top, cuma };
 }
 
-/** Ayın öğlen nöbeti çizelgesini oluşturur (aynı veriyle her zaman aynı sonuç). */
-export function oglenOlustur(B: Baglam, y: number, m: number): OglenSonucu {
+/** o gün öğlen nöbetine yazılabilenler (grup başına) ve o günün nöbetçileri */
+function gunAdaylari(B: Baglam, G: ReturnType<typeof puantajIzgarasi>, y: number, m: number, d: number) {
+  const cu = haftaGunu(y, m, d) === CUMA, nobetci: number[] = [], ca: Record<Grup, number[]> = { e: [], t: [] };
+  G.satirlar.forEach(r => {
+    const g = oglenGrubu(r.s.role); if (!g) return;
+    const c = r.cells[d - 1];
+    // o gün mesaide: normal mesai ya da nöbet (eczane / acil servis nöbetçisi gün içinde de çalışır)
+    if (!(c.kod === "M" || c.kod === "N" || (c.kod.indexOf("S:") === 0 && c.saat > 0))) return;
+    if (c.kod === "N") nobetci.push(r.s.id);
+    if (cu && g === "e" && r.s.cumaMuaf) return;
+    ca[g].push(r.s.id);
+  });
+  return { ca, nobetci };
+}
+
+/**
+ * Ayın öğlen nöbeti çizelgesini oluşturur (aynı veriyle her zaman aynı sonuç).
+ * onceki: ayın kayıtlı öğlen nöbeti. Elle düzenlenen günler olduğu gibi kalır. onarim verilirse yalnız eksikler
+ * doldurulur: o günden önceki günler hiç değişmez, sonraki günlerde hâlâ yazılabilen kişiler yerinde kalır (sonradan
+ * girilen izin / rapor gibi durumlarda listenin geri kalanı karışmasın).
+ */
+export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<string, OglenGunu> = {}, onarim?: { bugun: number }): OglenSonucu {
   const G = puantajIzgarasi(B, y, m), dim = ayGunSayisi(y, m), uyarilar: string[] = [];
   const ilkDw = haftaGunu(y, m, 1), hafta = (d: number) => Math.floor((d - 1 + ilkDw) / 7);
   const devir = oglenDevir(B, y, m);
@@ -71,21 +92,23 @@ export function oglenOlustur(B: Baglam, y: number, m: number): OglenSonucu {
     }
   }
   const gunler: OglenGunSonucu[] = [], aday: Record<Grup, number[][]> = { e: [], t: [] }, gerek: Record<Grup, number[]> = { e: [], t: [] };
+  // sabit: değişmeyecek kişiler (gün başına, grup başına); tamSabit: gün hiç değişmez (elle ya da onarımda geçmiş gün)
+  const sabit: Record<Grup, number[][]> = { e: [], t: [] }, tamSabit: boolean[] = [];
   for (let d = 1; d <= dim; d++) {
-    if (!oglenGunuMu(B, y, m, d)) continue;
+    const k = onceki[d], gecmis = !!onarim && tarihNo(y, m, d) < onarim.bugun;
+    if (!oglenGunuMu(B, y, m, d) && !(k && (k.elle || gecmis))) continue;
     const dw = haftaGunu(y, m, d), cu = dw === CUMA, ger = cu ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
-    const nobetci: number[] = [], ca: Record<Grup, number[]> = { e: [], t: [] };
-    G.satirlar.forEach(r => {
-      const g = oglenGrubu(r.s.role); if (!g) return;
-      const c = r.cells[d - 1];
-      // o gün mesaide: normal mesai ya da nöbet (eczane / acil servis nöbetçisi gün içinde de çalışır)
-      if (!(c.kod === "M" || c.kod === "N" || (c.kod.indexOf("S:") === 0 && c.saat > 0))) return;
-      if (c.kod === "N") nobetci.push(r.s.id);
-      if (cu && g === "e" && r.s.cumaMuaf) return;
-      ca[g].push(r.s.id);
-    });
-    gunler.push({ gun: d, dw, e: [], t: [], nobetci });
-    for (const g of GRUPLAR) { aday[g].push(ca[g]); gerek[g].push(Math.min(ger[g], ca[g].length)); }
+    const { ca, nobetci } = gunAdaylari(B, G, y, m, d);
+    const tam = !!k && (!!k.elle || gecmis);
+    gunler.push({ gun: d, dw, e: [], t: [], nobetci, ...(k?.elle ? { elle: true as const } : {}) });
+    tamSabit.push(tam);
+    for (const g of GRUPLAR) {
+      aday[g].push(ca[g]);
+      const kalan = tam ? (k![g] || []).slice() : onarim && k ? (k[g] || []).filter(id => ca[g].includes(id)) : [];
+      sabit[g].push(kalan);
+      gerek[g].push(tam ? kalan.length : Math.max(kalan.length, Math.min(ger[g], ca[g].length)));
+    }
+    if (tam) continue;
     const gunAd = d + " " + AYLAR[m];
     if (ca.e.length < ger.e) uyarilar.push(gunAd + ": öğlen nöbeti için " + ger.e + " eczacı gerekli, o gün çalışan " + ca.e.length + " eczacı var" + (cu ? " (Cuma'dan muaf olanlar hariç)" : "") + ".");
     if (ca.t.length < ger.t) uyarilar.push(gunAd + ": öğlen nöbeti için " + ger.t + " tekniker gerekli, o gün çalışan " + ca.t.length + " tekniker var.");
@@ -97,7 +120,9 @@ export function oglenOlustur(B: Baglam, y: number, m: number): OglenSonucu {
   for (const g of GRUPLAR) {
     const havuz = B.staff.filter(s => oglenGrubu(s.role) === g && aktifAydaMi(s, y, m));
     const cumaHavuz = havuz.filter(s => !(g === "e" && s.cumaMuaf));
-    const sec: number[][] = gunler.map(() => []);
+    const sec: number[][] = gunler.map((_, i) => sabit[g][i].slice());
+    // değişmez yerler: sabit kişiler listenin başında durur, arama yalnız sonrasına dokunur
+    const ilkSerbest = sabit[g].map(l => l.length);
     const J = (): number => {
       const top: Record<number, number> = {}, cu: Record<number, number> = {}, hf: Record<string, number> = {};
       let j = 0;
@@ -133,12 +158,12 @@ export function oglenOlustur(B: Baglam, y: number, m: number): OglenSonucu {
     let cur = J();
     for (let tur = 0; tur < 100; tur++) {
       let iyi = false;
-      for (let i = 0; i < N; i++) for (let q = 0; q < sec[i].length; q++) for (const id of aday[g][i]) {
+      for (let i = 0; i < N; i++) for (let q = ilkSerbest[i]; q < sec[i].length; q++) for (const id of aday[g][i]) {
         if (sec[i].includes(id)) continue;
         const eski = sec[i][q]; sec[i][q] = id; const v = J();
         if (v < cur - 1e-9) { cur = v; iyi = true; } else sec[i][q] = eski;
       }
-      for (let i = 0; i < N; i++) for (let k = i + 1; k < N; k++) for (let a = 0; a < sec[i].length; a++) for (let b = 0; b < sec[k].length; b++) {
+      for (let i = 0; i < N; i++) for (let k = i + 1; k < N; k++) for (let a = ilkSerbest[i]; a < sec[i].length; a++) for (let b = ilkSerbest[k]; b < sec[k].length; b++) {
         const p = sec[i][a], r = sec[k][b];
         if (p === r || sec[k].includes(p) || sec[i].includes(r) || !aday[g][k].includes(p) || !aday[g][i].includes(r)) continue;
         sec[i][a] = r; sec[k][b] = p; const v = J();
@@ -150,7 +175,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number): OglenSonucu {
     const hf: Record<string, number> = {};
     sec.forEach((l, i) => l.forEach(id => { const k = haftaNo[i] + ":" + id; hf[k] = (hf[k] ?? (haftaNo[i] === 0 ? oncekiHafta[id] || 0 : 0)) + 1; }));
     for (const [k, v] of Object.entries(hf)) if (v > 2) uyarilar.push((B.kisi(Number(k.split(":")[1]))?.name ?? "") + " bir haftada " + v + " öğlen nöbeti aldı (o hafta yeterli kişi yok).");
-    gunler.forEach((x, i) => { x[g] = sec[i].slice().sort((a, b) => a - b); });
+    gunler.forEach((x, i) => { x[g] = tamSabit[i] ? sec[i] : sec[i].slice().sort((a, b) => a - b); });
   }
   return { gunler, uyarilar };
 }
@@ -170,4 +195,32 @@ export function oglenYillik(B: Baglam, y: number, sonAy: number): Record<number,
     }
   }
   return t;
+}
+
+/**
+ * Kayıtlı öğlen nöbetlerinde sonradan bozulan günler (izin, rapor, nöbet ertesi izni, resmi tatil / arife işareti, Cuma
+ * muafiyeti, çalışma dönemi): bugünden itibaren, elle düzenlenmemiş günlerde yazılamayacak kişi ya da doldurulabilecek
+ * eksik yer var mı. Varsa ayın onarılmış hâli döner (eksikler doldurulur, geri kalanı yerinde kalır).
+ */
+export function oglenOnarimlari(B: Baglam, bugun: number): { y: number; m: number; gunler: OglenGunSonucu[] }[] {
+  const out: { y: number; m: number; gunler: OglenGunSonucu[] }[] = [];
+  for (const [ayK, kayit] of Object.entries(B.oglen)) {
+    const [y, m] = ayK.split("-").map(Number), dim = ayGunSayisi(y, m);
+    if (!kayit || tarihNo(y, m, dim) < bugun) continue;
+    const G = puantajIzgarasi(B, y, m);
+    let bozuk = false;
+    for (let d = 1; d <= dim && !bozuk; d++) {
+      if (tarihNo(y, m, d) < bugun) continue;
+      const k = kayit[d];
+      if (k?.elle) continue;
+      if (!oglenGunuMu(B, y, m, d)) { bozuk = !!k; continue; }
+      const { ca } = gunAdaylari(B, G, y, m, d), ger = haftaGunu(y, m, d) === CUMA ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
+      for (const g of GRUPLAR) {
+        const l = k ? k[g] || [] : [];
+        if (l.some(id => !ca[g].includes(id)) || l.length < Math.min(ger[g], ca[g].length)) bozuk = true;
+      }
+    }
+    if (bozuk) out.push({ y, m, gunler: oglenOlustur(B, y, m, kayit, { bugun }).gunler });
+  }
+  return out;
 }

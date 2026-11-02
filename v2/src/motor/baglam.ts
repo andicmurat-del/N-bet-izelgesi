@@ -32,7 +32,7 @@ export class Baglam {
   schedules: Nesne<MotorCizelgesi>;
   puantaj: Nesne<PuantajAyi>;
   acil: Nesne<Nesne<number[]>>;
-  oglen: Nesne<Nesne<{ e: number[]; t: number[] }>>;
+  oglen: Nesne<Nesne<{ e: number[]; t: number[]; elle?: true }>>;
   servisKayit: Nesne<any>;
   /** puantajdaki değişim kayıtları (nöbet değişimi, izin/rapor nedeniyle yerine geçme) */
   degisimler: Degisimi[];

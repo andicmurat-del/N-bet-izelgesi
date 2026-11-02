@@ -1,6 +1,7 @@
 // Uygulama durumu ve tarayıcıda saklanması. Veriler yalnız bu tarayıcıda durur; taşımak için yedek dosyası kullanılır.
-import type { AyCizelgesi, Ayarlar, Gorevli, Kisi, PuantajKodu, Rol, Tercih, Veri } from "./tipler";
+import type { AyCizelgesi, Ayarlar, Gorevli, Kisi, OglenGunu, PuantajKodu, Rol, Tercih, Veri } from "./tipler";
 import { ayAnahtari, gunAnahtari, gunSayisi, haftaSonuMu, tercihAnahtari } from "./tarih";
+import { oglenOnarimlariHesapla } from "../motor";
 
 const ANAHTAR = "nobet-cizelgesi-v2";
 
@@ -78,7 +79,7 @@ export function veriyiDogrula(ham: unknown): Veri {
     const ids = (l: unknown) => [...new Set((Array.isArray(l) ? l : []).filter((id: unknown): id is number => Number.isInteger(id) && kisiIdleri.has(id as number)))];
     for (const [gun, g] of Object.entries(nesne(gunler))) {
       const x = nesne(g), e = ids(x.e), t = ids(x.t);
-      if (/^\d{1,2}$/.test(gun) && (e.length || t.length)) (v.oglen[ayK] ??= {})[gun] = { e, t };
+      if (/^\d{1,2}$/.test(gun) && (e.length || t.length || x.elle === true)) (v.oglen[ayK] ??= {})[gun] = { e, t, ...(x.elle === true ? { elle: true as const } : {}) };
     }
   }
   for (const [k, c] of Object.entries(nesne(o.schedules))) {
@@ -156,10 +157,21 @@ export const depo = $state({
   kayitSorunu: acilisSorunu,
 });
 
+/** Sonradan girilen izin / rapor vb. öğlen nöbetini bozduysa bugünden sonraki eksikler kendiliğinden doldurulur
+ *  (elle düzenlenen ve geçmiş günler değişmez); onarım, onu doğuran değişiklikle aynı geri alma adımına girer. */
+function oglenOnar() {
+  if (!Object.keys(depo.veri.oglen).length) return;
+  const b = new Date();
+  try {
+    for (const o of oglenOnarimlariHesapla($state.snapshot(depo.veri), b.getFullYear() * 10000 + (b.getMonth() + 1) * 100 + b.getDate()))
+      oglenKaydet(o.y, o.m, o.gunler);
+  } catch { /* onarım yapılamazsa kayıt yine yazılır; ekranda bozuk günler işaretli kalır */ }
+}
 let kayitZamanlayici: ReturnType<typeof setTimeout> | undefined;
 function kaydet() {
   clearTimeout(kayitZamanlayici);
   kayitZamanlayici = setTimeout(() => {
+    oglenOnar();
     gecmiseIsle();
     try {
       localStorage.setItem(ANAHTAR, JSON.stringify($state.snapshot(depo.veri)));
@@ -389,12 +401,17 @@ export function acilAyiniSil(y: number, m: number) { delete depo.veri.acil[ayAna
 
 // ---------- öğlen nöbeti ----------
 export const oglenAyi = (y: number, m: number) => depo.veri.oglen[ayAnahtari(y, m)];
-export function oglenKaydet(y: number, m: number, gunler: { gun: number; e: number[]; t: number[] }[]) {
-  const a: Record<string, { e: number[]; t: number[] }> = {};
-  gunler.forEach(g => { if (g.e.length || g.t.length) a[g.gun] = { e: g.e.slice(), t: g.t.slice() }; });
+export function oglenKaydet(y: number, m: number, gunler: { gun: number; e: number[]; t: number[]; elle?: true }[]) {
+  const a: Record<string, OglenGunu> = {};
+  gunler.forEach(g => { if (g.e.length || g.t.length || g.elle) a[g.gun] = { e: g.e.slice(), t: g.t.slice(), ...(g.elle ? { elle: true as const } : {}) }; });
   if (Object.keys(a).length) depo.veri.oglen[ayAnahtari(y, m)] = a; else delete depo.veri.oglen[ayAnahtari(y, m)];
 }
 export function oglenAyiniSil(y: number, m: number) { delete depo.veri.oglen[ayAnahtari(y, m)]; }
+/** bir günü elle düzenler (otomatik oluşturma ve onarım bu güne dokunmaz); elle false: güne otomatik yazılsın */
+export function oglenGunuAyarla(y: number, m: number, gun: number, e: number[], t: number[], elle = true) {
+  const a = (depo.veri.oglen[ayAnahtari(y, m)] ??= {});
+  a[gun] = { e: [...new Set(e)], t: [...new Set(t)], ...(elle ? { elle: true as const } : {}) };
+}
 
 // ---------- puantaj ----------
 export function puantajKoduAyarla(y: number, m: number, id: number, gun: number, kod: PuantajKodu | null) {
