@@ -1,12 +1,13 @@
 // Acil eczane nöbet listesi: her gün 2 nöbetçi (24 saat). Eczane nöbet çizelgesinden bağımsız oluşturulur; hazırlama ve
-// "her gün en az bir eczacı" kuralı yoktur. Nöbet tutanlar: acil servis eczacıları ve Personel'de "acilde nöbet tutar"
+// "her gün en az bir eczacı" kuralı yoktur. Nöbet tutanlar: acil servis personeli ve Personel'de "acilde nöbet tutar"
 // işaretli eczacılar (görevi eczacı kalır; günlük eczanede mesai yapar, eczane nöbeti ve hazırlaması tutmaz). Kurallar eczane nöbetindeki gibi: izinli / eş durumu yok / çalışma dönemi
 // dışındaki güne yazılmaz, art arda iki gün ve 5 günde 3 nöbet olmaz, mümkünse en az 3 gün ara, ayda en fazla bir
 // Cumartesi ve bir Pazar; izin, rapor (puantaj), eş durumu ve istiyor / istemiyor tercihleri eczane nöbetindeki gibi
 // (eş durumu var: o gün yazılır; istemiyor: mümkünse yazılmaz; ertesi gün izne çıkana mümkünse yazılmaz); eşitlik ayrı (yalnız acil nöbetleri) ve yıl boyunca: toplam nöbet ve hafta sonu / resmi tatil
-// nöbeti. Kişinin aynı gün ya da komşu günde eczane nöbeti / hazırlaması varsa o güne yazılmaz (iki liste çakışmaz).
+// nöbeti; herkesin payı yazılabildiği gün sayısına göredir (izinli / raporlu günler düşülür, telafi istenmez). Kişinin aynı gün ya da komşu günde eczane nöbeti / hazırlaması varsa o güne yazılmaz (iki liste çakışmaz).
 // Elle düzenlenen günler korunur.
-import { aktifAydaMi, type Baglam } from "./baglam";
+import type { Kisi } from "../veri/tipler";
+import { aktifAydaMi, aktifGunMu, type Baglam } from "./baglam";
 import { ayAnahtari, ayGunSayisi, AYLAR, CUMARTESI, gunKaydir, haftaGunu, PAZAR } from "./takvim";
 
 /** acil nöbetine yazılabilir mi: acil servis personeli ya da "acilde nöbet tutar" işaretli eczacı / kemoterapi eczacısı */
@@ -36,7 +37,26 @@ export function acilNobetiYakin(B: Baglam, id: number, y: number, m: number, d: 
   return false;
 }
 
-/** yılın önceki aylarından kişi başı fark (o ay acil kadrosundakilerin ortalamasına göre): toplam ve hafta sonu / tatil */
+/** Kişinin ayın nöbetinden payı (günlük eczanedeki gibi): o ay yazılabildiği gün sayısına göre. İzinli, raporlu, eş durumu
+ *  yok, çalışma dönemi dışı günler kişiden düşülür; bu günler için sonradan telafi istenmez. Toplam ve hafta sonu / tatil
+ *  günleri ayrı (oranların toplamı 1; müsait günü olmayanın payı 0). */
+function acilPaylari(B: Baglam, y: number, m: number, havuz: Kisi[]) {
+  const mus: Record<number, number> = {}, musH: Record<number, number> = {}; let t = 0, tH = 0;
+  for (const s of havuz) {
+    mus[s.id] = 0; musH[s.id] = 0;
+    for (let d = 1; d <= ayGunSayisi(y, m); d++) {
+      if (!aktifGunMu(s, y, m, d) || B.kesinYasak(s.id, y, m, d)) continue;
+      mus[s.id]++; t++;
+      if (B.tatilMi(y, m, d)) { musH[s.id]++; tH++; }
+    }
+  }
+  const pay: Record<number, number> = {}, payH: Record<number, number> = {};
+  for (const s of havuz) { pay[s.id] = t ? mus[s.id] / t : 0; payH[s.id] = tH ? musH[s.id] / tH : 0; }
+  return { pay, payH };
+}
+
+/** yılın önceki aylarından kişi başı fark: tutulan acil nöbeti − o ayki payı (yazılabildiği güne göre); toplam ve
+ *  hafta sonu / tatil. İzin / rapor ayları telafi ettirilmez; ay ortası başlayan / ayrılan çalıştığı gün kadar pay alır. */
 function acilDevir(B: Baglam, y: number, m: number) {
   const top: Record<number, number> = {}, hs: Record<number, number> = {};
   for (let mm = 0; mm < m; mm++) {
@@ -44,9 +64,10 @@ function acilDevir(B: Baglam, y: number, m: number) {
     const havuz = B.staff.filter(s => acilKadrosunda(s) && aktifAydaMi(s, y, mm)); if (!havuz.length) continue;
     const c: Record<number, number> = {}, h: Record<number, number> = {};
     havuz.forEach(s => { c[s.id] = 0; h[s.id] = 0; });
-    for (const [gun, l] of Object.entries(kayit)) l.forEach(id => { if (c[id] === undefined) return; c[id]++; if (B.tatilMi(y, mm, Number(gun))) h[id]++; });
-    const oc = havuz.reduce((t, s) => t + c[s.id], 0) / havuz.length, oh = havuz.reduce((t, s) => t + h[s.id], 0) / havuz.length;
-    havuz.forEach(s => { top[s.id] = (top[s.id] || 0) + c[s.id] - oc; hs[s.id] = (hs[s.id] || 0) + h[s.id] - oh; });
+    let T = 0, TH = 0;
+    for (const [gun, l] of Object.entries(kayit)) l.forEach(id => { if (c[id] === undefined) return; c[id]++; T++; if (B.tatilMi(y, mm, Number(gun))) { h[id]++; TH++; } });
+    const { pay, payH } = acilPaylari(B, y, mm, havuz);
+    havuz.forEach(s => { top[s.id] = (top[s.id] || 0) + c[s.id] - T * pay[s.id]; hs[s.id] = (hs[s.id] || 0) + h[s.id] - TH * payH[s.id]; });
   }
   return { top, hs };
 }
@@ -55,7 +76,7 @@ function acilDevir(B: Baglam, y: number, m: number) {
 export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string, true> = {}): AcilSonucu {
   const dim = ayGunSayisi(y, m), uyarilar: string[] = [], kayit = B.acil[ayAnahtari(y, m)] || {};
   const havuz = B.staff.filter(s => acilKadrosunda(s) && aktifAydaMi(s, y, m));
-  const devir = acilDevir(B, y, m);
+  const devir = acilDevir(B, y, m), { pay, payH } = acilPaylari(B, y, m, havuz);
   // ay sınırı: önceki ayın son 4 günü ve sonraki ayın ilk 4 günündeki acil nöbetleri (art arda / 5 günde 3 için)
   const disGun: Record<number, number[]> = {};
   for (const k of [-3, -2, -1, 0, dim + 1, dim + 2, dim + 3, dim + 4]) {
@@ -100,8 +121,11 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
       }
       for (const id of aday[i]) if (tercih(id, i) === "esVar" && !sec[i].includes(id)) j += W.esVar;
     }
+    // bu ayın payı da yazılabildiği güne göre: izinli / raporlu olan o ay daha az alır, sonra telafi etmez
+    let N = 0, NH = 0;
+    for (const s of havuz) { N += top[s.id] || 0; NH += hs[s.id] || 0; }
     for (const s of havuz) {
-      const a = (top[s.id] || 0) + (devir.top[s.id] || 0), b = (hs[s.id] || 0) + (devir.hs[s.id] || 0);
+      const a = (top[s.id] || 0) - N * pay[s.id] + (devir.top[s.id] || 0), b = (hs[s.id] || 0) - NH * payH[s.id] + (devir.hs[s.id] || 0);
       j += W.toplam * a * a + W.hs * b * b;
       if ((cmt[s.id] || 0) > 1) j += W.hsFazla * ((cmt[s.id] || 0) - 1);
       if ((paz[s.id] || 0) > 1) j += W.hsFazla * ((paz[s.id] || 0) - 1);

@@ -169,3 +169,30 @@ describe("sonradan izin: yerine önerilenler ve yıllık rapor", () => {
     expect(R.oglen.some(s => s.id === 13)).toBe(false);   // acil servis personeli öğlende yok
   });
 });
+
+describe("acil eşitliği günlük eczanedeki gibi: izinli günler düşülür, telafi yok", () => {
+  // 6 kişilik acil kadrosu (2 işaretli eczacı + 4 acil servis personeli), eczane çizelgesi yok
+  const v0 = () => JSON.parse(JSON.stringify({ ...veri, prefs: {} }));
+  const say = (r, id) => r.gunler.filter(g => g.ids.includes(id)).length;
+  test("10 gün izinli kişi o ay az tutar, sonraki ay fazla almaz", () => {
+    const v = v0();
+    for (let d = 1; d <= 10; d++) v.prefs[`13-${Y}-${M}-${d}`] = "izinli";
+    const r1 = acilHesapla(v, Y, M);
+    const n13 = say(r1, 13), diger = [1, 2, 14, 15, 16].map(id => say(r1, id));
+    expect(n13).toBeLessThan(Math.min(...diger));                 // payı 20/30 gün
+    expect(Math.abs(n13 - 60 * 20 / 170)).toBeLessThanOrEqual(1.5);
+    v.acil[`${Y}-${M}`] = Object.fromEntries(r1.gunler.map(g => [g.gun, g.ids]));
+    const r2 = acilHesapla(v, Y, M + 1);                           // Aralık: herkes tam ay
+    const l2 = [1, 2, 13, 14, 15, 16].map(id => say(r2, id));
+    expect(Math.max(...l2) - Math.min(...l2)).toBeLessThanOrEqual(1);
+  });
+  test("ay ortasında başlayan çalıştığı gün kadar pay alır", () => {
+    const v = v0();
+    v.staff.find(s => s.id === 16).baslangic = `${Y}-11-16`;      // 16 Kasım'da başlıyor (15 gün)
+    const r = acilHesapla(v, Y, M), n = say(r, 16);
+    expect(Math.abs(n - 60 * 15 / 165)).toBeLessThanOrEqual(1.5);
+    v.acil[`${Y}-${M}`] = Object.fromEntries(r.gunler.map(g => [g.gun, g.ids]));
+    const r2 = acilHesapla(v, Y, M + 1), l2 = [1, 2, 13, 14, 15, 16].map(id => say(r2, id));
+    expect(Math.max(...l2) - Math.min(...l2)).toBeLessThanOrEqual(1);
+  });
+});

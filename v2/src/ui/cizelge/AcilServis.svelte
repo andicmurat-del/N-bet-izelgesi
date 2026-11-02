@@ -105,7 +105,7 @@
       {/if}
     </div>
   </div>
-  <p class="aciklama">Her gün 2 kişi; acil servis personeli ve "Acilde nöbet tutar" işaretli eczacılar (kemoterapi eczacıları dahil) arasından eşit dağıtılır (eczane nöbetinden ayrı, yıl boyunca). Aynı ya da komşu günde eczane nöbeti olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.</p>
+  <p class="aciklama">Her gün 2 kişi; acil servis personeli ve "Acilde nöbet tutar" işaretli eczacılar (kemoterapi eczacıları dahil) arasından eşit dağıtılır (eczane nöbetinden ayrı, yıl boyunca; herkesin payı yazılabildiği gün sayısına göre: izinli / raporlu günler düşülür, telafi istenmez). Aynı ya da komşu günde eczane nöbeti olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.</p>
   {#if onay}<p class="bant bilgi">Onaylandı: {onayMetni}. Onaylı liste kilitlidir; yeniden oluşturulmaz ve elle değiştirilmez. Sonradan izin ya da rapor alan kişinin günü işaretli görünür: güne dokunup yerine yazılacak kişiyi seçin.</p>{/if}
   {#each sorunluGunler as g}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{g.gun} {AYLAR_AD[m]}: {g.adlar.join(", ")} bu gün yazılamaz (izin, rapor ya da çalışma dönemi dışı). Güne dokunup yerine birini seçin.</span></p>{/each}
   {#each uyarilar as u}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}

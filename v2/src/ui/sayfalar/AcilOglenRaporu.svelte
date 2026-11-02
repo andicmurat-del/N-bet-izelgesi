@@ -13,7 +13,7 @@
   const fark = (l: Satir[], k: "top" | "tatil" | "cuma") => (l.length ? Math.max(...l.map(x => x[k] ?? 0)) - Math.min(...l.map(x => x[k] ?? 0)) : 0);
   const bolumler = $derived([
     { baslik: "Acil eczane nöbeti", l: R.acil, aylar: R.acilAylar, ek: "tatil" as const, ekAd: "Hafta sonu / tatil",
-      bos: "Bu yıl acil eczane nöbet listesi yok.", not: "Acil kadrosu: acil servis personeli ve \"Acilde nöbet tutar\" işaretli eczacılar. Eşitlik yıl boyunca: izin vb. nedeniyle bir ay az tutan sonraki aylarda tamamlar." },
+      bos: "Bu yıl acil eczane nöbet listesi yok.", not: "Acil kadrosu: acil servis personeli ve \"Acilde nöbet tutar\" işaretli eczacılar. Eşitlik yıl boyunca ve günlük eczanedeki gibi: herkesin payı yazılabildiği gün sayısına göredir; izinli / raporlu günler düşülür, telafi istenmez (izinli ay az görünür)." },
     { baslik: "Öğlen nöbeti", l: R.oglen, aylar: R.oglenAylar, ek: "cuma" as const, ekAd: "Cuma",
       bos: "Bu yıl öğlen nöbet listesi yok.", not: "Eczacılar ve teknikerler. Cuma ayrıca sayılır; Cuma'dan muaf olanlarda Cuma sayısı 0'dır." },
   ]);
