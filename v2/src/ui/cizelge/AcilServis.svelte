@@ -2,10 +2,10 @@
   // Acil eczane nöbet listesi: günde 2 kişi; acil servis personeli ve "acilde nöbet tutar" işaretli eczacılar (kemoterapi dahil) arasından
   // otomatik oluşturulur (eczane çizelgesiyle çakışmadan), günler elle de düzenlenebilir (elle günler korunur).
   // Puantajda bu günler nöbet (24 saat) sayılır; ertesi gün mesai günüyse nöbet izni (Nİ), tatilse çalışılmadı (B) yazılır.
-  import { depo, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, acilKaydet, acilElleMi, resmiTatilMi, tatilMi } from "../../veri/depo.svelte";
-  import { acilDenetle, acilHesapla, acilKadrosunda } from "../../motor";
+  import { depo, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, acilKaydet, acilElleMi, resmiTatilMi, tatilMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
+  import { acilAdaylariHesapla, acilDenetle, acilHesapla, acilKadrosunda, acilSorunluGunler } from "../../motor";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
-  import { GUN_KISA, GUN_UZUN, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
+  import { AYLAR as AYLAR_AD, GUN_KISA, GUN_UZUN, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
 
@@ -14,6 +14,10 @@
   const y = $derived(depo.yil), m = $derived(depo.ay);
   const adaylar = $derived(aydaCalisanlar(y, m).filter(k => acilKadrosunda(k)).sort((a, b) => a.name.localeCompare(b.name, "tr")));
   let uyarilar = $state<string[]>([]);
+  // onaylı ay: liste kilitli (yeniden oluşturma, silme, elle değiştirme yok); yalnız sonradan izin / rapor alan kişinin
+  // yerine başkası yazılabilir
+  const onay = $derived(listeOnayi("acil", y, m));
+  const onayMetni = $derived(onay ? new Date(onay.zaman).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" }) + (onay.kim ? " · " + onay.kim : "") : "");
   $effect(() => { y; m; uyarilar = []; });
   function olustur() {
     const r = acilHesapla($state.snapshot(depo.veri), y, m) as { gunler: { gun: number; ids: number[] }[]; uyarilar: string[] };
@@ -29,6 +33,9 @@
     for (const g of gunler) for (const id of acilGunu(y, m, g)) o.set(id, [...(o.get(id) ?? []), g]);
     return [...o.entries()].map(([id, l]) => ({ id, ad: ad(id), gunler: l, tatil: l.filter(g => tatilMi(y, m, g)).length })).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
   });
+  // kayıtlı nöbetçisi sonradan yazılamaz hâle gelen günler (izin / rapor girildi, eş durumu yok, dönem dışı)
+  const sorunluGunler = $derived(dolu ? acilSorunluGunler($state.snapshot(depo.veri), y, m).map(x => ({ gun: x.gun, adlar: x.ids.map(ad) })) : []);
+  const sorunluMu = (g: number) => sorunluGunler.some(x => x.gun === g);
   const bugun = new Date();
   const bugunMu = (d: number) => bugun.getFullYear() === y && bugun.getMonth() === m && bugun.getDate() === d;
 
@@ -40,13 +47,26 @@
   const denetim = $derived(acik ? (acilDenetle($state.snapshot(depo.veri), y, m, gun, secim) as { sev: "hata" | "uyari"; t: string }[]).filter(x => x.sev !== "hata") : []);
   // seçenekler: o gün çalışma dönemi içinde olan acil kadrosu
   const gunAday = $derived(adaylar.filter(k => { const t = `${y}-${String(m + 1).padStart(2, "0")}-${String(gun).padStart(2, "0")}`; return !(k.baslangic && t < k.baslangic) && !(k.bitis && t > k.bitis); }));
-  function kaydet() { if (ayni) return; acilGunuAyarla(y, m, gun, secim); acik = false; }
-  function temizle() { acilGunuAyarla(y, m, gun, []); acik = false; }
+  function kaydet() { if (ayni || onay) return; acilGunuAyarla(y, m, gun, secim); acik = false; }
+  function temizle() { if (onay) return; acilGunuAyarla(y, m, gun, []); acik = false; }
+  // yerine yazılabilecekler: günün kayıtlı nöbetçilerinden o gün yazılamayan (sonradan izin / rapor) varsa onun yerine,
+  // yoksa boş yer için; uygunluğa ve yıl içindeki acil nöbet sayısına göre sıralı
+  const kayitli = $derived(acik ? acilGunu(y, m, gun) : []);
+  const oneri = $derived(acik ? acilAdaylariHesapla($state.snapshot(depo.veri), y, m, gun, kayitli, null) as { sorunlu: number[]; adaylar: { id: number; ad: string; engel: boolean; uyarilar: string[]; yil: number }[] } : { sorunlu: [], adaylar: [] });
+  const bosYer = $derived(kayitli.length < 2);
+  const yerineBakilan = $derived(oneri.sorunlu[0] ?? null);
+  const gosterOneri = $derived(acik && (oneri.sorunlu.length > 0 || bosYer) && (!onay || oneri.sorunlu.length > 0));
+  function yerineYaz(id: number) {
+    const yeni = yerineBakilan !== null ? kayitli.map(i => (i === yerineBakilan ? id : i)) : [...kayitli, id];
+    acilGunuAyarla(y, m, gun, yeni, true, !!onay);
+    const l = acilGunu(y, m, gun); s1 = String(l[0] ?? ""); s2 = String(l[1] ?? "");
+    if (!acilAdaylariHesapla($state.snapshot(depo.veri), y, m, gun, l, null).sorunlu.length && l.length >= 2) acik = false;
+  }
 
   let silOnayi = $state(false), durum = $state("");
   $effect(() => { y; m; silOnayi = false; durum = ""; });
   function sil() { if (!silOnayi) { silOnayi = true; return; } acilAyiniSil(y, m); silOnayi = false; }
-  const dosyaAdi = (uz: string) => `acil-servis-${y}-${String(m + 1).padStart(2, "0")}.${uz}`;
+  const dosyaAdi = (uz: string) => `acil-eczane-${y}-${String(m + 1).padStart(2, "0")}.${uz}`;
   async function cikti(tur: "xlsx" | "pdf") {
     durum = "";
     try {
@@ -72,15 +92,22 @@
       <span class="rozet notr rakam">{adaylar.length} kişi acilde nöbet tutuyor</span>
     </div>
     <div class="dugmeler">
-      {#if adaylar.length}<button class="dugme ana" onclick={olustur}><Ikon ad={dolu ? "yenile" : "takvim"} />{dolu ? "Yeniden oluştur" : "Acil nöbet listesini oluştur"}</button>{/if}
+      {#if onay}
+        <button class="dugme" onclick={() => listeOnayiniKaldir("acil", y, m)}>Onayı kaldır</button>
+      {:else}
+        {#if adaylar.length}<button class="dugme{dolu ? '' : ' ana'}" onclick={olustur}><Ikon ad={dolu ? "yenile" : "takvim"} />{dolu ? "Yeniden oluştur" : "Acil nöbet listesini oluştur"}</button>{/if}
+        {#if dolu}<button class="dugme ana" onclick={() => listeyiOnayla("acil", y, m)}><Ikon ad="tamam" />Onayla</button>{/if}
+      {/if}
       {#if dolu}
         <button class="dugme" onclick={() => cikti("pdf")}><Ikon ad="indir" />PDF</button>
         <button class="dugme" onclick={() => cikti("xlsx")}><Ikon ad="indir" />Excel</button>
-        <button class="dugme sade tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, ayın acil nöbetlerini sil" : "Sil"}</button>
+        {#if !onay}<button class="dugme sade tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, ayın acil nöbetlerini sil" : "Sil"}</button>{/if}
       {/if}
     </div>
   </div>
   <p class="aciklama">Her gün 2 kişi; acil servis personeli ve "Acilde nöbet tutar" işaretli eczacılar (kemoterapi eczacıları dahil) arasından eşit dağıtılır (eczane nöbetinden ayrı, yıl boyunca). Aynı ya da komşu günde eczane nöbeti olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.</p>
+  {#if onay}<p class="bant bilgi">Onaylandı: {onayMetni}. Onaylı liste kilitlidir; yeniden oluşturulmaz ve elle değiştirilmez. Sonradan izin ya da rapor alan kişinin günü işaretli görünür: güne dokunup yerine yazılacak kişiyi seçin.</p>{/if}
+  {#each sorunluGunler as g}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{g.gun} {AYLAR_AD[m]}: {g.adlar.join(", ")} bu gün yazılamaz (izin, rapor ya da çalışma dönemi dışı). Güne dokunup yerine birini seçin.</span></p>{/each}
   {#each uyarilar as u}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
@@ -90,7 +117,7 @@
       {#each { length: haftaGunu(y, m, 1) } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
       {#each gunler as g (g)}
         {@const l = acilGunu(y, m, g)}
-        <button class="gun" class:tatil={tatilMi(y, m, g)} class:bugun={bugunMu(g)} class:dolu={l.length} onclick={() => gunAc(g)}
+        <button class="gun" class:tatil={tatilMi(y, m, g)} class:bugun={bugunMu(g)} class:dolu={l.length} class:sorunlu={sorunluMu(g)} onclick={() => gunAc(g)}
           aria-label="{gunMetni(y, m, g)}: acil eczane nöbetçisi {l.map(ad).join(' ve ') || 'yok'}">
           <span class="ust"><span class="no rakam">{g}</span>{#if acilElleMi(y, m, g)}<span class="elle" title="Elle düzenlendi; yeniden oluşturmada korunur">elle</span>{/if}<span class="gunadi">{GUN_UZUN[haftaGunu(y, m, g)]}</span>{#if resmiTatilMi(y, m, g)}<span class="etiket">Resmi tatil</span>{/if}</span>
           <span class="kisiler">
@@ -119,21 +146,37 @@
   </section>
 {/if}
 
-<Pencere bind:acik baslik={gunMetni(y, m, gun)} altBaslik="Acil eczane nöbeti · günde 2 kişi · kaydedilen gün elle düzenlenmiş sayılır">
+<Pencere bind:acik baslik={gunMetni(y, m, gun)} altBaslik={onay ? "Acil eczane nöbeti · onaylı liste" : "Acil eczane nöbeti · günde 2 kişi · kaydedilen gün elle düzenlenmiş sayılır"}>
   {#if !gunAday.length}<p class="not">Bu gün acilde nöbet tutabilecek kimse yok.</p>{/if}
+  {#if gosterOneri}
+    <section class="oneri" aria-label="Yerine yazılabilecekler">
+      <h3>{yerineBakilan !== null ? ad(yerineBakilan) + " bu gün yazılamaz; yerine yazılabilecekler" : "Boş yere yazılabilecekler"}</h3>
+      {#each oneri.adaylar.filter(a => !a.engel).slice(0, 6) as a, i (a.id)}
+        <div class="aday" class:ilk={i === 0}>
+          <div><b>{a.ad}</b> <small class="rakam">yılda {a.yil} acil nöbeti</small>
+            {#if a.uyarilar.length}<small class="uyari">{a.uyarilar.join(" · ")}</small>{:else}<small class="uygun">uygun</small>{/if}</div>
+          <button class="dugme{i === 0 ? ' ana' : ''}" onclick={() => yerineYaz(a.id)}>Yaz</button>
+        </div>
+      {:else}<p class="not">Bu gün yazılabilecek başka kimse yok.</p>{/each}
+      <p class="ipucu">Sıra: kural uyarısı olmayanlar önce, sonra yıl içinde daha az acil nöbeti tutan. Yazılan gün elle düzenlenmiş sayılır.</p>
+    </section>
+  {/if}
   <div class="iki">
-    <label class="alan"><span>1. nöbetçi</span><select class="girdi" bind:value={s1}><option value="">Seçilmedi</option>{#each gunAday as k}<option value={String(k.id)}>{k.name}</option>{/each}</select></label>
-    <label class="alan"><span>2. nöbetçi</span><select class="girdi" bind:value={s2}><option value="">Seçilmedi</option>{#each gunAday as k}<option value={String(k.id)}>{k.name}</option>{/each}</select></label>
+    <label class="alan"><span>1. nöbetçi</span><select class="girdi" disabled={!!onay} bind:value={s1}><option value="">Seçilmedi</option>{#each gunAday as k}<option value={String(k.id)}>{k.name}</option>{/each}</select></label>
+    <label class="alan"><span>2. nöbetçi</span><select class="girdi" disabled={!!onay} bind:value={s2}><option value="">Seçilmedi</option>{#each gunAday as k}<option value={String(k.id)}>{k.name}</option>{/each}</select></label>
   </div>
   {#if ayni}<p class="not hata" role="alert">Aynı kişi iki kez seçilemez.</p>
   {:else if denetim.length}
     <div class="denetim" aria-live="polite">{#each denetim as x}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{x.t}</span></p>{/each}</div>
   {/if}
   {#snippet altlik()}
-    {#if acilGunu(y, m, gun).length}<button class="dugme sade" onclick={temizle}>Günü temizle</button>{/if}
+    {#if acilGunu(y, m, gun).length && !onay}<button class="dugme sade" onclick={temizle}>Günü temizle</button>{/if}
     <span style="flex:1"></span>
-    <button class="dugme" onclick={() => (acik = false)}>Vazgeç</button>
-    <button class="dugme ana" onclick={kaydet} disabled={ayni}>Kaydet</button>
+    {#if onay}<button class="dugme" onclick={() => (acik = false)}>Kapat</button>
+    {:else}
+      <button class="dugme" onclick={() => (acik = false)}>Vazgeç</button>
+      <button class="dugme ana" onclick={kaydet} disabled={ayni}>Kaydet</button>
+    {/if}
   {/snippet}
 </Pencere>
 
@@ -152,6 +195,17 @@
   .gun.tatil { background: var(--tatil-zemin); }
   .gun.dolu { border-left: 3px solid var(--acil); }
   .gun.bugun { box-shadow: inset 0 0 0 2px var(--odak); }
+  .gun.sorunlu { border-color: var(--dikkat); background: var(--dikkat-zemin); }
+  .bant { display: block; }
+  .bant.bilgi { background: var(--bilgi-zemin); color: var(--bilgi); }
+  .oneri { display: grid; gap: 6px; padding: var(--b3); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey-2); margin-bottom: var(--b3); }
+  .oneri h3 { font-size: var(--f-sm); font-weight: 600; }
+  .aday { display: flex; align-items: center; justify-content: space-between; gap: var(--b3); padding: 6px 8px; border-radius: var(--r-kucuk); background: var(--yuzey); }
+  .aday.ilk { box-shadow: inset 0 0 0 1px var(--vurgu); }
+  .aday small { display: block; font-size: var(--f-xs); color: var(--soluk); }
+  .aday small.uyari { color: var(--dikkat); }
+  .aday small.uygun { color: var(--vurgu); }
+  .ipucu { font-size: var(--f-xs); color: var(--soluk); }
   .ust { display: flex; align-items: center; gap: 6px; }
   .no { font-weight: 600; font-size: var(--f-sm); color: var(--yazi-2); }
   .gunadi { display: none; }

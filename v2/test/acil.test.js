@@ -133,3 +133,39 @@ describe("sonradan değişen kadro ve az kadro", () => {
     L.forEach(g => [...g.onay, ...g.haz, ...g.dst, ...g.gel, ...g.yok].forEach(x => expect(x.s.role).not.toBe("servis")));
   });
 });
+
+describe("sonradan izin: yerine önerilenler ve yıllık rapor", () => {
+  test("sorunlu gün bulunur; öneriler engelsiz ve az nöbet tutan önce", async () => {
+    const { acilAdaylariHesapla, acilSorunluGunler } = await import("../src/motor");
+    const v = JSON.parse(JSON.stringify(eczaneli));
+    const r = acilHesapla(v, Y, M); v.acil[`${Y}-${M}`] = Object.fromEntries(r.gunler.map(g => [g.gun, g.ids]));
+    const g = r.gunler.find(x => x.gun > 5 && x.ids.includes(14));
+    v.puantaj[`${Y}-${M}`] = { 14: { [g.gun]: "R" } };
+    expect(acilSorunluGunler(v, Y, M)).toEqual([{ gun: g.gun, ids: [14] }]);
+    const o = acilAdaylariHesapla(v, Y, M, g.gun, g.ids, null);
+    expect(o.sorunlu).toEqual([14]);
+    expect(o.adaylar.every(a => !g.ids.includes(a.id))).toBe(true);
+    const ilk = o.adaylar[0];
+    expect(ilk.engel).toBe(false);
+    // sıralama: engel → uyarı sayısı → yıllık sayı
+    for (let i = 1; i < o.adaylar.length; i++) {
+      const a = o.adaylar[i - 1], b = o.adaylar[i];
+      const k = x => [Number(x.engel), x.uyarilar.length, x.yil];
+      const ka = k(a), kb = k(b), i0 = ka.findIndex((v, j) => v !== kb[j]);
+      expect(i0 === -1 || ka[i0] < kb[i0]).toBe(true);
+    }
+  });
+  test("yıllık acil ve öğlen raporu: aylar ve toplamlar kayıtla tutarlı", async () => {
+    const { acilOglenRaporuHesapla } = await import("../src/motor");
+    const v = JSON.parse(JSON.stringify(veri));
+    const r = acilHesapla(v, Y, M); v.acil[`${Y}-${M}`] = Object.fromEntries(r.gunler.map(g => [g.gun, g.ids]));
+    v.oglen = { [`${Y}-${M}`]: { 2: { e: [3, 4], t: [8] }, 6: { e: [3, 5, 6], t: [8, 9] } } };
+    const R = acilOglenRaporuHesapla(v, Y);
+    expect(R.acilAylar[M]).toBe(true); expect(R.acilAylar[M - 1]).toBe(false);
+    expect(R.acil.reduce((t, s) => t + s.top, 0)).toBe(r.gunler.length * 2);
+    expect(R.acil.every(s => [1, 2, 13, 14, 15, 16].includes(s.id))).toBe(true);
+    const e3 = R.oglen.find(s => s.id === 3);
+    expect(e3.aylar[M]).toBe(2); expect(e3.top).toBe(2); expect(e3.cuma).toBe(1);   // 6 Kasım 2026 Cuma
+    expect(R.oglen.some(s => s.id === 13)).toBe(false);   // acil servis personeli öğlende yok
+  });
+});

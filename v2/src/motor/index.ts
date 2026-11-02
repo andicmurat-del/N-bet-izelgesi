@@ -18,7 +18,7 @@ import { cizelgeUret, type CizelgeSonucu } from "./nobet/olustur";
 import { acilOlustur } from "./acil";
 import { oglenOlustur, oglenOnarimlari, oglenYillik } from "./oglen";
 import { puantajIzgarasi } from "./puantaj";
-import { acilDenetle as acilDenetimi, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
+import { acilAdaylari, acilDenetle as acilDenetimi, acilOglenRaporu, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
 import { ServisMotoru, type HesapSecenegi } from "./servis/ay";
 import { ybMi, zorMu } from "./servis/liste";
 import { tarihNo } from "./takvim";
@@ -81,6 +81,16 @@ export function yerineAdaylarHesapla(veri: unknown, y: number, m: number, gun: n
 
 /** Acil servis nöbeti denetimi: aynı kişi iki kez, izin/eş durumu, art arda iki gün, aynı gün eczane nöbeti */
 export function acilDenetle(veri: unknown, y: number, m: number, g: number, ids: number[]) { return acilDenetimi(new Baglam(veri), y, m, g, ids); }
+/** Acil nöbeti gününe yerine yazılabilecekler, uygunluk ve yıllık eşitliğe göre sıralı */
+export function acilAdaylariHesapla(veri: unknown, y: number, m: number, g: number, ids: number[], cik: number | null) { return acilAdaylari(new Baglam(veri), y, m, g, ids, cik); }
+/** Acil listesinde kayıtlı nöbetçisi o gün yazılamaz hâle gelen günler (sonradan izin / rapor vb.): gün → kişi id'leri */
+export function acilSorunluGunler(veri: unknown, y: number, m: number) {
+  const B = new Baglam(veri), out: { gun: number; ids: number[] }[] = [];
+  for (const [g, l] of Object.entries(B.acil[y + "-" + m] || {})) { const ids = l.filter(i => B.kesinYasak(i, y, m, Number(g))); if (ids.length) out.push({ gun: Number(g), ids }); }
+  return out.sort((a, b) => a.gun - b.gun);
+}
+/** Yılın acil eczane ve öğlen nöbeti dağılımı (Raporlar) */
+export function acilOglenRaporuHesapla(veri: unknown, yil: number) { return acilOglenRaporu(new Baglam(veri), yil); }
 /** Günlük çalışma listesi: her gün kim onayda, kim hazırlamada, kim yok (izin/rapor) */
 export function calismaListesiHesapla(veri: unknown, y: number, m: number) { return calismaListesi(new Baglam(veri), y, m); }
 /** Yılın raporu: ay ay kişi başı puantaj özeti ve yıllık denge (çizelgeye göre) */

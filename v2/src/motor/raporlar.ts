@@ -1,7 +1,7 @@
 // Raporlar: günlük çalışma listesi, acil servis denetimi, yılın raporu (ay ay puantaj özeti ve yıllık denge),
 // uyarıların önem sınıfı.
-import { eczaneGoreviYakin } from "./acil";
-import { eczaneNobetcisi, aktifAydaMi, ayrildiMi, type Baglam } from "./baglam";
+import { acilKadrosunda, eczaneGoreviYakin } from "./acil";
+import { eczaneNobetcisi, aktifAydaMi, aktifGunMu, ayrildiMi, type Baglam } from "./baglam";
 import { ayVeriVarMi } from "./istatistik";
 import { puantajIzgarasi, ROL_SIRA, type PuantajIzgarasi } from "./puantaj";
 import { ayAnahtari, ayGunSayisi, AY_KISA, CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
@@ -66,6 +66,46 @@ export function acilDenetle(B: Baglam, y: number, m: number, g: number, ids: num
     if (B.izinOncesiMi(id, y, m, g)) out.push({ sev: "uyari", t: s.name + " ertesi gün izinde; nöbet ertesi izni izne denk gelir." });
   });
   return out;
+}
+
+/** Acil nöbeti gününe yerine yazılabilecekler (ör. sonradan izin / rapor alanın yerine): o gün çalışma dönemi içindeki
+ *  acil kadrosu, o günün öteki nöbetçisi ve çıkan kişi hariç. Sıra: kesin engeli olmayanlar önce, sonra uyarı sayısı,
+ *  yıl içindeki acil nöbet sayısı (az olan önce; eşitlik), ad. ids: günün şu anki nöbetçileri; cik: yerine bakılan kişi. */
+export function acilAdaylari(B: Baglam, y: number, m: number, g: number, ids: number[], cik: number | null) {
+  const kalan = ids.filter(i => i !== cik);
+  const yil: Record<number, number> = {};
+  for (let mm = 0; mm < 12; mm++) for (const l of Object.values(B.acil[ayAnahtari(y, mm)] || {})) l.forEach(i => { yil[i] = (yil[i] || 0) + 1; });
+  // günün nöbetçilerinden o gün yazılamayacak olanlar (sonradan izin / rapor, eş durumu yok, dönem dışı)
+  const sorunlu = ids.filter(i => B.kesinYasak(i, y, m, g));
+  const adaylar = B.staff
+    .filter(s => acilKadrosunda(s) && aktifGunMu(s, y, m, g) && !ids.includes(s.id))
+    .map(s => {
+      const bulgu = acilDenetle(B, y, m, g, [...kalan, s.id]).filter(x => x.t.startsWith(s.name));
+      return { id: s.id, ad: s.name, rol: s.role, engel: B.kesinYasak(s.id, y, m, g), uyarilar: bulgu.map(x => x.t.slice(s.name.length).replace(/^[,\s]+/, "")), yil: yil[s.id] || 0 };
+    })
+    .sort((a, b) => Number(a.engel) - Number(b.engel) || a.uyarilar.length - b.uyarilar.length || a.yil - b.yil || a.ad.localeCompare(b.ad, "tr"));
+  return { sorunlu, adaylar };
+}
+
+/** Yılın acil eczane ve öğlen nöbeti dağılımı: kişi başı ay ay sayılar, yıl toplamı; acilde hafta sonu / tatil,
+ *  öğlende Cuma ayrıca. Kayıt olan ya da yıl içinde o kadroda çalışan herkes listelenir. */
+export function acilOglenRaporu(B: Baglam, yil: number) {
+  const acil = new Map<number, { aylar: number[]; tatil: number }>(), oglen = new Map<number, { aylar: number[]; cuma: number }>();
+  const ac = (id: number) => { if (!acil.has(id)) acil.set(id, { aylar: Array(12).fill(0), tatil: 0 }); return acil.get(id)!; };
+  const og = (id: number) => { if (!oglen.has(id)) oglen.set(id, { aylar: Array(12).fill(0), cuma: 0 }); return oglen.get(id)!; };
+  for (let m = 0; m < 12; m++) {
+    B.staff.forEach(s => { if (!aktifAydaMi(s, yil, m)) return; if (acilKadrosunda(s)) ac(s.id); if (s.role === "eczaci" || s.role === "teknisyen") og(s.id); });
+    for (const [gun, l] of Object.entries(B.acil[ayAnahtari(yil, m)] || {})) l.forEach(id => { const r = ac(id); r.aylar[m]++; if (B.tatilMi(yil, m, Number(gun))) r.tatil++; });
+    for (const [gun, k] of Object.entries(B.oglen[ayAnahtari(yil, m)] || {})) [...k.e, ...k.t].forEach(id => { const r = og(id); r.aylar[m]++; if (haftaGunu(yil, m, Number(gun)) === CUMA) r.cuma++; });
+  }
+  const satir = <T extends { aylar: number[] }>(id: number, r: T) => { const s = B.kisi(id); return { id, ad: s?.name ?? "(silinmiş kişi)", rol: s?.role ?? "", ...r, top: r.aylar.reduce((t, x) => t + x, 0) }; };
+  const sira = (a: { rol: string; ad: string }, b: { rol: string; ad: string }) => (ROL_SIRA[a.rol] ?? 9) - (ROL_SIRA[b.rol] ?? 9) || a.ad.localeCompare(b.ad, "tr");
+  return {
+    acil: [...acil].map(([id, r]) => satir(id, r)).sort(sira),
+    oglen: [...oglen].map(([id, r]) => satir(id, r)).sort(sira),
+    acilAylar: Array.from({ length: 12 }, (_, m) => !!B.acil[ayAnahtari(yil, m)]),
+    oglenAylar: Array.from({ length: 12 }, (_, m) => !!B.oglen[ayAnahtari(yil, m)]),
+  };
 }
 
 // ---- yılın raporu ----

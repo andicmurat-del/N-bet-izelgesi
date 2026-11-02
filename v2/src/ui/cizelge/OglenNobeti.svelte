@@ -1,7 +1,7 @@
 <script lang="ts">
   // Öğlen nöbeti: hafta içi öğle arasında eczanede kalanlar (Pzt–Prş 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker).
   // O günün çalışma listesinden (puantaj) yazılır; yıl boyunca toplam ve Cuma sayısı eşit tutulur.
-  import { depo, aydaCalisanlar, ayCizelgesi, oglenAyi, oglenKaydet, oglenAyiniSil, oglenGunuAyarla, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
+  import { depo, aydaCalisanlar, ayCizelgesi, oglenAyi, oglenKaydet, oglenAyiniSil, oglenGunuAyarla, resmiTatilMi, arifeMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
   import { OGLEN_GEREK, oglenGrubu, oglenHesapla, oglenYillikHesapla, puantajHesapla } from "../../motor";
   import { AYLAR, GUN_KISA, ayAdi, gunMetni, gunSayisi, haftaGunu, kisaAd } from "../../veri/tarih";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
@@ -14,6 +14,9 @@
   const y = $derived(depo.yil), m = $derived(depo.ay);
   const c = $derived(ayCizelgesi(y, m));
   const kayit = $derived(oglenAyi(y, m));
+  // onaylı ay: yeniden oluşturma, silme ve elle değiştirme yok; sonradan girilen izin / rapor yine kendiliğinden onarılır
+  const onay = $derived(listeOnayi("oglen", y, m));
+  const onayMetni = $derived(onay ? new Date(onay.zaman).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" }) + (onay.kim ? " · " + onay.kim : "") : "");
   const ad = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş kişi)";
   const kisa = (id: number) => kisaAd(ad(id), depo.veri.staff.map(k => k.name));
   const gunlerTum = $derived(Array.from({ length: gunSayisi(y, m) }, (_, i) => i + 1));
@@ -87,8 +90,8 @@
   const nobetciMiG = (id: number, d: number) => hucreG(id, d)?.kod === "N";
   const secE = $derived(se.filter(Boolean).map(Number)), secT = $derived(st.filter(Boolean).map(Number));
   const tekrar = $derived(new Set(secE).size !== secE.length || new Set(secT).size !== secT.length);
-  function gunKaydet() { if (tekrar) return; oglenGunuAyarla(y, m, gun, secE, secT, true); acik = false; }
-  function otomatik() { const k = kayit?.[gun]; oglenGunuAyarla(y, m, gun, k?.e ?? [], k?.t ?? [], false); acik = false; }
+  function gunKaydet() { if (tekrar || onay) return; oglenGunuAyarla(y, m, gun, secE, secT, true); acik = false; }
+  function otomatik() { if (onay) return; const k = kayit?.[gun]; oglenGunuAyarla(y, m, gun, k?.e ?? [], k?.t ?? [], false); acik = false; }
 
   let durum = $state("");
   async function pdf() {
@@ -118,12 +121,18 @@
       <span class="rozet notr">Pzt–Prş {OGLEN_GEREK.hafta.e} eczacı + {OGLEN_GEREK.hafta.t} tekniker · Cuma {OGLEN_GEREK.cuma.e} eczacı + {OGLEN_GEREK.cuma.t} tekniker</span>
     </div>
     <div class="dugmeler">
-      <button class="dugme ana" onclick={olustur}><Ikon ad={kayit ? "yenile" : "saat"} />{kayit ? "Yeniden oluştur" : "Öğlen nöbetini oluştur"}</button>
+      {#if onay}
+        <button class="dugme" onclick={() => listeOnayiniKaldir("oglen", y, m)}>Onayı kaldır</button>
+      {:else}
+        <button class="dugme{kayit ? '' : ' ana'}" onclick={olustur}><Ikon ad={kayit ? "yenile" : "saat"} />{kayit ? "Yeniden oluştur" : "Öğlen nöbetini oluştur"}</button>
+        {#if kayit}<button class="dugme ana" onclick={() => listeyiOnayla("oglen", y, m)}><Ikon ad="tamam" />Onayla</button>{/if}
+      {/if}
       {#if kayit}<button class="dugme" onclick={pdf}><Ikon ad="indir" />PDF</button>{/if}
-      {#if kayit}<button class="dugme sade tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, ayın öğlen nöbetini sil" : "Sil"}</button>{/if}
+      {#if kayit && !onay}<button class="dugme sade tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, ayın öğlen nöbetini sil" : "Sil"}</button>{/if}
     </div>
   </div>
   <p class="aciklama">O gün mesaide çalışanlardan yazılır; resmi tatil ve arife günü öğlen nöbeti yoktur. Herkese haftada bir (kişi yetmezse iki); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz. Cuma'dan muaf kişiler (eczacı ya da tekniker) Personel bölümünde işaretlenir. Bir güne dokunup kişileri elle değiştirebilirsiniz; sonradan girilen izin ve raporlarda boşalan yerler kendiliğinden doldurulur (elle düzenlenen ve geçmiş günler değişmez).</p>
+  {#if onay}<p class="bant bilgi">Onaylandı: {onayMetni}. Onaylı liste kilitlidir; yeniden oluşturulmaz ve elle değiştirilmez. Sonradan girilen izin ve raporlarda boşalan yerler yine kendiliğinden doldurulur.</p>{/if}
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
   {#each [...uyarilar, ...sorunlar] as u}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}
@@ -177,26 +186,29 @@
   </section>
 {/if}
 
-<Pencere bind:acik baslik={gunMetni(y, m, gun)} altBaslik="Öğlen nöbeti · {gerekE} eczacı + {gerekT} tekniker">
+<Pencere bind:acik baslik={gunMetni(y, m, gun)} altBaslik="Öğlen nöbeti · {gerekE} eczacı + {gerekT} tekniker{onay ? ' · onaylı liste' : ''}">
   <div class="iki">
     <div class="alanlar">
       {#each se as _, i}
-        <label class="alan"><span>{i + 1}. eczacı</span><select class="girdi" bind:value={se[i]}><option value="">Seçilmedi</option>{#each secenekler("e") as k}<option value={String(k.id)}>{k.name}{etiket(k.id)}</option>{/each}</select></label>
+        <label class="alan"><span>{i + 1}. eczacı</span><select class="girdi" disabled={!!onay} bind:value={se[i]}><option value="">Seçilmedi</option>{#each secenekler("e") as k}<option value={String(k.id)}>{k.name}{etiket(k.id)}</option>{/each}</select></label>
       {/each}
     </div>
     <div class="alanlar">
       {#each st as _, i}
-        <label class="alan"><span>{i + 1}. tekniker</span><select class="girdi" bind:value={st[i]}><option value="">Seçilmedi</option>{#each secenekler("t") as k}<option value={String(k.id)}>{k.name}{etiket(k.id)}</option>{/each}</select></label>
+        <label class="alan"><span>{i + 1}. tekniker</span><select class="girdi" disabled={!!onay} bind:value={st[i]}><option value="">Seçilmedi</option>{#each secenekler("t") as k}<option value={String(k.id)}>{k.name}{etiket(k.id)}</option>{/each}</select></label>
       {/each}
     </div>
   </div>
   {#if tekrar}<p class="not hata" role="alert">Aynı kişi iki kez seçilemez.</p>{/if}
-  <p class="not">Kaydedilen gün elle düzenlenmiş sayılır: yeniden oluşturma ve otomatik doldurma bu güne dokunmaz.</p>
+  <p class="not">{onay ? "Liste onaylı: değiştirmek için önce onayı kaldırın." : "Kaydedilen gün elle düzenlenmiş sayılır: yeniden oluşturma ve otomatik doldurma bu güne dokunmaz."}</p>
   {#snippet altlik()}
-    {#if kayit?.[gun]?.elle}<button class="dugme sade" onclick={otomatik}>Otomatiğe bırak</button>{/if}
+    {#if kayit?.[gun]?.elle && !onay}<button class="dugme sade" onclick={otomatik}>Otomatiğe bırak</button>{/if}
     <span style="flex:1"></span>
-    <button class="dugme" onclick={() => (acik = false)}>Vazgeç</button>
-    <button class="dugme ana" onclick={gunKaydet} disabled={tekrar}>Kaydet</button>
+    {#if onay}<button class="dugme" onclick={() => (acik = false)}>Kapat</button>
+    {:else}
+      <button class="dugme" onclick={() => (acik = false)}>Vazgeç</button>
+      <button class="dugme ana" onclick={gunKaydet} disabled={tekrar}>Kaydet</button>
+    {/if}
   {/snippet}
 </Pencere>
 
@@ -219,6 +231,7 @@
   .blok h2 { font-size: var(--f-lg); }
   .blok .aciklama { margin-bottom: 0; }
   .bant { padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; background: var(--vurgu-zemin); color: var(--vurgu); }
+  .bant.bilgi { background: var(--bilgi-zemin); color: var(--bilgi); }
   .takvim-kutu { padding: var(--b3); display: grid; gap: var(--b3); }
   .takvim { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
   .bas { text-align: center; font-size: var(--f-xs); font-weight: 600; color: var(--soluk); padding-bottom: 2px; }

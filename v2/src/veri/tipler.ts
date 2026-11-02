@@ -81,6 +81,8 @@ export interface Veri {
   acilElle: Record<string, Record<string, true>>;
   /** "yil-ay" → gün → öğlen nöbetçileri: e eczacılar, t teknikerler (kişi id'leri); elle: elle düzenlendi */
   oglen: Record<string, Record<string, OglenGunu>>;
+  /** "yil-ay" → onaylanan acil eczane / öğlen nöbet listesi (onaylı ay elle değiştirilemez, yeniden oluşturulmaz) */
+  listeOnay: { acil: Record<string, Onay>; oglen: Record<string, Onay> };
   /** puantajdaki nöbet değişimleri ve izin/rapor nedeniyle yerine geçmeler (geri alınabilsin diye önceki kodlarla) */
   degisimler: Degisim[];
   /** servis hazırlama ayarları: servis adına göre zorluk/hasta/çok günlük/hazırlanıyor; elle eklenen servisler */

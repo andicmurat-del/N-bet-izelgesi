@@ -1,5 +1,6 @@
 <script lang="ts">
-  // Yıllık raporlar: özet (aylara göre fazla mesai, görev dağılımı), yıllık denge (beklenen paya göre fark), kişi geçmişi.
+  // Yıllık raporlar: özet (aylara göre fazla mesai, görev dağılımı), yıllık denge (beklenen paya göre fark), kişi geçmişi,
+  // acil eczane ve öğlen nöbeti dağılımı, servis hazırlama.
   import { yillikRaporHesapla } from "../../motor";
   import { depo } from "../../veri/depo.svelte";
   import { ROL_AD, type Rol } from "../../veri/tipler";
@@ -7,11 +8,12 @@
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Ikon from "../ortak/Ikon.svelte";
   import ServisRaporu from "../hazirlama/ServisRaporu.svelte";
+  import AcilOglenRaporu from "./AcilOglenRaporu.svelte";
   import type { Rapor } from "../../disa/raporCikti";
 
 
   let yil = $state(depo.yil);
-  let sekme = $state<"ozet" | "denge" | "kisi" | "servis">("ozet");
+  let sekme = $state<"ozet" | "denge" | "kisi" | "acil" | "servis">("ozet");
   const R = $derived(yillikRaporHesapla($state.snapshot(depo.veri), yil) as Rapor);
   const nobetci = (r: Rol) => r === "eczaci" || r === "teknisyen" || r === "nobetci";
   const duty = $derived(R.V.kisiler.filter(k => nobetci(k.role)));
@@ -56,14 +58,17 @@
     <button role="tab" aria-selected={sekme === "ozet"} class:secili={sekme === "ozet"} onclick={() => (sekme = "ozet")}>Özet</button>
     <button role="tab" aria-selected={sekme === "denge"} class:secili={sekme === "denge"} onclick={() => (sekme = "denge")}>Denge</button>
     <button role="tab" aria-selected={sekme === "kisi"} class:secili={sekme === "kisi"} onclick={() => (sekme = "kisi")}>Kişi geçmişi</button>
+    <button role="tab" aria-selected={sekme === "acil"} class:secili={sekme === "acil"} onclick={() => (sekme = "acil")}>Acil ve öğlen</button>
     <button role="tab" aria-selected={sekme === "servis"} class:secili={sekme === "servis"} onclick={() => (sekme = "servis")}>Servis hazırlama</button>
   </div>
-  {#if R.V.kayitli && sekme !== "servis"}<button class="dugme" onclick={excel}><Ikon ad="indir" />Excel</button>{/if}
+  {#if R.V.kayitli && sekme !== "servis" && sekme !== "acil"}<button class="dugme" onclick={excel}><Ikon ad="indir" />Excel</button>{/if}
 </div>
 {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
 {#if sekme === "servis"}
   <ServisRaporu {yil} />
+{:else if sekme === "acil"}
+  <AcilOglenRaporu {yil} />
 {:else if !R.V.kayitli}
   <div class="kart bos"><h2>{yil} yılı için kayıtlı çizelge yok</h2><p>Çizelge oluşturduğunuz aylar burada raporlanır.</p></div>
 {:else if sekme === "ozet"}

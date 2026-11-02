@@ -21,6 +21,7 @@ export function bosVeri(): Veri {
     acil: {},
     acilElle: {},
     oglen: {},
+    listeOnay: { acil: {}, oglen: {} },
     degisimler: [],
     servisAyar: { svc: {}, ekstra: [] },
     servisKayit: {},
@@ -88,6 +89,12 @@ export function veriyiDogrula(ham: unknown): Veri {
       if (/^\d{1,2}$/.test(gun) && (e.length || t.length || x.elle === true)) (v.oglen[ayK] ??= {})[gun] = { e, t, ...(x.elle === true ? { elle: true as const } : {}) };
     }
   }
+  const lo = nesne(o.listeOnay);
+  for (const tur of ["acil", "oglen"] as const)
+    for (const [ayK, x] of Object.entries(nesne(lo[tur]))) {
+      const a = nesne(x);
+      if (/^\d{4}-\d{1,2}$/.test(ayK) && Number(a.zaman) > 0) v.listeOnay[tur][ayK] = { zaman: Number(a.zaman), kim: String(a.kim ?? "") };
+    }
   for (const [k, c] of Object.entries(nesne(o.schedules))) {
     if (!c || !Array.isArray(c.days) || !Number.isInteger(c.year) || !Number.isInteger(c.month)) continue;
     // anahtar, ay ve gün sayısı tutmalı; günler alan alan kurulur (bozuk bir gün sayfayı her açılışta çökertmesin)
@@ -170,7 +177,7 @@ function oglenOnar() {
   const b = new Date();
   try {
     for (const o of oglenOnarimlariHesapla($state.snapshot(depo.veri), b.getFullYear() * 10000 + (b.getMonth() + 1) * 100 + b.getDate()))
-      oglenKaydet(o.y, o.m, o.gunler);
+      oglenKaydet(o.y, o.m, o.gunler, true);
   } catch { /* onarım yapılamazsa kayıt yine yazılır; ekranda bozuk günler işaretli kalır */ }
 }
 let kayitZamanlayici: ReturnType<typeof setTimeout> | undefined;
@@ -230,6 +237,13 @@ function goruntuyuUygula(t: string) {
   // onay geri alma ile değişmez: onaylı çizelge olduğu gibi kalır, onaysız ayın onayı geri gelmez
   for (const [k, c] of Object.entries(simdi.schedules)) if (c.onay) v.schedules[k] = c;
   for (const [k, c] of Object.entries(v.schedules)) if (c.onay && !simdi.schedules[k]?.onay) delete c.onay;
+  // acil / öğlen listesi onayı da geri almayla değişmez: onaylı ayın listesi ve onayı olduğu gibi kalır
+  v.listeOnay = simdi.listeOnay;
+  for (const ayK of Object.keys(simdi.listeOnay.acil)) {
+    if (simdi.acil[ayK]) v.acil[ayK] = simdi.acil[ayK]; else delete v.acil[ayK];
+    if (simdi.acilElle[ayK]) v.acilElle[ayK] = simdi.acilElle[ayK]; else delete v.acilElle[ayK];
+  }
+  for (const ayK of Object.keys(simdi.listeOnay.oglen)) { if (simdi.oglen[ayK]) v.oglen[ayK] = simdi.oglen[ayK]; else delete v.oglen[ayK]; }
   depo.veri = v;
   sonGoruntu = goruntu();
 }
@@ -298,7 +312,10 @@ export function onayliGoreviVar(id: number): string[] {
         || Object.values(depo.veri.acil[ayK] ?? {}).some(l => l.includes(id))
         || !!depo.veri.puantaj[ayK]?.[id];
     })
-    .map(c => ayAnahtari(c.year, c.month));
+    .map(c => ayAnahtari(c.year, c.month))
+    .concat(Object.keys(depo.veri.listeOnay.acil).filter(ayK => Object.values(depo.veri.acil[ayK] ?? {}).some(l => l.includes(id))))
+    .concat(Object.keys(depo.veri.listeOnay.oglen).filter(ayK => Object.values(depo.veri.oglen[ayK] ?? {}).some(x => x.e.includes(id) || x.t.includes(id))))
+    .filter((k, i, a) => a.indexOf(k) === i);
 }
 
 /** Kişiyi siler; onaylı aylarda kaydı varsa silmez (false döner) */
@@ -312,11 +329,12 @@ export function kisiSil(id: number): boolean {
   }
   for (const [ayK, a] of Object.entries(depo.veri.puantaj)) if (!depo.veri.schedules[ayK]?.onay) delete a[id];
   for (const [ayK, a] of Object.entries(depo.veri.acil)) {
+    if (depo.veri.listeOnay.acil[ayK]) continue;
     for (const [g, l] of Object.entries(a)) { a[g] = l.filter(x => x !== id); if (!a[g].length) delete a[g]; }
     if (!Object.keys(a).length) delete depo.veri.acil[ayK];
   }
   for (const [ayK, a] of Object.entries(depo.veri.oglen)) {
-    if (depo.veri.schedules[ayK]?.onay) continue;
+    if (depo.veri.schedules[ayK]?.onay || depo.veri.listeOnay.oglen[ayK]) continue;
     for (const [g, x] of Object.entries(a)) { x.e = x.e.filter(i => i !== id); x.t = x.t.filter(i => i !== id); if (!x.e.length && !x.t.length) delete a[g]; }
     if (!Object.keys(a).length) delete depo.veri.oglen[ayK];
   }
@@ -394,10 +412,23 @@ export function onayiKaldir(y: number, m: number) {
   if (c) delete c.onay;
 }
 
-// ---------- acil servis nöbeti ----------
+// ---------- acil eczane / öğlen nöbet listesi onayı ----------
+// Onaylanan ayın listesi elle değiştirilemez, yeniden oluşturulmaz ve silinemez (önce onay kaldırılır). Öğlen nöbetinde
+// sonradan girilen izin / rapor yine kendiliğinden onarılır (kişi gerçekte yoktur); acil listesinde gün uyarılı kalır.
+export type ListeTuru = "acil" | "oglen";
+export const listeOnayi = (tur: ListeTuru, y: number, m: number) => depo.veri.listeOnay[tur][ayAnahtari(y, m)];
+export function listeyiOnayla(tur: ListeTuru, y: number, m: number) {
+  depo.veri.listeOnay[tur][ayAnahtari(y, m)] = { zaman: Date.now(), kim: depo.veri.kurum.onaylayan };
+  gecmisiSifirla();   // onay bir geri alma noktasıdır
+}
+export function listeOnayiniKaldir(tur: ListeTuru, y: number, m: number) { delete depo.veri.listeOnay[tur][ayAnahtari(y, m)]; }
+
+// ---------- acil eczane nöbeti ----------
 export const acilGunu = (y: number, m: number, gun: number): number[] => depo.veri.acil[ayAnahtari(y, m)]?.[gun] ?? [];
-/** acil nöbet gününü elle ayarlar; elle: gün otomatik oluşturmada korunur (temizlenen gün korunmaz) */
-export function acilGunuAyarla(y: number, m: number, gun: number, ids: number[], elle = true) {
+/** acil nöbet gününü elle ayarlar; elle: gün otomatik oluşturmada korunur (temizlenen gün korunmaz).
+ *  onayliDuzeltme: onaylı ayda yalnız sonradan yazılamaz hâle gelen kişinin yerine başkası yazılırken */
+export function acilGunuAyarla(y: number, m: number, gun: number, ids: number[], elle = true, onayliDuzeltme = false) {
+  if (listeOnayi("acil", y, m) && !onayliDuzeltme) return;
   const ayK = ayAnahtari(y, m), tek = [...new Set(ids)].slice(0, 2);
   if (elle && tek.length) (depo.veri.acilElle[ayK] ??= {})[gun] = true;
   else if (depo.veri.acilElle[ayK]) { delete depo.veri.acilElle[ayK][gun]; if (!Object.keys(depo.veri.acilElle[ayK]).length) delete depo.veri.acilElle[ayK]; }
@@ -407,10 +438,11 @@ export function acilGunuAyarla(y: number, m: number, gun: number, ids: number[],
   delete a[gun];
   if (!Object.keys(a).length) delete depo.veri.acil[ayK];
 }
-export function acilAyiniSil(y: number, m: number) { delete depo.veri.acil[ayAnahtari(y, m)]; delete depo.veri.acilElle[ayAnahtari(y, m)]; }
+export function acilAyiniSil(y: number, m: number) { if (listeOnayi("acil", y, m)) return; delete depo.veri.acil[ayAnahtari(y, m)]; delete depo.veri.acilElle[ayAnahtari(y, m)]; }
 export const acilElleMi = (y: number, m: number, gun: number) => !!depo.veri.acilElle[ayAnahtari(y, m)]?.[gun];
 /** otomatik oluşturulan acil nöbet listesini kaydeder (elle günler olduğu gibi gelir) */
 export function acilKaydet(y: number, m: number, gunler: { gun: number; ids: number[] }[]) {
+  if (listeOnayi("acil", y, m)) return;
   const a: Record<string, number[]> = {};
   gunler.forEach(g => { if (g.ids.length) a[g.gun] = g.ids.slice(0, 2); });
   if (Object.keys(a).length) depo.veri.acil[ayAnahtari(y, m)] = a; else delete depo.veri.acil[ayAnahtari(y, m)];
@@ -418,14 +450,17 @@ export function acilKaydet(y: number, m: number, gunler: { gun: number; ids: num
 
 // ---------- öğlen nöbeti ----------
 export const oglenAyi = (y: number, m: number) => depo.veri.oglen[ayAnahtari(y, m)];
-export function oglenKaydet(y: number, m: number, gunler: { gun: number; e: number[]; t: number[]; elle?: true }[]) {
+/** onarim: izin / rapor sonrası kendiliğinden onarım (onaylı ayda da yapılır) */
+export function oglenKaydet(y: number, m: number, gunler: { gun: number; e: number[]; t: number[]; elle?: true }[], onarim = false) {
+  if (!onarim && listeOnayi("oglen", y, m)) return;
   const a: Record<string, OglenGunu> = {};
   gunler.forEach(g => { if (g.e.length || g.t.length || g.elle) a[g.gun] = { e: g.e.slice(), t: g.t.slice(), ...(g.elle ? { elle: true as const } : {}) }; });
   if (Object.keys(a).length) depo.veri.oglen[ayAnahtari(y, m)] = a; else delete depo.veri.oglen[ayAnahtari(y, m)];
 }
-export function oglenAyiniSil(y: number, m: number) { delete depo.veri.oglen[ayAnahtari(y, m)]; }
+export function oglenAyiniSil(y: number, m: number) { if (listeOnayi("oglen", y, m)) return; delete depo.veri.oglen[ayAnahtari(y, m)]; }
 /** bir günü elle düzenler (otomatik oluşturma ve onarım bu güne dokunmaz); elle false: güne otomatik yazılsın */
 export function oglenGunuAyarla(y: number, m: number, gun: number, e: number[], t: number[], elle = true) {
+  if (listeOnayi("oglen", y, m)) return;
   const a = (depo.veri.oglen[ayAnahtari(y, m)] ??= {});
   a[gun] = { e: [...new Set(e)], t: [...new Set(t)], ...(elle ? { elle: true as const } : {}) };
 }
