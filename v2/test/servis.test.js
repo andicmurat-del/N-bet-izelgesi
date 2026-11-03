@@ -11,6 +11,10 @@ const { girdi, beklenen, bugun } = require("./servis-beklenen.json");
 const kopya = o => JSON.parse(JSON.stringify(o));
 
 const veri = kopya(girdi);
+// beklenen dağıtım eski varsayılan zorluklarla üretildi; sonradan değişen varsayılanlar burada eski değerleriyle verilir
+const ESKI_ZORLUK = { "YANIK": 5, "ORTOPEDİ-E": 7, "ORTOPEDİ-F": 7, "ORTOPEDİ-G": 7, "GENEL CERRAHİ-A": 8, "GENEL CERRAHİ-B": 8, "DOĞUM-G": 4, "DOĞUM-H": 4, "BEYİN CERRAHİ": 8 };
+veri.servisAyar ??= {}; veri.servisAyar.svc ??= {};
+for (const [ad, z] of Object.entries(ESKI_ZORLUK)) veri.servisAyar.svc[ad] = { z, ...veri.servisAyar.svc[ad] };
 veri.servisKayit = {};
 for (const ay of [9, 10]) veri.servisKayit["2026-" + ay] = servisAyHesapla(veri, 2026, ay, {}, bugun).kayit;
 
