@@ -1,6 +1,7 @@
 // Puantajda nöbet değişimi (yerine tutma, karşılıklı takas) ve izin/rapor nedeniyle yerine geçme: değişim yapılırsa
 // hangi kurallar bozulur (engel / uyarı) ve kim yerine geçebilir.
 import { acildeTutanEczaci, eczaciMi, hazirlamaRol, ikiDisaridanSerbestMi, nobetciRol, type Baglam } from "./baglam";
+import { acilKadrosunda, acilNobetiYakin } from "./acil";
 import { ayIstatistik } from "./istatistik";
 import { oncekiAySonKodu, puantajIzgarasi, type PuantajIzgarasi } from "./puantaj";
 import { AYLAR, ayAnahtari, CUMA, CUMARTESI, PAZAR, PERSEMBE, sonrakiAy } from "./takvim";
@@ -53,6 +54,12 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     else if (once === "R") out.engel.push(n + " " + et + " raporlu.");
     else if (once === "DI") out.engel.push(n + " " + et + " izinli (diğer izin).");
     else if (once === "P") out.engel.push(n + " " + et + " tarihinde çalışmıyor (işe başlama / ayrılış dışında).");
+    else {
+      // puantaja elle girilen nöbet izni ve (hafta içi) "çalışmadı"; değişimle görevini verenin "B"si sayılmaz
+      const elle = asil?.[id]?.[gun], degisimle = B.degisimler.some(z => z.y === y && z.m === m && z.gun === gun && z.cik === id);
+      if (elle === "NI") out.engel.push(n + " " + et + " nöbet izninde (puantajda girilmiş).");
+      else if (elle === "B" && !degisimle && !G1.gunler[gun - 1].tatil) out.engel.push(n + " " + et + " çalışmadı olarak girilmiş (puantaj).");
+    }
     const pr = B.tercih(id, y, m, gun);
     if (pr === "izinli" && once !== "YI") out.engel.push(n + " " + et + " izinli olarak işaretli.");
     else if (pr !== "izinli" && B.izinArasiMi(id, y, m, gun)) out.engel.push(n + " " + et + " izin arasında (iki izin günü arasındaki tatil).");
@@ -67,6 +74,8 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     if (!st || !r1 || !r2) return;
     const c2 = (i: number) => r2.cells[i];
     if (st.role === "destek") out.engel.push(n + " destek personeli; nöbet tutmaz.");
+    else if (acilKadrosunda(st)) out.engel.push(n + " acil eczane kadrosunda; günlük eczanede nöbet tutmaz.");
+    if (acilNobetiYakin(B, id, y, m, gun)) out.engel.push(n + " aynı ya da komşu günde acil eczane nöbetçisi.");
     const once = ortak(id, gun, r1, n, et);
     if (once === "N") out.engel.push(n + " " + et + " zaten nöbetçi.");
     if (B.tercih(id, y, m, gun) === "avoid") out.uyari.push(n + " " + et + " nöbet istemiyor olarak işaretli.");
@@ -106,6 +115,8 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     if (!st || !r1 || !r2) return;
     const c2 = (i: number) => r2.cells[i];
     if (!(st.role === "eczaci" || st.role === "teknisyen" || st.role === "destek" || st.role === "nobetci")) out.engel.push(n + " hazırlama görevi almaz (yalnızca eczacı, kemoterapi eczacısı, tekniker ve destek personeli).");
+    else if (acilKadrosunda(st)) out.engel.push(n + " acil eczane kadrosunda; günlük eczanede hazırlama tutmaz.");
+    if (acilNobetiYakin(B, id, y, m, gun)) out.engel.push(n + " aynı ya da komşu günde acil eczane nöbetçisi.");
     const once = ortak(id, gun, r1, n, et);
     if (once === "N") out.engel.push(n + " " + et + " nöbetçi; aynı gün hazırlama yapamaz.");
     else if (once === "H") out.engel.push(n + " " + et + " zaten hazırlama görevinde.");
@@ -162,7 +173,9 @@ export function yerineAdaylar(B: Baglam, y: number, m: number, gun: number, cik:
     // hafta içi "B": çalışmadı (elle) ya da normal mesaisi olmayan (nöbetçi eczacı, destek) için görevsiz gün; yalnız
     // elle girilen (devamsız / ücretsiz) gün yerine tutmaya kapalıdır, nöbetçi eczacı boş gününde yerine tutabilir
     const sadeceNobet = r.s.role === "nobetci" || r.s.role === "destek";
-    if (["YI", "R", "DI", "NI", "P"].indexOf(c.kod) >= 0 || (c.kod === "B" && !g.tatil && (!sadeceNobet || B.puantaj[y + "-" + m]?.[id]?.[gun] === "B"))) return;
+    // elle "B": görevini değişimle başkasına veren kişinin günü de "B" yazılır; o kişi o gün boştur (yerine tutabilir)
+    const elleCalismadi = (k: number) => B.puantaj[y + "-" + m]?.[k]?.[gun] === "B" && !B.degisimler.some(z => z.y === y && z.m === m && z.gun === gun && z.cik === k);
+    if (["YI", "R", "DI", "NI", "P"].indexOf(c.kod) >= 0 || (c.kod === "B" && !g.tatil && (!sadeceNobet || elleCalismadi(id)))) return;
     if (B.kesinYasak(id, y, m, gun)) return;
     const k = degisimDenetle(B, { y, m, gorev: H ? "H" : "N", tur: "devir", gun, cik, yer: id });
     const yt = Y[id] || { nobet: 0, prep: 0, fm: 0 };

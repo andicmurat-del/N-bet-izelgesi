@@ -4,7 +4,7 @@ import { acilKadrosunda, eczaneGoreviYakin } from "./acil";
 import { eczaneNobetcisi, aktifAydaMi, aktifGunMu, ayrildiMi, type Baglam } from "./baglam";
 import { ayVeriVarMi } from "./istatistik";
 import { puantajIzgarasi, ROL_SIRA, type PuantajIzgarasi } from "./puantaj";
-import { ayAnahtari, ayGunSayisi, AY_KISA, CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
+import { ayAnahtari, ayGunSayisi, AY_KISA, AYLAR, CUMA, CUMARTESI, gunKaydir, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
 
 // ---- günlük çalışma listesi: puantaja göre her gün kim onayda, kim hazırlamada, kim yok (izin/rapor) ----
 type ListeKisisi = { s: PuantajIzgarasi["satirlar"][number]["s"]; kod: string; saat: number; acil: boolean };
@@ -57,10 +57,15 @@ export function acilDenetle(B: Baglam, y: number, m: number, g: number, ids: num
   const sch = B.cizelge(y, m);
   [...new Set(ids)].forEach(id => {
     const s = B.kisi(id); if (!s) return;
+    if (!acilKadrosunda(s)) out.push({ sev: "hata", t: s.name + " acil eczane kadrosunda değil." });
     if (B.kesinYasak(id, y, m, g)) out.push({ sev: "uyari", t: s.name + " bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında." });
-    [-1, 1].forEach(k => { if ((ay[g + k] || []).indexOf(id) >= 0) out.push({ sev: "uyari", t: s.name + ", " + (g + k) + ". gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir)." }); });
+    // komşu günler ay sınırını da aşar (önceki ayın son günleri, sonraki ayın ilk günleri)
+    const var_ = (k: number) => { const [a2, b2, c2] = gunKaydir(y, m, g, k); return ((a2 === y && b2 === m ? ay : B.acil[ayAnahtari(a2, b2)] || {})[c2] || []).indexOf(id) >= 0; };
+    const gunAdi = (k: number) => { const [a2, b2, c2] = gunKaydir(y, m, g, k); return a2 === y && b2 === m ? c2 + ". gün" : c2 + " " + AYLAR[b2] + " günü"; };
+    [-1, 1].forEach(k => { if (var_(k)) out.push({ sev: "uyari", t: s.name + ", " + gunAdi(k) + " de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir)." }); });
+    if ((var_(-2) && var_(-4)) || (var_(-2) && var_(2)) || (var_(2) && var_(4))) out.push({ sev: "uyari", t: s.name + " 5 gün içinde 3 acil nöbeti tutmuş olur." });
     const ara = B.sayi("acilMinAra") || 3;
-    for (let k = 2; k < ara; k++) [-k, k].forEach(kk => { if ((ay[g + kk] || []).indexOf(id) >= 0) out.push({ sev: "uyari", t: s.name + ", " + (g + kk) + ". gün de acil eczanede nöbetçi (en az " + ara + " gün ara önerilir)." }); });
+    for (let k = 2; k < ara; k++) [-k, k].forEach(kk => { if (var_(kk)) out.push({ sev: "uyari", t: s.name + ", " + gunAdi(kk) + " de acil eczanede nöbetçi (en az " + ara + " gün ara önerilir)." }); });
     if (sch && sch.days[g - 1] && sch.days[g - 1].assigned.some(p => p.id === id)) out.push({ sev: "uyari", t: s.name + " aynı gün eczane nöbetçisi." });
     else if (eczaneGoreviYakin(B, id, y, m, g)) out.push({ sev: "uyari", t: s.name + " komşu günde eczane nöbeti ya da hazırlaması var." });
     const t = B.tercih(id, y, m, g);

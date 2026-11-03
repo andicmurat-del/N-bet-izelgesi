@@ -48,6 +48,17 @@ describe("nöbet değişimi", () => {
     expect(yerineAdaylarHesapla(v, Y, M, d, c, "N").some(a => a.id === 99)).toBe(true);
     const v2 = { ...v, puantaj: { [`${Y}-${M}`]: { 99: { [d]: "B" } } } };
     expect(yerineAdaylarHesapla(v2, Y, M, d, c, "N").some(a => a.id === 99)).toBe(false);
+    // görevini değişimle başkasına veren nöbetçi eczacının "B"si boş gündür: aynı gün başka birinin yerine tutabilir
+    const v3 = { ...v2, degisimler: [{ id: 1, y: Y, m: M, gun: d, cik: 99, yer: 1, gorev: "N", cikYeni: "B", yerYeni: "N" }] };
+    expect(yerineAdaylarHesapla(v3, Y, M, d, c, "N").some(a => a.id === 99)).toBe(true);
+  });
+
+  test("devir denetimi: acil kadrosu ve elle nöbet izni engeldir", () => {
+    const v = { ...veri, staff: [...veri.staff, { id: 98, name: "Acilci", role: "eczaci", acilTutar: true }] };
+    expect(degisimDenetle(v, { y: Y, m: M, gorev: "N", tur: "devir", gun: 5, cik, yer: 98 }).engel.some(t => /acil eczane kadrosunda/.test(t))).toBe(true);
+    const aday = yerineAdaylarHesapla(veri, Y, M, 5, cik, "N").find(a => !a.engel).id;
+    const v2 = { ...veri, puantaj: { [`${Y}-${M}`]: { [aday]: { 5: "NI" } } } };
+    expect(degisimDenetle(v2, { y: Y, m: M, gorev: "N", tur: "devir", gun: 5, cik, yer: aday }).engel.some(t => /nöbet izninde/.test(t))).toBe(true);
   });
 });
 

@@ -252,3 +252,15 @@ describe("acil eşitliği fazla mesai saatine göre de (günlük eczanedeki gibi
     }
   });
 });
+
+describe("acil günü elle düzenleme denetimi", () => {
+  test("ay sınırında art arda acil nöbeti ve 5 günde 3 nöbet uyarılır", async () => {
+    const { acilDenetle } = await import("../src/motor");
+    const v = JSON.parse(JSON.stringify(veri));
+    v.acil[`${Y}-${M - 1}`] = { 31: [13, 14], 30: [15, 16] };
+    v.acil[`${Y}-${M}`] = { 3: [15, 1] };
+    expect(acilDenetle(v, Y, M, 1, [13, 2]).some(x => x.t.startsWith("A1") && /31 Ekim günü de acil/.test(x.t))).toBe(true);
+    expect(acilDenetle(v, Y, M, 1, [15, 2]).some(x => x.t.startsWith("A3") && /5 gün içinde 3/.test(x.t))).toBe(true);
+    expect(acilDenetle(v, Y, M, 1, [3, 2]).some(x => x.sev === "hata" && x.t.startsWith("E3"))).toBe(true);
+  });
+});
