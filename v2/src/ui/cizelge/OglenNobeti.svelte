@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Bilgi from "../ortak/Bilgi.svelte";
   // Öğlen nöbeti: hafta içi öğle arasında eczanede kalanlar (Pzt–Prş 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker).
   // O günün çalışma listesinden (puantaj) yazılır; yıl boyunca toplam ve Cuma sayısı eşit tutulur.
   import { depo, veriAnlik, aydaCalisanlar, ayCizelgesi, oglenAyi, oglenKaydet, oglenAyiniSil, oglenGunuAyarla, resmiTatilMi, arifeMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
@@ -151,7 +152,7 @@
       {#if kayit && !onay}<button class="dugme sade tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, ayın öğlen nöbetini sil" : "Sil"}</button>{/if}
     </div>
   </div>
-  <p class="aciklama">O gün mesaide çalışanlardan yazılır; resmi tatil ve arife günü öğlen nöbeti yoktur. Herkese haftada bir (kişi yetmezse iki); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz. Cuma'dan muaf kişiler (eczacı ya da tekniker) Personel bölümünde işaretlenir. Bir güne dokunup kişileri elle değiştirebilirsiniz; sonradan girilen izin ve raporlarda boşalan yerler kendiliğinden doldurulur (elle düzenlenen ve geçmiş günler değişmez).</p>
+  <Bilgi baslik="Öğlen nöbeti kuralları"><p>O gün mesaide çalışanlardan yazılır; resmi tatil ve arife günü öğlen nöbeti yoktur. Herkese haftada bir (kişi yetmezse iki); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz. Cuma'dan muaf kişiler (eczacı ya da tekniker) Personel bölümünde işaretlenir. Bir güne dokunup kişileri elle değiştirebilirsiniz; sonradan girilen izin ve raporlarda boşalan yerler kendiliğinden doldurulur (elle düzenlenen ve geçmiş günler değişmez).</p></Bilgi>
   {#if onay}<p class="bant bilgi">Onaylandı: {onayMetni}. Onaylı liste kilitlidir; yeniden oluşturulmaz ve elle değiştirilmez. Sonradan girilen izin ve raporlarda boşalan yerler yine kendiliğinden doldurulur.</p>{/if}
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 

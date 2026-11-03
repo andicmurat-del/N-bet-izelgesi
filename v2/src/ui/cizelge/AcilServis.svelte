@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Bilgi from "../ortak/Bilgi.svelte";
   // Acil eczane nöbet listesi: günde 2 kişi; acil servis personeli ve "acilde nöbet tutar" işaretli eczacılar (kemoterapi dahil) arasından
   // otomatik oluşturulur (eczane çizelgesiyle çakışmadan), günler elle de düzenlenebilir (elle günler korunur).
   // Puantajda bu günler nöbet (24 saat) sayılır; ertesi gün mesai günüyse nöbet izni (Nİ), tatilse çalışılmadı (B) yazılır.
@@ -108,7 +109,7 @@
       {/if}
     </div>
   </div>
-  <p class="aciklama">Her gün 2 kişi; acil servis personeli ile nöbet yeri "Acil eczane" olan eczacılar ve kemoterapi eczacıları arasından eşit dağıtılır (eczane nöbetinden ayrı; her ay fazla mesai saati, yıl boyunca toplam ile Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı; herkesin payı yazılabildiği gün sayısına göre: izinli / raporlu günler düşülür, telafi istenmez). Aynı ya da komşu günde eczane nöbeti olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.</p>
+  <Bilgi baslik="Acil nöbeti kuralları"><p>Her gün 2 kişi; acil servis personeli ile nöbet yeri "Acil eczane" olan eczacılar ve kemoterapi eczacıları arasından eşit dağıtılır (eczane nöbetinden ayrı; her ay fazla mesai saati, yıl boyunca toplam ile Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı; herkesin payı yazılabildiği gün sayısına göre: izinli / raporlu günler düşülür, telafi istenmez). Aynı ya da komşu günde eczane nöbeti olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.</p></Bilgi>
   {#if onay}<p class="bant bilgi">Onaylandı: {onayMetni}. Onaylı liste kilitlidir; yeniden oluşturulmaz ve elle değiştirilmez. Sonradan izin ya da rapor alan kişinin günü işaretli görünür: güne dokunup yerine yazılacak kişiyi seçin.</p>{/if}
   {#each sorunluGunler as g}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{g.gun} {AYLAR_AD[m]}: {g.adlar.join(", ")} bu gün yazılamaz (izin, rapor ya da çalışma dönemi dışı). Güne dokunup yerine birini seçin.</span></p>{/each}
   {#each uyarilar as u}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}

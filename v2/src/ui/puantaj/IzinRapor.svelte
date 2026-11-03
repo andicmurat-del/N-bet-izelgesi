@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Bilgi from "../ortak/Bilgi.svelte";
   // Ay içinde gelişen izin ve rapor: kişi, tür ve tarih aralığı seçilir; puantaja etkisi ve kişinin o aralıktaki
   // nöbet/hazırlama görevleri gösterilir, her görev için yerine geçecek kişi önerilir: kurallara uyanlar arasında yerine
   // tutma sırayla gelir (yıl içinde en az yerine tutan önce). Kaydedilince yerine geçenler çizelgeye ve puantaja işlenir;
@@ -98,7 +99,7 @@
 <div class="duzen">
   <section class="kart form" aria-labelledby="izin-baslik">
     <h2 id="izin-baslik">Yeni kayıt</h2>
-    <p class="aciklama">Ay içinde gelişen rapor, yıllık izin ve fazla mesai karşılığı nöbet izni buradan girilir. Kişinin o günlerdeki nöbet ve hazırlamaları için yerine geçecek kişi önerilir: yerine tutma sırayla gelir (yıl içinde en az yerine tutan önce). Yıllık eşitlikte görev raporlu / izinli kişinin sayılır; sonradan telafi edilmez.</p>
+    <Bilgi baslik="Nasıl çalışır?"><p>Ay içinde gelişen rapor, yıllık izin ve fazla mesai karşılığı nöbet izni buradan girilir. Kişinin o günlerdeki nöbet ve hazırlamaları için yerine geçecek kişi önerilir: yerine tutma sırayla gelir (yıl içinde en az yerine tutan önce). Yıllık eşitlikte görev raporlu / izinli kişinin sayılır; sonradan telafi edilmez.</p></Bilgi>
     <fieldset class="turler">
       <legend>Tür</legend>
       {#each TURLER as t}<label class:secili={tur === t}><input type="radio" name="izin-tur" value={t} bind:group={tur} />{IZIN_AD[t].replace(/ \(.*\)$/, "")}</label>{/each}

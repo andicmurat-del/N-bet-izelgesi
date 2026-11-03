@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Bilgi from "../ortak/Bilgi.svelte";
   // Günlük çalışma listesi (puantaja göre): her gün kaç kişi onayda, hazırlamada, destekte; kim izinli.
   // Hafta sonu ve tatilde onaycılar eczane nöbetçileri, hazırlamacılar o günün hazırlamacılarıdır.
   import { depo, veriAnlik } from "../../veri/depo.svelte";
@@ -20,7 +21,7 @@
   const gorev = (k: Kayit, tatil: boolean) => k.kod === "N" ? (k.acil ? "Acil eczane nöbeti" : "Nöbetçi") : k.kod === "H" ? "Hazırlama" : tatil ? "" : ROL_AD[k.s.role];
 </script>
 
-<p class="aciklama">Puantaja göre her gün çalışanlar. Mesai günlerinde eczacılar onayda, teknikerler hazırlamada; hafta sonu ve tatilde onaycılar eczane nöbetçileri, hazırlamacılar o günün hazırlamacılarıdır. Bir güne dokunup adları görün.</p>
+<Bilgi baslik="Açıklama"><p>Puantaja göre her gün çalışanlar. Mesai günlerinde eczacılar onayda, teknikerler hazırlamada; hafta sonu ve tatilde onaycılar eczane nöbetçileri, hazırlamacılar o günün hazırlamacılarıdır. Bir güne dokunup adları görün.</p></Bilgi>
 
 <p class="lejant" aria-hidden="true"><span class="s onay"><i></i>Onay / onaycı</span><span class="s haz"><i></i>Hazırlama</span><span class="s dst"><i></i>Destek</span><span class="s yok"><i></i>Yok (izin, rapor)</span></p>
 <section class="kart takvim-kutu" aria-label="Çalışma listesi">

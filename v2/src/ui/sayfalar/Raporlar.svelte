@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Bilgi from "../ortak/Bilgi.svelte";
   // Yıllık raporlar: özet (aylara göre fazla mesai, görev dağılımı), yıllık denge (beklenen paya göre fark), kişi geçmişi,
   // acil eczane ve öğlen nöbeti dağılımı, servis hazırlama.
   import { yillikRaporHesapla } from "../../motor";
@@ -132,7 +133,7 @@
   </section>
 {:else if sekme === "denge" && R.D}
   <section class="blok">
-    <p class="aciklama">Her hücrede yıl toplamı ve kişinin çalıştığı ay sayısına göre beklenen paydan farkı. Nöbet sayısına hazırlama da dahildir. Renkli: fark büyük (sayılarda 1,5'ten, saatte 8'den fazla). Yarım yıl çalışanlar ay sayısıyla birlikte gösterilir.</p>
+    <Bilgi baslik="Tablo nasıl okunur?"><p>Her hücrede yıl toplamı ve kişinin çalıştığı ay sayısına göre beklenen paydan farkı. Nöbet sayısına hazırlama da dahildir. Renkli: fark büyük (sayılarda 1,5'ten, saatte 8'den fazla). Yarım yıl çalışanlar ay sayısıyla birlikte gösterilir.</p></Bilgi>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
     <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Yıllık denge tablosu">
       <table class="denge">
