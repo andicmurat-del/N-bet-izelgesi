@@ -3,11 +3,12 @@
   // otomatik oluşturulur (eczane çizelgesiyle çakışmadan), günler elle de düzenlenebilir (elle günler korunur).
   // Puantajda bu günler nöbet (24 saat) sayılır; ertesi gün mesai günüyse nöbet izni (Nİ), tatilse çalışılmadı (B) yazılır.
   import { depo, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, acilKaydet, acilElleMi, resmiTatilMi, tatilMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
-  import { acilAdaylariHesapla, acilDenetle, acilHesapla, acilKadrosunda, acilSorunluGunler } from "../../motor";
+  import { acilAdaylariHesapla, acilDenetle, acilHesapla, acilKadrosunda, acilSorunluGunler, puantajHesapla } from "../../motor";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR as AYLAR_AD, GUN_KISA, GUN_UZUN, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
+  import AylikOzet from "../ortak/AylikOzet.svelte";
 
   let { git }: { git: (ad: "kisiler") => void } = $props();
 
@@ -36,6 +37,8 @@
   // kayıtlı nöbetçisi sonradan yazılamaz hâle gelen günler (izin / rapor girildi, eş durumu yok, dönem dışı)
   const sorunluGunler = $derived(dolu ? acilSorunluGunler($state.snapshot(depo.veri), y, m).map(x => ({ gun: x.gun, adlar: x.ids.map(ad) })) : []);
   const sorunluMu = (g: number) => sorunluGunler.some(x => x.gun === g);
+  // kişi başı aylık özet (puantajdaki gibi; acil kadrosu, hazırlama yok)
+  const ozetSatirlari = $derived(dolu ? (puantajHesapla($state.snapshot(depo.veri), y, m) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => acilKadrosunda(r.s)) as never : []);
   const bugun = new Date();
   const bugunMu = (d: number) => bugun.getFullYear() === y && bugun.getMonth() === m && bugun.getDate() === d;
 
@@ -128,22 +131,10 @@
     </div>
   </section>
 
-  <section class="blok">
-    <h2>Kişi özeti</h2>
-    {#if ozet.length}
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
-      <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Acil eczane kişi özeti">
-        <table>
-          <thead><tr><th class="sol" scope="col">Ad soyad</th><th scope="col">Nöbet</th><th scope="col">Hafta sonu / tatil</th><th class="sol" scope="col">Nöbet günleri</th></tr></thead>
-          <tbody>
-            {#each ozet as o (o.id)}<tr><th class="sol" scope="row">{o.ad}</th><td class="rakam vurgu">{o.gunler.length}</td><td class="rakam">{o.tatil}</td><td class="sol rakam">{o.gunler.join(", ")}</td></tr>{/each}
-          </tbody>
-        </table>
-      </div>
-    {:else}
-      <p class="aciklama">Bu ay için henüz acil eczane nöbet listesi oluşturulmadı.</p>
-    {/if}
-  </section>
+  <div class="blok">
+    {#if dolu}<AylikOzet satirlar={ozetSatirlari} baslik="Kişi özeti" hazirlama={false} />
+    {:else}<h2>Kişi özeti</h2><p class="aciklama">Bu ay için henüz acil eczane nöbet listesi oluşturulmadı.</p>{/if}
+  </div>
 {/if}
 
 <Pencere bind:acik baslik={gunMetni(y, m, gun)} altBaslik={onay ? "Acil eczane nöbeti · onaylı liste" : "Acil eczane nöbeti · günde 2 kişi · kaydedilen gün elle düzenlenmiş sayılır"}>
@@ -216,15 +207,6 @@
   .yok { font-size: var(--f-xs); color: var(--soluk); }
   .blok { margin-top: var(--b5); display: grid; gap: var(--b2); }
   .blok h2 { font-size: var(--f-lg); }
-  .tablo-kap { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; font-size: var(--f-sm); }
-  th, td { padding: 8px 12px; border-bottom: 1px solid var(--cizgi-acik); text-align: right; white-space: nowrap; }
-  thead th { font-size: var(--f-xs); color: var(--soluk); font-weight: 600; background: var(--yuzey-2); }
-  tbody th { font-weight: 500; }
-  .sol { text-align: left; }
-  td.sol { white-space: normal; }
-  .vurgu { font-weight: 600; color: var(--acil); }
-  tbody tr:last-child > * { border-bottom: 0; }
   .iki { display: grid; grid-template-columns: 1fr 1fr; gap: var(--b3); }
   .denetim { display: grid; gap: 6px; }
   .satir { display: flex; gap: var(--b2); align-items: flex-start; font-size: var(--f-sm); padding: 6px 10px; border-radius: var(--r-kucuk); background: var(--dikkat-zemin); }

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { depo, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import { arkaPlandaOlustur } from "../../motor/istemci";
-  import { acilKadrosunda, uyariSiniflandir } from "../../motor";
+  import { acilKadrosunda, puantajHesapla, uyariSiniflandir } from "../../motor";
   import { cizelgeKitabi } from "../../disa/cizelgeXlsx";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR, ayAdi } from "../../veri/tarih";
@@ -9,7 +9,7 @@
   import Ikon from "../ortak/Ikon.svelte";
   import Takvim from "../cizelge/Takvim.svelte";
   import Uyarilar from "../cizelge/Uyarilar.svelte";
-  import KisiOzeti from "../cizelge/KisiOzeti.svelte";
+  import AylikOzet from "../ortak/AylikOzet.svelte";
   import GunPenceresi from "../cizelge/GunPenceresi.svelte";
   import Hazirlama from "./Hazirlama.svelte";
   import Puantaj from "./Puantaj.svelte";
@@ -25,6 +25,8 @@
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
   // acilde nöbet tutanlar (acil servis personeli, acilde tutan eczacılar) eczane çizelgesine girmez; nöbetleri Acil Eczane'de
+  // kişi başı aylık özet (puantajdaki gibi; günlük eczane kadrosu)
+  const ozetSatirlari = $derived(c ? (puantajHesapla($state.snapshot(depo.veri), depo.yil, depo.ay) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => !acilKadrosunda(r.s)) as never : []);
   const kisiler = $derived(aydaCalisanlar(depo.yil, depo.ay).filter(k => !acilKadrosunda(k)));
   const nobetci = $derived(kisiler.filter(k => k.role !== "destek"));
   const eczaci = $derived(kisiler.filter(k => k.role === "eczaci" || k.role === "nobetci"));
@@ -198,8 +200,8 @@
           <section class="uyari-bolum"><h2>Uyarılar</h2><Uyarilar metinler={c.uyarilar} /></section>
         {/if}
       </div>
-      <aside class="kart yan"><KisiOzeti {c} kisiler={kisiler} bind:vurgu /></aside>
     </div>
+    <div class="ozet-kap"><AylikOzet satirlar={ozetSatirlari} bind:vurgu /></div>
     <GunPenceresi bind:acik={gunAcik} {c} gun={acikGun} />
   {:else if !calisiyor}
     <section class="kart bos-ay">
@@ -235,7 +237,8 @@
   .donen { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--cizgi); border-top-color: var(--vurgu); animation: don 0.9s linear infinite; flex: none; }
   @keyframes don { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .donen { animation: none; border-top-color: var(--vurgu); } }
-  .duzen { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: var(--b4); align-items: start; }
+  .duzen { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--b4); align-items: start; }
+  .ozet-kap { margin-top: var(--b5); }
   .ana-sutun { display: grid; gap: var(--b4); min-width: 0; }
   .takvim-kutu { padding: var(--b3); display: grid; gap: var(--b3); }
   .lejant { display: flex; flex-wrap: wrap; gap: var(--b2) var(--b4); font-size: var(--f-xs); color: var(--soluk); padding: 0 var(--b1); }
@@ -244,14 +247,12 @@
   .lejant .kirmizi { color: var(--hata); }
   .uyari-bolum { display: grid; gap: var(--b2); }
   .uyari-bolum h2 { font-size: var(--f-lg); }
-  .yan { padding: var(--b4); position: sticky; top: var(--b4); max-height: calc(100dvh - 32px); overflow-y: auto; }
   .bos-ay { padding: var(--b5); display: grid; gap: var(--b3); max-width: 760px; }
   .bos-ay p { color: var(--yazi-2); }
 
   @media (max-width: 1100px) {
     .duzen { grid-template-columns: 1fr; }
-    .yan { position: static; max-height: none; }
-  }
+    }
   @media (max-width: 720px) {
     .takvim-kutu { padding: 6px; }
     .lejant { padding: var(--b2) var(--b3) var(--b3); }
