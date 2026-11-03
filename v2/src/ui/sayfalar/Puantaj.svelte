@@ -13,6 +13,7 @@
   import Sekmeler from "../ortak/Sekmeler.svelte";
   import IzinRapor from "../puantaj/IzinRapor.svelte";
   import NobetDegisimi from "../puantaj/NobetDegisimi.svelte";
+  import AylikOzet from "../ortak/AylikOzet.svelte";
 
   // gomulu: Günlük Eczane / Acil Eczane sayfasının alt sekmesi olarak (başlık ve ay seçici üst sayfada).
   // kimler: cetvelde ve izin/rapor kaydında görünen kişiler (o bölümün kadrosu); acil: Acil Eczane puantajı
@@ -137,19 +138,8 @@
     </table>
   </div>
 
-  <section class="aylik">
-    <h2>Aylık özet</h2>
-    <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
-    <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Aylık özet">
-      <table class="ozet-tablo">
-        <thead><tr><th scope="col">Ad soyad</th><th scope="col">Görev</th><th scope="col">Nöbet</th><th scope="col">Perşembe</th><th scope="col">Cuma</th><th scope="col">Cumartesi</th><th scope="col">Pazar</th>{#if !acil}<th scope="col">Hazırlama</th>{/if}<th scope="col">Resmi tatil</th><th scope="col">Yıllık izin</th><th scope="col">Rapor</th><th scope="col">Fazla mesai</th></tr></thead>
-        <tbody>
-          {#each G.satirlar as r (r.s.id)}
-            <tr><th scope="row">{r.s.name}</th><td class="sol">{ROL_AD[r.s.role]}</td><td>{r.n}</td><td>{r.thu}</td><td>{r.cu}</td><td>{r.cmt}</td><td>{r.paz}</td>{#if !acil}<td>{r.h}</td>{/if}<td>{r.rt}</td><td>{r.yi}</td><td>{r.rd}</td><td class="fm">{r.fm} sa</td></tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+  <section class="aylik-kap">
+    <AylikOzet satirlar={G.satirlar} hazirlama={!acil} />
     <p class="dipnot">Fazla mesai = toplam çalışma (yıllık izin ve rapor günleri o günün mesaisi kadar sayılır) − aylık normal mesai. Ayın son günü tutulan nöbetin ertesi gün izni bu aydan düşülür. Nöbet ertesi izin (Nİ) önce o günün 08:00-20:00 diliminden düşülür; bu dilim yetmezse kalanı 20:00-08:00 diliminden düşülür. Kemoterapi eczacısında nöbet günü ve ertesi günün mesaisi düşülür; destek personelinde hazırlama saatleri aynen yazılır.</p>
   </section>
   {/if}
@@ -212,14 +202,7 @@
   .ozet.ilk { border-left: 2px solid var(--cizgi); }
   .ozet.fm { font-weight: 700; color: var(--vurgu); }
   .soluk { color: var(--soluk); }
-  .aylik { margin-top: var(--b5); display: grid; gap: var(--b2); }
-  .aylik h2 { font-size: var(--f-lg); }
-  .ozet-tablo { width: 100%; }
-  .ozet-tablo th, .ozet-tablo td { padding: 8px 12px; border-bottom: 1px solid var(--cizgi-acik); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .ozet-tablo thead th { background: var(--yuzey-2); font-size: var(--f-xs); color: var(--yazi-2); }
-  .ozet-tablo tbody th, .ozet-tablo .sol, .ozet-tablo thead th:first-child, .ozet-tablo thead th:nth-child(2) { text-align: left; }
-  .ozet-tablo tbody th { font-weight: 500; }
-  .ozet-tablo .fm { font-weight: 700; color: var(--vurgu); }
+  .aylik-kap { margin-top: var(--b5); display: grid; gap: var(--b2); }
   .dipnot { font-size: var(--f-xs); color: var(--soluk); max-width: 100ch; }
   .secenekler { border: 0; padding: 0; margin: 0; display: grid; gap: 4px; }
   legend { font-weight: 600; font-size: var(--f-sm); margin-bottom: var(--b2); }
