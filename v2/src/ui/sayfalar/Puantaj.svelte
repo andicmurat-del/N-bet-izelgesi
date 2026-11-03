@@ -1,7 +1,7 @@
 <script lang="ts">
   // Aylık puantaj cetveli: çizelgeden gelen nöbet/hazırlama, nöbet ertesi izin ve izinler; hücre elle değiştirilebilir.
   import { puantajHesapla } from "../../motor";
-  import { depo, ayCizelgesi, puantajKoduAyarla, puantajElleKodu } from "../../veri/depo.svelte";
+  import { depo, veriAnlik, duzKopya, ayCizelgesi, puantajKoduAyarla, puantajElleKodu } from "../../veri/depo.svelte";
   import type { Kisi, PuantajKodu } from "../../veri/tipler";
   import { ROL_AD } from "../../veri/tipler";
   import { GUN_KISA, gunMetni } from "../../veri/tarih";
@@ -27,7 +27,7 @@
   let gorunum = $state<(typeof TUM_GORUNUMLER)[number]["ad"]>("cetvel");
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
-  const G = $derived.by(() => { const t = puantajHesapla($state.snapshot(depo.veri), depo.yil, depo.ay) as Izgara; return { ...t, satirlar: t.satirlar.filter(r => kimler(r.s as Kisi)) }; });
+  const G = $derived.by(() => { const t = puantajHesapla(veriAnlik(), depo.yil, depo.ay) as Izgara; return { ...t, satirlar: t.satirlar.filter(r => kimler(r.s as Kisi)) }; });
   const elleSayisi = $derived(Object.values(depo.veri.puantaj[`${depo.yil}-${depo.ay}`] ?? {}).reduce((t, a) => t + Object.keys(a).length, 0));
 
   const grupAd: Record<string, string> = { eczaci: "Eczacılar", nobetci: "Kemoterapi eczacıları", teknisyen: "Teknikerler", destek: "Destek personeli", servis: "Acil servis personeli" };
@@ -39,7 +39,7 @@
   function hucreAc(r: PuantajSatiri, i: number) {
     const gun = i + 1, elle = puantajElleKodu(depo.yil, depo.ay, r.s.id, gun);
     // elle kod kaldırılınca çıkacak kod: kayıt geçici kaldırılıp hesaplanır
-    const v = $state.snapshot(depo.veri);
+    const v = duzKopya(depo.veri);
     if (elle) delete v.puantaj[`${depo.yil}-${depo.ay}`][r.s.id][gun];
     const oto = (puantajHesapla(v, depo.yil, depo.ay) as Izgara).satirlar.find(x => x.s.id === r.s.id)?.cells[i].kod ?? "";
     secili = { id: r.s.id, ad: r.s.name, gun, otomatik: oto, simdiki: r.cells[i].kod };

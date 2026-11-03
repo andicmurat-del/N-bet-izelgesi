@@ -1,7 +1,7 @@
 <script lang="ts">
   // Bir günü elle düzenleme: nöbetçiler ve (tatil günüyse) hazırlama. Seçim değiştikçe kurallar anında denetlenir.
   import { gunuDenetle, acilKadrosunda } from "../../motor";
-  import { depo, gunuGuncelle, gunKilidiniKaldir, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
+  import { depo, veriAnlik, duzKopya, gunuGuncelle, gunKilidiniKaldir, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import type { AyCizelgesi, Gorevli, Kisi } from "../../veri/tipler";
   import { ROL_AD } from "../../veri/tipler";
   import { gunMetni, isoTarih } from "../../veri/tarih";
@@ -29,7 +29,7 @@
   const nb = $derived([n1, n2].filter(Boolean).map(kisi).filter((x): x is Gorevli => !!x));
   const pr = $derived(g.tatil ? [h1, h2].filter(Boolean).map(kisi).filter((x): x is Gorevli => !!x) : []);
   const ayniKisi = $derived((n1 && n1 === n2) || (h1 && h1 === h2));
-  const denetim = $derived(acik && !ayniKisi ? (gunuDenetle($state.snapshot(depo.veri), $state.snapshot(c), gun, nb, pr) as { sev: "hata" | "uyari" | "bilgi"; t: string }[]) : []);
+  const denetim = $derived(acik && !ayniKisi ? (gunuDenetle(veriAnlik(), duzKopya(c) as never, gun, nb, pr) as { sev: "hata" | "uyari" | "bilgi"; t: string }[]) : []);
   const hatalar = $derived(denetim.filter(x => x.sev === "hata"));
   const uyarilar = $derived(denetim.filter(x => x.sev === "uyari"));
   const bilgiler = $derived(denetim.filter(x => x.sev === "bilgi"));

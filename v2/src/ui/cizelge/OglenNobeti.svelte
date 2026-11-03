@@ -1,7 +1,7 @@
 <script lang="ts">
   // Öğlen nöbeti: hafta içi öğle arasında eczanede kalanlar (Pzt–Prş 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker).
   // O günün çalışma listesinden (puantaj) yazılır; yıl boyunca toplam ve Cuma sayısı eşit tutulur.
-  import { depo, aydaCalisanlar, ayCizelgesi, oglenAyi, oglenKaydet, oglenAyiniSil, oglenGunuAyarla, resmiTatilMi, arifeMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
+  import { depo, veriAnlik, aydaCalisanlar, ayCizelgesi, oglenAyi, oglenKaydet, oglenAyiniSil, oglenGunuAyarla, resmiTatilMi, arifeMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
   import { OGLEN_GEREK, oglenGrubu, oglenHesapla, oglenYillikHesapla, puantajHesapla } from "../../motor";
   import { AYLAR, GUN_KISA, ayAdi, gunMetni, gunSayisi, haftaGunu, kisaAd } from "../../veri/tarih";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
@@ -29,7 +29,7 @@
   $effect(() => { y; m; uyarilar = []; silOnayi = false; });
 
   function olustur() {
-    const r = oglenHesapla($state.snapshot(depo.veri), y, m) as { gunler: { gun: number; e: number[]; t: number[] }[]; uyarilar: string[] };
+    const r = oglenHesapla(veriAnlik(), y, m) as { gunler: { gun: number; e: number[]; t: number[] }[]; uyarilar: string[] };
     oglenKaydet(y, m, r.gunler);
     uyarilar = r.uyarilar;
     silOnayi = false;
@@ -37,7 +37,7 @@
   function sil() { if (!silOnayi) { silOnayi = true; return; } oglenAyiniSil(y, m); silOnayi = false; uyarilar = []; }
 
   // kayıttaki kişiler o gün hâlâ mesaide mi (sonradan izin / rapor girilmiş olabilir); o günün nöbetçileri
-  const G = $derived(kayit ? (puantajHesapla($state.snapshot(depo.veri), y, m) as { satirlar: { s: { id: number }; cells: { kod: string; saat: number }[] }[] }) : null);
+  const G = $derived(kayit ? (puantajHesapla(veriAnlik(), y, m) as { satirlar: { s: { id: number }; cells: { kod: string; saat: number }[] }[] }) : null);
   const hucre = (id: number, d: number) => G?.satirlar.find(r => r.s.id === id)?.cells[d - 1];
   const calisiyor = (id: number, d: number) => { const h = hucre(id, d); return !!h && (h.kod === "M" || h.kod === "N" || (h.kod.startsWith("S:") && h.saat > 0)); };
   const nobetciMi = (id: number, d: number) => hucre(id, d)?.kod === "N";
@@ -58,7 +58,7 @@
   const sorunlar = $derived(haftalar.flat().flatMap(s => [...s.e, ...s.t].filter(id => !calisiyor(id, s.gun))
     .map(id => `${s.gun} ${AYLAR[m]}: ${ad(id)} o gün artık mesaide değil (izin ya da rapor sonradan girilmiş); yeniden oluşturun ya da bilerek bırakın.`)));
 
-  const yillik = $derived(oglenYillikHesapla($state.snapshot(depo.veri), y, m) as Record<number, { top: number; cuma: number; ay: number; ayCuma: number }>);
+  const yillik = $derived(oglenYillikHesapla(veriAnlik(), y, m) as Record<number, { top: number; cuma: number; ay: number; ayCuma: number }>);
   const SIRA: Partial<Record<Rol, number>> = { eczaci: 0, teknisyen: 1 };
   const ozet = $derived(kisiler.slice().sort((a, b) => (SIRA[a.role] ?? 9) - (SIRA[b.role] ?? 9) || a.name.localeCompare(b.name, "tr"))
     .map(k => ({ k, ...(yillik[k.id] ?? { top: 0, cuma: 0, ay: 0, ayCuma: 0 }) })));
@@ -84,7 +84,7 @@
     return n.length ? ` (${n.join(", ")})` : "";
   };
   // pencere için puantaj, kayıt olmasa da
-  const GP = $derived(acik ? (puantajHesapla($state.snapshot(depo.veri), y, m) as { satirlar: { s: { id: number }; cells: { kod: string; saat: number }[] }[] }) : null);
+  const GP = $derived(acik ? (puantajHesapla(veriAnlik(), y, m) as { satirlar: { s: { id: number }; cells: { kod: string; saat: number }[] }[] }) : null);
   const hucreG = (id: number, d: number) => GP?.satirlar.find(r => r.s.id === id)?.cells[d - 1];
   const calisiyorG = (id: number, d: number) => { const h = hucreG(id, d); return !!h && (h.kod === "M" || h.kod === "N" || (h.kod.startsWith("S:") && h.saat > 0)); };
   const nobetciMiG = (id: number, d: number) => hucreG(id, d)?.kod === "N";

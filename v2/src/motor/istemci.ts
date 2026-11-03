@@ -14,7 +14,7 @@ function sayfadaOlustur(veri: Veri, yil: number, ay: number, varyasyon: number):
   }, 30));   // "hazırlanıyor" yazısı ekrana çizilsin diye kısa bekleme
 }
 
-/** Ayın çizelgesini arka planda oluşturur. veri düz bir kopya olmalı ($state.snapshot). */
+/** Ayın çizelgesini arka planda oluşturur. veri düz bir kopya olmalı (veriAnlik). */
 export function arkaPlandaOlustur(veri: Veri, yil: number, ay: number, varyasyon = 0): Promise<OlusturmaSonucu> {
   if (isciEngelli) return sayfadaOlustur(veri, yil, ay, varyasyon);
   let isci: Worker;

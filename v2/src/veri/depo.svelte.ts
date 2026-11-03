@@ -170,13 +170,25 @@ export const depo = $state({
   kayitSorunu: acilisSorunu,
 });
 
+/** Düz (proxy'siz) derin kopya. Svelte'in anlık görüntü işlevi her yaprak değerde structuredClone çağırdığından büyük
+ *  veride çok yavaş; veri yalnız düz nesne, dizi ve ilkel değerlerden oluşur (JSON'a yazılan biçim). */
+export function duzKopya<T>(x: T): T {
+  if (Array.isArray(x)) { const k = new Array(x.length); for (let i = 0; i < x.length; i++) k[i] = duzKopya(x[i]); return k as T; }
+  if (x !== null && typeof x === "object") { const k: Record<string, unknown> = {}; for (const a of Object.keys(x)) k[a] = duzKopya((x as Record<string, unknown>)[a]); return k as T; }
+  return x;
+}
+// Verinin tek ortak kopyası: veri değişince bir kez alınır; motor hesapları (yalnız okur), kayıt ve geri alma bunu kullanır.
+// Bu kopya değiştirilmez: üzerinde değişiklik yapacak iş duzKopya(depo.veri) ile kendi kopyasını alır.
+const anlik = $derived(duzKopya(depo.veri));
+export const veriAnlik = (): Veri => anlik;
+
 /** Sonradan girilen izin / rapor vb. öğlen nöbetini bozduysa bugünden sonraki eksikler kendiliğinden doldurulur
  *  (elle düzenlenen ve geçmiş günler değişmez); onarım, onu doğuran değişiklikle aynı geri alma adımına girer. */
 function oglenOnar() {
   if (!Object.keys(depo.veri.oglen).length) return;
   const b = new Date();
   try {
-    for (const o of oglenOnarimlariHesapla($state.snapshot(depo.veri), b.getFullYear() * 10000 + (b.getMonth() + 1) * 100 + b.getDate()))
+    for (const o of oglenOnarimlariHesapla(veriAnlik(), b.getFullYear() * 10000 + (b.getMonth() + 1) * 100 + b.getDate()))
       oglenKaydet(o.y, o.m, o.gunler, true);
   } catch { /* onarım yapılamazsa kayıt yine yazılır; ekranda bozuk günler işaretli kalır */ }
 }
@@ -187,7 +199,7 @@ function kaydet() {
     oglenOnar();
     gecmiseIsle();
     try {
-      localStorage.setItem(ANAHTAR, JSON.stringify($state.snapshot(depo.veri)));
+      localStorage.setItem(ANAHTAR, JSON.stringify(veriAnlik()));
       if (depo.kayitSorunu !== acilisSorunu) depo.kayitSorunu = "";
     } catch {
       depo.kayitSorunu = "Veriler bu tarayıcıya kaydedilemedi (gizli pencere ya da depolama dolu olabilir). Sayfayı kapatmadan önce Ayarlar'dan yedek alın.";
@@ -196,7 +208,7 @@ function kaydet() {
 }
 $effect.root(() => {
   $effect(() => {
-    JSON.stringify(depo.veri);
+    veriAnlik();
     kaydet();
   });
 });
@@ -209,7 +221,7 @@ $effect.root(() => {
 const GECMIS_SINIR = 30, GRUPLAMA_MS = 350;
 export const gecmis = $state({ geri: [] as string[], ileri: [] as string[] });
 let sonGoruntu: string | null = null, sonEkleme = 0;
-const goruntu = () => JSON.stringify({ ...$state.snapshot(depo.veri), servisKayit: undefined });
+const goruntu = () => JSON.stringify({ ...veriAnlik(), servisKayit: undefined });
 
 /** Son kayıttan bu yana değişiklik varsa önceki görüntü geri alma yığınına girer (kayıt sırasında çağrılır) */
 export function gecmiseIsle() {
@@ -231,7 +243,7 @@ export function gecmisiSifirla() {
   sonGoruntu = goruntu();
 }
 function goruntuyuUygula(t: string) {
-  const simdi = $state.snapshot(depo.veri);
+  const simdi = duzKopya(depo.veri);
   const v = veriyiDogrula(JSON.parse(t));
   v.servisKayit = simdi.servisKayit;
   // onay geri alma ile değişmez: onaylı çizelge olduğu gibi kalır, onaysız ayın onayı geri gelmez
@@ -498,7 +510,7 @@ export function aydaCalisanlar(y: number, m: number): Kisi[] {
 
 // ---------- yedek ----------
 export function yedekVerisi(): string {
-  return JSON.stringify({ uygulama: "nobet-cizelgesi-v2", zaman: new Date().toISOString(), veri: $state.snapshot(depo.veri) }, null, 1);
+  return JSON.stringify({ uygulama: "nobet-cizelgesi-v2", zaman: new Date().toISOString(), veri: veriAnlik() }, null, 1);
 }
 export function yedektenYukle(metin: string): { tamam: true; atlanan: number } | { tamam: false; hata: string } {
   let o: any;
@@ -509,7 +521,7 @@ export function yedektenYukle(metin: string): { tamam: true; atlanan: number } |
   // okunamayıp atlanan kişi ve çizelge sayısı (kullanıcıya söylenir)
   const atlanan = (o.veri.staff.length - v.staff.length) + (Object.keys(o.veri.schedules).length - Object.keys(v.schedules).length);
   // yüklemeden önceki veri bir kez saklanır: yanlış dosya seçilirse geri alınabilir
-  try { localStorage.setItem(ANAHTAR + "-yukleme-oncesi", JSON.stringify($state.snapshot(depo.veri))); } catch { /* yer yoksa geçilir */ }
+  try { localStorage.setItem(ANAHTAR + "-yukleme-oncesi", JSON.stringify(veriAnlik())); } catch { /* yer yoksa geçilir */ }
   depo.veri = v;
   gecmisiSifirla();   // yüklemenin kendi geri dönüşü var (yuklemeOncesineDon)
   return { tamam: true, atlanan };

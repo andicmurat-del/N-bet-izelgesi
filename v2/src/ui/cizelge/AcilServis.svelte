@@ -2,7 +2,7 @@
   // Acil eczane nöbet listesi: günde 2 kişi; acil servis personeli ve "acilde nöbet tutar" işaretli eczacılar (kemoterapi dahil) arasından
   // otomatik oluşturulur (eczane çizelgesiyle çakışmadan), günler elle de düzenlenebilir (elle günler korunur).
   // Puantajda bu günler nöbet (24 saat) sayılır; ertesi gün mesai günüyse nöbet izni (Nİ), tatilse çalışılmadı (B) yazılır.
-  import { depo, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, acilKaydet, acilElleMi, resmiTatilMi, tatilMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
+  import { depo, veriAnlik, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, acilKaydet, acilElleMi, resmiTatilMi, tatilMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
   import { acilAdaylariHesapla, acilDenetle, acilHesapla, acilKadrosunda, acilSorunluGunler, puantajHesapla } from "../../motor";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR as AYLAR_AD, GUN_KISA, GUN_UZUN, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
@@ -21,7 +21,7 @@
   const onayMetni = $derived(onay ? new Date(onay.zaman).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" }) + (onay.kim ? " · " + onay.kim : "") : "");
   $effect(() => { y; m; uyarilar = []; });
   function olustur() {
-    const r = acilHesapla($state.snapshot(depo.veri), y, m) as { gunler: { gun: number; ids: number[] }[]; uyarilar: string[] };
+    const r = acilHesapla(veriAnlik(), y, m) as { gunler: { gun: number; ids: number[] }[]; uyarilar: string[] };
     acilKaydet(y, m, r.gunler);
     uyarilar = r.uyarilar;
   }
@@ -35,10 +35,10 @@
     return [...o.entries()].map(([id, l]) => ({ id, ad: ad(id), gunler: l, tatil: l.filter(g => tatilMi(y, m, g)).length })).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
   });
   // kayıtlı nöbetçisi sonradan yazılamaz hâle gelen günler (izin / rapor girildi, eş durumu yok, dönem dışı)
-  const sorunluGunler = $derived(dolu ? acilSorunluGunler($state.snapshot(depo.veri), y, m).map(x => ({ gun: x.gun, adlar: x.ids.map(ad) })) : []);
+  const sorunluGunler = $derived(dolu ? acilSorunluGunler(veriAnlik(), y, m).map(x => ({ gun: x.gun, adlar: x.ids.map(ad) })) : []);
   const sorunluMu = (g: number) => sorunluGunler.some(x => x.gun === g);
   // kişi başı aylık özet (puantajdaki gibi; acil kadrosu, hazırlama yok)
-  const ozetSatirlari = $derived(dolu ? (puantajHesapla($state.snapshot(depo.veri), y, m) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => acilKadrosunda(r.s)) as never : []);
+  const ozetSatirlari = $derived(dolu ? (puantajHesapla(veriAnlik(), y, m) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => acilKadrosunda(r.s)) as never : []);
   const bugun = new Date();
   const bugunMu = (d: number) => bugun.getFullYear() === y && bugun.getMonth() === m && bugun.getDate() === d;
 
@@ -47,7 +47,7 @@
   function gunAc(g: number) { const l = acilGunu(y, m, g); gun = g; s1 = String(l[0] ?? ""); s2 = String(l[1] ?? ""); acik = true; }
   const secim = $derived([s1, s2].filter(Boolean).map(Number));
   const ayni = $derived(!!s1 && s1 === s2);
-  const denetim = $derived(acik ? (acilDenetle($state.snapshot(depo.veri), y, m, gun, secim) as { sev: "hata" | "uyari"; t: string }[]).filter(x => x.sev !== "hata") : []);
+  const denetim = $derived(acik ? (acilDenetle(veriAnlik(), y, m, gun, secim) as { sev: "hata" | "uyari"; t: string }[]).filter(x => x.sev !== "hata") : []);
   // seçenekler: o gün çalışma dönemi içinde olan acil kadrosu
   const gunAday = $derived(adaylar.filter(k => { const t = `${y}-${String(m + 1).padStart(2, "0")}-${String(gun).padStart(2, "0")}`; return !(k.baslangic && t < k.baslangic) && !(k.bitis && t > k.bitis); }));
   function kaydet() { if (ayni || onay) return; acilGunuAyarla(y, m, gun, secim); acik = false; }
@@ -55,7 +55,7 @@
   // yerine yazılabilecekler: günün kayıtlı nöbetçilerinden o gün yazılamayan (sonradan izin / rapor) varsa onun yerine,
   // yoksa boş yer için; uygunluğa ve yıl içindeki acil nöbet sayısına göre sıralı
   const kayitli = $derived(acik ? acilGunu(y, m, gun) : []);
-  const oneri = $derived(acik ? acilAdaylariHesapla($state.snapshot(depo.veri), y, m, gun, kayitli, null) as { sorunlu: number[]; adaylar: { id: number; ad: string; engel: boolean; uyarilar: string[]; yil: number }[] } : { sorunlu: [], adaylar: [] });
+  const oneri = $derived(acik ? acilAdaylariHesapla(veriAnlik(), y, m, gun, kayitli, null) as { sorunlu: number[]; adaylar: { id: number; ad: string; engel: boolean; uyarilar: string[]; yil: number }[] } : { sorunlu: [], adaylar: [] });
   const bosYer = $derived(kayitli.length < 2);
   const yerineBakilan = $derived(oneri.sorunlu[0] ?? null);
   const gosterOneri = $derived(acik && (oneri.sorunlu.length > 0 || bosYer) && (!onay || oneri.sorunlu.length > 0));
@@ -63,7 +63,7 @@
     const yeni = yerineBakilan !== null ? kayitli.map(i => (i === yerineBakilan ? id : i)) : [...kayitli, id];
     acilGunuAyarla(y, m, gun, yeni, true, !!onay);
     const l = acilGunu(y, m, gun); s1 = String(l[0] ?? ""); s2 = String(l[1] ?? "");
-    if (!acilAdaylariHesapla($state.snapshot(depo.veri), y, m, gun, l, null).sorunlu.length && l.length >= 2) acik = false;
+    if (!acilAdaylariHesapla(veriAnlik(), y, m, gun, l, null).sorunlu.length && l.length >= 2) acik = false;
   }
 
   let silOnayi = $state(false), durum = $state("");

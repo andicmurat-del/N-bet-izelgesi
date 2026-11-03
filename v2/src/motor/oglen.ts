@@ -60,7 +60,7 @@ function oglenDevir(B: Baglam, y: number, m: number) {
 }
 
 /** o gün öğlen nöbetine yazılabilenler (grup başına) ve o günün nöbetçileri */
-function gunAdaylari(B: Baglam, G: ReturnType<typeof puantajIzgarasi>, y: number, m: number, d: number) {
+function gunAdaylari(G: ReturnType<typeof puantajIzgarasi>, y: number, m: number, d: number) {
   const cu = haftaGunu(y, m, d) === CUMA, nobetci: number[] = [], ca: Record<Grup, number[]> = { e: [], t: [] };
   G.satirlar.forEach(r => {
     const g = oglenGrubu(r.s.role); if (!g) return;
@@ -100,7 +100,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
     const k = onceki[d], gecmis = !!onarim && tarihNo(y, m, d) < onarim.bugun;
     if (!oglenGunuMu(B, y, m, d) && !(k && (k.elle || gecmis))) continue;
     const dw = haftaGunu(y, m, d), cu = dw === CUMA, ger = cu ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
-    const { ca, nobetci } = gunAdaylari(B, G, y, m, d);
+    const { ca, nobetci } = gunAdaylari(G, y, m, d);
     const tam = !!k && (!!k.elle || gecmis);
     gunler.push({ gun: d, dw, e: [], t: [], nobetci, ...(k?.elle ? { elle: true as const } : {}) });
     tamSabit.push(tam);
@@ -216,7 +216,7 @@ export function oglenOnarimlari(B: Baglam, bugun: number): { y: number; m: numbe
       const k = kayit[d];
       if (k?.elle) continue;
       if (!oglenGunuMu(B, y, m, d)) { bozuk = !!k; continue; }
-      const { ca } = gunAdaylari(B, G, y, m, d), ger = haftaGunu(y, m, d) === CUMA ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
+      const { ca } = gunAdaylari(G, y, m, d), ger = haftaGunu(y, m, d) === CUMA ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
       for (const g of GRUPLAR) {
         const l = k ? k[g] || [] : [];
         if (l.some(id => !ca[g].includes(id)) || l.length < Math.min(ger[g], ca[g].length)) bozuk = true;
