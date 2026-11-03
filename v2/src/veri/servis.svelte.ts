@@ -1,6 +1,6 @@
 // Servis hazırlama: motorun (src/motor/servis) hesapladığı ay kayıtlarını ve servis ayarlarını saklar.
 // Motor verinin kopyasıyla çalışır; burada yalnız değişen ay kaydı depo.veri.servisKayit'e yazılır.
-import { depo } from "./depo.svelte";
+import { depo, duzKopya } from "./depo.svelte";
 import { servisAyHesapla, servisIslem, servisListesi, servisYillik } from "../motor";
 import type { ServisAyKaydi } from "./tipler";
 
@@ -15,7 +15,7 @@ export type ServisIslemi =
 export interface ServisBilgisi { id: number; name: string; z: number; h: number; multi: boolean; on: boolean; z0: number; h0: number; multi0: boolean; ekstra: boolean; yb: boolean; zor: boolean; grup: boolean }
 
 const anahtar = (y: number, m: number) => `${y}-${m}`;
-const kopya = () => $state.snapshot(depo.veri);
+const kopya = () => duzKopya(depo.veri);
 
 /** Ayın dağıtımını puantaja ve ayarlara göre günceller; değiştiyse kaydeder. */
 export function servisAyiniGuncelle(y: number, m: number): { cizelgeVar: boolean; kayitVar: boolean } {

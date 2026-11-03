@@ -1,6 +1,6 @@
 // 1. adım: açgözlü ilk yerleştirme. Günler sırayla doldurulur; her güne o ana kadarki yüke göre en uygun eczacı ve
 // ikinci nöbetçi yazılır. Sonraki adımlar (hazırlama, yerel arama) bu çizelgeyi iyileştirir.
-import { aktifGunMu, eczaciMi, gorevli, ikiDisaridanSerbestMi, type MotorGunu } from "../baglam";
+import { eczaciMi, gorevli, ikiDisaridanSerbestMi, type MotorGunu } from "../baglam";
 import type { Kisi } from "../../veri/tipler";
 import { CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "../takvim";
 import type { AyBilgisi } from "./ay";

@@ -113,47 +113,64 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
     if (ca.length < ACIL_GUNLUK) uyarilar.push(d + " " + AYLAR[m] + ": acil nöbeti için " + ACIL_GUNLUK + " kişi gerekli, yazılabilen " + ca.length + " kişi var (izin ya da aynı / komşu günde eczane nöbeti).");
   }
   const dw = Array.from({ length: dim }, (_, i) => haftaGunu(y, m, i + 1)), turler = Array.from({ length: dim }, (_, i) => gunTurleri(B, y, m, i + 1));
-  const tercih = (id: number, i: number) => B.tercih(id, y, m, i + 1);
+  // tercihler bir kez okunur (amaç işlevi her denemede yeniden hesaplanır)
+  const tercihler = Array.from({ length: dim }, (_, i) => new Map(havuz.map(s => [s.id, B.tercih(s.id, y, m, i + 1)])));
+  const tercih = (id: number, i: number) => tercihler[i].get(id) ?? B.tercih(id, y, m, i + 1);
+  const esVarlar = aday.map((l, i) => l.filter(id => tercih(id, i) === "esVar"));
   // ertesi gün izne çıkana nöbet yazılmaz (nöbet ertesi izni izne denk gelir); başka kimse yoksa yazılır
   const izinOnce = Array.from({ length: dim }, (_, i) => new Set(havuz.filter(s => B.izinOncesiMi(s.id, y, m, i + 1)).map(s => s.id)));
   const var_ = (id: number, d: number) => (d >= 1 && d <= dim ? sec[d - 1].includes(id) : (disGun[d] || []).includes(id));
   // iki acil nöbeti arasında önerilen en az gün (Ayarlar > Acil eczane): daha yakın her nöbet çifti hafif cezalı
   const ara = Math.max(2, Math.min(6, B.sayi("acilMinAra") || 3));
+  // kişi sırası (havuz) ve gün türleri dizi indisine çevrilir: amaç işlevi her denemede baştan hesaplanır, nesne yerine dizi
+  const H = havuz.length, sira = new Map(havuz.map((s, k) => [s.id, k])), TN = TURLER.length;
+  const turIdx = turler.map(l => l.map(([t, a]) => [TURLER.indexOf(t), a] as [number, number]));
+  const payDz = new Float64Array(TN * H), devirDz = new Float64Array(TN * H), wDz = TURLER.map(t => (t === "top" ? W.toplam : t === "fm" ? W.fm : W.tur));
+  TURLER.forEach((t, ti) => havuz.forEach((s, k) => { payDz[ti * H + k] = pay[t][s.id]; devirDz[ti * H + k] = t === "fm" ? 0 : devir[t][s.id] || 0; }));
+  const say = new Float64Array(TN * H), cmt = new Int32Array(H), paz = new Int32Array(H);
+  // nöbet var mı tablosu (kişi × gün; ay dışındaki komşu günler sabit): var_ yerine dizi okuması
+  const KAY = 6, L = dim + 2 * KAY + 1, dolu0 = new Uint8Array(H * L), dolu = new Uint8Array(H * L);
+  for (const [d, l] of Object.entries(disGun)) for (const id of l) { const k = sira.get(id); if (k !== undefined) dolu0[k * L + Number(d) + KAY] = 1; }
+  const varK = (id: number, k: number | undefined, d: number) => (k === undefined ? var_(id, d) : dolu[k * L + d + KAY] === 1);
   const J = (): number => {
     let j = 0;
-    const say = bosTur(), cmt: Record<number, number> = {}, paz: Record<number, number> = {};
+    say.fill(0); cmt.fill(0); paz.fill(0); dolu.set(dolu0);
+    for (let i = 0; i < dim; i++) for (const id of sec[i]) { const k = sira.get(id); if (k !== undefined) dolu[k * L + i + 1 + KAY] = 1; }
     for (let i = 0; i < dim; i++) {
       if (!sabit[i]) j += W.eksik * Math.max(0, Math.min(ACIL_GUNLUK, aday[i].length) - sec[i].length);
       const d = i + 1;
       for (const id of sec[i]) {
-        for (const [t, a] of turler[i]) say[t][id] = (say[t][id] || 0) + a;
-        if (dw[i] === CUMARTESI) cmt[id] = (cmt[id] || 0) + 1;
-        if (dw[i] === PAZAR) paz[id] = (paz[id] || 0) + 1;
+        const k = sira.get(id);
+        if (k !== undefined) {
+          for (const [ti, a] of turIdx[i]) say[ti * H + k] += a;
+          if (dw[i] === CUMARTESI) cmt[k]++;
+          if (dw[i] === PAZAR) paz[k]++;
+        }
         // ileriye bakan çiftler bir kez sayılır; ay başında önceki ayla olanlar da
-        if (var_(id, d + 1)) j += W.ardArda;
-        for (let k = 2; k < ara; k++) if (var_(id, d + k)) j += W.araIki;
-        if (var_(id, d + 2) && var_(id, d + 4)) j += W.ucBes;
-        if (d === 1 && var_(id, 0)) j += W.ardArda;
-        for (let k = 2; k < ara; k++) if (d <= k && var_(id, d - k)) j += W.araIki;
-        if (d <= 4 && var_(id, d - 2) && var_(id, d - 4)) j += W.ucBes;
-        if (d <= 2 && var_(id, d - 2) && var_(id, d + 2)) j += W.ucBes;
+        const v = (x: number) => varK(id, k, x);
+        if (v(d + 1)) j += W.ardArda;
+        for (let q = 2; q < ara; q++) if (v(d + q)) j += W.araIki;
+        if (v(d + 2) && v(d + 4)) j += W.ucBes;
+        if (d === 1 && v(0)) j += W.ardArda;
+        for (let q = 2; q < ara; q++) if (d <= q && v(d - q)) j += W.araIki;
+        if (d <= 4 && v(d - 2) && v(d - 4)) j += W.ucBes;
+        if (d <= 2 && v(d - 2) && v(d + 2)) j += W.ucBes;
         const t = tercih(id, i);
         if (t === "avoid") j += W.istemiyor; else if (t === "want") j -= W.istiyor;
         if (izinOnce[i].has(id)) j += W.izinOnce;
       }
-      for (const id of aday[i]) if (tercih(id, i) === "esVar" && !sec[i].includes(id)) j += W.esVar;
+      for (const id of esVarlar[i]) if (!sec[i].includes(id)) j += W.esVar;
     }
-    // bu ayın payı da yazılabildiği güne göre: izinli / raporlu olan o ay daha az alır, sonra telafi etmez
-    for (const t of TURLER) {
+    // bu ayın payı da yazılabildiği güne göre: izinli / raporlu olan o ay daha az alır, sonra telafi etmez;
+    // fazla mesai saati her ay kendi içinde eşitlenir (günlük eczanedeki gibi aylık), diğer türler yıl boyunca
+    for (let ti = 0; ti < TN; ti++) {
       let N = 0;
-      for (const s of havuz) N += say[t][s.id] || 0;
-      const w = t === "top" ? W.toplam : t === "fm" ? W.fm : W.tur;
-      // fazla mesai saati her ay kendi içinde eşitlenir (günlük eczanedeki gibi aylık); diğer türler yıl boyunca
-      for (const s of havuz) { const a = (say[t][s.id] || 0) - N * pay[t][s.id] + (t === "fm" ? 0 : devir[t][s.id] || 0); j += w * a * a; }
+      for (let k = 0; k < H; k++) N += say[ti * H + k];
+      for (let k = 0; k < H; k++) { const a = say[ti * H + k] - N * payDz[ti * H + k] + devirDz[ti * H + k]; j += wDz[ti] * a * a; }
     }
-    for (const s of havuz) {
-      if ((cmt[s.id] || 0) > 1) j += W.hsFazla * ((cmt[s.id] || 0) - 1);
-      if ((paz[s.id] || 0) > 1) j += W.hsFazla * ((paz[s.id] || 0) - 1);
+    for (let k = 0; k < H; k++) {
+      if (cmt[k] > 1) j += W.hsFazla * (cmt[k] - 1);
+      if (paz[k] > 1) j += W.hsFazla * (paz[k] - 1);
     }
     return j;
   };

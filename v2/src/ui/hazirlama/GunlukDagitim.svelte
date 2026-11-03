@@ -3,7 +3,7 @@
   // dağıtılır. Kişi dağıtımdan çıkarılabilir, gün yeniden karıştırılabilir, bir servis elle başka teknikere verilebilir.
   // Geçmiş günler kendiliğinden değişmez; değiştirilirse sonraki günler de yeniden dengelenir.
   import { untrack } from "svelte";
-  import { depo, tatilMi } from "../../veri/depo.svelte";
+  import { depo, veriAnlik, tatilMi } from "../../veri/depo.svelte";
   import { servisGunu, servisAtamaAdaylari } from "../../motor";
   import { servisAyiniGuncelle, servisIslemYap, type ServisIslemi } from "../../veri/servis.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
@@ -33,7 +33,7 @@
   // ay açıkken her veri değişikliğinde (puantaj, kişi, ayar) dağıtım güncellenir; geçmiş günler korunur
   let ay = $state({ cizelgeVar: false, kayitVar: false });
   $effect(() => { ay = servisAyiniGuncelle(y, m); });
-  const gun = $derived(ay.cizelgeVar ? (servisGunu($state.snapshot(depo.veri), y, m, secGun) as GunVerisi) : null);
+  const gun = $derived(ay.cizelgeVar ? (servisGunu(veriAnlik(), y, m, secGun) as GunVerisi) : null);
 
   const ix = $derived(isGunleri.indexOf(secGun));
   const gunAdi = (d: number) => `${d} ${AYLAR[m]} ${y} ${GUN_UZUN[haftaGunu(y, m, d)]}`;
@@ -49,7 +49,7 @@
 
   // servisi elle başka teknikere verme
   let ataAcik = $state(false), ataSn = $state(""), ataUyarili = $state<number | null>(null);
-  const ata = $derived(ataAcik ? (servisAtamaAdaylari($state.snapshot(depo.veri), y, m, secGun, ataSn) as { kaynak: number; kaynakAd: string; elle: boolean; elleVar: boolean; adaylar: Aday[] } | null) : null);
+  const ata = $derived(ataAcik ? (servisAtamaAdaylari(veriAnlik(), y, m, secGun, ataSn) as { kaynak: number; kaynakAd: string; elle: boolean; elleVar: boolean; adaylar: Aday[] } | null) : null);
   function ataAc(sn: string) { ataSn = sn; ataUyarili = null; ataAcik = true; }
   function ataSec(a: Aday) {
     if (a.uyari.length && ataUyarili !== a.id) { ataUyarili = a.id; return; }

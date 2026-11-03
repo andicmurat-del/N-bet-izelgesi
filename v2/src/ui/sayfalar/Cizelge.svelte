@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { depo, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
+  import { depo, veriAnlik, duzKopya, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import { arkaPlandaOlustur } from "../../motor/istemci";
   import { acilKadrosunda, puantajHesapla, uyariSiniflandir } from "../../motor";
   import { cizelgeKitabi } from "../../disa/cizelgeXlsx";
@@ -26,7 +26,7 @@
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
   // acilde nöbet tutanlar (acil servis personeli, acilde tutan eczacılar) eczane çizelgesine girmez; nöbetleri Acil Eczane'de
   // kişi başı aylık özet (puantajdaki gibi; günlük eczane kadrosu)
-  const ozetSatirlari = $derived(c ? (puantajHesapla($state.snapshot(depo.veri), depo.yil, depo.ay) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => !acilKadrosunda(r.s)) as never : []);
+  const ozetSatirlari = $derived(c ? (puantajHesapla(veriAnlik(), depo.yil, depo.ay) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => !acilKadrosunda(r.s)) as never : []);
   const kisiler = $derived(aydaCalisanlar(depo.yil, depo.ay).filter(k => !acilKadrosunda(k)));
   const nobetci = $derived(kisiler.filter(k => k.role !== "destek"));
   const eczaci = $derived(kisiler.filter(k => k.role === "eczaci" || k.role === "nobetci"));
@@ -49,7 +49,7 @@
     hata = ""; silOnayi = false; calisiyor = true;
     const y = depo.yil, m = depo.ay;
     try {
-      const r = await arkaPlandaOlustur($state.snapshot(depo.veri) as any, y, m, varyasyon);
+      const r = await arkaPlandaOlustur(veriAnlik() as any, y, m, varyasyon);
       if (!r.days) { hata = r.warnings[0] ?? "Çizelge oluşturulamadı."; return; }
       cizelgeKaydet(y, m, r.days, r.warnings);
     } catch (e) {
@@ -76,7 +76,7 @@
     if (!c) return;
     const y = c.year, m = c.month;
     try {
-      const blob = cizelgeKitabi($state.snapshot(c) as any, $state.snapshot(depo.veri.staff) as any, depo.veri.kurum.ad, d => resmiTatilMi(y, m, d));
+      const blob = cizelgeKitabi(duzKopya(c) as any, duzKopya(depo.veri.staff) as any, depo.veri.kurum.ad, d => resmiTatilMi(y, m, d));
       const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}.xlsx`, blob, blob.type);
       durum = ok ? "Excel dosyası kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "Dosya kaydedilemedi."); }
@@ -88,7 +88,7 @@
     pdfHazirlaniyor = true; durum = "";
     try {
       const { cizelgePdf } = await import("../../disa/cizelgePdf");
-      const blob = cizelgePdf($state.snapshot(c) as any, $state.snapshot(depo.veri.staff) as any, { kurum: depo.veri.kurum.ad, resmiTatil: d => resmiTatilMi(y, m, d), arife: d => arifeMi(y, m, d) });
+      const blob = cizelgePdf(duzKopya(c) as any, duzKopya(depo.veri.staff) as any, { kurum: depo.veri.kurum.ad, resmiTatil: d => resmiTatilMi(y, m, d), arife: d => arifeMi(y, m, d) });
       const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}.pdf`, blob, "application/pdf");
       durum = ok ? "PDF kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "PDF oluşturulamadı."); }

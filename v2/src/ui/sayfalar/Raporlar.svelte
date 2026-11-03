@@ -2,7 +2,7 @@
   // Yıllık raporlar: özet (aylara göre fazla mesai, görev dağılımı), yıllık denge (beklenen paya göre fark), kişi geçmişi,
   // acil eczane ve öğlen nöbeti dağılımı, servis hazırlama.
   import { yillikRaporHesapla } from "../../motor";
-  import { depo } from "../../veri/depo.svelte";
+  import { depo, veriAnlik } from "../../veri/depo.svelte";
   import { ROL_AD, type Rol } from "../../veri/tipler";
   import { AYLAR } from "../../veri/tarih";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
@@ -14,7 +14,7 @@
 
   let yil = $state(depo.yil);
   let sekme = $state<"ozet" | "denge" | "kisi" | "acil" | "servis">("ozet");
-  const R = $derived(yillikRaporHesapla($state.snapshot(depo.veri), yil) as Rapor);
+  const R = $derived(yillikRaporHesapla(veriAnlik(), yil) as Rapor);
   const nobetci = (r: Rol) => r === "eczaci" || r === "teknisyen" || r === "nobetci";
   const duty = $derived(R.V.kisiler.filter(k => nobetci(k.role)));
   const toplamNobet = $derived(duty.reduce((t, k) => t + R.toplam[k.id].nobet, 0));

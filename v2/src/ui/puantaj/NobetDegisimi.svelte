@@ -3,7 +3,7 @@
   // karşılıklı takas için ikinci görev seçilir. Kurallar varsayımsal puantajla denetlenir. Değişim yalnız puantaja
   // yansır; yıllık denge çizelgeye göre kalır. Bu ayın değişimleri listelenir, geri alınabilir.
   import { tick, untrack } from "svelte";
-  import { depo, ayCizelgesi } from "../../veri/depo.svelte";
+  import { depo, veriAnlik, ayCizelgesi } from "../../veri/depo.svelte";
   import { degisimDenetle, yerineAdaylarHesapla } from "../../motor";
   import { degisimUygula, degisimGeriAl, ayDegisimleri, puantajIzgarasi, IZIN_AD, type Gorev, type DegisimIstegi, type IzinTuru } from "../../veri/degisim.svelte";
   import { GUN_KISA, GUN_UZUN, gunMetni, haftaGunu } from "../../veri/tarih";
@@ -48,7 +48,7 @@
   }
   let panel = $state<HTMLElement>();
 
-  const adaylar = $derived(tur === "devir" && s1 ? (yerineAdaylarHesapla($state.snapshot(depo.veri), y, m, s1.gun, s1.id, s1.kod) as Aday[]) : []);
+  const adaylar = $derived(tur === "devir" && s1 ? (yerineAdaylarHesapla(veriAnlik(), y, m, s1.gun, s1.id, s1.kod) as Aday[]) : []);
   $effect(() => { if (tur === "devir" && s1 && !adaylar.some(a => String(a.id) === yer)) yer = String((adaylar.find(a => !a.engel) ?? adaylar[0])?.id ?? ""); });
   const istek = $derived.by((): DegisimIstegi | null => {
     if (!s1) return null;
@@ -56,7 +56,7 @@
     return s2 ? { y, m, gorev: s1.kod, gorev2: s2.kod, tur, gun: s1.gun, cik: s1.id, yer: s2.id, gun2: s2.gun } : null;
   });
   const ayniGun = $derived(tur === "takas" && !!s1 && !!s2 && s1.gun === s2.gun);
-  const kontrol = $derived(istek && !ayniGun ? (degisimDenetle($state.snapshot(depo.veri), istek) as Kontrol) : null);
+  const kontrol = $derived(istek && !ayniGun ? (degisimDenetle(veriAnlik(), istek) as Kontrol) : null);
   $effect(() => { istek; onayAdimi = false; });
 
   function uygula() {

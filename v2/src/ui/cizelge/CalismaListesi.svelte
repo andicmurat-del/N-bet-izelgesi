@@ -1,7 +1,7 @@
 <script lang="ts">
   // Günlük çalışma listesi (puantaja göre): her gün kaç kişi onayda, hazırlamada, destekte; kim izinli.
   // Hafta sonu ve tatilde onaycılar eczane nöbetçileri, hazırlamacılar o günün hazırlamacılarıdır.
-  import { depo } from "../../veri/depo.svelte";
+  import { depo, veriAnlik } from "../../veri/depo.svelte";
   import { calismaListesiHesapla } from "../../motor";
   import { GUN_KISA, GUN_UZUN, gunMetni, haftaGunu } from "../../veri/tarih";
   import { ROL_AD, type Rol } from "../../veri/tipler";
@@ -11,7 +11,7 @@
   type GunListesi = { gun: number; dw: number; tatil: boolean; onay: Kayit[]; haz: Kayit[]; dst: Kayit[]; gel: Kayit[]; yok: { s: Kayit["s"]; neden: string }[]; toplam: number };
 
   const y = $derived(depo.yil), m = $derived(depo.ay);
-  const L = $derived(calismaListesiHesapla($state.snapshot(depo.veri), y, m) as GunListesi[]);
+  const L = $derived(calismaListesiHesapla(veriAnlik(), y, m) as GunListesi[]);
   const bugun = new Date();
   const bugunMu = (d: number) => bugun.getFullYear() === y && bugun.getMonth() === m && bugun.getDate() === d;
 

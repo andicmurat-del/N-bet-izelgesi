@@ -2,14 +2,14 @@
   // Raporlar > Acil ve öğlen: yılın acil eczane nöbeti ve öğlen nöbeti dağılımı (kişi başı ay ay, yıl toplamı;
   // acilde hafta sonu / tatil, öğlende Cuma ayrıca). Eşitliği yıl boyunca görmek için.
   import { acilOglenRaporuHesapla } from "../../motor";
-  import { depo } from "../../veri/depo.svelte";
+  import { depo, veriAnlik } from "../../veri/depo.svelte";
   import { ROL_AD, type Rol } from "../../veri/tipler";
   import { AYLAR } from "../../veri/tarih";
 
   let { yil }: { yil: number } = $props();
   type Satir = { id: number; ad: string; rol: string; aylar: number[]; top: number; tatil?: number; cuma?: number; pe?: number; cu?: number; cmt?: number; paz?: number; resmi?: number };
   type Ek = "tatil" | "cuma" | "pe" | "cu" | "cmt" | "paz" | "resmi";
-  const R = $derived(acilOglenRaporuHesapla($state.snapshot(depo.veri), yil) as { acil: Satir[]; oglen: Satir[]; acilAylar: boolean[]; oglenAylar: boolean[] });
+  const R = $derived(acilOglenRaporuHesapla(veriAnlik(), yil) as { acil: Satir[]; oglen: Satir[]; acilAylar: boolean[]; oglenAylar: boolean[] });
   const ay3 = AYLAR.map(a => a.slice(0, 3));
   const fark = (l: Satir[], k: "top" | Ek) => (l.length ? Math.max(...l.map(x => x[k] ?? 0)) - Math.min(...l.map(x => x[k] ?? 0)) : 0);
   const bolumler = $derived([

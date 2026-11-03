@@ -4,7 +4,7 @@
   // tutma sırayla gelir (yıl içinde en az yerine tutan önce). Kaydedilince yerine geçenler çizelgeye ve puantaja işlenir;
   // yıllık eşitlikte görev raporlu / izinli kişinin sayılır (telafi gerekmez).
   import { untrack } from "svelte";
-  import { depo, aydaCalisanlar } from "../../veri/depo.svelte";
+  import { depo, veriAnlik, aydaCalisanlar } from "../../veri/depo.svelte";
   import { yerineAdaylarHesapla } from "../../motor";
   import { izinUygula, izinSil, ayIzinleri, puantajIzgarasi, IZIN_AD, IZIN_KISA, type IzinTuru, type Gorev } from "../../veri/degisim.svelte";
   import { ROL_AD, type Kisi } from "../../veri/tipler";
@@ -52,7 +52,7 @@
   // her görev için aday listesi (kurallara uyanlar önce)
   const adaylar = $derived.by(() => {
     if (!r || !etki) return [] as { gun: number; gorev: Gorev; l: Aday[] }[];
-    const v = $state.snapshot(depo.veri);
+    const v = veriAnlik();
     return etki.cakisma.map(cz => ({ ...cz, l: yerineAdaylarHesapla(v, y, m, cz.gun, r.s.id, cz.gorev, true) as Aday[] }));
   });
   // varsayılan seçim: ilk kural dışı olmayan aday; kullanıcının geçerli seçimi korunur
