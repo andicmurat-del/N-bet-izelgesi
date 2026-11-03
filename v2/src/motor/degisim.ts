@@ -159,7 +159,10 @@ export function yerineAdaylar(B: Baglam, y: number, m: number, gun: number, cik:
     const id = r.s.id; if (id === cik) return;
     if (acildeTutanEczaci(r.s) || (H ? !(hazirlamaRol(r.s.role) || r.s.role === "destek") : !nobetciRol(r.s.role))) return;
     const c = r.cells[gun - 1]; if (!c || c.kod === "N" || c.kod === "H") return;
-    if (["YI", "R", "DI", "NI", "P"].indexOf(c.kod) >= 0 || (c.kod === "B" && !g.tatil)) return;
+    // hafta içi "B": çalışmadı (elle) ya da normal mesaisi olmayan (nöbetçi eczacı, destek) için görevsiz gün; yalnız
+    // elle girilen (devamsız / ücretsiz) gün yerine tutmaya kapalıdır, nöbetçi eczacı boş gününde yerine tutabilir
+    const sadeceNobet = r.s.role === "nobetci" || r.s.role === "destek";
+    if (["YI", "R", "DI", "NI", "P"].indexOf(c.kod) >= 0 || (c.kod === "B" && !g.tatil && (!sadeceNobet || B.puantaj[y + "-" + m]?.[id]?.[gun] === "B"))) return;
     if (B.kesinYasak(id, y, m, gun)) return;
     const k = degisimDenetle(B, { y, m, gorev: H ? "H" : "N", tur: "devir", gun, cik, yer: id });
     const yt = Y[id] || { nobet: 0, prep: 0, fm: 0 };

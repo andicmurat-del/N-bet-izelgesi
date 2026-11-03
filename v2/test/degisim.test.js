@@ -39,6 +39,16 @@ describe("nöbet değişimi", () => {
     expect(yerineAdaylarHesapla(v, Y, M, 5, cik, "N").some(a => a.id === aday)).toBe(false);
     expect(puantajHesapla(v, Y, M).satirlar.find(r => r.s.id === aday).cells[4].kod).toBe("R");
   });
+
+  test("nöbetçi eczacı hafta içi boş gününde yerine tutabilir; elle 'çalışmadı' girilen gün tutamaz", () => {
+    const v = { ...veri, staff: [...veri.staff, { id: 99, name: "Nöbetçi", role: "nobetci" }] };
+    // 5. gün hafta içi değilse ilk hafta içi günü kullanılır
+    const hi = veri.schedules[`${Y}-${M}`].days.find(g => !g.tatil && g.day > 2), d = hi.day, c = hi.assigned[0].id;
+    expect(puantajHesapla(v, Y, M).satirlar.find(r => r.s.id === 99).cells[d - 1].kod).toBe("B");
+    expect(yerineAdaylarHesapla(v, Y, M, d, c, "N").some(a => a.id === 99)).toBe(true);
+    const v2 = { ...v, puantaj: { [`${Y}-${M}`]: { 99: { [d]: "B" } } } };
+    expect(yerineAdaylarHesapla(v2, Y, M, d, c, "N").some(a => a.id === 99)).toBe(false);
+  });
 });
 
 describe("rapor nedeniyle yerine tutma", () => {
