@@ -180,10 +180,16 @@ describe("acil ve öğlen listesi onayı", () => {
   });
   test("onaylı öğlen ayı elle değiştirilemez ama izin / rapor onarımı yazılır", () => {
     listeyiOnayla("oglen", Y, M);
-    oglenGunuAyarla(Y, M, 5, [3], [6]); oglenAyiniSil(Y, M); oglenKaydet(Y, M, [{ gun: 5, e: [4], t: [7] }]);
+    oglenGunuAyarla(Y, M, 5, [3], [6], { e: [3], t: [] }); oglenAyiniSil(Y, M); oglenKaydet(Y, M, [{ gun: 5, e: [4], t: [7] }]);
     expect(depo.veri.oglen[AY][5]).toEqual({ e: [1, 2], t: [5] });
     oglenKaydet(Y, M, [{ gun: 5, e: [1, 3], t: [5] }], true);
     expect(depo.veri.oglen[AY][5]).toEqual({ e: [1, 3], t: [5] });
+  });
+  test("öğlen gününün elle yerleri yedekte korunur; listede olmayan kişi elle yer sayılmaz", () => {
+    const v = veriyiDogrula({ ...bosVeri(), staff: [{ id: 1, name: "A", role: "eczaci" }, { id: 2, name: "B", role: "teknisyen" }],
+      oglen: { [AY]: { 5: { e: [1], t: [], sabit: { e: [1, 2], t: [2], bt: 1 } }, 6: { e: [1], t: [2], sabit: { e: [], t: [] } } } } });
+    expect(v.oglen[AY][5]).toEqual({ e: [1], t: [], sabit: { e: [1], t: [], bt: 1 } });
+    expect(v.oglen[AY][6]).toEqual({ e: [1], t: [2] });
   });
   test("onay yedekte korunur, geri alma onayı ve onaylı listeyi değiştirmez; onaylı listedeki kişi silinmez", () => {
     depo.veri.acil[AY][5] = [9, 10]; gecmiseIsle();

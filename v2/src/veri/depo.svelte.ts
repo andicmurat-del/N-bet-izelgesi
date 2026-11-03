@@ -1,5 +1,5 @@
 // Uygulama durumu ve tarayıcıda saklanması. Veriler yalnız bu tarayıcıda durur; taşımak için yedek dosyası kullanılır.
-import type { AyCizelgesi, Ayarlar, Gorevli, Kisi, OglenGunu, PuantajKodu, Rol, Tercih, Veri } from "./tipler";
+import type { AyCizelgesi, Ayarlar, Gorevli, Kisi, OglenGunu, OglenSabit, PuantajKodu, Rol, Tercih, Veri } from "./tipler";
 import { ayAnahtari, gunAnahtari, gunSayisi, haftaSonuMu, tercihAnahtari } from "./tarih";
 import { oglenOnarimlariHesapla } from "../motor";
 
@@ -26,6 +26,16 @@ export function bosVeri(): Veri {
     servisAyar: { svc: {}, ekstra: [] },
     servisKayit: {},
   };
+}
+
+/** öğlen gününün elle yerleri: yalnız o günün listesinde olan kişiler; boş yer sayısı 0–3; hiçbiri yoksa undefined */
+function oglenSabitDogrula(x: unknown, e: number[], t: number[]): OglenSabit | undefined {
+  if (!x || typeof x !== "object") return undefined;
+  const o = x as Record<string, unknown>, ic = (l: unknown, izin: number[]) => (Array.isArray(l) ? [...new Set(l.filter((id): id is number => izin.includes(id as number)))] : []);
+  const bos = (n: unknown) => (Number.isInteger(n) && (n as number) > 0 ? Math.min(3, n as number) : 0);
+  const sb: OglenSabit = { e: ic(o.e, e), t: ic(o.t, t) }, be = bos(o.be), bt = bos(o.bt);
+  if (be) sb.be = be; if (bt) sb.bt = bt;
+  return sb.e.length || sb.t.length || be || bt ? sb : undefined;
 }
 
 /** Yedekten ya da tarayıcıdan okunan veriyi güvenli biçime getirir; tanınmayan alanlar atılır. */
@@ -86,8 +96,8 @@ export function veriyiDogrula(ham: unknown): Veri {
     if (!/^\d{4}-\d{1,2}$/.test(ayK)) continue;
     const ids = (l: unknown) => [...new Set((Array.isArray(l) ? l : []).filter((id: unknown): id is number => Number.isInteger(id) && kisiIdleri.has(id as number)))];
     for (const [gun, g] of Object.entries(nesne(gunler))) {
-      const x = nesne(g), e = ids(x.e), t = ids(x.t);
-      if (/^\d{1,2}$/.test(gun) && (e.length || t.length || x.elle === true)) (v.oglen[ayK] ??= {})[gun] = { e, t, ...(x.elle === true ? { elle: true as const } : {}) };
+      const x = nesne(g), e = ids(x.e), t = ids(x.t), sb = oglenSabitDogrula(x.sabit, e, t);
+      if (/^\d{1,2}$/.test(gun) && (e.length || t.length || x.elle === true || sb)) (v.oglen[ayK] ??= {})[gun] = { e, t, ...(x.elle === true ? { elle: true as const } : {}), ...(sb ? { sabit: sb } : {}) };
     }
   }
   const lo = nesne(o.listeOnay);
@@ -463,18 +473,20 @@ export function acilKaydet(y: number, m: number, gunler: { gun: number; ids: num
 // ---------- öğlen nöbeti ----------
 export const oglenAyi = (y: number, m: number) => depo.veri.oglen[ayAnahtari(y, m)];
 /** onarim: izin / rapor sonrası kendiliğinden onarım (onaylı ayda da yapılır) */
-export function oglenKaydet(y: number, m: number, gunler: { gun: number; e: number[]; t: number[]; elle?: true }[], onarim = false) {
+export function oglenKaydet(y: number, m: number, gunler: { gun: number; e: number[]; t: number[]; elle?: true; sabit?: OglenSabit }[], onarim = false) {
   if (!onarim && listeOnayi("oglen", y, m)) return;
   const a: Record<string, OglenGunu> = {};
-  gunler.forEach(g => { if (g.e.length || g.t.length || g.elle) a[g.gun] = { e: g.e.slice(), t: g.t.slice(), ...(g.elle ? { elle: true as const } : {}) }; });
+  gunler.forEach(g => { if (g.e.length || g.t.length || g.elle || g.sabit) a[g.gun] = { e: g.e.slice(), t: g.t.slice(), ...(g.elle ? { elle: true as const } : {}), ...(g.sabit ? { sabit: duzKopya(g.sabit) } : {}) }; });
   if (Object.keys(a).length) depo.veri.oglen[ayAnahtari(y, m)] = a; else delete depo.veri.oglen[ayAnahtari(y, m)];
 }
 export function oglenAyiniSil(y: number, m: number) { if (listeOnayi("oglen", y, m)) return; delete depo.veri.oglen[ayAnahtari(y, m)]; }
-/** bir günü elle düzenler (otomatik oluşturma ve onarım bu güne dokunmaz); elle false: güne otomatik yazılsın */
-export function oglenGunuAyarla(y: number, m: number, gun: number, e: number[], t: number[], elle = true) {
+/** bir günü elle düzenler. sabit: elle belirlenen yerler (yeniden oluşturma ve onarım yalnız bunlara dokunmaz; günün
+ *  geri kalanı yeniden yazılabilir); null: gün tamamen otomatiğe bırakılır */
+export function oglenGunuAyarla(y: number, m: number, gun: number, e: number[], t: number[], sabit: OglenSabit | null) {
   if (listeOnayi("oglen", y, m)) return;
   const a = (depo.veri.oglen[ayAnahtari(y, m)] ??= {});
-  a[gun] = { e: [...new Set(e)], t: [...new Set(t)], ...(elle ? { elle: true as const } : {}) };
+  const E = [...new Set(e)], T = [...new Set(t)], sb = sabit ? oglenSabitDogrula(sabit, E, T) : undefined;
+  a[gun] = { e: E, t: T, ...(sb ? { sabit: sb } : {}) };
 }
 
 // ---------- puantaj ----------

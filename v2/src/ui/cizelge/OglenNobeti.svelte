@@ -44,6 +44,9 @@
   const nobetciMi = (id: number, d: number) => hucre(id, d)?.kod === "N";
 
   type Satir = { gun: number; dw: number; e: number[]; t: number[]; elle: boolean };
+  // gün elle düzenlendi mi (günün tamamı ya da bazı yerleri) ve hangi kişiler elle yazıldı
+  const elleMi = (k: { elle?: true; sabit?: unknown } | undefined) => !!k && (!!k.elle || !!k.sabit);
+  const elleKisi = (d: number, id: number) => { const k = kayit?.[d]; return !!k && (!!k.elle || !!k.sabit?.e.includes(id) || !!k.sabit?.t.includes(id)); };
   const haftalar = $derived.by(() => {
     if (!kayit) return [] as Satir[][];
     const out: Satir[][] = []; let cur: Satir[] = [];
@@ -51,7 +54,7 @@
       const dw = haftaGunu(y, m, d);
       if (dw === 0 && cur.length) { out.push(cur); cur = []; }
       const k = kayit[d];
-      if (k) cur.push({ gun: d, dw, e: k.e, t: k.t, elle: !!k.elle });
+      if (k) cur.push({ gun: d, dw, e: k.e, t: k.t, elle: elleMi(k) });
     }
     if (cur.length) out.push(cur);
     return out;
@@ -67,6 +70,8 @@
 
   // elle düzenleme: bir güne dokunulur, eczacı ve tekniker yerleri seçilir; bu gün otomatik oluşturmada korunur
   let acik = $state(false), gun = $state(1), se = $state<string[]>([]), st = $state<string[]>([]);
+  // pencere açıldığındaki yerler: kaydederken hangi yerin elle değiştirildiği bunlarla karşılaştırılır
+  let seIlk: string[] = [], stIlk: string[] = [];
   const gerekE = $derived(haftaGunu(y, m, gun) === 4 ? OGLEN_GEREK.cuma.e : OGLEN_GEREK.hafta.e);
   const gerekT = $derived(haftaGunu(y, m, gun) === 4 ? OGLEN_GEREK.cuma.t : OGLEN_GEREK.hafta.t);
   function gunAc(s: Satir) {
@@ -74,6 +79,7 @@
     const n = (l: number[], k: number) => Array.from({ length: Math.max(k, l.length) }, (_, i) => String(l[i] ?? ""));
     se = n(s.e, haftaGunu(y, m, s.gun) === 4 ? OGLEN_GEREK.cuma.e : OGLEN_GEREK.hafta.e);
     st = n(s.t, haftaGunu(y, m, s.gun) === 4 ? OGLEN_GEREK.cuma.t : OGLEN_GEREK.hafta.t);
+    seIlk = se.slice(); stIlk = st.slice();
     acik = true;
   }
   const secenekler = (g: "e" | "t") => kisiler.filter(k => oglenGrubu(k.role) === g).sort((a, b) => a.name.localeCompare(b.name, "tr"));
@@ -91,8 +97,27 @@
   const nobetciMiG = (id: number, d: number) => hucreG(id, d)?.kod === "N";
   const secE = $derived(se.filter(Boolean).map(Number)), secT = $derived(st.filter(Boolean).map(Number));
   const tekrar = $derived(new Set(secE).size !== secE.length || new Set(secT).size !== secT.length);
-  function gunKaydet() { if (tekrar || onay) return; oglenGunuAyarla(y, m, gun, secE, secT, true); acik = false; }
-  function otomatik() { if (onay) return; const k = kayit?.[gun]; oglenGunuAyarla(y, m, gun, k?.e ?? [], k?.t ?? [], false); acik = false; }
+  /** Elle yerler: bu pencerede değiştirilen her yer (kişi seçildiyse o kişi, "Seçilmedi" yapıldıysa boş yer) ve daha
+   *  önce elle belirlenip dokunulmayan yerler. Değiştirilmeyen öteki yerleri yeniden oluşturma yeniden yazabilir. */
+  function elleYerler(g: "e" | "t", sec: string[], ilk: string[]) {
+    const k = kayit?.[gun], once = k?.elle ? k[g] : k?.sabit?.[g] ?? [];
+    let oncekiBos = k?.elle ? Math.max(0, ilk.length - k[g].length) : (g === "e" ? k?.sabit?.be : k?.sabit?.bt) ?? 0;
+    const kisi: number[] = []; let bos = 0;
+    sec.forEach((v, i) => {
+      if (v !== ilk[i]) { if (v) kisi.push(Number(v)); else bos++; }
+      else if (v && once.includes(Number(v))) kisi.push(Number(v));
+      else if (!v && oncekiBos > 0) { bos++; oncekiBos--; }
+    });
+    return { kisi, bos };
+  }
+  function gunKaydet() {
+    if (tekrar || onay) return;
+    const E = elleYerler("e", se, seIlk), T = elleYerler("t", st, stIlk);
+    const sb = E.kisi.length || T.kisi.length || E.bos || T.bos ? { e: E.kisi, t: T.kisi, ...(E.bos ? { be: E.bos } : {}), ...(T.bos ? { bt: T.bos } : {}) } : null;
+    oglenGunuAyarla(y, m, gun, secE, secT, sb);
+    acik = false;
+  }
+  function otomatik() { if (onay) return; const k = kayit?.[gun]; oglenGunuAyarla(y, m, gun, k?.e ?? [], k?.t ?? [], null); acik = false; }
 
   let durum = $state("");
   // haftalık PDF: ayın hafta içi günleri haftalara bölünür (Pzt–Cuma); seçilen hafta tek sayfa
@@ -152,7 +177,7 @@
       {#if kayit && !onay}<button class="dugme sade tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, ayın öğlen nöbetini sil" : "Sil"}</button>{/if}
     </div>
   </div>
-  <Bilgi baslik="Öğlen nöbeti kuralları"><p>O gün mesaide çalışanlardan yazılır; resmi tatil ve arife günü öğlen nöbeti yoktur. Herkese haftada bir (kişi yetmezse iki); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz. Cuma'dan muaf kişiler (eczacı ya da tekniker) Personel bölümünde işaretlenir. Bir güne dokunup kişileri elle değiştirebilirsiniz; sonradan girilen izin ve raporlarda boşalan yerler kendiliğinden doldurulur (elle düzenlenen ve geçmiş günler değişmez).</p></Bilgi>
+  <Bilgi baslik="Öğlen nöbeti kuralları"><p>O gün mesaide çalışanlardan yazılır; resmi tatil ve arife günü öğlen nöbeti yoktur. Herkese haftada bir (kişi yetmezse iki); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz. Cuma'dan muaf kişiler (eczacı ya da tekniker) Personel bölümünde işaretlenir. Bir güne dokunup kişileri elle değiştirebilirsiniz: yalnız değiştirdiğiniz yerler korunur (altı noktalı çizgili adlar), "Seçilmedi" yaptığınız yer boş kalır; yeniden oluşturma günün öteki yerlerini yeniden yazar. Sonradan girilen izin ve raporlarda boşalan yerler kendiliğinden doldurulur (elle yazılan kişiler ve geçmiş günler değişmez).</p></Bilgi>
   {#if onay}<p class="bant bilgi">Onaylandı: {onayMetni}. Onaylı liste kilitlidir; yeniden oluşturulmaz ve elle değiştirilmez. Sonradan girilen izin ve raporlarda boşalan yerler yine kendiliğinden doldurulur.</p>{/if}
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
@@ -169,13 +194,13 @@
           {@const k = kayit[d]}
           {@const dw = haftaGunu(y, m, d)}
           {#if k}
-            {@const s = { gun: d, dw, e: k.e, t: k.t, elle: !!k.elle }}
+            {@const s = { gun: d, dw, e: k.e, t: k.t, elle: elleMi(k) }}
             <button class="gun" class:cuma={dw === 4} class:sorunlu={[...k.e, ...k.t].some(id => !calisiyor(id, d))} class:bugun={bugunMu(d)} onclick={() => gunAc(s)}
-              aria-label="{gunMetni(y, m, d)}: eczacı {k.e.map(ad).join(', ') || 'yok'}; tekniker {k.t.map(ad).join(', ') || 'yok'}{k.elle ? ', elle düzenlendi' : ''}">
-              <span class="ust"><span class="no rakam">{d}</span>{#if k.elle}<span class="elle" title="Elle düzenlendi">elle</span>{/if}</span>
+              aria-label="{gunMetni(y, m, d)}: eczacı {k.e.map(ad).join(', ') || 'yok'}; tekniker {k.t.map(ad).join(', ') || 'yok'}{elleMi(k) ? ', elle düzenlendi' : ''}">
+              <span class="ust"><span class="no rakam">{d}</span>{#if elleMi(k)}<span class="elle" title="Elle düzenlendi (işaretli kişiler yeniden oluşturmada korunur)">elle</span>{/if}</span>
               <span class="kisiler">
-                {#each k.e as id}<span class="kisi" class:sorun={!calisiyor(id, d)}><span class="isaret"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span>{#if nobetciMi(id, d)}<span class="nb" title="O günün nöbetçisi">N</span>{/if}</span>{/each}
-                {#each k.t as id}<span class="kisi" class:sorun={!calisiyor(id, d)}><span class="isaret teknisyen"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span>{#if nobetciMi(id, d)}<span class="nb" title="O günün nöbetçisi">N</span>{/if}</span>{/each}
+                {#each k.e as id}<span class="kisi" class:sorun={!calisiyor(id, d)} class:elle-kisi={!k.elle && elleKisi(d, id)}><span class="isaret"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span>{#if nobetciMi(id, d)}<span class="nb" title="O günün nöbetçisi">N</span>{/if}</span>{/each}
+                {#each k.t as id}<span class="kisi" class:sorun={!calisiyor(id, d)} class:elle-kisi={!k.elle && elleKisi(d, id)}><span class="isaret teknisyen"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span>{#if nobetciMi(id, d)}<span class="nb" title="O günün nöbetçisi">N</span>{/if}</span>{/each}
               </span>
             </button>
           {:else}
@@ -221,9 +246,9 @@
     </div>
   </div>
   {#if tekrar}<p class="not hata" role="alert">Aynı kişi iki kez seçilemez.</p>{/if}
-  <p class="not">{onay ? "Liste onaylı: değiştirmek için önce onayı kaldırın." : "Kaydedilen gün elle düzenlenmiş sayılır: yeniden oluşturma ve otomatik doldurma bu güne dokunmaz."}</p>
+  <p class="not">{onay ? "Liste onaylı: değiştirmek için önce onayı kaldırın." : "Değiştirdiğiniz yerler elle sayılır: yeniden oluşturma ve otomatik doldurma yalnız öteki yerleri değiştirir. \"Seçilmedi\" yaptığınız yer boş kalır."}</p>
   {#snippet altlik()}
-    {#if kayit?.[gun]?.elle && !onay}<button class="dugme sade" onclick={otomatik}>Otomatiğe bırak</button>{/if}
+    {#if elleMi(kayit?.[gun]) && !onay}<button class="dugme sade" onclick={otomatik}>Otomatiğe bırak</button>{/if}
     <span style="flex:1"></span>
     {#if onay}<button class="dugme" onclick={() => (acik = false)}>Kapat</button>
     {:else}
@@ -267,6 +292,7 @@
   .ust { display: flex; align-items: center; gap: 6px; }
   .no { font-weight: 600; font-size: var(--f-sm); color: var(--yazi-2); }
   .elle { margin-left: auto; font-size: 11px; color: var(--soluk); }
+  .elle-kisi .ad, .elle-kisi .ad-kisa { text-decoration: underline dotted; text-underline-offset: 3px; }
   .kisiler { display: grid; gap: 2px; min-width: 0; }
   .kisi { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1.3; font-weight: 500; min-width: 0; }
   .kisi .ad { min-width: 0; overflow-wrap: anywhere; }

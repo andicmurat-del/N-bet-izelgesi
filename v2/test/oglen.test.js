@@ -107,4 +107,40 @@ describe("öğlen nöbeti: elle düzenleme ve sonradan izin / rapor", () => {
     kayit[3].elle = true;
     expect(oglenOnarimlariHesapla(v, 20261101)).toEqual([]);   // elle düzenlenmiş
   });
+
+  // 3 Kasım 2026 Salı: 2 eczacı + 1 tekniker
+  const gun3 = v => oglenHesapla(v, Y, 10).gunler.find(x => x.gun === 3);
+  test("yalnız elle değiştirilen yer korunur; günün öteki yerleri yeniden yazılabilir", () => {
+    const v = kopya(veri), once = v.oglen[ayK][3];
+    const yeniTek = [9, 10, 11, 12].find(id => !once.t.includes(id));
+    v.oglen[ayK][3] = { e: once.e, t: [yeniTek], sabit: { e: [], t: [yeniTek] } };
+    const g = gun3(v);
+    expect(g.t).toEqual([yeniTek]);
+    expect(g.e.length).toBe(2);
+    expect(g.sabit).toEqual({ e: [], t: [yeniTek] });
+    // elle eczacı: o kişi kalır, öteki eczacı yeri yeniden yazılır
+    v.oglen[ayK][3] = { e: [4, 5], t: once.t, sabit: { e: [4], t: [] } };
+    expect(gun3(v).e).toContain(4);
+  });
+
+  test("elle boş bırakılan yer yeniden oluşturmada boş kalır", () => {
+    const v = kopya(veri), once = v.oglen[ayK][3];
+    v.oglen[ayK][3] = { e: once.e, t: [], sabit: { e: [], t: [], bt: 1 } };
+    const g = gun3(v);
+    expect(g.t).toEqual([]);
+    expect(g.e.length).toBe(2);
+    // onarım da boş yeri doldurmaz, elle yazılan kişiye dokunmaz
+    expect(oglenOnarimlariHesapla(v, 20261101).every(o => o.gunler.find(x => x.gun === 3).t.length === 0)).toBe(true);
+  });
+
+  test("onarım elle yazılan kişiyi değiştirmez, öteki yerleri onarır", () => {
+    const v = kopya(veri), k = v.oglen[ayK][5];
+    const [a, b] = k.e;
+    v.oglen[ayK][5] = { ...k, sabit: { e: [a], t: [] } };
+    v.prefs[`${a}-${Y}-10-5`] = "izinli"; v.prefs[`${b}-${Y}-10-5`] = "izinli";
+    const o = oglenOnarimlariHesapla(v, 20261101), g = o[0].gunler.find(x => x.gun === 5);
+    expect(g.e).toContain(a);
+    expect(g.e).not.toContain(b);
+    expect(g.e.length).toBe(2);
+  });
 });
