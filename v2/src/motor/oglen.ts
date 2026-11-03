@@ -9,9 +9,12 @@ import { aktifAydaMi, type Baglam } from "./baglam";
 import { puantajIzgarasi } from "./puantaj";
 import { ayAnahtari, ayGunSayisi, AYLAR, CUMA, gunKaydir, haftaGunu, oncekiAy, tarihNo } from "./takvim";
 
-/** bir günün öğlen nöbetçileri (kişi id'leri): eczacılar, teknikerler; elle: elle düzenlendi (yeniden oluşturma ve
- *  otomatik onarım dokunmaz) */
-export interface OglenGunu { e: number[]; t: number[]; elle?: true }
+/** elle belirlenen yerler: e / t elle yazılan kişiler, be / bt elle boş bırakılan yer sayısı */
+export interface OglenSabit { e: number[]; t: number[]; be?: number; bt?: number }
+/** bir günün öğlen nöbetçileri (kişi id'leri): eczacılar, teknikerler; sabit: elle belirlenen yerler (yeniden oluşturma
+ *  ve otomatik onarım yalnız bunlara dokunmaz); elle: günün tamamı elle (eski kayıtlar; gün hiç değişmez) */
+export interface OglenGunu { e: number[]; t: number[]; elle?: true; sabit?: OglenSabit }
+const bosSayisi = (sb: OglenSabit | undefined, g: "e" | "t") => (sb ? (g === "e" ? sb.be : sb.bt) || 0 : 0);
 
 /** günde gereken kişi: Pazartesi–Perşembe, Cuma */
 export const OGLEN_GEREK = { hafta: { e: 2, t: 1 }, cuma: { e: 3, t: 2 } };
@@ -25,7 +28,7 @@ export const oglenGrubu = (rol: string): Grup | null => (rol === "eczaci" ? "e" 
  *  yetiyorsa herkes bir kez); eşitlik nöbetçiden kaçınmaktan önce gelir */
 const W = { hafta3: 1000, hafta: 3, toplam: 1, cuma: 3, nobetci: 0.5, ardArda: 0.2 };
 
-export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[]; elle?: true }
+export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[]; elle?: true; sabit?: OglenSabit }
 export interface OglenSonucu { gunler: OglenGunSonucu[]; uyarilar: string[] }
 
 /** öğlen nöbeti yazılan günler: hafta içi, resmi tatil ve arife değil */
@@ -98,22 +101,28 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
   const sabit: Record<Grup, number[][]> = { e: [], t: [] }, tamSabit: boolean[] = [];
   for (let d = 1; d <= dim; d++) {
     const k = onceki[d], gecmis = !!onarim && tarihNo(y, m, d) < onarim.bugun;
-    if (!oglenGunuMu(B, y, m, d) && !(k && (k.elle || gecmis))) continue;
+    if (!oglenGunuMu(B, y, m, d) && !(k && (k.elle || k.sabit || gecmis))) continue;
     const dw = haftaGunu(y, m, d), cu = dw === CUMA, ger = cu ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
     const { ca, nobetci } = gunAdaylari(G, y, m, d);
-    const tam = !!k && (!!k.elle || gecmis);
-    gunler.push({ gun: d, dw, e: [], t: [], nobetci, ...(k?.elle ? { elle: true as const } : {}) });
+    const tam = !!k && (!!k.elle || gecmis), sb = k?.sabit;
+    gunler.push({ gun: d, dw, e: [], t: [], nobetci, ...(k?.elle ? { elle: true as const } : {}), ...(sb ? { sabit: sb } : {}) });
     tamSabit.push(tam);
+    const hedef = { e: 0, t: 0 };
     for (const g of GRUPLAR) {
       aday[g].push(ca[g]);
-      const kalan = tam ? (k![g] || []).slice() : onarim && k ? (k[g] || []).filter(id => ca[g].includes(id)) : [];
+      // elle yazılan kişiler yerinde kalır; onarımda öteki geçerli kişiler de kalır, yalnız eksikler doldurulur
+      const elleKisi = sb ? (sb[g] || []).slice() : [];
+      const kalan = tam ? (k![g] || []).slice() : [...elleKisi, ...(onarim && k ? (k[g] || []).filter(id => ca[g].includes(id) && !elleKisi.includes(id)) : [])];
       sabit[g].push(kalan);
-      gerek[g].push(tam ? kalan.length : Math.max(kalan.length, Math.min(ger[g], ca[g].length)));
+      // elle boş bırakılan yer doldurulmaz
+      hedef[g] = Math.max(0, ger[g] - bosSayisi(sb, g));
+      const yazilabilen = new Set([...ca[g], ...elleKisi]).size;
+      gerek[g].push(tam ? kalan.length : Math.max(kalan.length, Math.min(hedef[g], yazilabilen)));
     }
     if (tam) continue;
     const gunAd = d + " " + AYLAR[m];
-    if (ca.e.length < ger.e) uyarilar.push(gunAd + ": öğlen nöbeti için " + ger.e + " eczacı gerekli, o gün çalışan " + ca.e.length + " eczacı var" + (cu ? " (Cuma'dan muaf olanlar hariç)" : "") + ".");
-    if (ca.t.length < ger.t) uyarilar.push(gunAd + ": öğlen nöbeti için " + ger.t + " tekniker gerekli, o gün çalışan " + ca.t.length + " tekniker var" + (cu ? " (Cuma'dan muaf olanlar hariç)" : "") + ".");
+    if (ca.e.length < hedef.e && (sb?.e.length || 0) < hedef.e) uyarilar.push(gunAd + ": öğlen nöbeti için " + ger.e + " eczacı gerekli, o gün çalışan " + ca.e.length + " eczacı var" + (cu ? " (Cuma'dan muaf olanlar hariç)" : "") + ".");
+    if (ca.t.length < hedef.t && (sb?.t.length || 0) < hedef.t) uyarilar.push(gunAd + ": öğlen nöbeti için " + ger.t + " tekniker gerekli, o gün çalışan " + ca.t.length + " tekniker var" + (cu ? " (Cuma'dan muaf olanlar hariç)" : "") + ".");
   }
 
   const N = gunler.length, nobetciMi = gunler.map(x => new Set(x.nobetci));
@@ -215,11 +224,13 @@ export function oglenOnarimlari(B: Baglam, bugun: number): { y: number; m: numbe
       if (tarihNo(y, m, d) < bugun) continue;
       const k = kayit[d];
       if (k?.elle) continue;
-      if (!oglenGunuMu(B, y, m, d)) { bozuk = !!k; continue; }
+      if (!oglenGunuMu(B, y, m, d)) { bozuk = !!k && !k.sabit; continue; }
       const { ca } = gunAdaylari(G, y, m, d), ger = haftaGunu(y, m, d) === CUMA ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
       for (const g of GRUPLAR) {
-        const l = k ? k[g] || [] : [];
-        if (l.some(id => !ca[g].includes(id)) || l.length < Math.min(ger[g], ca[g].length)) bozuk = true;
+        // elle yazılan kişiye ve elle boş bırakılan yere dokunulmaz
+        const l = k ? k[g] || [] : [], elleKisi = k?.sabit?.[g] || [];
+        const hedef = Math.max(0, ger[g] - bosSayisi(k?.sabit, g)), yazilabilen = new Set([...ca[g], ...elleKisi]).size;
+        if (l.some(id => !ca[g].includes(id) && !elleKisi.includes(id)) || l.length < Math.min(hedef, yazilabilen)) bozuk = true;
       }
     }
     if (bozuk) out.push({ y, m, gunler: oglenOlustur(B, y, m, kayit, { bugun }).gunler });

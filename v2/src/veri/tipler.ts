@@ -19,8 +19,11 @@ export interface Kisi {
 /** Kişinin bir güne işaretlenen tercihi ya da izni */
 export type Tercih = "izinli" | "want" | "avoid" | "esVar" | "esYok";
 
-/** bir günün öğlen nöbetçileri; elle düzenlenen günü yeniden oluşturma ve otomatik onarım değiştirmez */
-export interface OglenGunu { e: number[]; t: number[]; elle?: true }
+/** öğlen nöbetinde elle belirlenen yerler: e / t elle yazılan eczacı ve teknikerler, be / bt elle boş bırakılan yer sayısı.
+ *  Yeniden oluşturma ve otomatik onarım yalnız bu yerlere dokunmaz; günün geri kalanı yeniden yazılır. */
+export interface OglenSabit { e: number[]; t: number[]; be?: number; bt?: number }
+/** bir günün öğlen nöbetçileri; sabit: elle belirlenen yerler; elle: günün tamamı elle (eski kayıtlar), hiç değişmez */
+export interface OglenGunu { e: number[]; t: number[]; elle?: true; sabit?: OglenSabit }
 
 export interface Gorevli { id: number; name: string; role: Rol }
 

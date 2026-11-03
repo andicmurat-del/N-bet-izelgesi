@@ -33,7 +33,7 @@ export class Baglam {
   puantaj: Nesne<PuantajAyi>;
   acil: Nesne<Nesne<number[]>>;
   acilElle: Nesne<Nesne<true>>;
-  oglen: Nesne<Nesne<{ e: number[]; t: number[]; elle?: true }>>;
+  oglen: Nesne<Nesne<{ e: number[]; t: number[]; elle?: true; sabit?: { e: number[]; t: number[]; be?: number; bt?: number } }>>;
   servisKayit: Nesne<any>;
   /** puantajdaki değişim kayıtları (nöbet değişimi, izin/rapor nedeniyle yerine geçme) */
   degisimler: Degisimi[];
