@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Bilgi from "../ortak/Bilgi.svelte";
   // Nöbet değişimi: takvimde bir görev (nöbet ya da hazırlama) seçilir; yerine tutacak kişi seçilir ya da
   // karşılıklı takas için ikinci görev seçilir. Kurallar varsayımsal puantajla denetlenir. Değişim yalnız puantaja
   // yansır; yıllık denge çizelgeye göre kalır. Bu ayın değişimleri listelenir, geri alınabilir.
@@ -101,7 +102,7 @@
     </fieldset>
     <p class="adim" aria-live="polite">{tur === "devir" ? (s1 ? "Yerine tutacak kişiyi seçin." : "Takvimde devredilecek nöbete ya da hazırlamaya dokunun.") : !s1 ? "Takvimde takas edilecek ilk görevi seçin." : !s2 ? "Şimdi karşılığında alınacak görevi seçin (başka bir kişinin)." : "Kuralları kontrol edip uygulayın."}</p>
   </div>
-  <p class="aciklama">Değişimler yalnız puantaja yansır; yıllık denge çizelgeye göre hesaplandığı için kimsenin sonraki aylardaki payı değişmez. Nöbet ile nöbet, hazırlama ile hazırlama ya da nöbet ile hazırlama takas edilebilir.</p>
+  <Bilgi baslik="Nasıl çalışır?"><p>Değişimler yalnız puantaja yansır; yıllık denge çizelgeye göre hesaplandığı için kimsenin sonraki aylardaki payı değişmez. Nöbet ile nöbet, hazırlama ile hazırlama ya da nöbet ile hazırlama takas edilebilir.</p></Bilgi>
 
   <div class="duzen">
     <section class="kart takvim-kutu" aria-label="Görevler">

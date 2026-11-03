@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Bilgi from "../ortak/Bilgi.svelte";
   // Servis listesi: zorluk (10 üzerinden), hasta sayısı, çok günlük, hazırlanıyor mu; elle servis ekleme.
   // Değişiklik bugünden sonraki günlerin dağıtımına uygulanır, geçmiş kayıtlar değişmez.
   import { servisler, servisAyariYaz, servisEkle, servisSil, servisAyarlariniSifirla, type ServisBilgisi } from "../../veri/servis.svelte";
@@ -30,7 +31,7 @@
   function sifirla() { if (!sifirOnay) { sifirOnay = true; return; } servisAyarlariniSifirla(); sifirOnay = false; durum = "Servis ayarları ilk haline döndü."; }
 </script>
 
-<p class="aciklama">Zorluk 10 üzerinden puanlanır (1 kolay, 10 en zor); zorluğu {SERVIS_ZOR_ESIK} ve üstü olan servisler <b>zor servis</b> sayılır ve her gün teknikerlere eşit bölünür. Günlük yük = hasta sayısı × zorluk; çok günlük servislerde gün sayısıyla çarpılır. İşareti kaldırılan servis hazırlanmaz. Adı "YB" ile biten servis yoğun bakım sayılır; YB servisleri de kişi başı eşit bölünür. Değişiklik bugünden sonraki günlere uygulanır, geçmiş kayıtlar değişmez.</p>
+<Bilgi baslik="Zorluk ve yük nasıl hesaplanır?"><p>Zorluk 10 üzerinden puanlanır (1 kolay, 10 en zor); zorluğu {SERVIS_ZOR_ESIK} ve üstü olan servisler <b>zor servis</b> sayılır ve her gün teknikerlere eşit bölünür. Günlük yük = hasta sayısı × zorluk; çok günlük servislerde gün sayısıyla çarpılır. İşareti kaldırılan servis hazırlanmaz. Adı "YB" ile biten servis yoğun bakım sayılır; YB servisleri de kişi başı eşit bölünür. Değişiklik bugünden sonraki günlere uygulanır, geçmiş kayıtlar değişmez.</p></Bilgi>
 
 <div class="ust">
   <span class="rozet notr rakam">{ozet.acik} / {L.length} servis hazırlanıyor · {ozet.yb} YB · {ozet.cok} çok günlük</span>
@@ -77,7 +78,6 @@
 </form>
 
 <style>
-  .aciklama { font-size: var(--f-sm); color: var(--yazi-2); margin-bottom: var(--b3); max-width: 90ch; }
   .ust { display: flex; flex-wrap: wrap; gap: var(--b3); align-items: center; justify-content: space-between; margin-bottom: var(--b3); }
   .sag { display: flex; flex-wrap: wrap; gap: var(--b2); }
   .ara { width: 220px; }

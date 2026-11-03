@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Bilgi from "../ortak/Bilgi.svelte";
   // Yıllık servis hazırlama raporu: kişi başı aylık yük ve servislerin kişilere dağılımı (payına göre renkli).
   import { untrack } from "svelte";
   import { depo } from "../../veri/depo.svelte";
@@ -34,7 +35,8 @@
   <div class="kart bos"><h2>{yil} yılı için servis kaydı yok</h2><p>Nöbet çizelgesi oluşturulan ayların servis dağıtımı burada raporlanır.</p></div>
 {:else}
   <div class="ust">
-    <p class="aciklama">Kayıtlı ay: {R.kayitli}/12. Ay sütunları kişinin o ayki toplam hazırlama yükü (servisin hasta sayısı × zorluğu; çok günlük servisler gün sayısıyla). Ort. yük: çalıştığı gün başına; Ekip ort.: aynı günlerde ekipte kişi başına düşen yük. Ekip ortalamasından %5'ten fazla sapan ortalama renklidir.</p>
+    <p class="aciklama">Kayıtlı ay: {R.kayitli}/12.</p>
+    <Bilgi baslik="Tablo nasıl okunur?"><p>Ay sütunları kişinin o ayki toplam hazırlama yükü (servisin hasta sayısı × zorluğu; çok günlük servisler gün sayısıyla). Ort. yük: çalıştığı gün başına; Ekip ort.: aynı günlerde ekipte kişi başına düşen yük. Ekip ortalamasından %5'ten fazla sapan ortalama renklidir.</p></Bilgi>
     <button class="dugme" onclick={excel}><Ikon ad="indir" />Excel</button>
   </div>
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}

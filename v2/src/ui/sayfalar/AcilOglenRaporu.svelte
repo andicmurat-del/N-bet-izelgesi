@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Bilgi from "../ortak/Bilgi.svelte";
   // Raporlar > Acil ve öğlen: yılın acil eczane nöbeti ve öğlen nöbeti dağılımı (kişi başı ay ay, yıl toplamı;
   // acilde hafta sonu / tatil, öğlende Cuma ayrıca). Eşitliği yıl boyunca görmek için.
   import { acilOglenRaporuHesapla } from "../../motor";
@@ -26,7 +27,8 @@
     {#if !b.aylar.some(Boolean)}
       <div class="kart bos"><p>{b.bos}</p></div>
     {:else}
-      <p class="aciklama">{b.not} En çok − en az: toplamda <b class="rakam">{fark(b.l, "top")}</b>{#each b.ekler as [k, a]}, {a} <b class="rakam">{fark(b.l, k)}</b>{/each}. Soluk sütunlar: listesi olmayan aylar.</p>
+      <Bilgi baslik="Açıklama"><p>{b.not}</p></Bilgi>
+      <p class="aciklama">En çok − en az: toplamda <b class="rakam">{fark(b.l, "top")}</b>{#each b.ekler as [k, a]}, {a} <b class="rakam">{fark(b.l, k)}</b>{/each}. Soluk sütunlar: listesi olmayan aylar.</p>
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
       <div class="kart tablo-kap" tabindex="0" role="region" aria-label="{yil} {b.baslik.toLocaleLowerCase('tr')} dağılımı">
         <table>

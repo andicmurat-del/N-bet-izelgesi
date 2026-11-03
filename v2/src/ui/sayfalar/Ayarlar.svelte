@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Bilgi from "../ortak/Bilgi.svelte";
   import { depo, tumVeriyiSil, yedekVerisi, yedektenYukle, yuklemeOncesineDon, AYAR_VARSAYILAN } from "../../veri/depo.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Ikon from "../ortak/Ikon.svelte";
@@ -59,7 +60,8 @@
 
   <section class="kart bolum">
     <h2>Günlük eczane nöbet kuralları</h2>
-    <p class="aciklama">Günlük Eczane Nöbet Listesi ve hazırlama için. Sabit kurallar: nöbet ertesi gün izin, art arda iki gün nöbet yok, ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti, kişiler arası fazla mesai farkı en çok 8 saat, hazırlama farkı en çok 1; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı eşit.</p>
+    <p class="aciklama">Günlük Eczane Nöbet Listesi ve hazırlama için.</p>
+    <Bilgi baslik="Sabit kurallar"><p>Nöbet ertesi gün izin, art arda iki gün nöbet yok, ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti, kişiler arası fazla mesai farkı en çok 8 saat, hazırlama farkı en çok 1; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı eşit.</p></Bilgi>
     <label class="alan"><span>İki nöbet arasında önerilen en az gün</span>
       <select class="girdi" bind:value={depo.veri.settings.minAra}>{#each [2, 3, 4] as n}<option value={n}>{n} gün{n === AYAR_VARSAYILAN.minAra ? " (önerilen)" : ""}</option>{/each}</select>
       <small>Ardışık günler her zaman yasaktır; bu sınır yalnız tercih edilir.</small></label>
@@ -69,7 +71,8 @@
 
   <section class="kart bolum">
     <h2>Acil eczane nöbet kuralları</h2>
-    <p class="aciklama">Acil Eczane Nöbet Listesi için. Sabit kurallar: günde 2 nöbetçi, nöbet ertesi gün izin, art arda iki gün ve 5 günde 3 nöbet yok, aynı ya da komşu günde günlük eczanede görevi olan yazılmaz, mümkünse ayda en fazla 1 Cumartesi ve 1 Pazar; her ay kişiler arası fazla mesai farkı mümkün olduğunca en çok 8 saat; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı eşit (izinli / raporlu günler paydan düşülür).</p>
+    <p class="aciklama">Acil Eczane Nöbet Listesi için.</p>
+    <Bilgi baslik="Sabit kurallar"><p>Günde 2 nöbetçi, nöbet ertesi gün izin, art arda iki gün ve 5 günde 3 nöbet yok, aynı ya da komşu günde günlük eczanede görevi olan yazılmaz, mümkünse ayda en fazla 1 Cumartesi ve 1 Pazar; her ay kişiler arası fazla mesai farkı mümkün olduğunca en çok 8 saat; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı eşit (izinli / raporlu günler paydan düşülür).</p></Bilgi>
     <label class="alan"><span>İki acil nöbeti arasında önerilen en az gün</span>
       <select class="girdi" bind:value={depo.veri.settings.acilMinAra}>{#each [2, 3, 4] as n}<option value={n}>{n} gün{n === AYAR_VARSAYILAN.acilMinAra ? " (önerilen)" : ""}</option>{/each}</select>
       <small>Art arda günler her zaman yasaktır; bu sınır yalnız tercih edilir.</small></label>
