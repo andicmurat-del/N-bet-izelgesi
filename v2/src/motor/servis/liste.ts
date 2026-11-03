@@ -7,17 +7,17 @@ const AD_DEGISIKLIGI: Record<string, string> = { "2.BAS 10 YATAK YB": "+10 YATAK
 /** [kısa ad, zorluk (10 üzerinden), hazırlama gün sayısı (1'den fazlaysa çok günlük), hasta sayısı] */
 const VARSAYILAN: [string, number, number, number][] = [
   ["2.BAS 10 YATAK YB", 6, 1, 10], ["2.BAS 8 YATAK YB", 5, 1, 8], ["2.BAS KORONER YB", 6, 1, 10], ["GÖĞÜS-2 YB", 5, 1, 10],
-  ["3.BAS GENEL YB", 5, 1, 10], ["ANJİO YB", 5, 1, 10], ["ARS YB", 6, 1, 10], ["BEYİN CER", 8, 3, 25], ["CERRAHİ-A", 8, 1, 25],
-  ["CERRAHİ-B", 8, 1, 25], ["ÇOCUK CER", 3, 3, 10], ["ÇOCUK HAST.", 3, 3, 10], ["ÇYB-2 YB", 3, 1, 5], ["ÇYB-3 YB", 3, 1, 5],
-  ["DAHİLİYE H", 8, 3, 25], ["DAHİLİYE-G", 8, 3, 25], ["DOĞUM-G", 4, 1, 15], ["DOĞUM-H", 4, 1, 15], ["EYB-1 YB", 8, 1, 10],
+  ["3.BAS GENEL YB", 5, 1, 10], ["ANJİO YB", 5, 1, 10], ["ARS YB", 6, 1, 10], ["BEYİN CER", 7, 3, 25], ["CERRAHİ-A", 7, 1, 25],
+  ["CERRAHİ-B", 7, 1, 25], ["ÇOCUK CER", 3, 3, 10], ["ÇOCUK HAST.", 3, 3, 10], ["ÇYB-2 YB", 3, 1, 5], ["ÇYB-3 YB", 3, 1, 5],
+  ["DAHİLİYE H", 8, 3, 25], ["DAHİLİYE-G", 8, 3, 25], ["DOĞUM-G", 3, 1, 15], ["DOĞUM-H", 2, 1, 15], ["EYB-1 YB", 8, 1, 10],
   ["EYB-2 YB", 8, 1, 10], ["EYB-3 YB", 7, 1, 10], ["EYB-4 YB", 6, 1, 10], ["FİZİK", 2, 3, 10], ["GÖĞÜS A", 10, 3, 25],
   ["GÖĞÜS CER", 7, 3, 20], ["GÖĞÜS-1 YB", 3, 1, 10], ["GÖĞÜS-C", 9, 3, 25], ["GÖĞÜS-D", 9, 3, 25],
   ["GÖZ", 1, 1, 2], ["İNME YB", 2, 1, 6], ["İNTANİYE+GERİATRİ", 7, 3, 20], ["KADIN", 2, 1, 10], ["KALP DAMAR", 6, 3, 20],
   ["KARDİYOLOJİ-C", 7, 1, 20], ["KARDİYOLOJİ-D", 7, 1, 20], ["KBB+PLASTİK", 5, 3, 10], ["KRONİK YARA", 10, 3, 25],
   ["KVC YB", 7, 1, 10], ["MAHKUM", 1, 1, 1], ["NEFROLOJİ", 10, 3, 25], ["NÖR YB", 6, 1, 10], ["NÖROLOJİ-E", 7, 3, 20],
-  ["NÖROLOJİ-F", 7, 3, 20], ["ORTOPEDİ-E", 7, 3, 20], ["ORTOPEDİ-F", 7, 3, 20], ["ORTOPEDİ-G", 7, 3, 20],
+  ["NÖROLOJİ-F", 7, 3, 20], ["ORTOPEDİ-E", 6, 3, 20], ["ORTOPEDİ-F", 6, 3, 20], ["ORTOPEDİ-G", 6, 3, 20],
   ["PALYATİF BKM", 10, 3, 25], ["PSK", 1, 1, 3], ["RADYASYON", 6, 3, 15], ["TBC", 2, 1, 4], ["TDL", 2, 1, 5],
-  ["ÜROLOJİ", 5, 3, 20], ["YANIK", 5, 3, 15], ["YANIK YB", 2, 1, 2], ["YENİDOĞAN YB", 5, 1, 15],
+  ["ÜROLOJİ", 5, 3, 20], ["YANIK", 4, 3, 15], ["YANIK YB", 2, 1, 2], ["YENİDOĞAN YB", 5, 1, 15],
 ];
 /** Aynı kişiye aynı gün verilmeyecek servis grupları (kısa adlarla) */
 const GRUPLAR = [
