@@ -76,6 +76,22 @@ describe("öğlen nöbeti", () => {
     expect(tekrar).toBeLessThanOrEqual(4);   // kuraldan önce 7
   });
 
+  test("haftada iki öğlen nöbeti sırayla: herkes bir kez iki almadan kimse yeniden iki almaz", () => {
+    // haftalar Pazartesi'ye göre (ay geçişindeki hafta tek hafta sayılır)
+    const hf = {};
+    for (const m of [10, 11]) Object.entries(veri.oglen[`${Y}-${m}`]).forEach(([d, k]) => k.e.forEach(id => {
+      const pzt = new Date(Y, m, +d - hg(m, +d)).getTime(); (hf[pzt] ??= {})[id] = (hf[pzt][id] || 0) + 1; }));
+    const say = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 }, bozuk = [];
+    for (const pzt of Object.keys(hf).sort((a, b) => a - b)) {
+      const iki = Object.keys(hf[pzt]).filter(id => hf[pzt][id] > 1).map(Number), enAz = Math.min(...Object.values(say));
+      expect(Math.max(...Object.values(hf[pzt]))).toBeLessThanOrEqual(2);
+      const bekleyen = Object.keys(say).map(Number).filter(id => say[id] === enAz && !iki.includes(id));
+      if (bekleyen.length && iki.some(id => say[id] > enAz)) bozuk.push(new Date(+pzt).toISOString().slice(0, 10));
+      iki.forEach(id => say[id]++);
+    }
+    expect(bozuk).toEqual([]);
+  });
+
   test("aynı veriyle aynı sonuç", () => {
     expect(JSON.stringify(oglenHesapla(veri, Y, 11))).toBe(JSON.stringify(oglenHesapla(veri, Y, 11)));
   });

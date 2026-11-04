@@ -4,7 +4,8 @@
 // göre: izinli, raporlu, nöbet ertesi izinli olan yazılmaz); resmi tatil ve arife günü öğlen nöbeti yoktur.
 // Hedefler (önem sırasıyla): herkese haftada bir (kişi yetmezse iki), yıl boyunca toplam sayı eşit, Cuma sayısı Cuma
 // yazılabilenler arasında ayrıca eşit, mümkünse o günün eczane / acil servis nöbetçisine yazılmaz (eşitlik bozulmuyorsa),
-// mümkünse aynı kişi art arda iki Cuma yazılmaz.
+// mümkünse aynı kişi art arda iki Cuma yazılmaz; haftada iki öğlen nöbeti sırayla verilir (grubundaki herkes bir kez
+// iki almadan aynı kişi yeniden iki almaz).
 // Hangi gün tutulduğu eşitlikte önemsizdir; yalnız Cuma ayrıca sayılır.
 import { aktifAydaMi, type Baglam } from "./baglam";
 import { puantajIzgarasi } from "./puantaj";
@@ -26,8 +27,8 @@ const GRUPLAR: Grup[] = ["e", "t"];
 export const oglenGrubu = (rol: string): Grup | null => (rol === "eczaci" ? "e" : rol === "teknisyen" ? "t" : null);
 
 /** amaç ağırlıkları (küçük daha iyi): haftada üçüncü kez çok ağır; haftada ikinci kez her seferinde ceza (kişi
- *  yetiyorsa herkes bir kez); eşitlik nöbetçiden kaçınmaktan önce gelir; art arda iki Cuma haftada ikinci kez kadar ağır */
-const W = { hafta3: 1000, hafta: 3, toplam: 1, cuma: 3, cumaArdArda: 3, nobetci: 0.5, ardArda: 0.2 };
+ *  yetiyorsa herkes bir kez); haftada iki alma sırası yıllık eşitlikten önce; eşitlik nöbetçiden kaçınmaktan önce gelir; art arda iki Cuma haftada ikinci kez kadar ağır */
+const W = { hafta3: 1000, ikiSira: 30, hafta: 3, toplam: 1, cuma: 3, cumaArdArda: 3, nobetci: 0.5, ardArda: 0.2 };
 
 export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[]; elle?: true; sabit?: OglenSabit }
 export interface OglenSonucu { gunler: OglenGunSonucu[]; uyarilar: string[] }
@@ -40,18 +41,22 @@ export function oglenGunuMu(B: Baglam, y: number, m: number, d: number): boolean
 /** Yılın önceki aylarından kişi başı fark: o ay çalışan grup arkadaşlarının ortalamasına göre fazla (+) / eksik (−).
  *  Toplam ve Cuma ayrı; Cuma farkı yalnız Cuma yazılabilenler arasında. Ocak'ta sayım sıfırdan başlar. */
 function oglenDevir(B: Baglam, y: number, m: number) {
-  const top: Record<number, number> = {}, cuma: Record<number, number> = {};
+  const top: Record<number, number> = {}, cuma: Record<number, number> = {}, iki: Record<number, number> = {};
   for (let mm = 0; mm < m; mm++) {
     const kayit = B.oglen[ayAnahtari(y, mm)]; if (!kayit) continue;
     for (const g of GRUPLAR) {
       const havuz = B.staff.filter(s => oglenGrubu(s.role) === g && aktifAydaMi(s, y, mm)); if (!havuz.length) continue;
       const cHavuz = havuz.filter(s => !s.cumaMuaf);
-      const c: Record<number, number> = {}, f: Record<number, number> = {};
-      havuz.forEach(s => { c[s.id] = 0; f[s.id] = 0; });
+      const c: Record<number, number> = {}, f: Record<number, number> = {}, hf: Record<string, number> = {}, ik: Record<number, number> = {};
+      havuz.forEach(s => { c[s.id] = 0; f[s.id] = 0; ik[s.id] = 0; });
+      const ilk = haftaGunu(y, mm, 1);
       for (const [gun, k] of Object.entries(kayit)) {
         const cu = haftaGunu(y, mm, Number(gun)) === CUMA;
-        (k[g] || []).forEach(id => { if (c[id] === undefined) return; c[id]++; if (cu) f[id]++; });
+        const h = Math.floor((Number(gun) - 1 + ilk) / 7);
+        (k[g] || []).forEach(id => { if (c[id] === undefined) return; c[id]++; if (cu) f[id]++; const kk = h + ":" + id; hf[kk] = (hf[kk] || 0) + 1; if (hf[kk] === 2) ik[id]++; });
       }
+      const ortI = havuz.reduce((t, s) => t + ik[s.id], 0) / havuz.length;
+      havuz.forEach(s => { iki[s.id] = (iki[s.id] || 0) + ik[s.id] - ortI; });
       const ort = havuz.reduce((t, s) => t + c[s.id], 0) / havuz.length;
       havuz.forEach(s => { top[s.id] = (top[s.id] || 0) + c[s.id] - ort; });
       if (cHavuz.length) {
@@ -60,7 +65,7 @@ function oglenDevir(B: Baglam, y: number, m: number) {
       }
     }
   }
-  return { top, cuma };
+  return { top, cuma, iki };
 }
 
 /** o gün öğlen nöbetine yazılabilenler (grup başına) ve o günün nöbetçileri */
@@ -137,7 +142,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
 
   const N = gunler.length, nobetciMi = gunler.map(x => new Set(x.nobetci));
   const ardisik = gunler.map((x, i) => i > 0 && gunler[i - 1].gun === x.gun - 1);
-  const haftaNo = gunler.map(x => hafta(x.gun)), cumaMi = gunler.map(x => x.dw === CUMA);
+  const haftaNo = gunler.map(x => hafta(x.gun)), sonHafta = Math.max(0, ...haftaNo), cumaMi = gunler.map(x => x.dw === CUMA);
   // bir önceki Cuma: bu aydaysa gün sırası, ay öncesindeyse -2, öğlen nöbeti yoksa -1
   const oncekiCumaNo = gunler.map(x => x.dw !== CUMA ? -1 : x.gun > 7 ? gunler.findIndex(z => z.gun === x.gun - 7) : -2);
   for (const g of GRUPLAR) {
@@ -160,9 +165,19 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
       }
       havuz.forEach(s => { const v = (top[s.id] || 0) + (devir.top[s.id] || 0); j += W.toplam * v * v; });
       cumaHavuz.forEach(s => { const v = (cu[s.id] || 0) + (devir.cuma[s.id] || 0); j += W.cuma * v * v; });
+      const ikiHafta: number[][] = [];
       for (const [k, v0] of Object.entries(hf)) {
-        const v = v0 + (k.startsWith("0:") ? oncekiHafta[Number(k.slice(2))] || 0 : 0);
+        const h = Number(k.slice(0, k.indexOf(":"))), id = Number(k.slice(k.indexOf(":") + 1)), v = v0 + (h === 0 ? oncekiHafta[id] || 0 : 0);
         j += (v > 1 ? W.hafta * (v - 1) : 0) + (v > 2 ? W.hafta3 * (v - 2) : 0);
+        if (v > 1) (ikiHafta[h] ??= []).push(id);
+      }
+      // haftada iki alma sırası: her haftanın sonunda (yılın önceki aylarındaki farkla birlikte) herkesin sayısı eşit
+      // kalsın; kareler her hafta ayrı toplandığı için sıra da gözetilir (herkes bir kez almadan kimse ikinci kez almaz)
+      const r: Record<number, number> = {};
+      havuz.forEach(s => { r[s.id] = devir.iki[s.id] || 0; });
+      for (let h = 0; h <= sonHafta; h++) {
+        (ikiHafta[h] || []).forEach(id => { if (r[id] !== undefined) r[id]++; });
+        havuz.forEach(s => { j += W.ikiSira * r[s.id] * r[s.id]; });
       }
       return j;
     };
