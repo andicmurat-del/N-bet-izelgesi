@@ -3,7 +3,6 @@
   import { depo, tercihAl, tercihAyarla, resmiTatilMi, arifeMi, resmiTatilAyarla, arifeAyarla, aydaCalisanlar, ayCizelgesi } from "../../veri/depo.svelte";
   import { TERCIH_ACIKLAMA, TERCIH_AD, ROL_AD, type Tercih } from "../../veri/tipler";
   import { GUN_KISA, gunMetni, gunSayisi, haftaGunu, haftaSonuMu, isoTarih } from "../../veri/tarih";
-  import AySecici from "../ortak/AySecici.svelte";
 
   // gomulu: Günlük Eczane / Acil Eczane sayfasının alt sekmesi olarak; kimler: listelenecek kişiler (o kadronun
   // nöbet tutanları); onayKilidi: eczane çizelgesi onaylıysa işaretler kilitlensin mi (acil listesinde onay yok)
@@ -59,17 +58,7 @@
 
 <svelte:window onpointerup={birak} onpointercancel={birak} />
 
-{#if !gomulu}
-<header class="sayfa-bas">
-  <div>
-    <h1>İzin ve tercihler</h1>
-    <p>Bir işaret seçip takvimdeki günlere dokunun; basılı tutup gezdirerek birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır.</p>
-  </div>
-  <AySecici />
-</header>
-{:else}
 <p class="gomulu-aciklama">Bir işaret seçip takvimdeki günlere dokunun; basılı tutup gezdirerek birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır.</p>
-{/if}
 
 {#if !depo.veri.staff.length}
   <div class="kart bos-durum">
@@ -148,9 +137,6 @@
 {/if}
 
 <style>
-  .sayfa-bas { display: flex; flex-wrap: wrap; gap: var(--b4); align-items: flex-end; justify-content: space-between; margin-bottom: var(--b5); }
-  .sayfa-bas > div { max-width: 64ch; }
-  .sayfa-bas p { color: var(--yazi-2); margin-top: var(--b2); }
   .bos-durum { padding: var(--b6); display: grid; gap: var(--b3); justify-items: start; }
   .bos-durum p { color: var(--yazi-2); }
   .sekmeler { display: inline-flex; gap: 2px; padding: 3px; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--r); margin-bottom: var(--b4); flex-wrap: wrap; }

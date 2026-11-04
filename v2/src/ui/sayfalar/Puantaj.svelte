@@ -7,7 +7,6 @@
   import { GUN_KISA, gunMetni } from "../../veri/tarih";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { KOD_AD, kodMetni, type Izgara, type PuantajSatiri } from "../../disa/puantajTipleri";
-  import AySecici from "../ortak/AySecici.svelte";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
@@ -65,17 +64,6 @@
   }
 </script>
 
-{#if !gomulu}
-<header class="sayfa-bas">
-  <div>
-    <h1>Puantaj</h1>
-    <p>Gerçekleşen çalışma: çizelgedeki nöbet ve hazırlamalar, nöbet ertesi izinler, yıllık izin ve raporlar. Ay içinde gelişen izin ve raporları, nöbet değişimlerini ilgili sekmeden girin; tek bir günü değiştirmek için cetveldeki hücreye dokunun.</p>
-  </div>
-  <AySecici />
-</header>
-{:else}
-<p class="gomulu-aciklama">Gerçekleşen çalışma: çizelgedeki nöbet ve hazırlamalar, nöbet ertesi izinler, yıllık izin ve raporlar. Ay içinde gelişen izin ve raporları, nöbet değişimlerini ilgili sekmeden girin; tek bir günü değiştirmek için cetveldeki hücreye dokunun.</p>
-{/if}
 
 {#if !G.satirlar.length}
   <div class="kart bos"><h2>Bu ayda çalışan personel yok</h2><button class="dugme ana" onclick={() => git("kisiler")}>Personel ekle</button></div>
@@ -163,9 +151,6 @@
 {/if}
 
 <style>
-  .sayfa-bas { display: flex; flex-wrap: wrap; gap: var(--b4); align-items: flex-end; justify-content: space-between; margin-bottom: var(--b4); }
-  .sayfa-bas > div { max-width: 70ch; }
-  .sayfa-bas p { color: var(--yazi-2); margin-top: var(--b2); }
   .bos { padding: var(--b5); display: grid; gap: var(--b3); justify-items: start; }
   .arac-cubugu { display: flex; flex-wrap: wrap; gap: var(--b3); align-items: center; justify-content: space-between; margin-bottom: var(--b3); }
   .durumlar, .dugmeler { display: flex; flex-wrap: wrap; gap: var(--b2); align-items: center; }
@@ -213,5 +198,4 @@
   .secenek b { font-weight: 500; }
   .secenek small { font-size: var(--f-xs); color: var(--soluk); }
   .not { font-size: var(--f-sm); color: var(--soluk); }
-  .gomulu-aciklama { font-size: var(--f-sm); color: var(--soluk); margin-bottom: var(--b3); max-width: 80ch; }
 </style>

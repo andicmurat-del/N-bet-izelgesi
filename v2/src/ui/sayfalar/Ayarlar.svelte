@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SayfaBasligi from "../ortak/SayfaBasligi.svelte";
   import Bilgi from "../ortak/Bilgi.svelte";
   import { depo, tumVeriyiSil, yedekVerisi, yedektenYukle, yuklemeOncesineDon, AYAR_VARSAYILAN } from "../../veri/depo.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
@@ -46,10 +47,7 @@
   }
 </script>
 
-<header class="sayfa-bas">
-  <h1>Ayarlar</h1>
-  <p>Kurum bilgileri, günlük ve acil eczane nöbet kuralları, puantaj ve yedek.</p>
-</header>
+<SayfaBasligi konum={["Ayarlar"]} baslik="Ayarlar" aciklama="Kurum bilgileri, günlük ve acil eczane nöbet kuralları, puantaj ve yedek." />
 
 <div class="bolumler">
   <section class="kart bolum">
@@ -110,8 +108,6 @@
 {#if durum}<p class="durum {durum.tur}" role="status">{durum.metin}</p>{/if}
 
 <style>
-  .sayfa-bas { margin-bottom: var(--b5); }
-  .sayfa-bas p { color: var(--yazi-2); margin-top: var(--b2); }
   .bolumler { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--b4); align-items: start; }
   .bolum { padding: var(--b5); display: grid; gap: var(--b4); }
   .bolum h2 { font-size: var(--f-lg); }

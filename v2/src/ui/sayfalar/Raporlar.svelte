@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SayfaBasligi from "../ortak/SayfaBasligi.svelte";
   import Bilgi from "../ortak/Bilgi.svelte";
   // Yıllık raporlar: özet (aylara göre fazla mesai, görev dağılımı), yıllık denge (beklenen paya göre fark), kişi geçmişi,
   // acil eczane ve öğlen nöbeti dağılımı, servis hazırlama.
@@ -42,17 +43,15 @@
   }
 </script>
 
-<header class="sayfa-bas">
-  <div>
-    <h1>Raporlar</h1>
-    <p>Yılın fazla mesai ve görev dağılımı. Rakamlar puantaja göredir (gerçekleşen); yıllık denge çizelgeye göre hesaplanır (puantajdaki gönüllü değişimler sayılmaz).</p>
-  </div>
+<SayfaBasligi konum={["Raporlar"]} baslik="Raporlar" aciklama="Yılın fazla mesai ve görev dağılımı. Rakamlar puantaja göredir (gerçekleşen); yıllık denge çizelgeye göre hesaplanır (puantajdaki gönüllü değişimler sayılmaz).">
+  {#snippet islemler()}
   <div class="yil" role="group" aria-label="Yıl seçimi">
     <button class="dugme sade" onclick={() => yil--} aria-label="Önceki yıl"><Ikon ad="sol" /></button>
     <span class="rakam">{yil}</span>
     <button class="dugme sade" onclick={() => yil++} aria-label="Sonraki yıl"><Ikon ad="sag" /></button>
   </div>
-</header>
+  {/snippet}
+</SayfaBasligi>
 
 <div class="ust-cubuk">
   <div class="sekmeler" role="tablist" aria-label="Rapor">
@@ -172,9 +171,6 @@
 {/if}
 
 <style>
-  .sayfa-bas { display: flex; flex-wrap: wrap; gap: var(--b4); align-items: flex-end; justify-content: space-between; margin-bottom: var(--b4); }
-  .sayfa-bas > div:first-child { max-width: 70ch; }
-  .sayfa-bas p { color: var(--yazi-2); margin-top: var(--b2); }
   .yil { display: inline-flex; align-items: center; gap: var(--b1); background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--r); padding: 2px; }
   .yil .dugme { min-height: 34px; width: 36px; padding: 0; }
   .yil span { min-width: 72px; text-align: center; font-weight: 600; font-family: var(--yazi-baslik); font-size: var(--f-lg); }

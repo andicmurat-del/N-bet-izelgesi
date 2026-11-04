@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SayfaBasligi from "../ortak/SayfaBasligi.svelte";
   import { depo, kisiEkle, kisiGuncelle, kisiSil, onayliGoreviVar } from "../../veri/depo.svelte";
   import { ROL_ACIKLAMA, ROL_AD, type Kisi, type Rol } from "../../veri/tipler";
   import { AYLAR, gorunenAd } from "../../veri/tarih";
@@ -48,12 +49,7 @@
   const tarihMetni = (t?: string) => { if (!t) return ""; const [y, m, d] = t.split("-").map(Number); return `${d} ${AYLAR[m - 1]} ${y}`; };
 </script>
 
-<header class="sayfa-bas">
-  <div>
-    <h1>Personel</h1>
-    <p>Nöbet ve hazırlama tutan herkes. İşe yeni başlayan ya da ayrılan kişinin tarihlerini girin; o tarihlerin dışında görev yazılmaz.</p>
-  </div>
-</header>
+<SayfaBasligi konum={["Personel"]} baslik="Personel" aciklama="Nöbet ve hazırlama tutan herkes. İşe yeni başlayan ya da ayrılan kişinin tarihlerini girin; o tarihlerin dışında görev yazılmaz." />
 
 <form class="kart ekle" onsubmit={ekle}>
   <label class="alan ad"><span>Ad soyad</span><input class="girdi" bind:value={yeniAd} maxlength="60" autocomplete="off" placeholder="ör. Zeynep Demir" /></label>
@@ -130,8 +126,6 @@
 </Pencere>
 
 <style>
-  .sayfa-bas { margin-bottom: var(--b5); }
-  .sayfa-bas p { color: var(--yazi-2); max-width: 64ch; margin-top: var(--b2); }
   .ekle { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; gap: var(--b3); align-items: end; padding: var(--b4); margin-bottom: var(--b5); }
   .ekle .aciklama { grid-column: 1 / -1; font-size: var(--f-sm); color: var(--soluk); }
   .hata { grid-column: 1 / -1; color: var(--hata); font-size: var(--f-sm); font-weight: 500; }

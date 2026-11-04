@@ -1,11 +1,12 @@
 <script lang="ts">
   // Tek çizgi kalınlığında, 24'lük ızgarada simgeler. Her zaman ekran okuyucudan gizlidir; anlamı düğme metni ya da aria-label taşır.
-  type Ad = "bilgi" | "takvim" | "kisiler" | "izin" | "ayarlar" | "sol" | "sag" | "indir" | "kilit" | "uyari" | "tamam" | "yenile" | "kapat" | "arti" | "sil" | "duzenle" | "yukle" | "karisik" | "tablo" | "grafik" | "acil" | "liste" | "katman" | "diger" | "geri" | "ileri" | "saat";
+  type Ad = "hastane" | "bilgi" | "takvim" | "kisiler" | "izin" | "ayarlar" | "sol" | "sag" | "indir" | "kilit" | "uyari" | "tamam" | "yenile" | "kapat" | "arti" | "sil" | "duzenle" | "yukle" | "karisik" | "tablo" | "grafik" | "acil" | "liste" | "katman" | "diger" | "geri" | "ileri" | "saat";
   let { ad, boyut = 18 }: { ad: Ad; boyut?: number } = $props();
 </script>
 
 <svg viewBox="0 0 24 24" width={boyut} height={boyut} fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  {#if ad === "bilgi"}<circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.8v.01" />
+  {#if ad === "hastane"}<circle cx="12" cy="12" r="9" /><path d="M12 7.5v9M7.5 12h9" />
+  {:else if ad === "bilgi"}<circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.8v.01" />
   {:else if ad === "saat"}<circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" />
   {:else if ad === "takvim"}<rect x="3.5" y="5" width="17" height="15.5" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" />
   {:else if ad === "kisiler"}<circle cx="9" cy="8.5" r="3.2" /><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0" /><circle cx="17" cy="9.5" r="2.5" /><path d="M15.5 14.6a4.6 4.6 0 0 1 5 4.9" />
