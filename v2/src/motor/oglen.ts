@@ -3,7 +3,8 @@
 // acilde nöbet tutan eczacılar da (acil servis personeli yazılmaz); Cuma'dan muaf işaretli kişiler (eczacı ya da tekniker) Cuma yazılmaz. O gün mesaide çalışanlardan yazılır (puantaja
 // göre: izinli, raporlu, nöbet ertesi izinli olan yazılmaz); resmi tatil ve arife günü öğlen nöbeti yoktur.
 // Hedefler (önem sırasıyla): herkese haftada bir (kişi yetmezse iki), yıl boyunca toplam sayı eşit, Cuma sayısı Cuma
-// yazılabilenler arasında ayrıca eşit, mümkünse o günün eczane / acil servis nöbetçisine yazılmaz (eşitlik bozulmuyorsa).
+// yazılabilenler arasında ayrıca eşit, mümkünse o günün eczane / acil servis nöbetçisine yazılmaz (eşitlik bozulmuyorsa),
+// mümkünse aynı kişi art arda iki Cuma yazılmaz.
 // Hangi gün tutulduğu eşitlikte önemsizdir; yalnız Cuma ayrıca sayılır.
 import { aktifAydaMi, type Baglam } from "./baglam";
 import { puantajIzgarasi } from "./puantaj";
@@ -25,8 +26,8 @@ const GRUPLAR: Grup[] = ["e", "t"];
 export const oglenGrubu = (rol: string): Grup | null => (rol === "eczaci" ? "e" : rol === "teknisyen" ? "t" : null);
 
 /** amaç ağırlıkları (küçük daha iyi): haftada üçüncü kez çok ağır; haftada ikinci kez her seferinde ceza (kişi
- *  yetiyorsa herkes bir kez); eşitlik nöbetçiden kaçınmaktan önce gelir */
-const W = { hafta3: 1000, hafta: 3, toplam: 1, cuma: 3, nobetci: 0.5, ardArda: 0.2 };
+ *  yetiyorsa herkes bir kez); eşitlik nöbetçiden kaçınmaktan önce gelir; art arda iki Cuma haftada ikinci kez kadar ağır */
+const W = { hafta3: 1000, hafta: 3, toplam: 1, cuma: 3, cumaArdArda: 3, nobetci: 0.5, ardArda: 0.2 };
 
 export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[]; elle?: true; sabit?: OglenSabit }
 export interface OglenSonucu { gunler: OglenGunSonucu[]; uyarilar: string[] }
@@ -96,6 +97,15 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
       if (r) [...(r.e || []), ...(r.t || [])].forEach(id => { oncekiHafta[id] = (oncekiHafta[id] || 0) + 1; });
     }
   }
+  // ayın ilk Cuması için önceki ayın son Cuma'sındaki öğlen nöbetçileri (art arda iki Cuma sayımı)
+  const oncekiCuma = new Set<number>();
+  {
+    const o = oncekiAy(y, m), ok = B.oglen[ayAnahtari(o.y, o.m)] || {};
+    for (let d = 1; d <= 7; d++) if (haftaGunu(y, m, d) === CUMA) {
+      const [, , od] = gunKaydir(y, m, d, -7), r = ok[od];
+      if (r) [...(r.e || []), ...(r.t || [])].forEach(id => oncekiCuma.add(id));
+    }
+  }
   const gunler: OglenGunSonucu[] = [], aday: Record<Grup, number[][]> = { e: [], t: [] }, gerek: Record<Grup, number[]> = { e: [], t: [] };
   // sabit: değişmeyecek kişiler (gün başına, grup başına); tamSabit: gün hiç değişmez (elle ya da onarımda geçmiş gün)
   const sabit: Record<Grup, number[][]> = { e: [], t: [] }, tamSabit: boolean[] = [];
@@ -128,6 +138,8 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
   const N = gunler.length, nobetciMi = gunler.map(x => new Set(x.nobetci));
   const ardisik = gunler.map((x, i) => i > 0 && gunler[i - 1].gun === x.gun - 1);
   const haftaNo = gunler.map(x => hafta(x.gun)), cumaMi = gunler.map(x => x.dw === CUMA);
+  // bir önceki Cuma: bu aydaysa gün sırası, ay öncesindeyse -2, öğlen nöbeti yoksa -1
+  const oncekiCumaNo = gunler.map(x => x.dw !== CUMA ? -1 : x.gun > 7 ? gunler.findIndex(z => z.gun === x.gun - 7) : -2);
   for (const g of GRUPLAR) {
     const havuz = B.staff.filter(s => oglenGrubu(s.role) === g && aktifAydaMi(s, y, m));
     const cumaHavuz = havuz.filter(s => !s.cumaMuaf);
@@ -143,6 +155,8 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
         const k = haftaNo[i] + ":" + id; hf[k] = (hf[k] || 0) + 1;
         if (nobetciMi[i].has(id)) j += W.nobetci;
         if (ardisik[i] && sec[i - 1].includes(id)) j += W.ardArda;
+        const oc = oncekiCumaNo[i];
+        if (oc >= 0 ? sec[oc].includes(id) : oc === -2 && oncekiCuma.has(id)) j += W.cumaArdArda;
       }
       havuz.forEach(s => { const v = (top[s.id] || 0) + (devir.top[s.id] || 0); j += W.toplam * v * v; });
       cumaHavuz.forEach(s => { const v = (cu[s.id] || 0) + (devir.cuma[s.id] || 0); j += W.cuma * v * v; });
