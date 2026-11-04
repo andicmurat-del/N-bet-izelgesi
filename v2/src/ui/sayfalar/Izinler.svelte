@@ -3,6 +3,10 @@
   import { depo, tercihAl, tercihAyarla, resmiTatilMi, arifeMi, resmiTatilAyarla, arifeAyarla, aydaCalisanlar, ayCizelgesi } from "../../veri/depo.svelte";
   import { TERCIH_ACIKLAMA, TERCIH_AD, ROL_AD, type Tercih } from "../../veri/tipler";
   import { GUN_KISA, gunMetni, gunSayisi, haftaGunu, haftaSonuMu, isoTarih } from "../../veri/tarih";
+  import { veriAnlik } from "../../veri/depo.svelte";
+  import { Baglam } from "../../motor/baglam";
+  import IslemAlani from "../ortak/IslemAlani.svelte";
+  import Ikon from "../ortak/Ikon.svelte";
 
   // gomulu: Günlük Eczane / Acil Eczane sayfasının alt sekmesi olarak; kimler: listelenecek kişiler (o kadronun
   // nöbet tutanları); onayKilidi: eczane çizelgesi onaylıysa işaretler kilitlensin mi (acil listesinde onay yok)
@@ -53,12 +57,22 @@
     return o;
   };
   const aktifDegil = (d: number) => !!secili && ((secili.baslangic && isoTarih(depo.yil, depo.ay, d) < secili.baslangic) || (secili.bitis && isoTarih(depo.yil, depo.ay, d) > secili.bitis));
-  const kisaltma: Record<Tercih, string> = { izinli: "İzin", want: "İster", avoid: "İstemez", esVar: "Eş +", esYok: "Eş −" };
+  const kisaltma: Record<Tercih, string> = { izinli: "İzinli", want: "İstiyor", avoid: "İstemiyor", esVar: "Eş +", esYok: "Eş −" };
+  const ARAC_AD: Record<Tercih | "temizle", string> = { izinli: "İzinli", want: "Nöbet istiyor", avoid: "Nöbet istemiyor", esVar: "Eş durumu: nöbetçi olsun", esYok: "Eş durumu: nöbetçi olmasın", temizle: "İşareti kaldır" };
+  // personel arama ve işaretli gün sayısı
+  let ara = $state("");
+  const listelenen = $derived(kisiler.filter(k => k.name.toLocaleLowerCase("tr").includes(ara.trim().toLocaleLowerCase("tr"))));
+  const isaretliGun = (id: number) => Object.values(kisiAyIsaretleri(id)).reduce((t, n) => t + (n ?? 0), 0);
+  // izin arasındaki hafta sonu (izin sayılır; çizgili gösterilir) — motorun kendi kuralıyla, yalnız okunur
+  const B = $derived(new Baglam(veriAnlik()));
+  const izinArasi = (d: number) => !!secili && B.tercih(secili.id, depo.yil, depo.ay, d) !== "izinli" && B.izinArasiMi(secili.id, depo.yil, depo.ay, d);
+  function isaretleriTemizle() {
+    if (!secili || onayli) return;
+    for (let d = 1; d <= gunSayisi(depo.yil, depo.ay); d++) if (tercihAl(secili.id, depo.yil, depo.ay, d)) tercihAyarla(secili.id, depo.yil, depo.ay, d, null);
+  }
 </script>
 
 <svelte:window onpointerup={birak} onpointercancel={birak} />
-
-<p class="gomulu-aciklama">Bir işaret seçip takvimdeki günlere dokunun; basılı tutup gezdirerek birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır.</p>
 
 {#if !depo.veri.staff.length}
   <div class="kart bos-durum">
@@ -67,134 +81,173 @@
     <button class="dugme ana" onclick={() => git("kisiler")}>Personel ekle</button>
   </div>
 {:else}
-  <div class="sekmeler" role="tablist" aria-label="İşaret türü">
-    <button role="tab" aria-selected={mod === "kisi"} class:secili={mod === "kisi"} onclick={() => (mod = "kisi")}>Kişi izinleri ve tercihleri</button>
-    <button role="tab" aria-selected={mod === "tatil"} class:secili={mod === "tatil"} onclick={() => (mod = "tatil")}>Resmi tatil ve arife</button>
-  </div>
+  <IslemAlani>
+    <div class="secim" role="tablist" aria-label="İşaret türü">
+      <button role="tab" aria-selected={mod === "kisi"} onclick={() => (mod = "kisi")}>Kişi izinleri ve tercihler</button>
+      <button role="tab" aria-selected={mod === "tatil"} onclick={() => (mod = "tatil")}>Resmi tatil ve arife</button>
+    </div>
+  </IslemAlani>
 
-  {#if onayli}<p class="onay-not" role="status">Bu ayın çizelgesi onaylı; işaretler değiştirilemez. Değiştirmek için önce Günlük Eczane Nöbet Listesi'nde onayı kaldırın.</p>{/if}
+  <p class="kutu bilgi kullanim"><Ikon ad="bilgi" boyut={16} /><span>Bir işaret türü seçip takvimdeki günlere dokunun; basılı tutup gezdirerek birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır. Tercihler çizelge oluşturulurken dikkate alınır; çizelge zaten varsa yeniden oluşturun.</span></p>
+  {#if onayli}<p class="kutu dikkat onay-not" role="status">Bu ayın çizelgesi onaylı; işaretler değiştirilemez. Değiştirmek için önce Günlük Eczane Nöbet Listesi'nde onayı kaldırın.</p>{/if}
 
   <div class="duzen">
-    <aside class="kart yan">
+    <aside class="panel yan">
       {#if mod === "kisi"}
-        <h2 class="yan-bas">Kişi</h2>
-        <ul class="kisiler">
-          {#each kisiler as k (k.id)}
-            {@const say = kisiAyIsaretleri(k.id)}
-            <li>
-              <button class:secili={k.id === seciliId} aria-pressed={k.id === seciliId} onclick={() => (seciliId = k.id)}>
-                <span class="isaret {k.role}"></span>
-                <span class="ad">{k.name}</span>
-                <span class="sayilar">{#each Object.entries(say) as [t, n]}<i class="t-{t}" title="{TERCIH_AD[t as Tercih]}: {n} gün">{n}</i>{/each}</span>
-              </button>
-            </li>
-          {/each}
-        </ul>
+        <div class="panel-bas"><h2>Personel</h2><span class="sayi">{kisiler.length} kişi</span></div>
+        <div class="arama"><input class="girdi" type="search" placeholder="Ad ara" aria-label="Personel ara" bind:value={ara} /></div>
+        <div class="kisi-liste">
+          <table class="tablo">
+            <thead><tr><th>Ad soyad</th><th class="sag">İşaretli gün</th></tr></thead>
+            <tbody>
+              {#each listelenen as k (k.id)}
+                <tr class:secili={k.id === seciliId}>
+                  <td><button class="kisi-btn" aria-pressed={k.id === seciliId} onclick={() => (seciliId = k.id)}><span class="isaret {k.role}"></span>{k.name}</button></td>
+                  <td class="sag">{isaretliGun(k.id) || "—"}</td>
+                </tr>
+              {:else}<tr><td colspan="2" class="soluk">Eşleşen kişi yok</td></tr>{/each}
+            </tbody>
+          </table>
+        </div>
       {:else}
-        <h2 class="yan-bas">Tatil günleri</h2>
-        <p class="yan-not">Hafta sonları zaten tatildir. Burada resmi tatil ve bayram günlerini, yarım gün çalışılan arifeleri işaretleyin; nöbet fazla mesaisi ve hazırlama görevleri buna göre hesaplanır.</p>
+        <div class="panel-bas"><h2>Tatil günleri</h2></div>
+        <p class="panel-ic yan-not">Hafta sonları zaten tatildir. Burada resmi tatil ve bayram günlerini, yarım gün çalışılan arifeleri işaretleyin; nöbet fazla mesaisi ve hazırlama görevleri buna göre hesaplanır.</p>
       {/if}
     </aside>
 
-    <section class="kart takvim-kutu" aria-label="Ay takvimi">
-      <div class="araclar" role="radiogroup" aria-label="İşaret">
-        {#if mod === "kisi"}
-          {#each ARACLAR as a}
-            <button role="radio" aria-checked={arac === a} class="arac t-{a}" class:secili={arac === a} onclick={() => (arac = a)} title={a === "temizle" ? "İşareti kaldır" : TERCIH_ACIKLAMA[a]}>{a === "temizle" ? "Temizle" : TERCIH_AD[a]}</button>
-          {/each}
-        {:else}
-          <button role="radio" aria-checked={tatilArac === "resmi"} class="arac t-resmi" class:secili={tatilArac === "resmi"} onclick={() => (tatilArac = "resmi")}>Resmi tatil</button>
-          <button role="radio" aria-checked={tatilArac === "arife"} class="arac t-arife" class:secili={tatilArac === "arife"} onclick={() => (tatilArac = "arife")}>Arife (yarım gün)</button>
-          <button role="radio" aria-checked={tatilArac === "temizle"} class="arac t-temizle" class:secili={tatilArac === "temizle"} onclick={() => (tatilArac = "temizle")}>Temizle</button>
-        {/if}
-      </div>
+    <div class="sag-sutun">
       {#if mod === "kisi" && secili}
-        <p class="secili-kisi"><span class="isaret {secili.role}"></span><b>{secili.name}</b> · {ROL_AD[secili.role]} · <span class="soluk">{arac === "temizle" ? "dokunduğunuz günün işareti kalkar" : TERCIH_ACIKLAMA[arac]}</span></p>
+        {@const say = kisiAyIsaretleri(secili.id)}
+        <section class="panel">
+          <div class="panel-bas"><h2>Seçili personel</h2>
+            <button class="dugme kucuk" onclick={isaretleriTemizle} disabled={onayli || !isaretliGun(secili.id)}><Ikon ad="sil" boyut={15} />İşaretleri temizle</button></div>
+          <div class="panel-ic secili-kisi">
+            <p class="ad"><span class="isaret {secili.role}"></span><b>{secili.name}</b><span class="soluk">{ROL_AD[secili.role]}</span></p>
+            <p class="ozet">{#each Object.entries(say) as [t, n]}<span class="tercih t-{t}">{TERCIH_AD[t as Tercih]}: {n} gün</span>{:else}<span class="soluk">Bu ay işaret yok.</span>{/each}</p>
+          </div>
+        </section>
       {/if}
+      <section class="panel">
+        <div class="panel-bas"><h2>İşaret türü</h2></div>
+        <div class="panel-ic araclar" role="radiogroup" aria-label="İşaret">
+          {#if mod === "kisi"}
+            {#each ARACLAR as a}
+              <label class="arac t-{a}" class:secili={arac === a} title={a === "temizle" ? "Dokunduğunuz günün işareti kalkar" : TERCIH_ACIKLAMA[a]}><input type="radio" name="arac" checked={arac === a} onchange={() => (arac = a)} />{ARAC_AD[a]}</label>
+            {/each}
+          {:else}
+            <label class="arac t-resmi" class:secili={tatilArac === "resmi"}><input type="radio" name="tatil-arac" checked={tatilArac === "resmi"} onchange={() => (tatilArac = "resmi")} />Resmi tatil</label>
+            <label class="arac t-arife" class:secili={tatilArac === "arife"}><input type="radio" name="tatil-arac" checked={tatilArac === "arife"} onchange={() => (tatilArac = "arife")} />Arife (yarım gün)</label>
+            <label class="arac t-temizle" class:secili={tatilArac === "temizle"}><input type="radio" name="tatil-arac" checked={tatilArac === "temizle"} onchange={() => (tatilArac = "temizle")} />İşareti kaldır</label>
+          {/if}
+        </div>
+        {#if mod === "kisi" && arac !== "temizle"}<p class="arac-not">{TERCIH_ACIKLAMA[arac]}</p>{/if}
+      </section>
 
-      <div class="izgara" class:kilitli={onayli}>
-        {#each GUN_KISA as g}<div class="bas" aria-hidden="true">{g}</div>{/each}
-        {#each { length: gunler.bos } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
-        {#each gunler.liste as d}
-          {@const y = depo.yil}{@const m = depo.ay}
-          {@const t = mod === "kisi" && secili ? tercihAl(secili.id, y, m, d) : undefined}
-          {@const rt = resmiTatilMi(y, m, d)}{@const ar = arifeMi(y, m, d)}{@const hs = haftaSonuMu(y, m, d)}
-          <button class="gun" class:hs class:rt class:ar class:pasif={mod === "kisi" && aktifDegil(d)} disabled={onayli}
-            aria-label="{gunMetni(y, m, d)}{rt ? ', resmi tatil' : ''}{ar ? ', arife' : ''}{t ? ', ' + TERCIH_AD[t] : ''}"
-            onpointerdown={e => basla(d, e)} onpointerenter={() => gez(d)}
-            onkeydown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); uygula(d); } }}>
-            <span class="no rakam">{d}</span>
-            {#if rt}<span class="etiket resmi">Resmi tatil</span>{:else if ar}<span class="etiket arife">Arife</span>{/if}
-            {#if t}<span class="tercih t-{t}">{kisaltma[t]}</span>{/if}
-          </button>
-        {/each}
-      </div>
-      {#if mod === "kisi"}
-        <p class="dipnot">Çizgili günler: kişi o tarihte çalışmıyor (işe başlama / ayrılış). Tercihler çizelge oluşturulurken dikkate alınır; çizelge zaten varsa yeniden oluşturun.</p>
-      {/if}
-    </section>
+      <section class="panel" aria-label="Ay takvimi">
+        <div class="panel-bas"><h2>{mod === "kisi" && secili ? secili.name + " · " : ""}Ay takvimi</h2>
+          <p class="lejant">{#if mod === "kisi"}<span><i class="ornek o-izin"></i>İzinli</span><span><i class="ornek o-arasi"></i>İzin arası</span><span><i class="ornek o-ister"></i>İstiyor</span><span><i class="ornek o-istemez"></i>İstemiyor</span><span><i class="ornek o-pasif"></i>Dönem dışı</span>{:else}<span><i class="ornek o-resmi"></i>Resmi tatil</span><span><i class="ornek o-arife"></i>Arife</span>{/if}</p></div>
+        <div class="izgara" class:kilitli={onayli}>
+          {#each GUN_KISA as g, i}<div class="bas" class:hs={i >= 5} aria-hidden="true">{g}</div>{/each}
+          {#each { length: gunler.bos } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
+          {#each gunler.liste as d}
+            {@const y = depo.yil}{@const m = depo.ay}
+            {@const t = mod === "kisi" && secili ? tercihAl(secili.id, y, m, d) : undefined}
+            {@const rt = resmiTatilMi(y, m, d)}{@const ar = arifeMi(y, m, d)}{@const hs = haftaSonuMu(y, m, d)}
+            {@const arasi = mod === "kisi" && izinArasi(d)}
+            <button class="gun t-{t ?? 'yok'}" class:hs class:rt class:ar class:arasi class:pasif={mod === "kisi" && aktifDegil(d)} disabled={onayli}
+              aria-label="{gunMetni(y, m, d)}{rt ? ', resmi tatil' : ''}{ar ? ', arife' : ''}{t ? ', ' + TERCIH_AD[t] : ''}{arasi ? ', izin arası' : ''}"
+              onpointerdown={e => basla(d, e)} onpointerenter={() => gez(d)}
+              onkeydown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); uygula(d); } }}>
+              <span class="serit"><b class="rakam">{d}</b><span class="gunadi">{GUN_KISA[haftaGunu(y, m, d)]}</span>{#if rt}<span class="etiket">Resmi tatil</span>{:else if ar}<span class="etiket">Arife</span>{/if}</span>
+              <span class="icerik">{#if t}<span class="tercih">{kisaltma[t]}</span>{:else if arasi}<span class="tercih">İzin arası</span>{/if}</span>
+            </button>
+          {/each}
+        </div>
+      </section>
+    </div>
   </div>
 {/if}
 
 <style>
   .bos-durum { padding: var(--b6); display: grid; gap: var(--b3); justify-items: start; }
   .bos-durum p { color: var(--yazi-2); }
-  .sekmeler { display: inline-flex; gap: 2px; padding: 3px; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--r); margin-bottom: var(--b4); flex-wrap: wrap; }
-  .sekmeler button { min-height: 34px; padding: 0 var(--b4); border: 0; border-radius: var(--r-kucuk); background: transparent; color: var(--yazi-2); font-weight: 500; cursor: pointer; }
-  .sekmeler button.secili { background: var(--vurgu-zemin); color: var(--vurgu); font-weight: 600; }
-  .onay-not { background: var(--bilgi-zemin); color: var(--bilgi); padding: var(--b3) var(--b4); border-radius: var(--r); margin-bottom: var(--b4); font-weight: 500; }
-  .duzen { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--b4); align-items: start; }
-  .yan { padding: var(--b4); position: sticky; top: var(--b4); max-height: calc(100dvh - 32px); overflow-y: auto; }
-  .yan-bas { font-size: var(--f-md); margin-bottom: var(--b2); }
+  .kullanim { display: flex; gap: var(--b2); align-items: flex-start; margin-bottom: var(--b4); }
+  .kullanim :global(svg) { flex: none; margin-top: 2px; color: var(--bilgi); }
+  .onay-not { margin-bottom: var(--b4); font-weight: 600; }
+  .duzen { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--b4); align-items: start; }
+  .yan { position: sticky; top: 58px; max-height: calc(100dvh - 72px); display: flex; flex-direction: column; overflow: hidden; }
+  .sayi { font-size: var(--f-xs); color: var(--yazi-2); font-weight: 600; }
+  .arama { padding: var(--b2) var(--b3); border-bottom: 1px solid var(--cizgi-acik); }
+  .kisi-liste { overflow-y: auto; min-height: 0; }
+  .kisi-liste .tablo { border: 0; }
+  .kisi-liste .tablo th, .kisi-liste .tablo td { border-left: 0; border-right: 0; }
+  .kisi-liste tr.secili > * { background: var(--secili-satir) !important; font-weight: 700; }
+  .kisi-btn { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 28px; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; color: inherit; font: inherit; }
+  .kisi-btn:hover { color: var(--baglanti); text-decoration: underline; }
   .yan-not { font-size: var(--f-sm); color: var(--yazi-2); }
-  .kisiler { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-  .kisiler button { display: flex; align-items: center; gap: var(--b2); width: 100%; min-height: 38px; padding: 0 var(--b2); border: 1px solid transparent; border-radius: var(--r-kucuk); background: transparent; cursor: pointer; text-align: left; }
-  .kisiler button:hover { background: var(--yuzey-2); }
-  .kisiler button.secili { background: var(--vurgu-zemin); border-color: color-mix(in srgb, var(--vurgu) 35%, transparent); font-weight: 600; }
-  .kisiler .ad { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sayilar { display: inline-flex; gap: 3px; }
-  .sayilar i { font-style: normal; font-size: var(--f-xs); font-weight: 600; min-width: 20px; text-align: center; padding: 0 4px; border-radius: 4px; }
-  .takvim-kutu { padding: var(--b4); display: grid; gap: var(--b3); min-width: 0; }
-  .araclar { display: flex; flex-wrap: wrap; gap: var(--b2); }
-  .arac { min-height: 34px; padding: 0 var(--b3); border-radius: 999px; border: 1.5px solid var(--cizgi); background: var(--yuzey); cursor: pointer; font-weight: 500; font-size: var(--f-sm); }
-  .arac.secili { border-color: currentColor; font-weight: 600; }
-  .secili-kisi { font-size: var(--f-sm); display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-  .soluk { color: var(--soluk); }
-  .izgara { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; user-select: none; touch-action: none; }
+  .sag-sutun { display: grid; gap: var(--b3); min-width: 0; }
+  .secili-kisi { display: grid; gap: var(--b2); }
+  .secili-kisi .ad { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--f-md); }
+  .secili-kisi .ad b { color: var(--lacivert); }
+  .secili-kisi .ozet { display: flex; flex-wrap: wrap; gap: 6px; }
+  .secili-kisi .tercih { font-size: var(--f-xs); }
+  .soluk { color: var(--soluk); font-size: var(--f-sm); }
+  .araclar { display: flex; flex-wrap: wrap; gap: var(--b2) var(--b4); }
+  .arac { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; font-size: var(--f-sm); font-weight: 600; color: var(--yazi); cursor: pointer; }
+  .arac input { width: 16px; height: 16px; accent-color: var(--lacivert); }
+  .arac-not { padding: 0 var(--b4) var(--b3); font-size: var(--f-xs); color: var(--yazi-2); }
+  .lejant { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: var(--f-xs); color: var(--yazi-2); }
+  .lejant span { display: inline-flex; align-items: center; gap: 5px; }
+  .ornek { display: inline-block; width: 14px; height: 12px; border: 1px solid var(--cizgi); }
+  .o-izin { background: var(--izin); border-color: var(--izin); }
+  .o-arasi { background: repeating-linear-gradient(135deg, var(--izin-zemin) 0 3px, var(--yuzey) 3px 6px); }
+  .o-ister { background: var(--tek-zemin); border-color: var(--tek); }
+  .o-istemez { background: var(--haz-zemin); border-color: var(--haz); }
+  .o-pasif { background: var(--yuzey-2); border-style: dashed; }
+  .o-resmi { background: var(--hs-zemin); border-color: var(--lacivert); }
+  .o-arife { background: var(--arife-zemin); border-color: var(--arife); }
+  .izgara { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); user-select: none; touch-action: none; }
   .izgara.kilitli { opacity: .7; }
-  .bas { text-align: center; font-size: var(--f-xs); font-weight: 600; color: var(--soluk); padding-bottom: 2px; }
-  .gun { position: relative; min-height: 72px; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 6px 8px; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); cursor: pointer; text-align: left; }
-  .gun:hover:not(:disabled) { border-color: var(--soluk); }
-  .gun.hs { background: var(--tatil-zemin); }
-  .gun.rt { background: var(--tatil-zemin); border-color: color-mix(in srgb, var(--tatil) 45%, var(--cizgi)); }
+  .bas, .bosluk, .gun { border-right: 1px solid var(--cizgi); border-bottom: 1px solid var(--cizgi); }
+  .izgara > :nth-child(7n) { border-right: 0; }
+  .bas { background: var(--tablo-bas); color: var(--lacivert); font-size: var(--f-xs); font-weight: 700; text-align: center; padding: 6px 0; }
+  .bosluk { background: var(--yuzey-2); }
+  .gun { position: relative; min-height: 84px; display: flex; flex-direction: column; padding: 0; border-top: 0; border-left: 0; border-radius: 0; background: var(--yuzey); cursor: pointer; text-align: left; color: var(--yazi); }
+  .gun:hover:not(:disabled) { box-shadow: inset 0 0 0 2px var(--altin); }
+  .gun:focus-visible { outline: 2px solid var(--odak); outline-offset: -2px; }
+  .serit { display: flex; align-items: center; gap: 6px; min-height: 24px; padding: 2px 8px; background: var(--panel-bas); border-bottom: 1px solid var(--cizgi-acik); font-size: var(--f-xs); color: var(--yazi-2); width: 100%; }
+  .serit b { font-size: var(--f-sm); color: var(--lacivert); }
+  .gun.hs .serit { background: color-mix(in srgb, var(--acik-mavi) 28%, var(--yuzey)); }
+  .gun.rt { background: var(--hs-zemin); } .gun.rt .serit { background: color-mix(in srgb, var(--acik-mavi) 45%, var(--yuzey)); }
   .gun.ar { background: var(--arife-zemin); }
-  .gun.pasif { background-image: repeating-linear-gradient(135deg, transparent 0 6px, var(--cizgi-acik) 6px 8px); }
-  .no { font-weight: 600; font-size: var(--f-sm); color: var(--yazi-2); }
-  .etiket { font-size: var(--f-xs); font-weight: 600; }
-  .etiket.resmi { color: var(--tatil); } .etiket.arife { color: var(--arife); }
-  .tercih { font-size: var(--f-xs); font-weight: 600; padding: 1px 6px; border-radius: 4px; margin-top: auto; }
-  .t-izinli { color: var(--izin); } .tercih.t-izinli, .sayilar .t-izinli { background: var(--izin-zemin); }
-  .t-want { color: var(--ister); } .tercih.t-want, .sayilar .t-want { background: var(--ister-zemin); }
-  .t-avoid { color: var(--istemez); } .tercih.t-avoid, .sayilar .t-avoid { background: var(--istemez-zemin); }
-  .t-esVar { color: var(--es); } .tercih.t-esVar, .sayilar .t-esVar { background: var(--es-zemin); }
-  .t-esYok { color: var(--esyok); } .tercih.t-esYok, .sayilar .t-esYok { background: var(--esyok-zemin); }
-  .t-temizle { color: var(--yazi-2); }
-  .t-resmi { color: var(--tatil); } .t-arife { color: var(--arife); }
-  .arac.secili.t-izinli { background: var(--izin-zemin); } .arac.secili.t-want { background: var(--ister-zemin); } .arac.secili.t-avoid { background: var(--istemez-zemin); }
-  .arac.secili.t-esVar { background: var(--es-zemin); } .arac.secili.t-esYok { background: var(--esyok-zemin); } .arac.secili.t-resmi { background: var(--tatil-zemin); } .arac.secili.t-arife { background: var(--arife-zemin); }
-  .arac.secili.t-temizle { background: var(--yuzey-2); }
-  .dipnot { font-size: var(--f-xs); color: var(--soluk); }
+  .etiket { font-weight: 700; color: var(--lacivert); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .icerik { flex: 1; display: flex; align-items: flex-end; padding: 6px 8px; }
+  .tercih { font-size: var(--f-xs); font-weight: 700; padding: 1px 6px; border-radius: 2px; border: 1px solid transparent; }
+  /* işaretler: izinli koyu gri, izin arası çizgili, istiyor açık mavi, istemiyor açık turuncu */
+  .gun.t-izinli { background: var(--izin); color: #FFFFFF; } .gun.t-izinli .serit { background: color-mix(in srgb, var(--izin) 85%, #000); color: #FFFFFF; } .gun.t-izinli .serit b { color: #FFFFFF; }
+  .gun.arasi { background: repeating-linear-gradient(135deg, var(--izin-zemin) 0 6px, var(--yuzey) 6px 12px); }
+  .gun.t-want { background: var(--tek-zemin); box-shadow: inset 0 0 0 2px var(--tek); }
+  .gun.t-avoid { background: var(--haz-zemin); box-shadow: inset 0 0 0 2px var(--haz); }
+  .gun.t-esVar { background: var(--es-zemin); box-shadow: inset 0 0 0 2px var(--es); }
+  .gun.t-esYok { background: var(--esyok-zemin); box-shadow: inset 0 0 0 2px var(--esyok); }
+  .gun.pasif { background: var(--yuzey-2); color: var(--soluk); } .gun.pasif .icerik::after { content: "Dönem dışı"; font-size: var(--f-xs); }
+  .tercih.t-izinli, .secili-kisi .t-izinli { background: var(--izin); color: #FFFFFF; }
+  .tercih.t-want, .secili-kisi .t-want { background: var(--tek-zemin); color: var(--tek); border-color: var(--tek); }
+  .tercih.t-avoid, .secili-kisi .t-avoid { background: var(--haz-zemin); color: var(--haz); border-color: var(--haz); }
+  .tercih.t-esVar, .secili-kisi .t-esVar { background: var(--es-zemin); color: var(--es); border-color: var(--es); }
+  .tercih.t-esYok, .secili-kisi .t-esYok { background: var(--esyok-zemin); color: var(--esyok); border-color: var(--esyok); }
+  .gun .tercih { background: transparent; border: 0; padding: 0; color: inherit; font-size: var(--f-sm); }
+  .gun.arasi .tercih { color: var(--izin); }
 
-  @media (max-width: 860px) {
+  @media (max-width: 960px) {
     .duzen { grid-template-columns: 1fr; }
-    .yan { position: static; max-height: none; }
-    .kisiler { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; padding-bottom: 4px; }
-    .kisiler button { border-color: var(--cizgi); border-radius: 999px; padding: 0 var(--b3); }
-    .gun { min-height: 56px; padding: 4px 5px; }
-    .etiket { display: none; }
-    .gun.rt .no::after { content: " RT"; color: var(--tatil); font-size: var(--f-xs); }
-    .gun.ar .no::after { content: " A"; color: var(--arife); font-size: var(--f-xs); }
-    .izgara { gap: 4px; }
+    .yan { position: static; max-height: 320px; }
   }
-  .gomulu-aciklama { font-size: var(--f-sm); color: var(--soluk); margin-bottom: var(--b3); max-width: 80ch; }
+  @media (max-width: 720px) {
+    .gun { min-height: 58px; }
+    .serit { padding: 1px 4px; min-height: 18px; }
+    .gunadi, .etiket { display: none; }
+    .icerik { padding: 3px 4px; }
+    .gun .tercih { font-size: 10px; }
+  }
 </style>
