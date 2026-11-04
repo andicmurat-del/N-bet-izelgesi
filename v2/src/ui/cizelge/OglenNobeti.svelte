@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Bilgi from "../ortak/Bilgi.svelte";
+  import IslemAlani from "../ortak/IslemAlani.svelte";
   // Öğlen nöbeti: hafta içi öğle arasında eczanede kalanlar (Pzt–Prş 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker).
   // O günün çalışma listesinden (puantaj) yazılır; yıl boyunca toplam ve Cuma sayısı eşit tutulur.
   import { depo, veriAnlik, aydaCalisanlar, ayCizelgesi, oglenAyi, oglenKaydet, oglenAyiniSil, oglenGunuAyarla, resmiTatilMi, arifeMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
@@ -157,11 +157,7 @@
     <div><button class="dugme ana" onclick={() => git("nobet")}><Ikon ad="takvim" />Günlük Eczane Nöbet Listesi</button></div>
   </section>
 {:else}
-  <div class="arac">
-    <div class="durumlar">
-      <span class="rozet notr">Pzt–Prş {OGLEN_GEREK.hafta.e} eczacı + {OGLEN_GEREK.hafta.t} tekniker · Cuma {OGLEN_GEREK.cuma.e} eczacı + {OGLEN_GEREK.cuma.t} tekniker</span>
-    </div>
-    <div class="dugmeler">
+  <IslemAlani>
       {#if onay}
         <button class="dugme" onclick={() => listeOnayiniKaldir("oglen", y, m)}>Onayı kaldır</button>
       {:else}
@@ -175,18 +171,18 @@
         </span>
       {/if}
       {#if kayit && !onay}<button class="dugme sade tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, ayın öğlen nöbetini sil" : "Sil"}</button>{/if}
-    </div>
-  </div>
-  <Bilgi baslik="Öğlen nöbeti kuralları"><p>O gün mesaide çalışanlardan yazılır; resmi tatil ve arife günü öğlen nöbeti yoktur. Herkese haftada bir (kişi yetmezse iki); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. Mümkünse aynı kişi art arda iki Cuma yazılmaz. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz. Cuma'dan muaf kişiler (eczacı ya da tekniker) Personel bölümünde işaretlenir. Bir güne dokunup kişileri elle değiştirebilirsiniz: yalnız değiştirdiğiniz yerler korunur (altı noktalı çizgili adlar), "Seçilmedi" yaptığınız yer boş kalır; yeniden oluşturma günün öteki yerlerini yeniden yazar. Sonradan girilen izin ve raporlarda boşalan yerler kendiliğinden doldurulur (elle yazılan kişiler ve geçmiş günler değişmez).</p></Bilgi>
+  </IslemAlani>
   {#if onay}<p class="bant bilgi">Onaylandı: {onayMetni}. Onaylı liste kilitlidir; yeniden oluşturulmaz ve elle değiştirilmez. Sonradan girilen izin ve raporlarda boşalan yerler yine kendiliğinden doldurulur.</p>{/if}
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
-  {#each [...uyarilar, ...sorunlar] as u}<p class="satir"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}
+  {#each [...uyarilar, ...sorunlar] as u}<p class="satir kutu dikkat"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}
 
   {#if !kayit}
-    <section class="kart bos"><p>Bu ay için öğlen nöbeti henüz oluşturulmadı.</p></section>
+    <p class="kutu dikkat bilgi-kutu"><Ikon ad="bilgi" boyut={16} /><span>{ayAdi(y, m)} için öğlen nöbeti henüz oluşturulmadı. Başlıktaki "Öğlen nöbetini oluştur" düğmesiyle hazırlayın.</span></p>
   {:else}
-    <section class="kart takvim-kutu" aria-label="{ayAdi(y, m)} öğlen nöbeti">
+    <section class="panel" aria-label="{ayAdi(y, m)} öğlen nöbeti">
+      <div class="panel-bas"><h2>{ayAdi(y, m)} öğlen nöbeti</h2>
+        <p class="lejant"><span><span class="gorev ecz">ECZ</span>Eczacı</span><span><span class="gorev tek">TEK</span>Tekniker</span><span><b class="nb">N</b> o günün nöbetçisi</span><span><span class="elle-ornek">Ad</span> elle yazıldı</span></p></div>
       <div class="takvim">
         {#each GUN_KISA.slice(0, 5) as g}<div class="bas" aria-hidden="true">{g}</div>{/each}
         {#each { length: haftaGunu(y, m, 1) <= 4 ? haftaGunu(y, m, 1) : 0 } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
@@ -197,39 +193,66 @@
             {@const s = { gun: d, dw, e: k.e, t: k.t, elle: elleMi(k) }}
             <button class="gun" class:cuma={dw === 4} class:sorunlu={[...k.e, ...k.t].some(id => !calisiyor(id, d))} class:bugun={bugunMu(d)} onclick={() => gunAc(s)}
               aria-label="{gunMetni(y, m, d)}: eczacı {k.e.map(ad).join(', ') || 'yok'}; tekniker {k.t.map(ad).join(', ') || 'yok'}{elleMi(k) ? ', elle düzenlendi' : ''}">
-              <span class="ust"><span class="no rakam">{d}</span>{#if elleMi(k)}<span class="elle" title="Elle düzenlendi (işaretli kişiler yeniden oluşturmada korunur)">elle</span>{/if}</span>
+              <span class="serit"><b class="rakam">{d}</b><span class="gunadi">{GUN_KISA[dw]}</span>{#if elleMi(k)}<span class="elle" title="Elle düzenlendi (işaretli kişiler yeniden oluşturmada korunur)">elle</span>{/if}</span>
               <span class="kisiler">
-                {#each k.e as id}<span class="kisi" class:sorun={!calisiyor(id, d)} class:elle-kisi={!k.elle && elleKisi(d, id)}><span class="isaret"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span>{#if nobetciMi(id, d)}<span class="nb" title="O günün nöbetçisi">N</span>{/if}</span>{/each}
-                {#each k.t as id}<span class="kisi" class:sorun={!calisiyor(id, d)} class:elle-kisi={!k.elle && elleKisi(d, id)}><span class="isaret teknisyen"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span>{#if nobetciMi(id, d)}<span class="nb" title="O günün nöbetçisi">N</span>{/if}</span>{/each}
+                {#each k.e as id}<span class="kisi" class:sorun={!calisiyor(id, d)} class:elle-kisi={!k.elle && elleKisi(d, id)}><span class="gorev ecz">ECZ</span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span>{#if nobetciMi(id, d)}<span class="nb" title="O günün nöbetçisi">N</span>{/if}</span>{/each}
+                {#each k.t as id}<span class="kisi" class:sorun={!calisiyor(id, d)} class:elle-kisi={!k.elle && elleKisi(d, id)}><span class="gorev tek">TEK</span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span>{#if nobetciMi(id, d)}<span class="nb" title="O günün nöbetçisi">N</span>{/if}</span>{/each}
               </span>
             </button>
           {:else}
-            <div class="gun bos-gun" aria-hidden="true"><span class="ust"><span class="no rakam">{d}</span></span><span class="yok">{bilgi(d)}</span></div>
+            <div class="gun bos-gun" aria-hidden="true"><span class="serit"><b class="rakam">{d}</b><span class="gunadi">{GUN_KISA[dw]}</span></span><span class="yok">{bilgi(d)}</span></div>
           {/if}
         {/each}
       </div>
-      <p class="lejant"><span><span class="isaret"></span>Eczacı</span><span><span class="isaret teknisyen"></span>Tekniker</span><span><b class="nb">N</b> o günün nöbetçisi</span><span>Gölgeli: Cuma</span></p>
     </section>
   {/if}
 
-  <section class="blok">
-    <h2>Kişi başı öğlen nöbeti</h2>
-    <p class="aciklama">Eşitlik yıl boyunca: izin vb. nedeniyle bir ay az alan sonraki aylarda tamamlar. Cuma ayrıca sayılır.</p>
-    <div class="kart tablo-kap">
-      <table>
-        <thead><tr><th class="sol">Kişi</th><th>Bu ay</th><th>Bu ay Cuma</th><th>Yıl ({y})</th><th>Yıl Cuma</th></tr></thead>
-        <tbody>
-          {#each ozet as o (o.k.id)}
-            <tr>
-              <th class="sol">{o.k.name} <small>{ROL_KISA[o.k.role]}{o.k.cumaMuaf ? " · Cuma'dan muaf" : ""}</small></th>
-              <td class="rakam">{o.ay}</td><td class="rakam">{o.k.cumaMuaf ? "–" : o.ayCuma}</td><td class="rakam">{o.top}</td><td class="rakam">{o.k.cumaMuaf ? "–" : o.cuma}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+  <div class="alt-duzen">
+    <div class="sol-sutun">
+      <section class="panel">
+        <div class="panel-bas"><h2>Öğlen nöbeti kuralları</h2></div>
+        <table class="tablo">
+          <thead><tr><th>Gün</th><th class="sag">Eczacı</th><th class="sag">Tekniker</th></tr></thead>
+          <tbody>
+            <tr><td>Pazartesi – Perşembe</td><td class="sag">{OGLEN_GEREK.hafta.e}</td><td class="sag">{OGLEN_GEREK.hafta.t}</td></tr>
+            <tr><td>Cuma</td><td class="sag">{OGLEN_GEREK.cuma.e}</td><td class="sag">{OGLEN_GEREK.cuma.t}</td></tr>
+            <tr><td>Resmi tatil ve arife</td><td class="sag">—</td><td class="sag">—</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="panel">
+        <div class="panel-bas"><h2>Eşitlik ilkesi</h2></div>
+        <div class="panel-ic ilke">
+          <p>O gün mesaide çalışanlardan yazılır. Herkese haftada bir (kişi yetmezse iki); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. İzin vb. nedeniyle bir ay az alan sonraki aylarda tamamlar. Mümkünse aynı kişi art arda iki Cuma yazılmaz. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz.</p>
+          <p>Bir güne dokunup kişileri elle değiştirebilirsiniz: yalnız değiştirdiğiniz yerler korunur, "Seçilmedi" yaptığınız yer boş kalır. Sonradan girilen izin ve raporlarda boşalan yerler kendiliğinden doldurulur.</p>
+          <button class="baglanti" onclick={() => git("kisiler")}><Ikon ad="kisiler" boyut={16} />Cuma'dan muaf olanları düzenle (Personel)</button>
+        </div>
+      </section>
     </div>
-    <div><button class="dugme sade" onclick={() => git("kisiler")}><Ikon ad="kisiler" />Cuma'dan muaf olanları düzenle</button></div>
-  </section>
+    <section class="panel">
+      <div class="panel-bas"><h2>Kişi başı öğlen nöbeti</h2></div>
+      <div class="tablo-kap">
+        <table class="tablo kisi-tablo">
+          <thead><tr><th class="sag">Sıra</th><th>Ad soyad</th><th class="sag">Bu ay</th><th class="sag">Bu ay Cuma</th><th class="sag">Yıl toplam</th><th class="sag">Yıl Cuma</th></tr></thead>
+          <tbody>
+            {#each [{ ad: "Eczacılar", rol: "eczaci" }, { ad: "Teknikerler", rol: "teknisyen" }] as grup}
+              {@const l = ozet.filter(o => o.k.role === grup.rol)}
+              {#if l.length}
+                <tr class="grup-satir"><td colspan="6">{grup.ad}</td></tr>
+                {#each l as o, i (o.k.id)}
+                  <tr>
+                    <td class="sag">{i + 1}</td>
+                    <td>{o.k.name}{#if o.k.cumaMuaf}{" "}<small>Cuma'dan muaf</small>{/if}</td>
+                    <td class="sag">{o.ay}</td><td class="sag">{o.k.cumaMuaf ? "–" : o.ayCuma}</td><td class="sag">{o.top}</td><td class="sag">{o.k.cumaMuaf ? "–" : o.cuma}</td>
+                  </tr>
+                {/each}
+              {/if}
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 {/if}
 
 <Pencere bind:acik baslik={gunMetni(y, m, gun)} altBaslik="Öğlen nöbeti · {gerekE} eczacı + {gerekT} tekniker{onay ? ' · onaylı liste' : ''}">
@@ -261,59 +284,54 @@
 <style>
   .bos { padding: var(--b5); display: grid; gap: var(--b3); max-width: 760px; }
   .bos p { color: var(--yazi-2); }
-  .arac { display: flex; flex-wrap: wrap; gap: var(--b3); align-items: center; justify-content: space-between; margin-bottom: var(--b2); }
-  .durumlar, .dugmeler { display: flex; flex-wrap: wrap; gap: var(--b2); align-items: center; }
-  .aciklama { font-size: var(--f-sm); color: var(--soluk); margin-bottom: var(--b3); max-width: 80ch; }
-  .satir { display: flex; gap: var(--b2); align-items: flex-start; font-size: var(--f-sm); padding: 6px 10px; border-radius: var(--r-kucuk); background: var(--dikkat-zemin); margin-bottom: var(--b2); }
-  .satir :global(svg) { flex: none; margin-top: 2px; color: var(--dikkat); }
-  .tablo-kap { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; font-size: var(--f-sm); }
-  th, td { padding: 8px 12px; border-bottom: 1px solid var(--cizgi-acik); text-align: right; white-space: nowrap; }
-  thead th { font-size: var(--f-xs); color: var(--soluk); font-weight: 600; background: var(--yuzey-2); }
-  tbody th { font-weight: 500; }
-  .sol { text-align: left; }
-  small { color: var(--soluk); font-weight: 400; }
-  .blok { margin-top: var(--b5); display: grid; gap: var(--b2); }
-  .blok h2 { font-size: var(--f-lg); }
-  .blok .aciklama { margin-bottom: 0; }
-  .bant { padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; background: var(--vurgu-zemin); color: var(--vurgu); }
+  .satir { display: flex; gap: var(--b2); align-items: flex-start; margin-bottom: var(--b2); }
+  .satir :global(svg) { flex: none; margin-top: 2px; }
+  .bilgi-kutu { display: flex; gap: var(--b2); align-items: center; margin-bottom: var(--b4); font-weight: 600; }
+  small { color: var(--soluk); font-weight: 400; font-size: var(--f-xs); }
+  .bant { padding: var(--b2) var(--b4); border: 1px solid var(--cizgi); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 600; background: var(--vurgu-zemin); color: var(--vurgu); }
   .bant.bilgi { background: var(--bilgi-zemin); color: var(--bilgi); }
-  .takvim-kutu { padding: var(--b3); display: grid; gap: var(--b3); }
-  /* yalnız hafta içi (Pzt–Cuma): 5 sütun, adlara daha çok yer */
-  .takvim { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-  .bas { text-align: center; font-size: var(--f-xs); font-weight: 600; color: var(--soluk); padding-bottom: 2px; }
-  .gun { display: flex; flex-direction: column; gap: 5px; min-height: 104px; padding: 8px 9px; text-align: left; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); min-width: 0; font: inherit; color: inherit; }
+  /* yalnız hafta içi (Pzt–Cuma): kenarlıklı 5 sütun, adlara daha çok yer */
+  .takvim { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .bas, .bosluk, .gun { border-right: 1px solid var(--cizgi); border-bottom: 1px solid var(--cizgi); }
+  .takvim > :nth-child(5n) { border-right: 0; }
+  .bas { background: var(--tablo-bas); color: var(--lacivert); font-size: var(--f-xs); font-weight: 700; text-align: center; padding: 6px 0; }
+  .bosluk { background: var(--yuzey-2); }
+  .gun { display: flex; flex-direction: column; min-height: 104px; padding: 0; text-align: left; border-top: 0; border-left: 0; border-radius: 0; background: var(--yuzey); min-width: 0; font: inherit; color: inherit; }
   button.gun { cursor: pointer; }
-  button.gun:hover { border-color: var(--soluk); }
-  .gun.cuma { background: var(--yuzey-2); }
-  .gun.sorunlu { border-color: var(--hata); }
-  .gun.bugun { box-shadow: inset 0 0 0 2px var(--odak); }
-  .bos-gun { background: transparent; border-style: dashed; }
-  .ust { display: flex; align-items: center; gap: 6px; }
-  .no { font-weight: 600; font-size: var(--f-sm); color: var(--yazi-2); }
-  .elle { margin-left: auto; font-size: 11px; color: var(--soluk); }
-  .elle-kisi .ad, .elle-kisi .ad-kisa { text-decoration: underline dotted; text-underline-offset: 3px; }
-  .kisiler { display: grid; gap: 2px; min-width: 0; }
-  .kisi { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1.3; font-weight: 500; min-width: 0; }
+  button.gun:hover { background: var(--yuzey-2); }
+  button.gun:focus-visible { outline: 2px solid var(--odak); outline-offset: -2px; }
+  .serit { display: flex; align-items: center; gap: 6px; min-height: 24px; padding: 2px 8px; background: var(--panel-bas); border-bottom: 1px solid var(--cizgi-acik); font-size: var(--f-xs); color: var(--yazi-2); }
+  .serit b { font-size: var(--f-sm); color: var(--lacivert); }
+  .gun.cuma .serit { background: color-mix(in srgb, var(--acik-mavi) 18%, var(--yuzey)); }
+  .gun.sorunlu .serit { box-shadow: inset 0 -2px 0 var(--hata); }
+  .gun.bugun .serit b { text-decoration: underline; text-underline-offset: 3px; }
+  .bos-gun { background: var(--yuzey-2); }
+  .elle { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--yazi-2); }
+  .elle-kisi .ad, .elle-kisi .ad-kisa, .elle-ornek { text-decoration: underline dotted; text-underline-offset: 3px; }
+  .kisiler { display: grid; gap: 3px; padding: 6px 8px 8px; min-width: 0; }
+  .kisi { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1.3; font-weight: 600; min-width: 0; }
   .kisi .ad { min-width: 0; overflow-wrap: anywhere; }
   .kisi.sorun { color: var(--hata); text-decoration: line-through; }
   .nb { font-size: 10px; font-weight: 700; color: var(--hata); flex: none; }
-  .yok { font-size: var(--f-xs); color: var(--soluk); }
+  .yok { font-size: var(--f-xs); color: var(--soluk); padding: 6px 8px; }
   .ad-kisa { display: none; }
-  .lejant { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: var(--f-sm); color: var(--yazi-2); }
-  .lejant > span { display: inline-flex; align-items: center; gap: 6px; }
+  .lejant { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--f-xs); color: var(--yazi-2); }
+  .lejant > span { display: inline-flex; align-items: center; gap: 5px; }
+  .alt-duzen { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: var(--b4); margin-top: var(--b4); align-items: start; }
+  .sol-sutun { display: grid; gap: var(--b4); }
+  .ilke { display: grid; gap: var(--b2); font-size: var(--f-sm); color: var(--yazi-2); }
+  .baglanti { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 0; color: var(--baglanti); font-weight: 600; text-decoration: underline; cursor: pointer; justify-self: start; text-align: left; }
+  .kisi-tablo td { white-space: nowrap; }
+  @media (max-width: 960px) { .alt-duzen { grid-template-columns: 1fr; } }
   @media (max-width: 720px) {
-    .takvim-kutu { padding: 6px; }
-    .takvim { gap: 3px; }
-    .bas { font-size: 11px; }
-    .gun { min-height: 70px; padding: 4px 3px 5px; gap: 3px; border-radius: 6px; }
-    .no { font-size: 12px; }
+    .bas { font-size: 11px; padding: 4px 0; }
+    .gun { min-height: 70px; }
+    .serit { padding: 1px 4px; min-height: 18px; }
+    .gunadi { display: none; }
     .elle { font-size: 9px; }
-    .kisiler { gap: 1px; }
-    .kisi { font-size: 11px; gap: 2px; font-weight: 600; line-height: 1.2; }
-    .kisi .isaret { display: none; }
-    /* 5 sütunda telefonda da tam ad (gerekirse alt satıra kayar) */
-    .kisi .ad { overflow-wrap: anywhere; }
+    .kisiler { gap: 1px; padding: 3px 3px 4px; }
+    .kisi { font-size: 11px; gap: 2px; line-height: 1.2; }
+    .kisi .gorev { display: none; }
     .nb { font-size: 8px; }
     .yok { font-size: 9px; }
   }
@@ -321,7 +339,7 @@
   .pdf-hafta select { width: auto; min-width: 9.5em; }
   .iki { display: grid; grid-template-columns: 1fr 1fr; gap: var(--b3); }
   .alanlar { display: grid; gap: var(--b2); align-content: start; }
-  .not { padding: var(--b2) var(--b3); border-radius: var(--r-kucuk); font-size: var(--f-sm); background: var(--yuzey-2); color: var(--yazi-2); }
+  .not { padding: var(--b2) var(--b3); border: 1px solid var(--cizgi-acik); border-radius: var(--r-kucuk); font-size: var(--f-sm); background: var(--yuzey-2); color: var(--yazi-2); }
   .not.hata { background: var(--hata-zemin); color: var(--hata); }
   @media (max-width: 720px) { .iki { grid-template-columns: 1fr; } }
 </style>

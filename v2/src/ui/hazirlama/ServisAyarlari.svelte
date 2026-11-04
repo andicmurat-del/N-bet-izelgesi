@@ -65,7 +65,7 @@
   </table>
 </div>
 
-<form class="kart yeni" onsubmit={ekle}>
+<form class="kart panel-blok yeni" onsubmit={ekle}>
   <h2>Servis ekle</h2>
   <div class="alanlar">
     <label class="alan genis"><span>Servis adı</span><input class="girdi" bind:value={yeniAd} maxlength="40" placeholder="ör. ONKOLOJİ ya da ÇOCUK YB" /></label>
@@ -78,14 +78,15 @@
 </form>
 
 <style>
+  :where(tbody tr:nth-child(even)) > :where(td, th) { background: var(--yuzey-2); }
   .ust { display: flex; flex-wrap: wrap; gap: var(--b3); align-items: center; justify-content: space-between; margin-bottom: var(--b3); }
   .sag { display: flex; flex-wrap: wrap; gap: var(--b2); }
   .ara { width: 220px; }
   .bant { padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; background: var(--vurgu-zemin); color: var(--vurgu); }
   .tablo-kap { overflow-x: auto; max-height: 70vh; overflow-y: auto; }
   table { border-collapse: collapse; width: 100%; font-size: var(--f-sm); }
-  th, td { padding: 6px 12px; border-bottom: 1px solid var(--cizgi-acik); text-align: center; white-space: nowrap; }
-  thead th { position: sticky; top: 0; z-index: 1; background: var(--yuzey-2); font-size: var(--f-xs); color: var(--soluk); font-weight: 600; }
+  th, td { padding: 6px 12px; border: 1px solid var(--cizgi-acik); text-align: center; white-space: nowrap; }
+  thead th { position: sticky; top: 0; z-index: 1; background: var(--tablo-bas); font-size: var(--f-xs); color: var(--lacivert); font-weight: 700; }
   .sol { text-align: left; }
   tbody th { font-weight: 500; }
   .ad { display: inline-flex; align-items: center; gap: var(--b2); cursor: pointer; }
@@ -96,7 +97,7 @@
   tr.kapali th, tr.kapali td { color: var(--soluk); }
   tr.kapali .ad { text-decoration: line-through; }
   .gizli { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .yeni { padding: var(--b4); margin-top: var(--b4); display: grid; gap: var(--b3); }
+  .yeni { padding: 0 var(--b4) var(--b4); margin-top: var(--b4); display: grid; gap: var(--b3); }
   .yeni h2 { font-size: var(--f-lg); }
   .alanlar { display: flex; flex-wrap: wrap; gap: var(--b3); align-items: flex-end; }
   .alanlar .alan { width: 130px; }

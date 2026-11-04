@@ -41,7 +41,7 @@
   </div>
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
-  <section class="blok">
+  <section class="blok panel-blok">
     <h2>Aylara göre yük</h2>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
     <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Aylara göre servis yükü">
@@ -62,7 +62,7 @@
     </div>
   </section>
 
-  <section class="blok">
+  <section class="blok panel-blok">
     <h2>Servislerin kişilere dağılımı</h2>
     <p class="aciklama">Her servisi bu yıl kimin kaç kez hazırladığı. Payı, kişinin çalıştığı günlere göre düşen sayıdır; payın bir alt ya da üst tam sayısı dengelidir.</p>
     <p class="lejant" aria-hidden="true"><span>Payından:</span>{#each SINIF as [c, t]}<span class="kutu {c}">{t}</span>{/each}</p>
@@ -95,17 +95,17 @@
 {/if}
 
 <style>
+  :where(tbody tr:nth-child(even)) > :where(td, th) { background: var(--yuzey-2); }
   .bos { padding: var(--b5); display: grid; gap: var(--b2); }
   .bos p { color: var(--yazi-2); }
   .ust { display: flex; flex-wrap: wrap; gap: var(--b3); justify-content: space-between; align-items: flex-start; margin-bottom: var(--b3); }
   .aciklama { font-size: var(--f-sm); color: var(--soluk); max-width: 90ch; }
   .bant { padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; background: var(--vurgu-zemin); color: var(--vurgu); }
-  .blok { display: grid; gap: var(--b2); margin-bottom: var(--b5); }
-  .blok h2 { font-size: var(--f-lg); }
+  .blok { margin-bottom: var(--b4); }
   .tablo-kap { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: var(--f-sm); }
-  th, td { padding: 7px 10px; border-bottom: 1px solid var(--cizgi-acik); text-align: right; white-space: nowrap; }
-  thead th { font-size: var(--f-xs); color: var(--soluk); font-weight: 600; background: var(--yuzey-2); }
+  th, td { padding: 7px 10px; border: 1px solid var(--cizgi-acik); text-align: right; white-space: nowrap; }
+  thead th { font-size: var(--f-xs); color: var(--lacivert); font-weight: 700; background: var(--tablo-bas); }
   thead th small { display: block; font-weight: 500; font-size: var(--f-xs); }
   tbody th { font-weight: 500; }
   .sol { text-align: left; }

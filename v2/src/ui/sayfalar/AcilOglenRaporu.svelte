@@ -22,7 +22,7 @@
 </script>
 
 {#each bolumler as b (b.baslik)}
-  <section class="blok">
+  <section class="blok panel-blok">
     <h2>{b.baslik}</h2>
     {#if !b.aylar.some(Boolean)}
       <div class="kart bos"><p>{b.bos}</p></div>
@@ -49,14 +49,14 @@
 {/each}
 
 <style>
-  .blok { display: grid; gap: var(--b2); margin-bottom: var(--b5); }
-  .blok h2 { font-size: var(--f-lg); }
+  :where(tbody tr:nth-child(even)) > :where(td, th) { background: var(--yuzey-2); }
+  .blok { margin-bottom: var(--b4); }
   .aciklama { font-size: var(--f-sm); color: var(--soluk); max-width: 100ch; }
   .bos { padding: var(--b4); color: var(--yazi-2); }
   .tablo-kap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: var(--f-sm); font-variant-numeric: tabular-nums; }
-  th, td { padding: 8px 10px; border-bottom: 1px solid var(--cizgi-acik); text-align: right; white-space: nowrap; }
-  thead th { font-size: var(--f-xs); color: var(--soluk); font-weight: 600; background: var(--yuzey-2); }
+  th, td { padding: 8px 10px; border: 1px solid var(--cizgi-acik); text-align: right; white-space: nowrap; }
+  thead th { font-size: var(--f-xs); color: var(--lacivert); font-weight: 700; background: var(--tablo-bas); }
   tbody th { font-weight: 500; }
   tbody th small { color: var(--soluk); font-weight: 400; }
   .sol { text-align: left; }

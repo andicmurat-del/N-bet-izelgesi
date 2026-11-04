@@ -169,7 +169,7 @@
     </aside>
   </div>
 
-  <section class="blok" aria-labelledby="dg-liste">
+  <section class="blok panel-blok" aria-labelledby="dg-liste">
     <h2 id="dg-liste">Bu ayın değişimleri</h2>
     {#if satirlar.length}
       <ul>
