@@ -55,11 +55,15 @@ describe("öğlen nöbeti", () => {
     expect(nob).toBeLessThanOrEqual(3);
   });
 
-  test("yıl boyu eşitlik: toplam ve Cuma (izinli olan sonraki ay kapatır)", () => {
+  test("yıl boyu eşitlik: toplam ve Cuma; izinli günler paydan düşer (izinden dönen fazladan yazılmaz)", () => {
     ay(11);
     const Yl = oglenYillikHesapla(veri, Y, 11);
     const say = ids => ids.map(id => (Yl[id] || { top: 0 }).top);
-    expect(fark(say([1, 2, 3, 4, 5, 6, 7]))).toBeLessThanOrEqual(1);
+    expect(fark(say([1, 3, 4, 5, 6, 7]))).toBeLessThanOrEqual(1);
+    // E2 Kasım'da bir hafta izinliydi: o haftanın payı düşer, Aralık'ta kapatmaz (öbürlerinden az, en çok bir haftalık pay)
+    const enAz = Math.min(...say([1, 3, 4, 5, 6, 7]));
+    expect(Yl[2].top).toBeLessThan(enAz);
+    expect(enAz - Yl[2].top).toBeLessThanOrEqual(2);
     expect(Yl[8]).toBeUndefined();   // acil servis personeli öğlen nöbetine yazılmaz
     expect(fark(say([9, 10, 11, 12, 13]))).toBeLessThanOrEqual(1);
     expect(fark([1, 2, 3, 4, 5, 6].map(id => Yl[id].cuma))).toBeLessThanOrEqual(1);
@@ -73,7 +77,7 @@ describe("öğlen nöbeti", () => {
       .map(([d, k]) => ({ t: new Date(Y, m, +d).getTime(), ids: [...k.e, ...k.t] })));
     let tekrar = 0;
     for (let i = 1; i < cumalar.length; i++) if (cumalar[i].t - cumalar[i - 1].t === 7 * 864e5) tekrar += cumalar[i].ids.filter(id => cumalar[i - 1].ids.includes(id)).length;
-    expect(tekrar).toBeLessThanOrEqual(4);   // kuraldan önce 7
+    expect(tekrar).toBeLessThanOrEqual(5);   // kuraldan önce 7 (haftada iki sırası ve pay kuralıyla birlikte)
   });
 
   test("haftada iki öğlen nöbeti sırayla: herkes bir kez iki almadan kimse yeniden iki almaz", () => {
