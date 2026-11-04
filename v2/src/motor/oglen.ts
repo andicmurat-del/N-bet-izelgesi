@@ -2,9 +2,11 @@
 // sırayla yapılan bir iştir. Pazartesi–Perşembe 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker. Eczacı: eczacı ve
 // acilde nöbet tutan eczacılar da (acil servis personeli yazılmaz); Cuma'dan muaf işaretli kişiler (eczacı ya da tekniker) Cuma yazılmaz. O gün mesaide çalışanlardan yazılır (puantaja
 // göre: izinli, raporlu, nöbet ertesi izinli olan yazılmaz); resmi tatil ve arife günü öğlen nöbeti yoktur.
-// Hedefler (önem sırasıyla): herkese haftada bir (kişi yetmezse iki), yıl boyunca toplam sayı eşit, Cuma sayısı Cuma
+// Hedefler (önem sırasıyla): herkese haftada bir (kişi yetmezse iki), yıl boyunca toplam sayı yazılabildiği günlere
+// göre eşit (izinli günler paydan düşer, izinden dönen fazladan yazılmaz), Cuma sayısı Cuma
 // yazılabilenler arasında ayrıca eşit, mümkünse o günün eczane / acil servis nöbetçisine yazılmaz (eşitlik bozulmuyorsa),
-// mümkünse aynı kişi art arda iki Cuma yazılmaz.
+// mümkünse aynı kişi art arda iki Cuma yazılmaz; haftada iki öğlen nöbeti sırayla verilir (grubundaki herkes bir kez
+// iki almadan aynı kişi yeniden iki almaz).
 // Hangi gün tutulduğu eşitlikte önemsizdir; yalnız Cuma ayrıca sayılır.
 import { aktifAydaMi, type Baglam } from "./baglam";
 import { puantajIzgarasi } from "./puantaj";
@@ -26,8 +28,8 @@ const GRUPLAR: Grup[] = ["e", "t"];
 export const oglenGrubu = (rol: string): Grup | null => (rol === "eczaci" ? "e" : rol === "teknisyen" ? "t" : null);
 
 /** amaç ağırlıkları (küçük daha iyi): haftada üçüncü kez çok ağır; haftada ikinci kez her seferinde ceza (kişi
- *  yetiyorsa herkes bir kez); eşitlik nöbetçiden kaçınmaktan önce gelir; art arda iki Cuma haftada ikinci kez kadar ağır */
-const W = { hafta3: 1000, hafta: 3, toplam: 1, cuma: 3, cumaArdArda: 3, nobetci: 0.5, ardArda: 0.2 };
+ *  yetiyorsa herkes bir kez); haftada iki alma sırası yıllık eşitlikten önce; eşitlik nöbetçiden kaçınmaktan önce gelir; art arda iki Cuma haftada iki sırasıyla yarışabilsin diye ağır */
+const W = { hafta3: 1000, ikiSira: 30, hafta: 3, toplam: 2, cuma: 3, cumaArdArda: 25, nobetci: 0.5, ardArda: 0.2 };
 
 export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[]; elle?: true; sabit?: OglenSabit }
 export interface OglenSonucu { gunler: OglenGunSonucu[]; uyarilar: string[] }
@@ -37,45 +39,77 @@ export function oglenGunuMu(B: Baglam, y: number, m: number, d: number): boolean
   return haftaGunu(y, m, d) <= CUMA && !B.tatilMi(y, m, d) && !B.arifeMi(y, m, d);
 }
 
-/** Yılın önceki aylarından kişi başı fark: o ay çalışan grup arkadaşlarının ortalamasına göre fazla (+) / eksik (−).
- *  Toplam ve Cuma ayrı; Cuma farkı yalnız Cuma yazılabilenler arasında. Ocak'ta sayım sıfırdan başlar. */
+/** Bir ayın kişi başı payı: yerler, o ay yazılabildiği günlere göre bölünür (izinli, raporlu, nöbet ertesi izinli
+ *  günler paydan düşer; izinden dönen kişi borçlu sayılmaz). gunler: o ayın öğlen günleri, her biri için aday listesi
+ *  ve dolan yer sayısı; toplam payında Cuma'dan muaf olan da sayılır (Cuma'yı öteki günlerde tamamlar); Cuma payı
+ *  yalnız Cuma günleri ve Cuma'dan muaf olmayanlar arasında; haftada iki payı, o hafta en az
+ *  iki gün yazılabilenler arasında o haftanın iki alma sayısı kadar. */
+function aylikPay(havuz: number[], cumaMuaf: Set<number>, gunler: { aday: number[]; yer: number; cuma: boolean; hafta: number }[], ikiHafta: Record<number, number>) {
+  const top: Record<number, number> = {}, cuma: Record<number, number> = {}, iki: Record<number, number> = {};
+  havuz.forEach(id => { top[id] = 0; cuma[id] = 0; iki[id] = 0; });
+  const bol = (pay: Record<number, number>, yer: number, kimler: number[]) => {
+    const l = kimler.filter(id => pay[id] !== undefined); if (!l.length) return;
+    l.forEach(id => { pay[id] += yer / l.length; });
+  };
+  const haftaGun: Record<number, Record<number, number>> = {};
+  for (const g of gunler) {
+    bol(top, g.yer, g.aday);
+    if (g.cuma) bol(cuma, g.yer, g.aday.filter(id => !cumaMuaf.has(id)));
+    const hg = (haftaGun[g.hafta] ??= {}); g.aday.forEach(id => { hg[id] = (hg[id] || 0) + 1; });
+  }
+  for (const [h, n] of Object.entries(ikiHafta)) {
+    const hg = haftaGun[Number(h)] || {};
+    bol(iki, n, Object.keys(hg).map(Number).filter(id => hg[id] >= 2));
+  }
+  return { top, cuma, iki };
+}
+
+/** Yılın önceki aylarından kişi başı fark: aldığı − payı (fazla +, eksik −). Pay, kişinin o ay yazılabildiği günlere
+ *  göredir; izin borç yaratmaz, yalnız yuvarlama ve dağılım farkları sonraki aylara taşınır. Toplam, Cuma ve haftada
+ *  iki ayrı; Ocak'ta sayım sıfırdan başlar. */
 function oglenDevir(B: Baglam, y: number, m: number) {
-  const top: Record<number, number> = {}, cuma: Record<number, number> = {};
+  const top: Record<number, number> = {}, cuma: Record<number, number> = {}, iki: Record<number, number> = {};
+  const muaf = new Set(B.staff.filter(s => s.cumaMuaf).map(s => s.id));
   for (let mm = 0; mm < m; mm++) {
     const kayit = B.oglen[ayAnahtari(y, mm)]; if (!kayit) continue;
+    const G = puantajIzgarasi(B, y, mm), ilk = haftaGunu(y, mm, 1);
     for (const g of GRUPLAR) {
-      const havuz = B.staff.filter(s => oglenGrubu(s.role) === g && aktifAydaMi(s, y, mm)); if (!havuz.length) continue;
-      const cHavuz = havuz.filter(s => !s.cumaMuaf);
-      const c: Record<number, number> = {}, f: Record<number, number> = {};
-      havuz.forEach(s => { c[s.id] = 0; f[s.id] = 0; });
+      const havuz = B.staff.filter(s => oglenGrubu(s.role) === g && aktifAydaMi(s, y, mm)).map(s => s.id); if (!havuz.length) continue;
+      const c: Record<number, number> = {}, f: Record<number, number> = {}, hf: Record<string, number> = {}, ik: Record<number, number> = {}, ikiHafta: Record<number, number> = {};
+      const gunler: { aday: number[]; yer: number; cuma: boolean; hafta: number }[] = [];
       for (const [gun, k] of Object.entries(kayit)) {
-        const cu = haftaGunu(y, mm, Number(gun)) === CUMA;
-        (k[g] || []).forEach(id => { if (c[id] === undefined) return; c[id]++; if (cu) f[id]++; });
+        const d = Number(gun), cu = haftaGunu(y, mm, d) === CUMA, h = Math.floor((d - 1 + ilk) / 7), l = (k[g] || []).filter(id => havuz.includes(id));
+        // pay: o gün kadroda olanlar ve o gün yazılmış olanlar (elle yazılan, sonradan izinli olsa da payına sayılır)
+        gunler.push({ aday: [...new Set([...gunAdaylari(G, y, mm, d).mevcut[g], ...l])], yer: l.length, cuma: cu, hafta: h });
+        l.forEach(id => { c[id] = (c[id] || 0) + 1; if (cu) f[id] = (f[id] || 0) + 1; const kk = h + ":" + id; hf[kk] = (hf[kk] || 0) + 1; if (hf[kk] === 2) { ik[id] = (ik[id] || 0) + 1; ikiHafta[h] = (ikiHafta[h] || 0) + 1; } });
       }
-      const ort = havuz.reduce((t, s) => t + c[s.id], 0) / havuz.length;
-      havuz.forEach(s => { top[s.id] = (top[s.id] || 0) + c[s.id] - ort; });
-      if (cHavuz.length) {
-        const ortF = cHavuz.reduce((t, s) => t + f[s.id], 0) / cHavuz.length;
-        cHavuz.forEach(s => { cuma[s.id] = (cuma[s.id] || 0) + f[s.id] - ortF; });
-      }
+      const pay = aylikPay(havuz, muaf, gunler, ikiHafta), cHavuz = new Set(B.staff.filter(s => !s.cumaMuaf).map(s => s.id));
+      havuz.forEach(id => {
+        top[id] = (top[id] || 0) + (c[id] || 0) - pay.top[id];
+        iki[id] = (iki[id] || 0) + (ik[id] || 0) - pay.iki[id];
+        if (cHavuz.has(id)) cuma[id] = (cuma[id] || 0) + (f[id] || 0) - pay.cuma[id];
+      });
     }
   }
-  return { top, cuma };
+  return { top, cuma, iki };
 }
 
 /** o gün öğlen nöbetine yazılabilenler (grup başına) ve o günün nöbetçileri */
 function gunAdaylari(G: ReturnType<typeof puantajIzgarasi>, y: number, m: number, d: number) {
-  const cu = haftaGunu(y, m, d) === CUMA, nobetci: number[] = [], ca: Record<Grup, number[]> = { e: [], t: [] };
+  const cu = haftaGunu(y, m, d) === CUMA, nobetci: number[] = [], ca: Record<Grup, number[]> = { e: [], t: [] }, mevcut: Record<Grup, number[]> = { e: [], t: [] };
   G.satirlar.forEach(r => {
     const g = oglenGrubu(r.s.role); if (!g) return;
     const c = r.cells[d - 1];
+    // pay için o gün kadroda olanlar: yıllık izin, rapor ve çalışma dönemi dışı düşer; nöbet ve nöbet ertesi izni
+    // herkesin düzenli işi olduğu için düşmez
+    if (!(c.kod === "YI" || c.kod === "R" || c.kod === "DI" || c.kod === "P")) mevcut[g].push(r.s.id);
     // o gün mesaide: normal mesai ya da nöbet (eczane / acil servis nöbetçisi gün içinde de çalışır)
     if (!(c.kod === "M" || c.kod === "N" || (c.kod.indexOf("S:") === 0 && c.saat > 0))) return;
     if (c.kod === "N") nobetci.push(r.s.id);
     if (cu && r.s.cumaMuaf) return;
     ca[g].push(r.s.id);
   });
-  return { ca, nobetci };
+  return { ca, nobetci, mevcut };
 }
 
 /**
@@ -106,20 +140,20 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
       if (r) [...(r.e || []), ...(r.t || [])].forEach(id => oncekiCuma.add(id));
     }
   }
-  const gunler: OglenGunSonucu[] = [], aday: Record<Grup, number[][]> = { e: [], t: [] }, gerek: Record<Grup, number[]> = { e: [], t: [] };
+  const gunler: OglenGunSonucu[] = [], mevcutG: Record<Grup, number[][]> = { e: [], t: [] }, aday: Record<Grup, number[][]> = { e: [], t: [] }, gerek: Record<Grup, number[]> = { e: [], t: [] };
   // sabit: değişmeyecek kişiler (gün başına, grup başına); tamSabit: gün hiç değişmez (elle ya da onarımda geçmiş gün)
   const sabit: Record<Grup, number[][]> = { e: [], t: [] }, tamSabit: boolean[] = [];
   for (let d = 1; d <= dim; d++) {
     const k = onceki[d], gecmis = !!onarim && tarihNo(y, m, d) < onarim.bugun;
     if (!oglenGunuMu(B, y, m, d) && !(k && (k.elle || k.sabit || gecmis))) continue;
     const dw = haftaGunu(y, m, d), cu = dw === CUMA, ger = cu ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
-    const { ca, nobetci } = gunAdaylari(G, y, m, d);
+    const { ca, nobetci, mevcut } = gunAdaylari(G, y, m, d);
     const tam = !!k && (!!k.elle || gecmis), sb = k?.sabit;
     gunler.push({ gun: d, dw, e: [], t: [], nobetci, ...(k?.elle ? { elle: true as const } : {}), ...(sb ? { sabit: sb } : {}) });
     tamSabit.push(tam);
     const hedef = { e: 0, t: 0 };
     for (const g of GRUPLAR) {
-      aday[g].push(ca[g]);
+      aday[g].push(ca[g]); mevcutG[g].push(mevcut[g]);
       // elle yazılan kişiler yerinde kalır; onarımda öteki geçerli kişiler de kalır, yalnız eksikler doldurulur
       const elleKisi = sb ? (sb[g] || []).slice() : [];
       const kalan = tam ? (k![g] || []).slice() : [...elleKisi, ...(onarim && k ? (k[g] || []).filter(id => ca[g].includes(id) && !elleKisi.includes(id)) : [])];
@@ -137,7 +171,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
 
   const N = gunler.length, nobetciMi = gunler.map(x => new Set(x.nobetci));
   const ardisik = gunler.map((x, i) => i > 0 && gunler[i - 1].gun === x.gun - 1);
-  const haftaNo = gunler.map(x => hafta(x.gun)), cumaMi = gunler.map(x => x.dw === CUMA);
+  const haftaNo = gunler.map(x => hafta(x.gun)), sonHafta = Math.max(0, ...haftaNo), cumaMi = gunler.map(x => x.dw === CUMA);
   // bir önceki Cuma: bu aydaysa gün sırası, ay öncesindeyse -2, öğlen nöbeti yoksa -1
   const oncekiCumaNo = gunler.map(x => x.dw !== CUMA ? -1 : x.gun > 7 ? gunler.findIndex(z => z.gun === x.gun - 7) : -2);
   for (const g of GRUPLAR) {
@@ -146,6 +180,16 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
     const sec: number[][] = gunler.map((_, i) => sabit[g][i].slice());
     // değişmez yerler: sabit kişiler listenin başında durur, arama yalnız sonrasına dokunur
     const ilkSerbest = sabit[g].map(l => l.length);
+    // bu ayın payı: yerler kişinin yazılabildiği günlere göre bölünür (izinli günler paydan düşer)
+    const havuzId = havuz.map(s => s.id), gunAday = gunler.map((_, i) => [...new Set([...mevcutG[g][i], ...sabit[g][i]])]);
+    const pay = aylikPay(havuzId, new Set(havuz.filter(s => s.cumaMuaf).map(s => s.id)), gunler.map((x, i) => ({ aday: gunAday[i], yer: gerek[g][i], cuma: cumaMi[i], hafta: haftaNo[i] })), {});
+    // haftada iki payı için: o hafta en az iki gün kadroda olanlar
+    const ikiYazilabilir: number[][] = [];
+    for (let h = 0; h <= sonHafta; h++) {
+      const say: Record<number, number> = {};
+      gunler.forEach((_, i) => { if (haftaNo[i] === h) gunAday[i].forEach(id => { say[id] = (say[id] || 0) + 1; }); });
+      ikiYazilabilir[h] = havuzId.filter(id => (say[id] || 0) >= 2);
+    }
     const J = (): number => {
       const top: Record<number, number> = {}, cu: Record<number, number> = {}, hf: Record<string, number> = {};
       let j = 0;
@@ -158,11 +202,24 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
         const oc = oncekiCumaNo[i];
         if (oc >= 0 ? sec[oc].includes(id) : oc === -2 && oncekiCuma.has(id)) j += W.cumaArdArda;
       }
-      havuz.forEach(s => { const v = (top[s.id] || 0) + (devir.top[s.id] || 0); j += W.toplam * v * v; });
-      cumaHavuz.forEach(s => { const v = (cu[s.id] || 0) + (devir.cuma[s.id] || 0); j += W.cuma * v * v; });
+      havuz.forEach(s => { const v = (top[s.id] || 0) - pay.top[s.id] + (devir.top[s.id] || 0); j += W.toplam * v * v; });
+      cumaHavuz.forEach(s => { const v = (cu[s.id] || 0) - pay.cuma[s.id] + (devir.cuma[s.id] || 0); j += W.cuma * v * v; });
+      const ikiHafta: number[][] = [];
       for (const [k, v0] of Object.entries(hf)) {
-        const v = v0 + (k.startsWith("0:") ? oncekiHafta[Number(k.slice(2))] || 0 : 0);
+        const h = Number(k.slice(0, k.indexOf(":"))), id = Number(k.slice(k.indexOf(":") + 1)), v = v0 + (h === 0 ? oncekiHafta[id] || 0 : 0);
         j += (v > 1 ? W.hafta * (v - 1) : 0) + (v > 2 ? W.hafta3 * (v - 2) : 0);
+        if (v > 1) (ikiHafta[h] ??= []).push(id);
+      }
+      // haftada iki alma sırası: her haftanın sonunda (yılın önceki aylarındaki farkla birlikte) herkesin sayısı eşit
+      // kalsın; kareler her hafta ayrı toplandığı için sıra da gözetilir (herkes bir kez almadan kimse ikinci kez almaz)
+      const r: Record<number, number> = {};
+      havuz.forEach(s => { r[s.id] = devir.iki[s.id] || 0; });
+      for (let h = 0; h <= sonHafta; h++) {
+        const l = ikiHafta[h] || [], yaz = ikiYazilabilir[h];
+        l.forEach(id => { if (r[id] !== undefined) r[id]++; });
+        // o hafta yazılabilenlerin payı düşülür: izinli kişi o haftanın sırasını kaçırmış sayılmaz
+        if (l.length && yaz.length) yaz.forEach(id => { r[id] -= l.length / yaz.length; });
+        havuz.forEach(s => { j += W.ikiSira * r[s.id] * r[s.id]; });
       }
       return j;
     };
