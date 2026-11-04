@@ -68,6 +68,14 @@ describe("öğlen nöbeti", () => {
     expect(Yl[13].cuma).toBe(0);
   });
 
+  test("mümkünse aynı kişi art arda iki Cuma yazılmaz", () => {
+    const cumalar = [10, 11].flatMap(m => Object.entries(veri.oglen[`${Y}-${m}`]).filter(([d]) => hg(m, +d) === 4)
+      .map(([d, k]) => ({ t: new Date(Y, m, +d).getTime(), ids: [...k.e, ...k.t] })));
+    let tekrar = 0;
+    for (let i = 1; i < cumalar.length; i++) if (cumalar[i].t - cumalar[i - 1].t === 7 * 864e5) tekrar += cumalar[i].ids.filter(id => cumalar[i - 1].ids.includes(id)).length;
+    expect(tekrar).toBeLessThanOrEqual(4);   // kuraldan önce 7
+  });
+
   test("aynı veriyle aynı sonuç", () => {
     expect(JSON.stringify(oglenHesapla(veri, Y, 11))).toBe(JSON.stringify(oglenHesapla(veri, Y, 11)));
   });

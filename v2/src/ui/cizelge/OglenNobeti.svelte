@@ -223,7 +223,7 @@
       <section class="panel">
         <div class="panel-bas"><h2>Eşitlik ilkesi</h2></div>
         <div class="panel-ic ilke">
-          <p>O gün mesaide çalışanlardan yazılır. Herkese haftada bir (kişi yetmezse iki); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. İzin vb. nedeniyle bir ay az alan sonraki aylarda tamamlar. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz.</p>
+          <p>O gün mesaide çalışanlardan yazılır. Herkese haftada bir (kişi yetmezse iki); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. İzin vb. nedeniyle bir ay az alan sonraki aylarda tamamlar. Mümkünse aynı kişi art arda iki Cuma yazılmaz. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz.</p>
           <p>Bir güne dokunup kişileri elle değiştirebilirsiniz: yalnız değiştirdiğiniz yerler korunur, "Seçilmedi" yaptığınız yer boş kalır. Sonradan girilen izin ve raporlarda boşalan yerler kendiliğinden doldurulur.</p>
           <button class="baglanti" onclick={() => git("kisiler")}><Ikon ad="kisiler" boyut={16} />Cuma'dan muaf olanları düzenle (Personel)</button>
         </div>
