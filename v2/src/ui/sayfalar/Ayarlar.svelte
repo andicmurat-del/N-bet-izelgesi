@@ -50,13 +50,13 @@
 <SayfaBasligi konum={["Ayarlar"]} baslik="Ayarlar" aciklama="Kurum bilgileri, günlük ve acil eczane nöbet kuralları, puantaj ve yedek." />
 
 <div class="bolumler">
-  <section class="kart bolum">
+  <section class="kart panel-blok bolum">
     <h2>Kurum</h2>
     <label class="alan"><span>Kurum adı</span><input class="girdi" bind:value={depo.veri.kurum.ad} maxlength="80" placeholder="ör. Şehir Hastanesi Eczanesi" /><small>Çıktıların başlığında görünür.</small></label>
     <label class="alan"><span>Onaylayan</span><input class="girdi" bind:value={depo.veri.kurum.onaylayan} maxlength="80" placeholder="ör. Sorumlu Eczacı Ayşe Yılmaz" /><small>Çizelge onaylanınca kayda geçer.</small></label>
   </section>
 
-  <section class="kart bolum">
+  <section class="kart panel-blok bolum">
     <h2>Günlük eczane nöbet kuralları</h2>
     <p class="aciklama">Günlük Eczane Nöbet Listesi ve hazırlama için.</p>
     <Bilgi baslik="Sabit kurallar"><p>Nöbet ertesi gün izin, art arda iki gün nöbet yok, ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti, kişiler arası fazla mesai farkı en çok 8 saat, hazırlama farkı en çok 1; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı eşit.</p></Bilgi>
@@ -67,7 +67,7 @@
       <input class="girdi" type="number" min="0" max="8" value={depo.veri.settings.destekAylik} onchange={e => { depo.veri.settings.destekAylik = sinirla(e.currentTarget.value, 0, 8, AYAR_VARSAYILAN.destekAylik); e.currentTarget.value = String(depo.veri.settings.destekAylik); }} /></label>
   </section>
 
-  <section class="kart bolum">
+  <section class="kart panel-blok bolum">
     <h2>Acil eczane nöbet kuralları</h2>
     <p class="aciklama">Acil Eczane Nöbet Listesi için.</p>
     <Bilgi baslik="Sabit kurallar"><p>Günde 2 nöbetçi, nöbet ertesi gün izin, art arda iki gün ve 5 günde 3 nöbet yok, aynı ya da komşu günde günlük eczanede görevi olan yazılmaz, mümkünse ayda en fazla 1 Cumartesi ve 1 Pazar; her ay kişiler arası fazla mesai farkı mümkün olduğunca en çok 8 saat; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı eşit (izinli / raporlu günler paydan düşülür).</p></Bilgi>
@@ -76,14 +76,14 @@
       <small>Art arda günler her zaman yasaktır; bu sınır yalnız tercih edilir.</small></label>
   </section>
 
-  <section class="kart bolum">
+  <section class="kart panel-blok bolum">
     <h2>Puantaj</h2>
     <p class="aciklama">Günlük eczane ve acil eczane puantajı için.</p>
     <label class="alan"><span>Arife günü normal mesai (saat)</span>
       <input class="girdi" type="number" min="0" max="8" value={depo.veri.settings.arifeSaat} onchange={e => { depo.veri.settings.arifeSaat = sinirla(e.currentTarget.value, 0, 8, AYAR_VARSAYILAN.arifeSaat); e.currentTarget.value = String(depo.veri.settings.arifeSaat); }} /></label>
   </section>
 
-  <section class="kart bolum">
+  <section class="kart panel-blok bolum">
     <h2>Yedek</h2>
     <p class="aciklama">Veriler yalnız bu tarayıcıda durur. Tarayıcı verisi silinirse kaybolur; düzenli yedek alın. Yedek dosyasıyla başka bir bilgisayara da taşıyabilirsiniz.</p>
     <div class="dugmeler">
@@ -95,7 +95,7 @@
     {#if geriAlinabilir}<div><button class="dugme" onclick={geriDon}><Ikon ad="yenile" />Yüklemeden önceki verilere dön</button></div>{/if}
   </section>
 
-  <section class="kart bolum tehlikeli">
+  <section class="kart panel-blok bolum tehlikeli">
     <h2>Tüm verileri sil</h2>
     <p class="aciklama">Personel, izinler, çizelgeler ve ayarlar bu tarayıcıdan silinir. Geri alınamaz; önce yedek alın.</p>
     <div class="dugmeler">
@@ -109,7 +109,7 @@
 
 <style>
   .bolumler { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--b4); align-items: start; }
-  .bolum { padding: var(--b5); display: grid; gap: var(--b4); }
+  .bolum { padding: 0 var(--b4) var(--b4); display: grid; gap: var(--b4); }
   .bolum h2 { font-size: var(--f-lg); }
   .aciklama { font-size: var(--f-sm); color: var(--soluk); }
   .dugmeler { display: flex; flex-wrap: wrap; gap: var(--b2); }
@@ -119,5 +119,5 @@
   .durum.tamam { background: var(--vurgu-zemin); color: var(--vurgu); border: 1px solid var(--vurgu); }
   .durum.hata { background: var(--hata-zemin); color: var(--hata); border: 1px solid var(--hata); }
   @media (min-width: 861px) { .durum { bottom: var(--b5); } }
-  @media (max-width: 420px) { .bolumler { grid-template-columns: 1fr; } .bolum { padding: var(--b4); } }
+  @media (max-width: 420px) { .bolumler { grid-template-columns: 1fr; } .bolum { padding: 0 var(--b4) var(--b4); } }
 </style>

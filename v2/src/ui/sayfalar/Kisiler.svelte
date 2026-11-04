@@ -64,7 +64,7 @@
 <div class="gruplar">
   {#each gruplar as g}
     {#if g.kisiler.length || g.rol === "eczaci" || g.rol === "teknisyen"}
-      <section class="kart grup">
+      <section class="kart panel-blok grup">
         <h2><span class="isaret {g.rol}"></span>{ROL_AD[g.rol]}<span class="sayi rakam">{g.kisiler.length}</span></h2>
         {#if g.kisiler.length}
           <ul>
@@ -130,7 +130,7 @@
   .ekle .aciklama { grid-column: 1 / -1; font-size: var(--f-sm); color: var(--soluk); }
   .hata { grid-column: 1 / -1; color: var(--hata); font-size: var(--f-sm); font-weight: 500; }
   .gruplar { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--b4); align-items: start; }
-  .grup { padding: var(--b4); }
+  .grup { padding: 0 var(--b4) var(--b4); }
   .grup h2 { display: flex; align-items: center; gap: var(--b2); font-size: var(--f-lg); margin-bottom: var(--b3); }
   .sayi { margin-left: auto; font-family: var(--yazi-govde); font-size: var(--f-sm); color: var(--soluk); font-weight: 500; }
   ul { list-style: none; margin: 0; padding: 0; display: grid; }

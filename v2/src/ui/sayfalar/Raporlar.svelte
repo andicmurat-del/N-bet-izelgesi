@@ -72,14 +72,14 @@
 {:else if !R.V.kayitli}
   <div class="kart bos"><h2>{yil} yılı için kayıtlı çizelge yok</h2><p>Çizelge oluşturduğunuz aylar burada raporlanır.</p></div>
 {:else if sekme === "ozet"}
-  <div class="kpi-satir">
-    <div class="kart kpi"><small>Kayıtlı ay</small><b class="rakam">{R.V.kayitli}<span>/ 12</span></b></div>
-    <div class="kart kpi"><small>Toplam nöbet</small><b class="rakam">{toplamNobet}</b><span class="alt">kişi başı {duty.length ? (toplamNobet / duty.length).toFixed(1).replace(".", ",") : 0}</span></div>
-    <div class="kart kpi"><small>Toplam fazla mesai</small><b class="rakam">{toplamFm}<span>sa</span></b><span class="alt">nöbetçi başı {Math.round(fmOrt)} sa</span></div>
-    <div class="kart kpi"><small>Yıllık fark (en çok − en az)</small><b class="rakam">{fmFark}<span>sa</span></b><span class="rozet {fmFark <= 16 ? 'tamam' : fmFark <= 32 ? 'dikkat' : 'hata'}">{fmFark <= 16 ? "Dengeli" : fmFark <= 32 ? "Orta" : "Dengesiz"}</span></div>
+  <div class="ozet-serit kpi-serit">
+    <div class="kpi"><small>Kayıtlı ay</small><b class="rakam">{R.V.kayitli}<span>/ 12</span></b></div>
+    <div class="kpi"><small>Toplam nöbet</small><b class="rakam">{toplamNobet}</b><span class="alt">kişi başı {duty.length ? (toplamNobet / duty.length).toFixed(1).replace(".", ",") : 0}</span></div>
+    <div class="kpi"><small>Toplam fazla mesai</small><b class="rakam">{toplamFm}<span>sa</span></b><span class="alt">nöbetçi başı {Math.round(fmOrt)} sa</span></div>
+    <div class="kpi"><small>Yıllık fark (en çok − en az)</small><b class="rakam">{fmFark}<span>sa</span></b><span class="rozet {fmFark <= 16 ? 'tamam' : fmFark <= 32 ? 'dikkat' : 'hata'}">{fmFark <= 16 ? "Dengeli" : fmFark <= 32 ? "Orta" : "Dengesiz"}</span></div>
   </div>
 
-  <section class="blok">
+  <section class="blok panel-blok">
     <h2>Aylara göre fazla mesai (saat)</h2>
     <p class="aciklama">Turuncu: ayın nöbetçi ortalamasının 8 saatten fazla üstü; mavi: altı. Soluk sütunlar: kaydı olmayan aylar.</p>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
@@ -102,7 +102,7 @@
     </div>
   </section>
 
-  <section class="blok">
+  <section class="blok panel-blok">
     <h2>Yıllık toplam fazla mesai</h2>
     <div class="kart cubuklar" role="img" aria-label="Nöbetçi başı yıllık fazla mesai; ortalama {Math.round(fmOrt)} saat">
       {#each [...duty].sort((a, b) => R.toplam[b.id].fm - R.toplam[a.id].fm) as k (k.id)}
@@ -116,7 +116,7 @@
     </div>
   </section>
 
-  <section class="blok">
+  <section class="blok panel-blok">
     <h2>Görev dağılımı (yıl toplamı)</h2>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
     <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Görev dağılımı">
@@ -131,7 +131,7 @@
     </div>
   </section>
 {:else if sekme === "denge" && R.D}
-  <section class="blok">
+  <section class="blok panel-blok">
     <Bilgi baslik="Tablo nasıl okunur?"><p>Her hücrede yıl toplamı ve kişinin çalıştığı ay sayısına göre beklenen paydan farkı. Nöbet sayısına hazırlama da dahildir. Renkli: fark büyük (sayılarda 1,5'ten, saatte 8'den fazla). Yarım yıl çalışanlar ay sayısıyla birlikte gösterilir.</p></Bilgi>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
     <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Yıllık denge tablosu">
@@ -149,7 +149,7 @@
     </div>
   </section>
 {:else if sekme === "kisi" && kisi}
-  <section class="blok">
+  <section class="blok panel-blok">
     <label class="alan kisi-sec"><span>Kişi</span>
       <select class="girdi" bind:value={kisiId}>{#each R.V.kisiler as k}<option value={k.id}>{k.name} · {ROL_AD[k.role]}{k.aktif ? "" : " (listeden çıkarıldı)"}</option>{/each}</select>
     </label>
@@ -171,30 +171,27 @@
 {/if}
 
 <style>
-  .yil { display: inline-flex; align-items: center; gap: var(--b1); background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--r); padding: 2px; }
+  :where(tbody tr:nth-child(even)) > :where(td, th) { background: var(--yuzey-2); }
+  .yil { display: inline-flex; align-items: center; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); }
   .yil .dugme { min-height: 34px; width: 36px; padding: 0; }
-  .yil span { min-width: 72px; text-align: center; font-weight: 600; font-family: var(--yazi-baslik); font-size: var(--f-lg); }
-  .ust-cubuk { display: flex; flex-wrap: wrap; gap: var(--b3); justify-content: space-between; align-items: center; margin-bottom: var(--b4); }
-  .sekmeler { display: inline-flex; gap: 2px; padding: 3px; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--r); flex-wrap: wrap; }
-  .sekmeler button { min-height: 34px; padding: 0 var(--b4); border: 0; border-radius: var(--r-kucuk); background: transparent; color: var(--yazi-2); font-weight: 500; cursor: pointer; }
-  .sekmeler button.secili { background: var(--vurgu-zemin); color: var(--vurgu); font-weight: 600; }
+  .yil span { min-width: 72px; text-align: center; font-weight: 700; color: var(--lacivert); font-size: var(--f-md); }
+  .ust-cubuk { display: flex; flex-wrap: wrap; gap: var(--b3); justify-content: space-between; align-items: flex-end; margin-bottom: var(--b4); }
+  .sekmeler { display: flex; gap: 2px; border-bottom: 1px solid var(--cizgi); overflow-x: auto; flex: 1; min-width: 0; }
+  .sekmeler button { min-height: 38px; padding: 0 14px; margin-bottom: -1px; border: 1px solid var(--cizgi); border-top: 3px solid transparent; border-radius: var(--r) var(--r) 0 0; background: var(--panel-bas); color: var(--yazi-2); font-weight: 600; cursor: pointer; white-space: nowrap; flex: none; }
+  .sekmeler button:hover { color: var(--lacivert); background: var(--tablo-bas); }
+  .sekmeler button.secili { background: var(--yuzey); color: var(--lacivert); border-top-color: var(--lacivert); border-bottom-color: var(--yuzey); }
   .bant { padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; background: var(--vurgu-zemin); color: var(--vurgu); }
   .bos { padding: var(--b5); display: grid; gap: var(--b2); }
   .bos p { color: var(--yazi-2); }
-  .kpi-satir { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--b3); margin-bottom: var(--b5); }
-  .kpi { padding: var(--b4); display: grid; gap: 2px; align-content: start; }
-  .kpi small { color: var(--soluk); font-size: var(--f-sm); }
-  .kpi b { font-family: var(--yazi-baslik); font-size: var(--f-2xl); font-weight: 600; }
-  .kpi b span { font-size: var(--f-md); color: var(--soluk); margin-left: 4px; font-weight: 500; }
-  .kpi .alt { color: var(--soluk); font-size: var(--f-sm); }
-  .kpi .rozet { justify-self: start; }
-  .blok { display: grid; gap: var(--b2); margin-bottom: var(--b5); }
-  .blok h2 { font-size: var(--f-lg); }
+  .kpi-serit { margin-bottom: var(--b4); }
+  .kpi b span { font-size: var(--f-sm); color: var(--yazi-2); margin-left: 4px; font-weight: 600; }
+  .kpi .rozet { display: inline-flex; width: auto; justify-self: start; }
+  .blok { margin-bottom: var(--b4); }
   .aciklama { font-size: var(--f-sm); color: var(--soluk); max-width: 100ch; }
   .tablo-kap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: var(--f-sm); font-variant-numeric: tabular-nums; }
-  th, td { padding: 8px 10px; border-bottom: 1px solid var(--cizgi-acik); text-align: right; white-space: nowrap; }
-  thead th { background: var(--yuzey-2); font-size: var(--f-xs); color: var(--yazi-2); font-weight: 600; }
+  th, td { padding: 8px 10px; border: 1px solid var(--cizgi-acik); text-align: right; white-space: nowrap; }
+  thead th { background: var(--tablo-bas); font-size: var(--f-xs); color: var(--lacivert); font-weight: 700; }
   .sol { text-align: left; }
   tbody th { font-weight: 500; }
   tbody th .isaret { margin-right: 8px; }
@@ -213,13 +210,13 @@
   .cubuklar { padding: var(--b4); display: grid; gap: 6px; }
   .cubuk-satir { display: grid; grid-template-columns: minmax(110px, 180px) minmax(0, 1fr) 44px; align-items: center; gap: var(--b3); font-size: var(--f-sm); }
   .cubuk-satir .ad { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .iz { position: relative; height: 12px; border-radius: 6px; background: var(--cizgi-acik); }
-  .iz i { position: absolute; inset: 0 auto 0 0; border-radius: 6px; }
+  .iz { position: relative; height: 12px; background: var(--yuzey-2); border: 1px solid var(--cizgi-acik); }
+  .iz i { position: absolute; inset: 0 auto 0 0; }
   .ecz { background: var(--ecz); } .tek { background: var(--tek); }
-  .iz u { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--yazi); opacity: .7; }
+  .iz u { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--hata); }
   .deger { text-align: right; color: var(--yazi-2); }
   .lejant { display: flex; flex-wrap: wrap; gap: var(--b4); font-size: var(--f-xs); color: var(--soluk); margin-top: var(--b2); }
   .lejant span { display: inline-flex; align-items: center; gap: 6px; }
   .lejant i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-  .lejant i.cizgi { width: 2px; height: 14px; background: var(--yazi); opacity: .7; border-radius: 0; }
+  .lejant i.cizgi { width: 2px; height: 14px; background: var(--hata); border-radius: 0; }
 </style>

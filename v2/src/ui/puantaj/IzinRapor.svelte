@@ -97,7 +97,7 @@
 </script>
 
 <div class="duzen">
-  <section class="kart form" aria-labelledby="izin-baslik">
+  <section class="kart panel-blok form" aria-labelledby="izin-baslik">
     <h2 id="izin-baslik">Yeni kayıt</h2>
     <Bilgi baslik="Nasıl çalışır?"><p>Ay içinde gelişen rapor, yıllık izin ve fazla mesai karşılığı nöbet izni buradan girilir. Kişinin o günlerdeki nöbet ve hazırlamaları için yerine geçecek kişi önerilir: yerine tutma sırayla gelir (yıl içinde en az yerine tutan önce). Yıllık eşitlikte görev raporlu / izinli kişinin sayılır; sonradan telafi edilmez.</p></Bilgi>
     <fieldset class="turler">
@@ -157,7 +157,7 @@
     {#if durum}<p class="durum {durum.tur}" role="status">{durum.metin}</p>{/if}
   </section>
 
-  <section class="kart liste" aria-labelledby="kayit-baslik">
+  <section class="kart panel-blok liste" aria-labelledby="kayit-baslik">
     <h2 id="kayit-baslik">Bu ayın kayıtları</h2>
     {#if kayitlar.length}
       <ul>
@@ -179,7 +179,7 @@
 
 <style>
   .duzen { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--b4); align-items: start; }
-  .kart { padding: var(--b5); display: grid; gap: var(--b3); }
+  .kart { padding: 0 var(--b4) var(--b4); display: grid; gap: var(--b3); }
   h2 { font-size: var(--f-lg); }
   .aciklama { font-size: var(--f-sm); color: var(--soluk); }
   fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
@@ -215,5 +215,5 @@
   .k-NI { background: var(--es-zemin); color: var(--es); }
   .k-DI { background: var(--yuzey); color: var(--yazi-2); box-shadow: inset 0 0 0 1px var(--cizgi); }
   @media (max-width: 1000px) { .duzen { grid-template-columns: 1fr; } }
-  @media (max-width: 480px) { .kart { padding: var(--b4); } .iki { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) { .kart { padding: 0 var(--b4) var(--b4); } .iki { grid-template-columns: 1fr; } }
 </style>
