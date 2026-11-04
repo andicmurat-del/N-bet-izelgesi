@@ -10,6 +10,7 @@
   import { AYLAR, GUN_UZUN, gunSayisi, haftaGunu } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
+  import IslemAlani from "../ortak/IslemAlani.svelte";
 
   let { git }: { git: (ad: "cizelge" | "kisiler") => void } = $props();
 
@@ -114,77 +115,89 @@
     <div><button class="dugme ana" onclick={() => git("kisiler")}><Ikon ad="kisiler" />Personel ekle</button></div>
   </section>
 {:else if gun}
-  <div class="gun-secici">
-    <button class="dugme sade" onclick={() => (secGun = isGunleri[ix - 1])} disabled={ix <= 0} aria-label="Önceki iş günü"><Ikon ad="sol" /></button>
-    <label class="gizli" for="sv-gun">Gün</label>
-    <select id="sv-gun" class="girdi" bind:value={secGun}>{#each isGunleri as d}<option value={d}>{d} {AYLAR[m]} {GUN_UZUN[haftaGunu(y, m, d)]}</option>{/each}</select>
-    <button class="dugme sade" onclick={() => (secGun = isGunleri[ix + 1])} disabled={ix < 0 || ix >= isGunleri.length - 1} aria-label="Sonraki iş günü"><Ikon ad="sag" /></button>
-    <label class="ngun"><span>Çok günlük servisler</span>
-      <select class="girdi" onchange={e => yap({ tur: "ngun", gun: secGun, n: Number(e.currentTarget.value) })}>
-        {#each Array.from({ length: Math.max(6, gun.oto, gun.n) }, (_, i) => i + 1) as v}<option value={v} selected={v === gun.n}>{v} gün{v === gun.oto ? " (takvime göre)" : ""}</option>{/each}
-      </select>
-    </label>
-  </div>
+  {@const calisan = gun.kisiler.filter(k => k.on).length}
+  <section class="panel">
+    <div class="panel-bas"><h2>Dağıtım bilgileri</h2><span class="ozet-bilgi rakam">Çalışan tekniker {calisan}/{gun.kisiler.length}{#if gun.sonuc}{" · "}Ortalama yük {Math.round(ort)}{/if}</span></div>
+    <div class="panel-ic gun-secici">
+      <label class="alan"><span>Dağıtım günü</span>
+        <span class="gun-satir">
+          <button class="dugme" onclick={() => (secGun = isGunleri[ix - 1])} disabled={ix <= 0} aria-label="Önceki iş günü"><Ikon ad="sol" />Önceki gün</button>
+          <select id="sv-gun" class="girdi" bind:value={secGun}>{#each isGunleri as d}<option value={d}>{d} {AYLAR[m]} {GUN_UZUN[haftaGunu(y, m, d)]}</option>{/each}</select>
+          <button class="dugme" onclick={() => (secGun = isGunleri[ix + 1])} disabled={ix < 0 || ix >= isGunleri.length - 1} aria-label="Sonraki iş günü">Sonraki gün<Ikon ad="sag" /></button>
+        </span>
+      </label>
+      <label class="alan ngun"><span>Çok günlük servisler</span>
+        <select class="girdi" onchange={e => yap({ tur: "ngun", gun: secGun, n: Number(e.currentTarget.value) })}>
+          {#each Array.from({ length: Math.max(6, gun.oto, gun.n) }, (_, i) => i + 1) as v}<option value={v} selected={v === gun.n}>{v} gün{v === gun.oto ? " (takvime göre)" : ""}</option>{/each}
+        </select>
+      </label>
+    </div>
+  </section>
 
   {#if gun.bayat}
     <p class="bant dikkat"><Ikon ad="uyari" boyut={16} />Bu geçmiş günün kaydından sonra puantaj ya da servis ayarı değişti; kayıt olduğu gibi duruyor.
       <button class="baglanti" onclick={() => yap({ tur: "yeniden", gun: secGun })}>Bu günden itibaren yeniden dağıt</button></p>
   {/if}
 
-  <section class="kisiler" aria-labelledby="sv-kisiler">
-    <h2 id="sv-kisiler" class="kucuk-baslik">O gün çalışan teknikerler</h2>
-    <div class="cipler">
-      {#each gun.kisiler as k (k.id)}
-        <button class="cip" class:acik={k.on} aria-pressed={k.on} onclick={() => yap({ tur: "kisi", gun: secGun, id: k.id })}>
-          <span class="kutucuk" aria-hidden="true">{#if k.on}<Ikon ad="tamam" boyut={13} />{/if}</span>{k.name}{#if k.etiket}<small>{k.etiket}</small>{/if}{#if k.elle}<small class="elle">elle</small>{/if}
-        </button>
-      {/each}
+  <section class="panel" aria-labelledby="sv-kisiler">
+    <div class="panel-bas"><h2 id="sv-kisiler">O gün çalışan teknikerler</h2></div>
+    <div class="panel-ic">
+      <div class="cipler">
+        {#each gun.kisiler as k (k.id)}
+          <label class="cip" class:acik={k.on}>
+            <input type="checkbox" checked={k.on} onchange={() => yap({ tur: "kisi", gun: secGun, id: k.id })} />
+            <span>{k.name}{#if k.etiket}{" "}<small>({k.etiket})</small>{/if}{#if k.elle}{" "}<small class="elle">(elle)</small>{/if}</span>
+          </label>
+        {/each}
+      </div>
+      <p class="not">Kişiler puantajdan gelir; izin, rapor ya da nöbet ertesi izni olan kapalıdır. Buradan kapattığınız kişi yalnız servis dağıtımından çıkar.{gun.gecmis ? " Geçmiş gün: değişiklik sonraki günleri de yeniden dağıtır." : ""}</p>
     </div>
-    <p class="not">Kişiler puantajdan gelir; izin, rapor ya da nöbet ertesi izni olan kapalıdır. Buradan kapattığınız kişi yalnız servis dağıtımından çıkar.{gun.gecmis ? " Geçmiş gün: değişiklik sonraki günleri de yeniden dağıtır." : ""}</p>
   </section>
 
   {#if gun.sonuc}
     {@const S = gun.sonuc}
-    <div class="arac">
-      <div class="dugmeler">
-        <button class="dugme" onclick={() => yap({ tur: "karistir", gun: secGun })}><Ikon ad="karisik" />Yeniden karıştır</button>
-        {#if elleSayisi}<button class="dugme" onclick={() => yap({ tur: "ataSifirla", gun: secGun })}>Elle atamaları kaldır ({elleSayisi})</button>{/if}
-      </div>
-      <div class="dugmeler">
-        <button class="dugme" onclick={() => (pdfAcik = true)}><Ikon ad="indir" />PDF</button>
-        <button class="dugme" onclick={kopyala}>Kopyala</button>
-      </div>
-    </div>
+    <IslemAlani>
+      <button class="dugme" onclick={() => yap({ tur: "karistir", gun: secGun })}><Ikon ad="karisik" />Yeniden karıştır</button>
+      {#if elleSayisi}<button class="dugme" onclick={() => yap({ tur: "ataSifirla", gun: secGun })}>Elle atamaları kaldır ({elleSayisi})</button>{/if}
+      <button class="dugme" onclick={() => (pdfAcik = true)}><Ikon ad="indir" />PDF</button>
+      <button class="dugme" onclick={kopyala}>Kopyala</button>
+    </IslemAlani>
     {#if durum}<p class="bant tamam" role="status">{durum}</p>{/if}
-    <p class="not">Bir servisi başka teknikere vermek için servis adına dokunun. <span aria-hidden="true">✎</span> elle atanan servis; yeniden dağıtımda yeri değişmez. Turuncu çizgili servisler zor servistir.</p>
 
-    <div class="kartlar">
-      {#each S.kisi as p (p.id)}
-        <section class="kart kisi" aria-label="{p.name}: {p.items.length} servis">
-          <header><b>{p.name}</b><span class="rakam">{p.items.length}</span></header>
-          <p class="meta">{p.w} servis-gün · {p.yb} YB · {p.zr} zor · yük {p.total}</p>
-          <ul>
-            {#each p.items as s (s.name)}
-              <li><button class="servis" class:zor={s.zor} onclick={() => ataAc(s.name)} aria-label="{s.name}{s.zor ? ', zor servis' : ''}{gun.ata[s.name] === p.id ? ', elle atandı' : ''}: başka teknikere ver">
-                <span>{s.name.replace(/\sYB$/, "")}</span>
-                {#if ybMi(s.name)}<i class="etiket yb">YB</i>{/if}
-                {#if s.multi && S.n > 1}<i class="etiket">×{S.n}</i>{/if}
-                {#if gun.ata[s.name] === p.id}<i class="etiket elle">✎</i>{/if}
-              </button></li>
+    <section class="panel">
+      <div class="panel-bas"><h2>Servis dağıtımı · {gunAdi(secGun)}</h2>
+        <p class="lejant"><span><i class="etk yb">YB</i>Yoğun bakım</span><span><i class="etk zor">ZOR</i>Zor servis</span><span><i class="etk elle">✎</i>Elle atandı</span><span><u class="ort-ornek"></u>Ortalama</span></p></div>
+      <div class="tablo-kap">
+        <table class="tablo dagitim">
+          <thead><tr><th class="sag">Sıra</th><th>Tekniker</th><th>Servisler <span class="ince">(başka teknikere vermek için servise dokunun)</span></th><th class="sag">Servis</th><th class="sag">YB</th><th class="sag">Zor</th><th class="sag">Yük</th><th>Yük dengesi</th></tr></thead>
+          <tbody>
+            {#each S.kisi as p, i (p.id)}
+              <tr>
+                <td class="sag">{i + 1}</td>
+                <td class="ad-hucre">{p.name}</td>
+                <td class="servisler">
+                  {#each p.items as s (s.name)}
+                    <button class="servis" class:zor={s.zor} onclick={() => ataAc(s.name)} aria-label="{s.name}{s.zor ? ', zor servis' : ''}{gun.ata[s.name] === p.id ? ', elle atandı' : ''}: başka teknikere ver">
+                      <span>{s.name.replace(/\sYB$/, "")}</span>
+                      {#if ybMi(s.name)}<i class="etk yb">YB</i>{/if}
+                      {#if s.zor}<i class="etk zor">ZOR</i>{/if}
+                      {#if s.multi && S.n > 1}<i class="etk">×{S.n}</i>{/if}
+                      {#if gun.ata[s.name] === p.id}<i class="etk elle">✎</i>{/if}
+                    </button>
+                  {/each}
+                </td>
+                <td class="sag">{p.items.length}</td>
+                <td class="sag">{p.yb}</td>
+                <td class="sag">{p.zr}</td>
+                <td class="sag yuk">{p.total}</td>
+                <td class="denge"><span class="iz" title="Ortalama {Math.round(ort)}"><i style="width:{(p.total / enCok) * 92}%"></i><u style="left:{(ort / enCok) * 92}%"></u></span></td>
+              </tr>
             {/each}
-          </ul>
-        </section>
-      {/each}
-    </div>
-
-    <details class="kart detay" open>
-      <summary>Günlük yük dengesi <span class="not">çizgi: kişi başı ortalama ({Math.round(ort)})</span></summary>
-      <div class="cubuklar">
-        {#each S.kisi as p (p.id)}
-          <div class="cubuk-satir"><span class="ad">{p.name}</span><span class="iz"><i style="width:{(p.total / enCok) * 92}%"></i><u style="left:{(ort / enCok) * 92}%"></u></span><span class="rakam">{p.total}</span></div>
-        {/each}
+          </tbody>
+        </table>
       </div>
-    </details>
+      <p class="not dip">Servis-gün: {S.kisi.reduce((t, p) => t + p.w, 0)} · çok günlük servisler {S.n} gün için hazırlanır. Kırmızı çizgi kişi başı ortalama yükü ({Math.round(ort)}) gösterir.</p>
+    </section>
   {:else}
     <p class="bant bilgi">Bu gün için dağıtım yok: seçili tekniker ya da hazırlanan servis yok.</p>
   {/if}
@@ -226,53 +239,48 @@
 
 <style>
   .bos { padding: var(--b5); display: grid; gap: var(--b3); max-width: 760px; }
+  .bos h2 { font-size: var(--f-lg); }
   .bos p { color: var(--yazi-2); }
   .gizli { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .gun-secici { display: flex; flex-wrap: wrap; align-items: center; gap: var(--b2); margin-bottom: var(--b4); }
-  .gun-secici > select { width: auto; min-width: 230px; font-weight: 600; }
-  .ngun { display: inline-flex; align-items: center; gap: var(--b2); margin-left: auto; font-size: var(--f-sm); color: var(--yazi-2); }
+  .panel + .panel, .panel + .bant, .bant + .panel { margin-top: var(--b3); }
+  .ozet-bilgi { font-size: var(--f-sm); font-weight: 700; color: var(--lacivert); }
+  .gun-secici { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--b3) var(--b5); }
+  .gun-satir { display: flex; gap: var(--b2); align-items: center; flex-wrap: wrap; }
+  .gun-satir select { width: auto; min-width: 230px; font-weight: 600; }
   .ngun select { width: auto; }
-  .bant { display: flex; align-items: center; flex-wrap: wrap; gap: var(--b2); padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; }
+  .bant { display: flex; align-items: center; flex-wrap: wrap; gap: var(--b2); padding: var(--b2) var(--b4); border: 1px solid var(--cizgi); border-radius: var(--r); margin-top: var(--b3); font-size: var(--f-sm); font-weight: 600; }
   .bant.dikkat { background: var(--dikkat-zemin); color: var(--dikkat); }
   .bant.bilgi { background: var(--bilgi-zemin); color: var(--bilgi); }
   .bant.tamam { background: var(--vurgu-zemin); color: var(--vurgu); }
-  .baglanti { border: 0; background: none; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; font-weight: 600; }
-  .kucuk-baslik { font-size: var(--f-sm); font-weight: 600; color: var(--yazi-2); margin-bottom: var(--b2); }
-  .kisiler { margin-bottom: var(--b4); }
-  .cipler { display: flex; flex-wrap: wrap; gap: 6px; }
-  .cip { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 var(--b3) 0 var(--b2); border: 1px solid var(--cizgi); border-radius: 999px; background: var(--yuzey); color: var(--yazi-2); font-weight: 500; cursor: pointer; }
-  .cip.acik { border-color: var(--tek); background: var(--tek-zemin); color: var(--yazi); }
-  .cip small { font-size: var(--f-xs); color: var(--soluk); }
+  .baglanti { border: 0; background: none; padding: 0; color: var(--baglanti); text-decoration: underline; cursor: pointer; font-weight: 600; }
+  .cipler { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px var(--b3); }
+  .cip { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 2px 6px; border: 1px solid transparent; border-radius: var(--r-kucuk); color: var(--yazi-2); font-size: var(--f-sm); cursor: pointer; min-width: 0; }
+  .cip:hover { background: var(--yuzey-2); border-color: var(--cizgi-acik); }
+  .cip.acik { color: var(--yazi); font-weight: 600; }
+  .cip input { width: 16px; height: 16px; accent-color: var(--lacivert); flex: none; }
+  .cip small { font-size: var(--f-xs); color: var(--soluk); font-weight: 400; }
   .cip small.elle { color: var(--dikkat); font-weight: 600; }
-  .kutucuk { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--soluk); color: var(--yuzey); }
-  .cip.acik .kutucuk { background: var(--tek); border-color: var(--tek); }
-  .not { font-size: var(--f-xs); color: var(--soluk); margin-top: var(--b2); }
-  .arac { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--b2); margin-bottom: var(--b2); }
-  .dugmeler { display: flex; flex-wrap: wrap; gap: var(--b2); }
-  .kartlar { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--b3); margin: var(--b3) 0 var(--b4); }
-  .kisi { padding: var(--b3); display: grid; gap: var(--b2); align-content: start; }
-  .kisi header { display: flex; justify-content: space-between; align-items: baseline; gap: var(--b2); }
-  .kisi header span { font-size: var(--f-lg); font-weight: 600; color: var(--tek); }
-  .meta { font-size: var(--f-xs); color: var(--soluk); }
-  ul { list-style: none; margin: 0; padding: 0; }
-  .kisi ul { display: grid; gap: 3px; }
-  .servis { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 30px; padding: 3px 8px; border: 1px solid transparent; border-radius: 6px; background: var(--yuzey-2); color: var(--yazi); font-size: var(--f-sm); font-weight: 500; text-align: left; cursor: pointer; }
-  .servis:hover { border-color: var(--soluk); }
-  .servis > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-  .servis.zor { box-shadow: inset 3px 0 0 var(--haz); }
-  .etiket { font-style: normal; font-size: var(--f-xs); font-weight: 700; color: var(--yazi-2); flex: none; }
-  .etiket.yb { color: var(--bilgi); }
-  .etiket.elle { color: var(--dikkat); }
-  .detay { padding: var(--b3) var(--b4); margin-bottom: var(--b3); }
-  summary { cursor: pointer; font-weight: 600; }
-  summary .not { margin: 0 0 0 var(--b2); font-weight: 400; }
-  .cubuklar { display: grid; gap: 6px; margin-top: var(--b3); }
-  .cubuk-satir { display: grid; grid-template-columns: minmax(100px, 170px) minmax(0, 1fr) 48px; align-items: center; gap: var(--b3); font-size: var(--f-sm); }
-  .cubuk-satir .ad { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .cubuk-satir .rakam { text-align: right; }
-  .iz { position: relative; height: 12px; background: var(--yuzey-2); border-radius: 6px; }
-  .iz i { position: absolute; inset: 0 auto 0 0; background: var(--tek); border-radius: 6px; }
-  .iz u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--yazi); }
+  .not { font-size: var(--f-xs); color: var(--yazi-2); margin-top: var(--b2); }
+  .not.dip { margin: 0; padding: var(--b2) var(--b4); border-top: 1px solid var(--cizgi-acik); }
+  .lejant { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: var(--f-xs); color: var(--yazi-2); }
+  .lejant > span { display: inline-flex; align-items: center; gap: 5px; }
+  .ince { font-weight: 400; color: var(--yazi-2); letter-spacing: 0; }
+  .dagitim td { vertical-align: top; }
+  .ad-hucre { font-weight: 700; white-space: nowrap; color: var(--lacivert); }
+  .servisler { display: flex; flex-wrap: wrap; gap: 4px; min-width: 320px; }
+  .dagitim td.servisler { display: table-cell; }
+  .servis { display: inline-flex; align-items: center; gap: 4px; min-height: 26px; padding: 1px 6px; margin: 0 4px 4px 0; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); color: var(--yazi); font-size: var(--f-xs); font-weight: 600; text-align: left; cursor: pointer; }
+  .servis:hover { border-color: var(--lacivert); background: var(--vurgu-zemin); }
+  .etk { font-style: normal; font-size: 10px; font-weight: 700; padding: 0 3px; border-radius: 2px; color: var(--yazi-2); flex: none; }
+  .etk.yb { background: var(--tek-zemin); color: var(--tek); }
+  .etk.zor { background: var(--haz-zemin); color: var(--haz); }
+  .etk.elle { color: var(--dikkat); }
+  .yuk { font-weight: 700; color: var(--lacivert); }
+  .denge { min-width: 160px; }
+  .iz { position: relative; display: block; height: 12px; margin-top: 4px; background: var(--yuzey-2); border: 1px solid var(--cizgi-acik); }
+  .iz i { position: absolute; inset: 0 auto 0 0; background: var(--nobet-hucre); }
+  .iz u, .ort-ornek { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--hata); }
+  .ort-ornek { position: static; display: inline-block; height: 12px; }
   .adaylar { display: grid; gap: 6px; }
   .aday { display: grid; gap: 2px; text-align: left; padding: var(--b2) var(--b3); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); color: var(--yazi); cursor: pointer; }
   .aday:hover { border-color: var(--vurgu); }
@@ -287,8 +295,9 @@
   .secenekler input { accent-color: var(--vurgu); width: 18px; height: 18px; }
   .secenekler span { display: grid; }
   .secenekler small { font-size: var(--f-xs); color: var(--soluk); }
+  @media (max-width: 1100px) { .cipler { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 720px) {
-    .gun-secici > select { flex: 1; min-width: 0; }
-    .ngun { margin-left: 0; width: 100%; justify-content: space-between; }
+    .gun-satir select { flex: 1; min-width: 0; }
+    .cipler { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 </style>
