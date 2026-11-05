@@ -46,6 +46,16 @@
     if (!kisiSil(duzenlenen.id)) return;   // onaylı aylarda kaydı var: silinmez
     duzenleAcik = false;
   }
+  // hızlı anahtarlar: Cuma muafı (eczacı, tekniker) ve acil eczane nöbeti (eczacı, kemoterapi eczacısı)
+  const cumaOlur = (r: Rol) => r === "eczaci" || r === "teknisyen";
+  const acilOlur = (r: Rol) => r === "eczaci" || r === "nobetci";
+  // sürükle-bırak: kişiyi başka görev sütununa bırakmak görevini değiştirir (geri al ile dönülür)
+  let surukId = $state<number | null>(null), hedefRol = $state<Rol | null>(null);
+  function birak(r: Rol) {
+    const k = depo.veri.staff.find(x => x.id === surukId);
+    if (k && k.role !== r) kisiGuncelle(k.id, { role: r, cumaMuaf: k.cumaMuaf && cumaOlur(r) ? true : undefined });
+    surukId = null; hedefRol = null;
+  }
   const tarihMetni = (t?: string) => { if (!t) return ""; const [y, m, d] = t.split("-").map(Number); return `${d} ${AYLAR[m - 1]} ${y}`; };
 </script>
 
@@ -61,28 +71,37 @@
   {#if ekleHata}<p class="hata" role="alert">{ekleHata}</p>{/if}
 </form>
 
+<p class="ipucu ust">Kişiyi ⋮⋮ tutamağından başka bir görev sütununa sürükleyerek görevini değiştirin; anahtarlarla özel durumları açıp kapatın. Ad ve tarihler için ✎.</p>
 <div class="gruplar">
   {#each gruplar as g}
     {#if g.kisiler.length || g.rol === "eczaci" || g.rol === "teknisyen"}
-      <section class="kart panel-blok grup">
-        <h2><span class="isaret {g.rol}"></span>{ROL_AD[g.rol]}<span class="sayi rakam">{g.kisiler.length}</span></h2>
+      <section class="panel grup" class:hedef={hedefRol === g.rol} aria-label={ROL_AD[g.rol]}
+        ondragover={e => { if (surukId !== null) { e.preventDefault(); hedefRol = g.rol; } }}
+        ondragleave={() => { if (hedefRol === g.rol) hedefRol = null; }}
+        ondrop={e => { e.preventDefault(); birak(g.rol); }}>
+        <div class="panel-bas"><h2><span class="isaret {g.rol}"></span>{ROL_AD[g.rol]}</h2><span class="sayi rakam">{g.kisiler.length}</span></div>
         {#if g.kisiler.length}
           <ul>
             {#each g.kisiler as k (k.id)}
-              <li>
+              <li class:suruklenen={surukId === k.id}>
+                <span class="tutamak" draggable="true" role="button" tabindex="-1" aria-label="{k.name}: sürükleyerek görevini değiştir" title="Sürükleyerek görevini değiştirin"
+                  ondragstart={e => { surukId = k.id; e.dataTransfer?.setData("text/plain", String(k.id)); }} ondragend={() => { surukId = null; hedefRol = null; }}>⋮⋮</span>
                 <div class="kim">
                   <b>{k.name}</b>
                   {#if k.baslangic || k.bitis}<small>{k.baslangic ? "Başlangıç " + tarihMetni(k.baslangic) : ""}{k.baslangic && k.bitis ? " · " : ""}{k.bitis ? "Ayrılış " + tarihMetni(k.bitis) : ""}</small>{/if}
-                  {#if k.cumaMuaf}<small>Öğlen nöbeti: Cuma'dan muaf</small>{/if}
-                  {#if k.role === "nobetci"}<small>Nöbet: {k.acilTutar ? "acil eczane" : "günlük eczane"}</small>
-                  {:else if k.acilTutar}<small>Nöbet: acil eczane</small>{/if}
                 </div>
-                <button class="dugme sade kucuk" onclick={() => duzenle(k)} aria-label="{k.name}: düzenle"><Ikon ad="duzenle" />Düzenle</button>
+                {#if cumaOlur(k.role)}
+                  <label class="anahtar" title="Öğlen nöbetinde Cuma'dan muaf"><input type="checkbox" checked={!!k.cumaMuaf} onchange={e => kisiGuncelle(k.id, { cumaMuaf: e.currentTarget.checked ? true : undefined })} /><i aria-hidden="true"></i>Cuma muaf</label>
+                {/if}
+                {#if acilOlur(k.role)}
+                  <label class="anahtar" title="Eczane nöbeti yerine acil eczane nöbeti tutar"><input type="checkbox" checked={!!k.acilTutar} onchange={e => kisiGuncelle(k.id, { acilTutar: e.currentTarget.checked ? true : undefined })} /><i aria-hidden="true"></i>Acilde</label>
+                {/if}
+                <button class="dugme sade kucuk duz" onclick={() => duzenle(k)} aria-label="{k.name}: düzenle" title="Ad, görev ve tarihler"><Ikon ad="duzenle" /></button>
               </li>
             {/each}
           </ul>
         {:else}
-          <p class="bos">Henüz {ROL_AD[g.rol].toLocaleLowerCase("tr")} eklenmedi.</p>
+          <p class="bos">{surukId !== null ? "Buraya bırakın" : `Henüz ${ROL_AD[g.rol].toLocaleLowerCase("tr")} eklenmedi.`}</p>
         {/if}
       </section>
     {/if}
@@ -129,13 +148,26 @@
   .ekle { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; gap: var(--b3); align-items: end; padding: var(--b4); margin-bottom: var(--b5); }
   .ekle .aciklama { grid-column: 1 / -1; font-size: var(--f-sm); color: var(--soluk); }
   .hata { grid-column: 1 / -1; color: var(--hata); font-size: var(--f-sm); font-weight: 500; }
-  .gruplar { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--b4); align-items: start; }
-  .grup { padding: 0 var(--b4) var(--b4); }
-  .grup h2 { display: flex; align-items: center; gap: var(--b2); font-size: var(--f-lg); margin-bottom: var(--b3); }
-  .sayi { margin-left: auto; font-family: var(--yazi-govde); font-size: var(--f-sm); color: var(--soluk); font-weight: 500; }
+  .gruplar { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--b4); align-items: start; }
+  .grup.hedef { box-shadow: 0 0 0 3px var(--altin); }
+  .grup h2 { display: flex; align-items: center; gap: var(--b2); }
+  .sayi { margin-left: auto; font-size: var(--f-sm); color: var(--soluk); font-weight: 600; }
   ul { list-style: none; margin: 0; padding: 0; display: grid; }
-  li { display: flex; align-items: center; gap: var(--b3); padding: var(--b2) 0; border-top: 1px solid var(--cizgi-acik); }
+  li { display: flex; align-items: center; gap: var(--b2); padding: 6px var(--b3); border-top: 1px solid var(--cizgi-acik); }
   li:first-child { border-top: 0; }
+  li.suruklenen { opacity: .45; }
+  .tutamak { color: var(--soluk); cursor: grab; font-size: 12px; letter-spacing: -2px; padding: 4px 2px; user-select: none; }
+  .anahtar { display: inline-flex; align-items: center; gap: 5px; font-size: var(--f-xs); font-weight: 600; color: var(--soluk); cursor: pointer; white-space: nowrap; }
+  .anahtar input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .anahtar i { position: relative; width: 28px; height: 16px; border-radius: 8px; background: var(--cizgi); transition: background .15s; flex: none; }
+  .anahtar i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #FFFFFF; transition: left .15s; }
+  .anahtar:has(input:checked) { color: var(--lacivert); }
+  .anahtar:has(input:checked) i { background: var(--lacivert); }
+  .anahtar:has(input:checked) i::after { left: 14px; }
+  .anahtar:has(input:focus-visible) i { outline: 2px solid var(--odak); outline-offset: 2px; }
+  .duz { padding: 4px 6px; }
+  .ust { margin: 0 0 var(--b3); }
+  .bos { padding: var(--b3) var(--b4); }
   .kim { flex: 1; min-width: 0; }
   .kim b { font-weight: 500; display: block; }
   .kim small { color: var(--soluk); font-size: var(--f-xs); }
