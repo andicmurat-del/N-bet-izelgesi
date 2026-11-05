@@ -96,6 +96,31 @@ describe("öğlen nöbeti", () => {
     expect(bozuk).toEqual([]);
   });
 
+  test("haftada herkese bir: o hafta yazılabilen biri hiç yazılmamışken kimse iki almaz", () => {
+    const acik = [];
+    for (const m of [10, 11]) {
+      const G = puantajHesapla(veri, Y, m), kayit = veri.oglen[`${Y}-${m}`], hf = {}, yazilir = {};
+      for (const [d, k] of Object.entries(kayit)) {
+        const h = Math.floor((+d - 1 + hg(m, 1)) / 7);
+        for (const grup of ["e", "t"]) {
+          k[grup].forEach(id => { const kk = grup + h + ":" + id; hf[kk] = (hf[kk] || 0) + 1; });
+          G.satirlar.filter(r => r.s.role === (grup === "e" ? "eczaci" : "teknisyen")).forEach(r => {
+            const c = r.cells[+d - 1];
+            if ((c.kod === "M" || c.kod === "N") && !(hg(m, +d) === 4 && r.s.cumaMuaf)) (yazilir[grup + h] ??= new Set()).add(r.s.id);
+          });
+        }
+      }
+      // ayın ilk ve son yarım haftası komşu aya taşar; yalnız ayın içindeki tam haftalar denetlenir
+      for (const [gh, l] of Object.entries(yazilir)) {
+        const h = +gh.slice(1); if (h === 0 || Object.keys(kayit).every(d => Math.floor((+d - 1 + hg(m, 1)) / 7) < h + 1)) continue;
+        if (Object.keys(kayit).filter(d => Math.floor((+d - 1 + hg(m, 1)) / 7) === h).length < 5) continue;
+        const iki = [...l].some(id => hf[gh + ":" + id] > 1);
+        if (iki) l.forEach(id => { if (!hf[gh + ":" + id]) acik.push(`${m + 1}. ay ${h}. hafta: ${id}`); });
+      }
+    }
+    expect(acik).toEqual([]);
+  });
+
   test("aynı veriyle aynı sonuç", () => {
     expect(JSON.stringify(oglenHesapla(veri, Y, 11))).toBe(JSON.stringify(oglenHesapla(veri, Y, 11)));
   });
