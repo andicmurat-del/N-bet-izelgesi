@@ -23,18 +23,19 @@
 <div class="kutu bilgi aciklama-kutu">
   <p><b>Onay:</b> mesai gününde onayda çalışan eczacılar.</p>
   <p><b>Hazırlama:</b> mesai gününde hazırlamada çalışan teknikerler.</p>
-  <p><b>Yok:</b> izinli, raporlu ya da nöbet ertesi izinde olanlar. Adları görmek için güne dokunun; hafta sonu ve tatil günlerinde o günün nöbetçi ve hazırlamacıları da dokununca görünür.</p>
+  <p><b>Yok:</b> izinli, raporlu ya da nöbet ertesi izinde olanlar. Adları görmek için güne dokunun. Hafta sonları gösterilmez; hafta içi resmi tatil günlerinde sayı yazılmaz, o günün nöbetçileri dokununca görünür.</p>
 </div>
 
 <section class="panel" aria-label="Çalışma listesi">
   <div class="panel-bas"><h2>Günlük çalışan sayıları</h2>
     <p class="lejant" aria-hidden="true"><span class="s onay"><i></i>Onay</span><span class="s haz"><i></i>Hazırlama</span><span class="s dst"><i></i>Destek</span><span class="s yok"><i></i>Yok</span></p></div>
   <div class="takvim">
-    {#each GUN_KISA as d, i}<div class="bas" aria-hidden="true">{d}</div>{/each}
-    {#each { length: haftaGunu(y, m, 1) } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
-    {#each L as x (x.gun)}
+    <!-- yalnız hafta içi: Cumartesi ve Pazar gösterilmez -->
+    {#each GUN_KISA.slice(0, 5) as d}<div class="bas" aria-hidden="true">{d}</div>{/each}
+    {#each { length: haftaGunu(y, m, 1) <= 4 ? haftaGunu(y, m, 1) : 0 } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
+    {#each L.filter(x => x.dw <= 4) as x (x.gun)}
       <button class="gun" class:hs={x.tatil} class:bugun={bugunMu(x.gun)} onclick={() => { secili = x.gun; acik = true; }}
-        aria-label="{gunMetni(y, m, x.gun)}{x.tatil ? ': hafta sonu / tatil' : ''}: {x.onay.length} {x.tatil ? 'onaycı' : 'onay'}, {x.haz.length} {x.tatil ? 'hazırlamacı' : 'hazırlama'}{x.dst.length ? ', ' + x.dst.length + ' destek' : ''}{x.yok.length ? ', ' + x.yok.length + ' kişi yok' : ''}">
+        aria-label="{gunMetni(y, m, x.gun)}{x.tatil ? ': resmi tatil' : ''}: {x.onay.length} {x.tatil ? 'onaycı' : 'onay'}, {x.haz.length} {x.tatil ? 'hazırlamacı' : 'hazırlama'}{x.dst.length ? ', ' + x.dst.length + ' destek' : ''}{x.yok.length ? ', ' + x.yok.length + ' kişi yok' : ''}">
         <span class="serit"><b class="rakam">{x.gun}</b><span class="gunadi">{GUN_KISA[x.dw]}</span></span>
         {#if !x.tatil}<span class="sayilar">
           <span class="s onay"><i></i><span class="etk">Onay</span><b class="rakam">{x.onay.length}</b></span>
@@ -69,12 +70,12 @@
 
 <style>
   .aciklama-kutu { display: grid; gap: 2px; margin-bottom: var(--b4); }
-  .takvim { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .takvim { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .bas, .bosluk, .gun { border-right: 1px solid var(--cizgi); border-bottom: 1px solid var(--cizgi); }
-  .bas:nth-child(7n), .takvim > :nth-child(7n) { border-right: 0; }
+  .takvim > :nth-child(5n) { border-right: 0; }
   .bas { background: var(--tablo-bas); color: var(--lacivert); font-size: var(--f-xs); font-weight: 700; text-align: center; padding: 6px 0; }
   .bosluk { background: var(--yuzey-2); }
-  .gun { display: flex; flex-direction: column; width: 100%; aspect-ratio: 5 / 4; padding: 0; text-align: left; border-top: 0; border-left: 0; border-radius: 0; background: var(--yuzey); cursor: pointer; min-width: 0; }
+  .gun { display: flex; flex-direction: column; width: 100%; aspect-ratio: 16 / 9; padding: 0; text-align: left; border-top: 0; border-left: 0; border-radius: 0; background: var(--yuzey); cursor: pointer; min-width: 0; }
   .gun:hover { background: var(--yuzey-2); }
   .gun:focus-visible { outline: 2px solid var(--odak); outline-offset: -2px; }
   .serit { display: flex; align-items: center; gap: 6px; min-height: 24px; padding: 2px 8px; background: var(--panel-bas); border-bottom: 1px solid var(--cizgi-acik); font-size: var(--f-xs); color: var(--yazi-2); }
