@@ -4,7 +4,7 @@
   import { depo, veriAnlik, duzKopya, ayCizelgesi, puantajKoduAyarla, puantajElleKodu } from "../../veri/depo.svelte";
   import type { Kisi, PuantajKodu } from "../../veri/tipler";
   import { ROL_AD } from "../../veri/tipler";
-  import { GUN_KISA, gunMetni } from "../../veri/tarih";
+  import { AYLAR, GUN_KISA, gunMetni } from "../../veri/tarih";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { KOD_AD, kodMetni, type Izgara, type PuantajSatiri } from "../../disa/puantajTipleri";
   import Ikon from "../ortak/Ikon.svelte";
@@ -35,6 +35,27 @@
   const fmTek = $derived(aralik(r => (acil ? r.s.role === "servis" : r.s.role === "teknisyen")));
   const toplamNobet = $derived(G.satirlar.reduce((t, r) => t + r.n, 0));
   const grupAd: Record<string, string> = { eczaci: "Eczacılar", nobetci: "Kemoterapi eczacıları", teknisyen: "Teknikerler", destek: "Destek personeli", servis: "Acil servis personeli" };
+
+  // sağ panel: seçili kişinin ay dökümü (ada dokununca değişir)
+  let kisiId = $state<number | null>(null);
+  const ks = $derived(G.satirlar.find(r => r.s.id === kisiId) ?? G.satirlar[0]);
+  const fmMax = $derived(Math.max(1, ...G.satirlar.map(r => r.fm)));
+  // ay içindeki izin / rapor aralıkları (art arda aynı kod) ve elle değişen hücre sayısı
+  const aralikAd: Record<string, string> = { YI: "yıllık izin", R: "rapor", DI: "diğer izin" };
+  const kisiOlaylar = $derived.by(() => {
+    if (!ks) return [] as string[];
+    const out: string[] = []; let bas = -1;
+    ks.cells.forEach((h, i) => {
+      const k = h.kod, son = i === ks.cells.length - 1 || ks.cells[i + 1].kod !== k;
+      if (!aralikAd[k]) return;
+      if (bas < 0) bas = i;
+      if (son) { const n = i - bas + 1; out.push(`${bas + 1}${n > 1 ? "–" + (i + 1) : ""} ${AYLAR[depo.ay]} ${aralikAd[k]}${n > 1 ? ` (${n} gün)` : ""}`); bas = -1; }
+    });
+    const elle = ks.cells.filter(h => h.ov).length;
+    out.push(elle ? `${elle} hücre elle değiştirildi` : "Elle değiştirilen hücre yok");
+    return out;
+  });
+  const grupAralik = (r: PuantajSatiri) => (r.s.role === "eczaci" || r.s.role === "nobetci" ? `Eczacılar ${fmEcz}` : r.s.role === "teknisyen" || r.s.role === "servis" ? `${acil ? "Acil servis" : "Teknikerler"} ${fmTek}` : "");
 
   // hücre düzenleme
   let acik = $state(false);
@@ -92,10 +113,11 @@
   </div>
   {#if !c}<p class="kutu dikkat uyari-satir">Bu ayın çizelgesi yok: nöbetler boş görünür.</p>{/if}
 
+  <div class="cetvel-duzen">
   <section class="panel cetvel-panel">
     <div class="panel-bas"><h2>Puantaj cetveli</h2>
       <p class="lejant">
-        <span><i class="k">8</i>Mesai</span><span><i class="k k-N">24</i>Nöbet</span><span><i class="k k-N acil">24</i>Acil nöbet</span><span><i class="k k-H">8</i>Hazırlama</span>
+        <span><i class="k"><i class="nokta"></i></i>Mesai (8 sa)</span><span><i class="k k-N">24</i>Nöbet</span><span><i class="k k-N acil">24</i>Acil nöbet</span><span><i class="k k-H">8</i>Hazırlama</span>
         <span><i class="k k-NI">Nİ</i>Nöbet izni</span><span><i class="k k-YI">Yİ</i>Yıllık izin</span><span><i class="k k-R">R</i>Rapor</span>
         <span><i class="k k-P">–</i>Dönem dışı</span><span><i class="k hs-ornek"></i>Hafta sonu</span><span><i class="k ov-ornek"></i>Elle</span>
       </p>
@@ -108,27 +130,23 @@
         <tr>
           <th class="ad" scope="col">Ad soyad</th>
           {#each G.gunler as g}<th scope="col" class:tatil={g.tatil} class:arife={g.arife} title={gunMetni(depo.yil, depo.ay, g.gun)}><span class="rakam">{g.gun}</span><small>{GUN_KISA[g.dw]}</small></th>{/each}
-          <th class="ozet ilk" scope="col">Toplam</th><th class="ozet" scope="col">Aylık</th><th class="ozet fm" scope="col">Fazla mesai</th><th class="ozet" scope="col">08–20</th><th class="ozet" scope="col">20–08</th>
+          <th class="ozet ilk fm" scope="col">Fazla<br />mesai</th>
         </tr>
       </thead>
       <tbody>
         {#each G.satirlar as r, si (r.s.id)}
           {#if si === 0 || G.satirlar[si - 1].s.role !== r.s.role}
-            <tr class="grup"><th class="ad" scope="rowgroup">{grupAd[r.s.role]}</th><td colspan={G.gunler.length + 5}></td></tr>
+            <tr class="grup"><th class="ad" scope="rowgroup">{grupAd[r.s.role]}</th><td colspan={G.gunler.length + 1}></td></tr>
           {/if}
-          <tr>
-            <th class="ad" scope="row"><span class="isaret {r.s.role}"></span>{r.s.name}</th>
+          <tr class:secili-kisi={ks?.s.id === r.s.id}>
+            <th class="ad" scope="row"><button class="ad-dugme" aria-pressed={ks?.s.id === r.s.id} onclick={() => (kisiId = r.s.id)}><span class="isaret {r.s.role}"></span>{r.s.name}</button></th>
             {#each r.cells as h, i}
               {@const g = G.gunler[i]}
               <td class="k-{h.kod}" class:tatil={g.tatil} class:ov={h.ov} class:acil={h.acil}>
-                <button onclick={() => hucreAc(r, i)} aria-label="{r.s.name}, {gunMetni(depo.yil, depo.ay, g.gun)}: {h.acil ? 'Acil eczane nöbeti (24 saat)' : (KOD_AD[h.kod] ?? h.kod)}{h.ov ? ' (elle)' : ''}">{kodMetni(h.kod, h.saat, g.arife)}</button>
+                <button onclick={() => hucreAc(r, i)} aria-label="{r.s.name}, {gunMetni(depo.yil, depo.ay, g.gun)}: {h.acil ? 'Acil eczane nöbeti (24 saat)' : (KOD_AD[h.kod] ?? h.kod)}{h.ov ? ' (elle)' : ''}">{#if h.kod === "M" && !g.arife}<i class="nokta" aria-hidden="true"></i>{:else}{kodMetni(h.kod, h.saat, g.arife)}{/if}</button>
               </td>
             {/each}
-            <td class="ozet ilk rakam">{r.toplam}</td>
-            <td class="ozet rakam">{r.aylik ?? "–"}</td>
-            <td class="ozet fm rakam">{r.fm}</td>
-            <td class="ozet rakam soluk">{r.fmGunduz}</td>
-            <td class="ozet rakam soluk">{r.fmGece}</td>
+            <td class="ozet ilk fm rakam">{r.fm}</td>
           </tr>
         {/each}
       </tbody>
@@ -140,6 +158,24 @@
     {/each}
   </div>
   </section>
+  {#if ks}
+    <aside class="panel kisi-panel" aria-label="Kişi dökümü">
+      <div class="panel-bas"><h2>{ks.s.name} · {ROL_AD[ks.s.role]}</h2></div>
+      <div class="panel-ic">
+        <div class="buyuk"><small>Fazla mesai</small><b class="rakam">{ks.fm} sa</b><span class="cubuk" aria-hidden="true"><i style="width:{Math.max(0, ks.fm) / fmMax * 100}%"></i></span><span class="soluk">{grupAralik(ks)}</span></div>
+        <dl>
+          <dt>Toplam çalışma</dt><dd class="rakam">{ks.toplam} sa</dd>
+          <dt>Aylık normal</dt><dd class="rakam">{ks.aylik ?? "–"}{ks.aylik !== null ? " sa" : ""}</dd>
+          <dt>08–20 / 20–08</dt><dd class="rakam">{ks.fmGunduz} / {ks.fmGece} sa</dd>
+        </dl>
+        <div class="sayilar">{#each [["Nöbet", ks.n], ["Hazırlama", ks.h], ["Nöbet izni", ks.ni], ["Yıllık izin", ks.yi], ["Rapor", ks.rd]] as [a, b]}<div><b class="rakam">{b}</b>{a}</div>{/each}</div>
+        <h3>Ay içinde</h3>
+        <ul class="olaylar">{#each kisiOlaylar as o}<li>{o}</li>{/each}</ul>
+        <p class="not">Başka bir kişinin dökümü için cetvelde adına dokunun; günün kodunu değiştirmek için hücreye dokunun.</p>
+      </div>
+    </aside>
+  {/if}
+  </div>
 
   <section class="aylik-kap">
     <AylikOzet satirlar={G.satirlar} hazirlama={!acil} />
@@ -169,7 +205,32 @@
   .bos { padding: var(--b5); display: grid; gap: var(--b3); justify-items: start; }
   .bant { padding: var(--b2) var(--b4); border: 1px solid var(--cizgi); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 600; background: var(--vurgu-zemin); color: var(--vurgu); }
   .uyari-satir { margin-top: var(--b3); font-weight: 600; }
-  .cetvel-panel { margin-top: var(--b4); }
+  .cetvel-duzen { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--b4); align-items: start; margin-top: var(--b4); }
+  .cetvel-panel { min-width: 0; }
+  .nokta { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--soluk); vertical-align: middle; }
+  .ad-dugme { display: flex; align-items: center; width: 100%; height: 30px; border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: inherit; text-align: left; cursor: pointer; }
+  .ad-dugme:hover { text-decoration: underline; }
+  .ad-dugme:focus-visible { outline: 2px solid var(--odak); outline-offset: -2px; }
+  .cetvel tr.secili-kisi > * { box-shadow: inset 0 2px 0 var(--altin), inset 0 -2px 0 var(--altin); }
+  .cetvel tr.secili-kisi .ad { background: color-mix(in srgb, var(--altin) 16%, var(--yuzey)) !important; }
+  .kisi-panel .panel-ic { display: grid; gap: var(--b3); }
+  .buyuk { display: grid; gap: 4px; }
+  .buyuk small { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--yazi-2); }
+  .buyuk b { font-size: 28px; color: var(--lacivert); line-height: 1.1; }
+  .buyuk .soluk { font-size: var(--f-xs); }
+  .cubuk { display: block; height: 8px; background: var(--yuzey-2); }
+  .cubuk i { display: block; height: 100%; background: var(--lacivert); }
+  .kisi-panel dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; margin: 0; font-size: var(--f-sm); }
+  .kisi-panel dt { color: var(--yazi-2); }
+  .kisi-panel dd { margin: 0; font-weight: 700; color: var(--lacivert); text-align: right; }
+  .sayilar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--cizgi-acik); }
+  .sayilar div { display: grid; padding: 6px 2px; text-align: center; font-size: 11px; color: var(--yazi-2); border-right: 1px solid var(--cizgi-acik); }
+  .sayilar div:last-child { border-right: 0; }
+  .sayilar b { font-size: 16px; color: var(--lacivert); }
+  .kisi-panel h3 { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--yazi-2); margin: 0; }
+  .olaylar { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: var(--f-sm); }
+  .kisi-panel .not { font-size: var(--f-xs); }
+  @media (max-width: 1100px) { .cetvel-duzen { grid-template-columns: 1fr; } }
   .lejant { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: var(--f-xs); color: var(--yazi-2); }
   .lejant span { display: inline-flex; align-items: center; gap: 5px; }
   .k { display: inline-grid; place-items: center; min-width: 24px; height: 18px; padding: 0 3px; border-radius: 2px; font-style: normal; font-weight: 700; font-size: 11px; border: 1px solid var(--cizgi); background: var(--yuzey); color: var(--yazi-2); }
@@ -179,18 +240,18 @@
   .tablo-kap { overflow-x: auto; }
   table { border-collapse: separate; border-spacing: 0; font-size: var(--f-sm); }
   .cetvel th, .cetvel td { border-right: 1px solid var(--cizgi-acik); border-bottom: 1px solid var(--cizgi-acik); padding: 0; text-align: center; white-space: nowrap; }
-  .cetvel thead th { position: sticky; top: 0; z-index: 2; background: var(--tablo-bas); color: var(--lacivert); font-weight: 700; font-size: var(--f-xs); padding: 4px 0; min-width: 28px; }
+  .cetvel thead th { position: sticky; top: 0; z-index: 2; background: var(--tablo-bas); color: var(--lacivert); font-weight: 700; font-size: var(--f-xs); padding: 4px 0; min-width: 22px; }
   .cetvel thead th small { display: block; font-size: 11px; font-weight: 600; color: var(--yazi-2); }
   .cetvel thead th.tatil { background: color-mix(in srgb, var(--acik-mavi) 28%, var(--yuzey)); }
   .cetvel thead th.arife { background: var(--arife-zemin); }
-  .cetvel .ad { position: sticky; left: 0; z-index: 1; background: var(--yuzey); text-align: left; padding: 0 var(--b3); font-weight: 600; min-width: 160px; }
+  .cetvel .ad { position: sticky; left: 0; z-index: 1; background: var(--yuzey); text-align: left; padding: 0 var(--b3); font-weight: 600; min-width: 130px; }
   .cetvel tbody tr:nth-child(even) .ad { background: var(--yuzey-2); }
   .cetvel thead .ad { z-index: 3; background: var(--tablo-bas); }
   .cetvel .ad .isaret { margin-right: 8px; }
   .cetvel tr.grup .ad, .cetvel tr.grup td { background: var(--panel-bas); font-size: 11px; color: var(--lacivert); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding-block: 4px; }
   .cetvel td.tatil { background: var(--hs-zemin); }
   .cetvel td { position: relative; }
-  .cetvel td button { width: 100%; min-width: 28px; height: 30px; border: 0; background: transparent; cursor: pointer; font-variant-numeric: tabular-nums; color: inherit; font-weight: inherit; }
+  .cetvel td button { width: 100%; min-width: 22px; height: 30px; border: 0; background: transparent; cursor: pointer; font-variant-numeric: tabular-nums; color: inherit; font-weight: inherit; }
   .cetvel td button:hover { outline: 2px solid var(--altin); outline-offset: -2px; }
   .cetvel td.ov::after { content: ""; position: absolute; top: 0; right: 0; border-top: 7px solid var(--altin); border-left: 7px solid transparent; pointer-events: none; }
   .k-N { background: var(--nobet-hucre) !important; color: #FFFFFF; font-weight: 700; }
@@ -200,10 +261,10 @@
   .k-YI { background: var(--tek-zemin) !important; color: var(--tek); font-weight: 700; }
   .k-R, .k-DI { background: var(--hata-zemin) !important; color: var(--hata); font-weight: 700; }
   .k-P { color: var(--soluk); }
-  .ozet { padding: 0 var(--b2) !important; min-width: 52px; text-align: right !important; font-weight: 600; }
+  .ozet { padding: 0 var(--b1) !important; min-width: 46px; text-align: right !important; font-weight: 600; }
   .ozet.ilk { border-left: 2px solid var(--cizgi); }
   thead .ozet { background: var(--tablo-bas); }
-  .ozet.fm { font-weight: 700; color: var(--lacivert); background: var(--vurgu-zemin); }
+  .ozet.fm { font-weight: 700; color: var(--lacivert); background: var(--vurgu-zemin); text-align: center !important; line-height: 1.15; }
   thead .ozet.fm { background: color-mix(in srgb, var(--acik-mavi) 35%, var(--yuzey)); }
   .soluk { color: var(--yazi-2); }
   .imzalar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--cizgi); }
