@@ -5,6 +5,7 @@
   import { cizelgeKitabi } from "../../disa/cizelgeXlsx";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR, GUN_UZUN, ayAdi, gunMetni, haftaGunu } from "../../veri/tarih";
+  import type { Gorevli } from "../../veri/tipler";
   import SayfaBasligi from "../ortak/SayfaBasligi.svelte";
   import IslemAlani from "../ortak/IslemAlani.svelte";
   import Ikon from "../ortak/Ikon.svelte";
@@ -31,6 +32,36 @@
   const nobetci = $derived(kisiler.filter(k => k.role !== "destek"));
   const eczaci = $derived(kisiler.filter(k => k.role === "eczaci" || k.role === "nobetci"));
   const eskime = $derived(c ? eskimeNedenleri(depo.yil, depo.ay) : []);
+
+  // güncel liste: puantajdaki nöbet değişimleri (yerine tutma, takas) işlenmiş hâli; asıl (onaylanan) çizelge ayrı görünümde.
+  // Her gün nöbetçiler ve hazırlamacılar puantajdan okunur; değişmeyen kişi yerinde kalır, değişenin yerine yeni gelen yazılır.
+  const guncel = $derived.by(() => {
+    if (!c) return null;
+    const G = puantajHesapla(veriAnlik(), depo.yil, depo.ay) as { satirlar: { s: Gorevli & { acilTutar?: true }; cells: { kod: string; acil?: boolean }[] }[] };
+    const gorevli = (s: Gorevli): Gorevli => ({ id: s.id, name: s.name, role: s.role });
+    const sirala = (eski: Gorevli[], yeni: Gorevli[]) => {
+      const idler = new Set(yeni.map(k => k.id)), kalan = yeni.filter(k => !eski.some(p => p.id === k.id));
+      const l = eski.map(p => (idler.has(p.id) ? p : kalan.shift())).filter((p): p is Gorevli => !!p);
+      return [...l, ...kalan];
+    };
+    const degisen = new Set<number>();
+    const days = c.days.map(g => {
+      const N: Gorevli[] = [], H: Gorevli[] = [];
+      for (const r of G.satirlar) {
+        const h = r.cells[g.day - 1]; if (!h) continue;
+        if (h.kod === "N" && !h.acil && !acilKadrosunda(r.s)) N.push(gorevli(r.s)); else if (h.kod === "H") H.push(gorevli(r.s));
+      }
+      const ayni = (a: Gorevli[], b: Gorevli[]) => a.length === b.length && a.every(p => b.some(q => q.id === p.id));
+      if (ayni(g.assigned, N) && ayni(g.prep, H)) return g;
+      degisen.add(g.day);
+      return { ...g, assigned: sirala(g.assigned, N), prep: sirala(g.prep, H) };
+    });
+    return { c: { ...c, days }, degisen };
+  });
+  let cizelgeGorunum = $state<"guncel" | "asil">("guncel");
+  const degisimVar = $derived(!!guncel && guncel.degisen.size > 0);
+  // ekranda ve çıktıda (PDF / Excel) açık olan görünüm
+  const goster = $derived(degisimVar && cizelgeGorunum === "guncel" ? guncel!.c : c);
 
   // görünüm: eczane nöbet çizelgesi, günlük çalışma listesi ya da acil servis nöbetleri
   const GORUNUMLER = [
@@ -81,7 +112,7 @@
   function gunAc(d: number) { seciliGun = d; if (innerWidth <= 1100) { acikGun = d; gunAcik = true; } }
   function gunuDuzenle() { acikGun = seciliGun; gunAcik = true; }
   let nobetGorunum = $state<"takvim" | "liste">("takvim");
-  const sg = $derived(c?.days[seciliGun - 1]);
+  const sg = $derived(goster?.days[seciliGun - 1]);
   const eczaciRol = (r: string) => r === "eczaci" || r === "nobetci";
   // özet şerit: nöbet sayısı ve fazla mesai aralığı (eczacı / tekniker; destek hariç)
   const ozet = $derived.by(() => {
@@ -94,12 +125,13 @@
   const fark = (a: { mn: number; mx: number } | null) => (a ? a.mx - a.mn : 0);
   const siniflar = $derived((c?.uyarilar ?? []).map(t => ({ t, ...(uyariSiniflandir(t) as { seviye: "hata" | "uyari" | "bilgi"; baslik: string }) })));
 
+  const ekAd = () => (goster !== c ? "-guncel" : "");
   async function excel() {
     if (!c) return;
     const y = c.year, m = c.month;
     try {
-      const blob = cizelgeKitabi(duzKopya(c) as any, duzKopya(depo.veri.staff) as any, depo.veri.kurum.ad, d => resmiTatilMi(y, m, d));
-      const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}.xlsx`, blob, blob.type);
+      const blob = cizelgeKitabi(duzKopya(goster) as any, duzKopya(depo.veri.staff) as any, depo.veri.kurum.ad, d => resmiTatilMi(y, m, d));
+      const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}${ekAd()}.xlsx`, blob, blob.type);
       durum = ok ? "Excel dosyası kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "Dosya kaydedilemedi."); }
   }
@@ -110,8 +142,8 @@
     pdfHazirlaniyor = true; durum = "";
     try {
       const { cizelgePdf } = await import("../../disa/cizelgePdf");
-      const blob = cizelgePdf(duzKopya(c) as any, duzKopya(depo.veri.staff) as any, { kurum: depo.veri.kurum.ad, resmiTatil: d => resmiTatilMi(y, m, d), arife: d => arifeMi(y, m, d) });
-      const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}.pdf`, blob, "application/pdf");
+      const blob = cizelgePdf(duzKopya(goster) as any, duzKopya(depo.veri.staff) as any, { kurum: depo.veri.kurum.ad, resmiTatil: d => resmiTatilMi(y, m, d), arife: d => arifeMi(y, m, d) });
+      const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}${ekAd()}.pdf`, blob, "application/pdf");
       durum = ok ? "PDF kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "PDF oluşturulamadı."); }
     finally { pdfHazirlaniyor = false; }
@@ -159,6 +191,7 @@
     {/if}
   {:else}
     <IslemAlani>
+      {#if degisimVar}<div class="secim" role="group" aria-label="Çizelge"><button aria-pressed={cizelgeGorunum === "guncel"} onclick={() => (cizelgeGorunum = "guncel")} title="Nöbet değişimleri işlenmiş liste">Güncel</button><button aria-pressed={cizelgeGorunum === "asil"} onclick={() => (cizelgeGorunum = "asil")} title="Değişimlerden önceki asıl çizelge">{c?.onay ? "Onaylanan" : "Asıl çizelge"}</button></div>{/if}
       {#if c}<div class="secim" role="group" aria-label="Görünüm"><button aria-pressed={nobetGorunum === "takvim"} onclick={() => (nobetGorunum = "takvim")}>Takvim</button><button aria-pressed={nobetGorunum === "liste"} onclick={() => (nobetGorunum = "liste")}>Liste</button></div>{/if}
       {#if !c}
         <button class="dugme ana" onclick={() => olustur()} disabled={calisiyor || nobetci.length < 2}><Ikon ad="takvim" />Çizelgeyi oluştur</button>
@@ -184,6 +217,7 @@
         <span>{sayilar.hata ? sayilar.hata + " kural sağlanamadı" : "Kurallar sağlandı"}{sayilar.uyari ? " · " + sayilar.uyari + " dikkat" : ""}</span></div>
     </div>
   {/if}
+  {#if degisimVar}<p class="bant bilgi"><Ikon ad="bilgi" boyut={16} />{cizelgeGorunum === "guncel" ? `Güncel liste gösteriliyor: nöbet değişimleri ve puantajdaki değişiklikler işlendi; değişen ${guncel!.degisen.size} gün işaretli. Değişimlerden önceki çizelge "${c?.onay ? "Onaylanan" : "Asıl çizelge"}" görünümünde.` : `${c?.onay ? "Onaylanan" : "Asıl"} çizelge gösteriliyor (değişimlerden önceki hâli). Değişimler "Güncel" görünümünde.`}</p>{/if}
   {#if eskime.length}<p class="bant dikkat"><Ikon ad="uyari" boyut={16} />{eskime.join(" ")} Çizelgeyi yeniden oluşturmanız önerilir.</p>{/if}
   {#if nobetci.length < 2}<p class="bant dikkat">Çizelge için {AYLAR[depo.ay]} ayında en az 2 nöbetçi (eczacı ya da tekniker) gerekir. <button class="baglanti" onclick={() => git("kisiler")}>Personel ekleyin</button>.</p>
   {:else if !eczaci.length}<p class="bant dikkat">Her gün en az bir eczacı nöbetçi olmalı; personel listesinde eczacı yok.</p>{/if}
@@ -202,22 +236,22 @@
       <div class="ana-sutun">
         {#if nobetGorunum === "takvim"}
           <section class="panel" aria-label="Takvim">
-            <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet takvimi</h2>
+            <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet takvimi{goster !== c ? " · güncel" : ""}</h2>
               <p class="lejant"><span><span class="gorev ecz">ECZ</span>Eczacı</span><span><span class="gorev tek">TEK</span>Tekniker</span><span><span class="gorev haz">H1</span>Hazırlama</span><span class="kirmizi"><Ikon ad="uyari" boyut={14} />Kural esnetildi</span><span><Ikon ad="kilit" boyut={13} />Elle</span></p></div>
-            <Takvim {c} {vurgu} secili={seciliGun} {gunAc} />
+            <Takvim c={goster!} {vurgu} secili={seciliGun} {gunAc} degisen={goster !== c ? guncel?.degisen : undefined} />
           </section>
         {:else}
           <section class="panel" aria-label="Liste">
-            <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet listesi</h2></div>
+            <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet listesi{goster !== c ? " · güncel" : ""}</h2></div>
             <div class="tablo-kap">
               <table class="tablo liste">
                 <thead><tr><th>Tarih</th><th>Gün</th><th>Nöbetçi eczacı</th><th>Nöbetçi tekniker</th><th>Hazırlama 1</th><th>Hazırlama 2</th></tr></thead>
                 <tbody>
-                  {#each c.days as g (g.day)}
+                  {#each goster!.days as g (g.day)}
                     {@const ec = g.assigned.filter(p => eczaciRol(p.role))}
                     {@const tk = g.assigned.filter(p => !eczaciRol(p.role))}
-                    <tr class:secili-satir={seciliGun === g.day} onclick={() => gunAc(g.day)}>
-                      <td class:hs={g.tatil} class="rakam">{g.day} {AYLAR[depo.ay]}</td>
+                    <tr class:secili-satir={seciliGun === g.day} class:degisti={goster !== c && guncel?.degisen.has(g.day)} onclick={() => gunAc(g.day)}>
+                      <td class:hs={g.tatil} class="rakam">{g.day} {AYLAR[depo.ay]}{#if goster !== c && guncel?.degisen.has(g.day)}{" "}<span class="degisti-etiket">değişti</span>{/if}</td>
                       <td class:hs={g.tatil}>{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</td>
                       <td class:hs={g.tatil}>{ec.map(p => p.name).join(", ") || "—"}{#if g.conflict}<span class="kirmizi" title="Kural esnetildi"> <Ikon ad="uyari" boyut={13} /></span>{/if}</td>
                       <td class:hs={g.tatil}>{tk.map(p => p.name).join(", ") || "—"}</td>
@@ -297,6 +331,8 @@
   .bant.dikkat { background: var(--dikkat-zemin); color: var(--dikkat); }
   .bant.hata { background: var(--hata-zemin); color: var(--hata); }
   .bant.tamam { background: var(--vurgu-zemin); color: var(--vurgu); }
+  .bant.bilgi { background: var(--bilgi-zemin, #EEF5FC); color: var(--lacivert); font-weight: 500; }
+  .degisti-etiket { font-size: var(--f-xs); font-weight: 700; color: var(--izin); }
   .baglanti { border: 0; background: none; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; font-weight: 600; }
   .calisiyor { display: flex; gap: var(--b4); align-items: center; padding: var(--b4) var(--b5); margin-bottom: var(--b3); }
   .calisiyor p { color: var(--soluk); font-size: var(--f-sm); }

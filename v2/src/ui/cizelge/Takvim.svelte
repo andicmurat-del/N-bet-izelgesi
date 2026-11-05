@@ -7,7 +7,7 @@
   import { depo, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import Ikon from "../ortak/Ikon.svelte";
 
-  let { c, vurgu = null, secili = null, gunAc }: { c: AyCizelgesi; vurgu?: number | null; secili?: number | null; gunAc: (gun: number) => void } = $props();
+  let { c, vurgu = null, secili = null, gunAc, degisen }: { c: AyCizelgesi; vurgu?: number | null; secili?: number | null; gunAc: (gun: number) => void; degisen?: Set<number> } = $props();
 
   const bos = $derived(haftaGunu(c.year, c.month, 1));
   const tumAdlar = $derived(depo.veri.staff.map(k => k.name));
@@ -37,6 +37,7 @@
         {#if rt}<span class="etiket">Resmi tatil</span>{:else if ar}<span class="etiket">Arife</span>{/if}
         <span class="simgeler">
           {#if g.conflict || eksik}<span class="sorun-simge" title="Bu günde kural esnetildi ya da kişi eksik"><Ikon ad="uyari" boyut={14} /></span>{/if}
+          {#if degisen?.has(g.day)}<span class="degisti" title="Bu günde nöbet değişimi var">değişti</span>{/if}
           {#if g.locked}<span class="kilit" title="Elle düzenlendi; yeniden oluşturmada korunur"><Ikon ad="kilit" boyut={13} /></span>{/if}
         </span>
       </span>
@@ -83,6 +84,7 @@
   .vurgulu .gun.vurgu { box-shadow: inset 0 0 0 2px var(--lacivert); }
   .ben { background: var(--vurgu-zemin); box-shadow: 0 0 0 2px var(--vurgu-zemin); }
   .ad-kisa { display: none; }
+  .degisti { font-size: var(--f-xs); font-weight: 700; color: var(--izin); white-space: nowrap; }
   @media (max-width: 720px) {
     .bas { font-size: 11px; padding: 4px 0; }
     .gun { min-height: 76px; }
@@ -90,6 +92,7 @@
     .serit b { font-size: 12px; }
     .gunadi, .etiket { display: none; }
     .simgeler :global(svg) { width: 11px; height: 11px; }
+    .degisti { font-size: 0; width: 6px; height: 6px; border-radius: 50%; background: var(--izin); }
     .kisiler { padding: 3px 3px 4px; gap: 1px; }
     .kisi { font-size: 10.5px; gap: 2px; }
     .gorev { min-width: 0; width: 5px; height: 12px; padding: 0; font-size: 0; }
