@@ -7,7 +7,7 @@
   import { depo, veriAnlik, ayCizelgesi } from "../../veri/depo.svelte";
   import { degisimDenetle, yerineAdaylarHesapla } from "../../motor";
   import { degisimUygula, degisimGeriAl, ayDegisimleri, puantajIzgarasi, IZIN_AD, type Gorev, type DegisimIstegi, type IzinTuru } from "../../veri/degisim.svelte";
-  import { GUN_KISA, GUN_UZUN, gunMetni, haftaGunu } from "../../veri/tarih";
+  import { GUN_KISA, gunMetni, haftaGunu, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
 
   type Kontrol = { engel: string[]; uyari: string[]; bilgi: string[] };
@@ -26,6 +26,8 @@
   const degisenGunler = $derived(new Set(ayDegisimleri(y, m).map(z => z.gun)));
   const bugun = new Date();
   const bugunMu = (d: number) => bugun.getFullYear() === y && bugun.getMonth() === m && bugun.getDate() === d;
+  const tumAdlar = $derived(depo.veri.staff.map(k => k.name));
+  const kisa = (a: string) => kisaAd(a, tumAdlar);
   const ad = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş)";
   const gorevAdi = (k: Gorev) => (k === "H" ? "hazırlama" : "nöbet");
 
@@ -105,22 +107,22 @@
   <Bilgi baslik="Nasıl çalışır?"><p>Değişimler yalnız puantaja yansır; yıllık denge çizelgeye göre hesaplandığı için kimsenin sonraki aylardaki payı değişmez. Nöbet ile nöbet, hazırlama ile hazırlama ya da nöbet ile hazırlama takas edilebilir.</p></Bilgi>
 
   <div class="duzen">
-    <section class="kart takvim-kutu" aria-label="Görevler">
+    <section class="panel-blok takvim-kutu" aria-label="Görevler">
       <div class="takvim">
         {#each GUN_KISA as d}<div class="bas" aria-hidden="true">{d}</div>{/each}
         {#each { length: haftaGunu(y, m, 1) } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
         {#each G.gunler as g (g.gun)}
           {@const gr = gorevliler(g.gun)}
-          <div class="gun" class:tatil={g.tatil} class:bugun={bugunMu(g.gun)}>
-            <span class="gun-ust"><span class="no rakam">{g.gun}</span><span class="gunadi">{GUN_UZUN[g.dw]}</span>{#if degisenGunler.has(g.gun)}<span class="degisti" title="Bu günde değişim var">değişti</span>{/if}</span>
+          <div class="gun" class:hs={g.tatil} class:bugun={bugunMu(g.gun)}>
+            <span class="serit"><b class="rakam">{g.gun}</b><span class="gunadi">{GUN_KISA[g.dw]}</span>{#if degisenGunler.has(g.gun)}<span class="degisti" title="Bu günde değişim var">değişti</span>{/if}</span>
             <span class="cipler">
               {#each gr.N as p}
                 {@const x = { id: p.id, gun: g.gun, kod: "N" as Gorev }}
-                <button class="cip" class:sec1={ayni(s1, x)} class:sec2={ayni(s2, x)} aria-pressed={ayni(s1, x) || ayni(s2, x)} onclick={() => sec(x)} aria-label="{p.ad}, {gunMetni(y, m, g.gun)} nöbet"><span class="isaret {p.rol}"></span>{p.ad}</button>
+                <button class="cip" class:sec1={ayni(s1, x)} class:sec2={ayni(s2, x)} aria-pressed={ayni(s1, x) || ayni(s2, x)} onclick={() => sec(x)} aria-label="{p.ad}, {gunMetni(y, m, g.gun)} nöbet"><span class="gorev {p.rol === 'teknisyen' ? 'tek' : p.rol === 'destek' ? 'des' : 'ecz'}">{p.rol === "teknisyen" ? "TEK" : p.rol === "destek" ? "DES" : "ECZ"}</span><span class="ad">{p.ad}</span><span class="ad-kisa">{kisa(p.ad)}</span></button>
               {/each}
               {#each gr.H as p, i}
                 {@const x = { id: p.id, gun: g.gun, kod: "H" as Gorev }}
-                <button class="cip h" class:sec1={ayni(s1, x)} class:sec2={ayni(s2, x)} aria-pressed={ayni(s1, x) || ayni(s2, x)} onclick={() => sec(x)} aria-label="{p.ad}, {gunMetni(y, m, g.gun)} hazırlama"><b>H{i + 1}</b>{p.ad}</button>
+                <button class="cip h" class:sec1={ayni(s1, x)} class:sec2={ayni(s2, x)} aria-pressed={ayni(s1, x) || ayni(s2, x)} onclick={() => sec(x)} aria-label="{p.ad}, {gunMetni(y, m, g.gun)} hazırlama"><span class="gorev haz">H{i + 1}</span><span class="ad">{p.ad}</span><span class="ad-kisa">{kisa(p.ad)}</span></button>
               {/each}
             </span>
           </div>
@@ -200,24 +202,27 @@
   .adim { font-size: var(--f-sm); font-weight: 500; color: var(--yazi-2); }
   .aciklama { font-size: var(--f-sm); color: var(--soluk); margin-bottom: var(--b3); max-width: 90ch; }
   .duzen { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--b4); align-items: start; }
-  .takvim-kutu { padding: var(--b3); }
-  .takvim { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
-  .bas { text-align: center; font-size: var(--f-xs); font-weight: 600; color: var(--soluk); padding-bottom: 2px; }
-  .gun { display: flex; flex-direction: column; gap: 4px; min-height: 96px; padding: 6px; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); min-width: 0; }
-  .gun.tatil { background: var(--tatil-zemin); }
-  .gun.bugun { box-shadow: inset 0 0 0 2px var(--odak); }
-  .gun-ust { display: flex; align-items: center; gap: 6px; padding: 0 2px; }
-  .no { font-weight: 600; font-size: var(--f-sm); color: var(--yazi-2); }
-  .gunadi { display: none; }
-  .degisti { margin-left: auto; font-size: var(--f-xs); font-weight: 600; color: var(--izin); }
-  .cipler { display: grid; gap: 3px; min-width: 0; }
-  .cip { display: flex; align-items: center; gap: 5px; min-height: 26px; padding: 2px 6px; border: 1px solid transparent; border-radius: 6px; background: var(--yuzey-2); color: var(--yazi); font-size: 13px; font-weight: 500; text-align: left; cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
-  .gun.tatil .cip { background: var(--yuzey); }
-  .cip:hover { border-color: var(--soluk); }
-  .cip.h { color: var(--yazi-2); }
-  .cip.h b { font-size: var(--f-xs); color: var(--haz); flex: none; }
+  .takvim-kutu { padding: 0 !important; overflow: hidden; }
+  .takvim { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .bas, .bosluk, .gun { border-right: 1px solid var(--cizgi); border-bottom: 1px solid var(--cizgi); }
+  .bas:nth-child(7n), .gun:nth-child(7n) { border-right: 0; }
+  .bas { background: var(--tablo-bas); color: var(--lacivert); font-size: var(--f-xs); font-weight: 700; text-align: center; padding: 6px 0; letter-spacing: .03em; }
+  .bosluk { background: var(--yuzey-2); }
+  .gun { display: flex; flex-direction: column; min-height: 112px; background: var(--yuzey); min-width: 0; }
+  .serit { display: flex; align-items: center; gap: 6px; min-height: 24px; padding: 2px 8px; background: var(--panel-bas); border-bottom: 1px solid var(--cizgi-acik); font-size: var(--f-xs); color: var(--yazi-2); }
+  .gun.hs .serit { background: color-mix(in srgb, var(--acik-mavi) 28%, var(--yuzey)); color: var(--lacivert); }
+  .serit b { font-size: var(--f-sm); color: var(--lacivert); }
+  .gun.bugun .serit b { text-decoration: underline; text-underline-offset: 3px; }
+  .degisti { margin-left: auto; font-size: var(--f-xs); font-weight: 700; color: var(--izin); white-space: nowrap; }
+  .cipler { display: grid; gap: 3px; padding: 6px 6px 8px; min-width: 0; }
+  .cip { display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 2px 4px; border: 1px solid transparent; border-radius: var(--r-kucuk); background: transparent; color: var(--yazi); font-size: 13px; text-align: left; cursor: pointer; min-width: 0; }
+  .cip:hover { background: var(--yuzey-2); border-color: var(--cizgi); }
+  .cip .ad { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+  .cip.h .ad { font-weight: 400; color: var(--yazi-2); }
+  .cip:not(.h) + .cip.h { margin-top: 3px; border-top: 1px dashed var(--cizgi); border-top-left-radius: 0; border-top-right-radius: 0; }
   .cip.sec1 { border-color: var(--vurgu); background: var(--vurgu-zemin); box-shadow: inset 0 0 0 1px var(--vurgu); }
   .cip.sec2 { border-color: var(--izin); background: var(--izin-zemin); box-shadow: inset 0 0 0 1px var(--izin); }
+  .ad-kisa { display: none; }
   .panel { padding: var(--b4); display: grid; gap: var(--b3); position: sticky; top: var(--b4); scroll-margin-top: var(--b4); }
   .bos-panel { font-size: var(--f-sm); color: var(--yazi-2); }
   .secilen { display: grid; gap: 2px; font-size: var(--f-sm); color: var(--yazi-2); }
@@ -247,16 +252,17 @@
 
   @media (max-width: 1100px) { .duzen { grid-template-columns: 1fr; } .panel { position: static; } }
   @media (max-width: 720px) {
-    .takvim-kutu { padding: 0; overflow: hidden; }
-    .takvim { grid-template-columns: 1fr; gap: 0; }
-    .bas, .bosluk { display: none; }
-    .gun { flex-direction: row; align-items: flex-start; min-height: 0; padding: 10px 12px; border-radius: 0; border-width: 0 0 1px; gap: 12px; }
-    .gun-ust { flex-direction: column; align-items: flex-start; gap: 0; width: 76px; flex: none; }
-    .no { font-size: var(--f-lg); color: var(--yazi); }
-    .gunadi { display: block; font-size: var(--f-xs); color: var(--soluk); }
-    .degisti { margin: 2px 0 0; }
-    .cipler { flex: 1; grid-template-columns: 1fr 1fr; }
-    .cip { font-size: var(--f-sm); }
+    .bas { font-size: 11px; padding: 4px 0; }
+    .gun { min-height: 76px; }
+    .serit { padding: 1px 3px; gap: 2px; min-height: 18px; }
+    .serit b { font-size: 12px; }
+    .gunadi { display: none; }
+    .degisti { font-size: 0; width: 6px; height: 6px; border-radius: 50%; background: var(--izin); }
+    .cipler { padding: 3px 2px 4px; gap: 2px; }
+    .cip { font-size: 10.5px; gap: 2px; min-height: 24px; padding: 1px 2px; }
+    .cip .gorev { min-width: 0; width: 5px; height: 12px; padding: 0; font-size: 0; }
+    .cip .ad { display: none; }
+    .ad-kisa { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+    .cip.h .ad-kisa { font-weight: 400; }
   }
-  @media (max-width: 380px) { .cipler { grid-template-columns: 1fr; } }
 </style>
