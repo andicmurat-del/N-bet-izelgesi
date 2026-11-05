@@ -53,6 +53,7 @@
 
   const adaylar = $derived(tur === "devir" && s1 ? (yerineAdaylarHesapla(veriAnlik(), y, m, s1.gun, s1.id, s1.kod) as Aday[]) : []);
   $effect(() => { if (tur === "devir" && s1 && !adaylar.some(a => String(a.id) === yer)) yer = String((adaylar.find(a => !a.engel) ?? adaylar[0])?.id ?? ""); });
+  const enUygun = $derived((adaylar.find(a => !a.engel && !a.uyari) ?? adaylar.find(a => !a.engel))?.id);
   const istek = $derived.by((): DegisimIstegi | null => {
     if (!s1) return null;
     if (tur === "devir") return yer ? { y, m, gorev: s1.kod, tur, gun: s1.gun, cik: s1.id, yer: Number(yer) } : null;
@@ -130,17 +131,23 @@
       </div>
     </section>
 
+    <div class="yan">
     <aside class="kart panel" aria-label="Değişim" bind:this={panel}>
       {#if !s1}
         <p class="bos-panel"><b>{tur === "devir" ? "Yerine tutma" : "Karşılıklı takas"}</b><br />{tur === "devir" ? "Takvimde bir kişinin nöbetine ya da hazırlamasına (H) dokunun, sonra yerine tutacak kişiyi seçin." : "Takvimde iki görev seçin: ilki bir kişinin, ikincisi başka bir kişinin görevi. İki kişi görevlerini karşılıklı değiştirir."}</p>
       {:else}
-        <div class="secilen"><span class="etiket sec1">{ad(s1.id)}</span><span>{gunMetni(y, m, s1.gun)} · {gorevAdi(s1.kod)}</span></div>
+        <div class="secili-gorev"><b>{gunMetni(y, m, s1.gun)} · {gorevAdi(s1.kod)}</b><span>{ad(s1.id)}</span></div>
         {#if tur === "devir"}
-          <label class="alan"><span>Yerine {s1.kod === "H" ? "hazırlama yapacak" : "nöbet tutacak"}</span>
-            <select class="girdi" onchange={e => (yer = e.currentTarget.value)}>
-              {#each adaylar as a}<option value={String(a.id)} selected={String(a.id) === yer}>{a.ad} · yıl içinde {a.yil} {gorevAdi(s1.kod)}{a.engel ? " · kural dışı" : a.uyari ? " · uyarı var" : ""}</option>{:else}<option value="">Uygun kişi yok</option>{/each}
-            </select>
-          </label>
+          <div class="adaylar-bas">Yerine {s1.kod === "H" ? "hazırlama yapabilecekler" : "tutabilecekler"}</div>
+          <div class="adaylar" role="radiogroup" aria-label="Yerine tutacak kişi">
+            {#each adaylar as a, i (a.id)}
+              <button class="aday" class:s={String(a.id) === yer} class:kot={!!a.engel} role="radio" aria-checked={String(a.id) === yer} onclick={() => (yer = String(a.id))}>
+                <span class="av" aria-hidden="true">{a.ad.split(" ").map(x => x[0]).join("").slice(0, 2).toLocaleUpperCase("tr")}</span>
+                <b>{a.ad}</b>
+                <small>{a.engel ? "Kural dışı" : a.uyari ? "Uyarı var" : a.id === enUygun ? "En uygun" : "Uygun"} · yıl {a.yil} {gorevAdi(s1.kod)}</small>
+              </button>
+            {:else}<p class="bos-panel">Uygun kişi yok.</p>{/each}
+          </div>
         {:else if s2}
           <div class="ok" aria-hidden="true">⇅</div>
           <div class="secilen"><span class="etiket sec2">{ad(s2.id)}</span><span>{gunMetni(y, m, s2.gun)} · {gorevAdi(s2.kod)}</span></div>
@@ -163,30 +170,32 @@
         {/if}
         {#if onayAdimi}<p class="onay" role="alert">Bu değişimde kural dışı durum var. Yine de uygulamak için tekrar basın.</p>{/if}
         <div class="dugmeler">
-          <button class="dugme ana" onclick={uygula} disabled={!istek || ayniGun}><Ikon ad="tamam" />{onayAdimi ? "Yine de uygula" : "Değişimi uygula"}</button>
+          <button class="dugme ana genis" onclick={uygula} disabled={!istek || ayniGun}><Ikon ad="tamam" />{onayAdimi ? "Yine de uygula" : tur === "devir" ? "Yerine yaz" : "Takası uygula"}</button>
           <button class="dugme sade" onclick={temizle}>Vazgeç</button>
         </div>
       {/if}
       {#if durum}<p class="durum {durum.tur}" role="status">{durum.metin}</p>{/if}
     </aside>
+    <section class="kart gecmis" aria-labelledby="dg-liste">
+      <h2 id="dg-liste">Değişim geçmişi</h2>
+      {#if satirlar.length}
+        <ul class="tl">
+          {#each satirlar as s (s.id)}
+            <li class:izin={s.tur !== "Yerine tutma" && s.tur !== "Karşılıklı takas"}>
+              <i aria-hidden="true"></i>
+              <span class="bilgi"><small class="zm">{zaman(s.zaman)} · {s.tur}</small><b>{s.metin}</b>{#if s.not}<small>{s.not}</small>{/if}
+                {#if geriOnay?.id === s.id}<small class="uyari-metin">{geriOnay.metin}</small>{/if}</span>
+              <button class="geri" onclick={() => geriAl(s.id)}>{geriOnay?.id === s.id ? "Evet, geri al" : "Geri al"}</button>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="aciklama">Bu ay için değişim yok.</p>
+      {/if}
+    </section>
+    </div>
   </div>
 
-  <section class="blok panel-blok" aria-labelledby="dg-liste">
-    <h2 id="dg-liste">Bu ayın değişimleri</h2>
-    {#if satirlar.length}
-      <ul>
-        {#each satirlar as s (s.id)}
-          <li>
-            <span class="bilgi"><b>{s.metin}</b><small>{s.tur} · {zaman(s.zaman)}{s.not ? ` · ${s.not}` : ""}</small>
-              {#if geriOnay?.id === s.id}<small class="uyari-metin">{geriOnay.metin}</small>{/if}</span>
-            <button class="dugme kucuk" onclick={() => geriAl(s.id)}><Ikon ad="yenile" boyut={15} />{geriOnay?.id === s.id ? "Evet, geri al" : "Geri al"}</button>
-          </li>
-        {/each}
-      </ul>
-    {:else}
-      <p class="aciklama">Bu ay için değişim yok.</p>
-    {/if}
-  </section>
 {/if}
 
 <style>
@@ -223,7 +232,34 @@
   .cip.sec1 { border-color: var(--vurgu); background: var(--vurgu-zemin); box-shadow: inset 0 0 0 1px var(--vurgu); }
   .cip.sec2 { border-color: var(--izin); background: var(--izin-zemin); box-shadow: inset 0 0 0 1px var(--izin); }
   .ad-kisa { display: none; }
-  .panel { padding: var(--b4); display: grid; gap: var(--b3); position: sticky; top: var(--b4); scroll-margin-top: var(--b4); }
+  .duzen { grid-template-columns: minmax(0, 1fr) 340px; }
+  .yan { display: grid; gap: var(--b3); align-content: start; }
+  .panel { padding: var(--b4); display: grid; gap: var(--b3); scroll-margin-top: var(--b4); }
+  .secili-gorev { display: grid; gap: 2px; padding: var(--b2) var(--b3); background: var(--secili-satir); border: 1px solid color-mix(in srgb, var(--altin) 45%, var(--yuzey)); }
+  .secili-gorev b { color: var(--lacivert); }
+  .secili-gorev span { font-size: var(--f-sm); }
+  .adaylar-bas { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--yazi-2); }
+  .adaylar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 320px; overflow-y: auto; }
+  .aday { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 8px; align-items: center; padding: 7px 8px; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); text-align: left; cursor: pointer; color: var(--yazi); font: inherit; }
+  .aday:hover { border-color: var(--lacivert); }
+  .aday:focus-visible { outline: 2px solid var(--odak); outline-offset: 1px; }
+  .aday .av { grid-row: span 2; width: 30px; height: 30px; border-radius: 50%; background: var(--lacivert); color: #FFFFFF; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+  .aday b { font-size: var(--f-sm); color: var(--lacivert); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .aday small { font-size: 11px; color: var(--yazi-2); }
+  .aday.s { border-color: var(--vurgu); background: var(--vurgu-zemin); box-shadow: inset 0 0 0 1px var(--vurgu); }
+  .aday.kot { opacity: .55; }
+  .genis { flex: 1; justify-content: center; }
+  .gecmis { padding: 0 var(--b4) var(--b4); display: grid; gap: var(--b2); }
+  .gecmis h2 { font-size: var(--f-lg); }
+  .tl { gap: 0; }
+  .tl li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: var(--b2); align-items: start; padding: var(--b2) 0; border: 0; border-bottom: 1px solid var(--cizgi-acik); border-radius: 0; background: none; }
+  .tl li:last-child { border-bottom: 0; }
+  .tl i { width: 10px; height: 10px; border-radius: 50%; background: var(--vurgu); margin-top: 5px; }
+  .tl li.izin i { background: var(--hata); }
+  .tl .bilgi b { font-weight: 500; font-size: var(--f-sm); }
+  .tl .zm { font-weight: 700; color: var(--lacivert); }
+  .geri { border: 0; background: none; padding: 2px 0; color: var(--baglanti); font: inherit; font-size: var(--f-xs); font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .geri:hover { text-decoration: underline; }
   .bos-panel { font-size: var(--f-sm); color: var(--yazi-2); }
   .secilen { display: grid; gap: 2px; font-size: var(--f-sm); color: var(--yazi-2); }
   .etiket { justify-self: start; padding: 2px 8px; border-radius: 6px; font-weight: 600; color: var(--yazi); }
@@ -242,15 +278,13 @@
   .durum { font-size: var(--f-sm); font-weight: 500; padding: var(--b2) var(--b3); border-radius: var(--r-kucuk); }
   .durum.tamam { background: var(--vurgu-zemin); color: var(--vurgu); }
   .durum.hata { background: var(--hata-zemin); color: var(--hata); }
-  .blok { margin-top: var(--b5); display: grid; gap: var(--b2); }
-  .blok h2 { font-size: var(--f-lg); }
   ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   li { display: flex; align-items: center; gap: var(--b3); padding: var(--b2) var(--b3); border-radius: var(--r-kucuk); background: var(--yuzey); border: 1px solid var(--cizgi); }
   .bilgi { display: grid; flex: 1; min-width: 0; }
   .bilgi small { font-size: var(--f-xs); color: var(--soluk); }
   .bilgi .uyari-metin { color: var(--dikkat); font-weight: 500; }
 
-  @media (max-width: 1100px) { .duzen { grid-template-columns: 1fr; } .panel { position: static; } }
+  @media (max-width: 1100px) { .duzen { grid-template-columns: 1fr; } }
   @media (max-width: 720px) {
     .bas { font-size: 11px; padding: 4px 0; }
     .gun { min-height: 76px; }
