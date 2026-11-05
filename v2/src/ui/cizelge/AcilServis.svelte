@@ -186,7 +186,7 @@
   .takvim > :nth-child(7n) { border-right: 0; }
   .bas { background: var(--tablo-bas); color: var(--lacivert); font-size: var(--f-xs); font-weight: 700; text-align: center; padding: 6px 0; }
   .bosluk { background: var(--yuzey-2); }
-  .gun { display: flex; flex-direction: column; min-height: 88px; width: 100%; aspect-ratio: 5 / 4; padding: 0; text-align: left; border-top: 0; border-left: 0; border-radius: 0; background: var(--yuzey); cursor: pointer; min-width: 0; }
+  .gun { display: flex; flex-direction: column; width: 100%; aspect-ratio: 5 / 4; padding: 0; text-align: left; border-top: 0; border-left: 0; border-radius: 0; background: var(--yuzey); cursor: pointer; min-width: 0; }
   .gun:hover { background: var(--yuzey-2); }
   .gun:focus-visible { outline: 2px solid var(--odak); outline-offset: -2px; }
   .gun.tatil .serit { background: color-mix(in srgb, var(--acik-mavi) 28%, var(--yuzey)); }
@@ -225,7 +225,7 @@
   /* telefon: aynı 7 sütunlu takvim, kısa adlar */
   @media (max-width: 720px) {
     .bas { font-size: 11px; padding: 4px 0; }
-    .gun { min-height: 62px; }
+    .gun { aspect-ratio: auto; min-height: 62px; }
     .ust { padding: 1px 4px; min-height: 18px; }
     .kisiler { padding: 3px 3px 4px; gap: 1px; }
     .no { font-size: 12px; }
