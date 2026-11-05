@@ -52,7 +52,8 @@ describe("öğlen nöbeti", () => {
     r.gunler.forEach(g => [...g.e, ...g.t].forEach(id => { const k = Math.floor((g.gun - 1 + hg(10, 1)) / 7) + ":" + id; hf[k] = (hf[k] || 0) + 1; }));
     expect(Math.max(...Object.values(hf))).toBeLessThanOrEqual(2);
     const nob = r.gunler.reduce((t, g) => t + [...g.e, ...g.t].filter(id => g.nobetci.includes(id)).length, 0);
-    expect(nob).toBeLessThanOrEqual(3);
+    // tek Cuma'dan muaf tekniker (T5) Pazartesi–Perşembe çoğu güne yazıldığı için nöbetçi olduğu günlere de düşebilir
+    expect(nob).toBeLessThanOrEqual(6);
   });
 
   test("yıl boyu eşitlik: toplam ve Cuma; izinli günler paydan düşer (izinden dönen fazladan yazılmaz)", () => {
@@ -65,7 +66,13 @@ describe("öğlen nöbeti", () => {
     expect(Yl[2].top).toBeLessThan(enAz);
     expect(enAz - Yl[2].top).toBeLessThanOrEqual(2);
     expect(Yl[8]).toBeUndefined();   // acil servis personeli öğlen nöbetine yazılmaz
-    expect(fark(say([9, 10, 11, 12, 13]))).toBeLessThanOrEqual(1);
+    // teknikerde Pazartesi–Perşembe Cuma'dan muaf olana (T5), Cuma öbürlerine; eşitlik iki grubun kendi içinde
+    expect(fark(say([9, 10, 11, 12]))).toBeLessThanOrEqual(1);
+    const tGun = { muaf: { h: 0, c: 0 }, diger: { h: 0, c: 0 } };
+    for (const m of [10, 11]) Object.entries(veri.oglen[`${Y}-${m}`]).forEach(([d, k]) => k.t.forEach(id => {
+      const a = id === 13 ? tGun.muaf : tGun.diger; if (hg(m, +d) === 4) a.c++; else a.h++; }));
+    expect(tGun.muaf.c).toBe(0);
+    expect(tGun.muaf.h).toBeGreaterThan(tGun.diger.h / 4 * 2);   // muaf haftada en çok 2; kalan Pzt–Prş öbür dördüne
     expect(fark([1, 2, 3, 4, 5, 6].map(id => Yl[id].cuma))).toBeLessThanOrEqual(1);
     expect(fark([9, 10, 11, 12].map(id => Yl[id].cuma))).toBeLessThanOrEqual(1);
     expect(Yl[7].cuma).toBe(0);
@@ -106,7 +113,8 @@ describe("öğlen nöbeti", () => {
           k[grup].forEach(id => { const kk = grup + h + ":" + id; hf[kk] = (hf[kk] || 0) + 1; });
           G.satirlar.filter(r => r.s.role === (grup === "e" ? "eczaci" : "teknisyen")).forEach(r => {
             const c = r.cells[+d - 1];
-            if ((c.kod === "M" || c.kod === "N") && !(hg(m, +d) === 4 && r.s.cumaMuaf)) (yazilir[grup + h] ??= new Set()).add(r.s.id);
+            // teknikerde Pazartesi–Perşembe muaf olmayan yalnız muaflar yetmezse yazılır: o güne sayılmaz
+            if ((c.kod === "M" || c.kod === "N") && !(hg(m, +d) === 4 && r.s.cumaMuaf) && !(grup === "t" && hg(m, +d) < 4 && !r.s.cumaMuaf)) (yazilir[grup + h] ??= new Set()).add(r.s.id);
           });
         }
       }
