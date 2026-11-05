@@ -111,7 +111,39 @@
   $effect(() => { if (c && seciliGun > c.days.length) seciliGun = 1; });
   function gunAc(d: number) { seciliGun = d; if (innerWidth <= 1100) { acikGun = d; gunAcik = true; } }
   function gunuDuzenle() { acikGun = seciliGun; gunAcik = true; }
-  let nobetGorunum = $state<"takvim" | "liste">("takvim");
+  let nobetGorunum = $state<"takvim" | "liste">("liste");
+  // liste görünümü: filtre düğmeleri (hafta içi / hafta sonu / değişen / kural esnetilen / elle), kişi seçimi ve ad arama;
+  // günler haftalara göre gruplanır
+  type Filtre = "tumu" | "hi" | "hs" | "degisen" | "esnek" | "elle";
+  let filtre = $state<Filtre>("tumu");
+  let kisiF = $state<number | null>(null);
+  let ara = $state("");
+  type Gun = NonNullable<typeof c>["days"][number];
+  const degistiMi = (g: Gun) => goster !== c && !!guncel?.degisen.has(g.day);
+  const filtreUy: Record<Filtre, (g: Gun) => boolean> = {
+    tumu: () => true, hi: g => !g.tatil, hs: g => g.tatil, degisen: degistiMi, esnek: g => !!g.conflict || g.assigned.length < 2, elle: g => !!g.locked,
+  };
+  const FILTRELER: [Filtre, string][] = [["tumu", "Tümü"], ["hi", "Hafta içi"], ["hs", "Hafta sonu"], ["degisen", "Değişen"], ["esnek", "Kural esnetilen"], ["elle", "Elle"]];
+  const kucuk = (t: string) => t.toLocaleLowerCase("tr-TR");
+  const kisiUyar = (g: Gun) => {
+    const l = [...g.assigned, ...(g.tatil ? g.prep : [])];
+    if (kisiF !== null && !l.some(p => p.id === kisiF)) return false;
+    const a = kucuk(ara.trim());
+    return !a || l.some(p => kucuk(p.name).includes(a));
+  };
+  const filtreSayisi = $derived(Object.fromEntries(FILTRELER.map(([f]) => [f, (goster?.days ?? []).filter(g => filtreUy[f](g) && kisiUyar(g)).length])) as Record<Filtre, number>);
+  // haftalar (Pazartesi başlar): [hafta no, yarım mı, günler]
+  const haftalar = $derived.by(() => {
+    if (!goster) return [];
+    const ilk = haftaGunu(depo.yil, depo.ay, 1), n = goster.days.length;
+    const h: { no: number; yarim: boolean; gunler: Gun[] }[] = [];
+    for (const g of goster.days) {
+      const w = Math.floor((g.day - 1 + ilk) / 7);
+      if (!h[w]) { const bas = w * 7 - ilk + 1; h[w] = { no: w + 1, yarim: bas < 1 || bas + 6 > n, gunler: [] }; }
+      if (filtreUy[filtre](g) && kisiUyar(g)) h[w].gunler.push(g);
+    }
+    return h.filter(x => x.gunler.length);
+  });
   const sg = $derived(goster?.days[seciliGun - 1]);
   const eczaciRol = (r: string) => r === "eczaci" || r === "nobetci";
   // özet şerit: nöbet sayısı ve fazla mesai aralığı (eczacı / tekniker; destek hariç)
@@ -243,21 +275,42 @@
         {:else}
           <section class="panel" aria-label="Liste">
             <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet listesi{goster !== c ? " · güncel" : ""}</h2></div>
+            <div class="filtreler">
+              <div class="cipler" role="group" aria-label="Günleri süz">
+                {#each FILTRELER as [f, ad]}<button class="cip" aria-pressed={filtre === f} onclick={() => (filtre = f)}>{ad} <span class="rakam">{filtreSayisi[f]}</span></button>{/each}
+              </div>
+              <div class="ara">
+                <select bind:value={kisiF} aria-label="Kişi"><option value={null}>Kişi: Tümü</option>{#each nobetci as k (k.id)}<option value={k.id}>{k.name}</option>{/each}</select>
+                <input type="search" bind:value={ara} placeholder="Ad ara" aria-label="Ad ara" />
+              </div>
+            </div>
             <div class="tablo-kap">
               <table class="tablo liste">
-                <thead><tr><th>Tarih</th><th>Gün</th><th>Nöbetçi eczacı</th><th>Nöbetçi tekniker</th><th>Hazırlama 1</th><th>Hazırlama 2</th></tr></thead>
+                <thead><tr><th>Tarih</th><th>Gün</th><th>Nöbetçi eczacı</th><th>Nöbetçi tekniker</th><th>Hazırlama 1</th><th>Hazırlama 2</th><th>Durum</th></tr></thead>
                 <tbody>
-                  {#each goster!.days as g (g.day)}
-                    {@const ec = g.assigned.filter(p => eczaciRol(p.role))}
-                    {@const tk = g.assigned.filter(p => !eczaciRol(p.role))}
-                    <tr class:secili-satir={seciliGun === g.day} class:degisti={goster !== c && guncel?.degisen.has(g.day)} onclick={() => gunAc(g.day)}>
-                      <td class:hs={g.tatil} class="rakam">{g.day} {AYLAR[depo.ay]}{#if goster !== c && guncel?.degisen.has(g.day)}{" "}<span class="degisti-etiket">değişti</span>{/if}</td>
-                      <td class:hs={g.tatil}>{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</td>
-                      <td class:hs={g.tatil}>{ec.map(p => p.name).join(", ") || "—"}{#if g.conflict}<span class="kirmizi" title="Kural esnetildi"> <Ikon ad="uyari" boyut={13} /></span>{/if}</td>
-                      <td class:hs={g.tatil}>{tk.map(p => p.name).join(", ") || "—"}</td>
-                      <td class:hs={g.tatil}>{g.tatil ? g.prep[0]?.name ?? "—" : "—"}</td>
-                      <td class:hs={g.tatil}>{g.tatil ? g.prep[1]?.name ?? "—" : "—"}</td>
-                    </tr>
+                  {#each haftalar as h (h.no)}
+                    <tr class="grup"><td colspan="7">{h.no}. hafta{h.yarim ? " (yarım)" : ""}</td></tr>
+                    {#each h.gunler as g (g.day)}
+                      {@const ec = g.assigned.filter(p => eczaciRol(p.role))}
+                      {@const tk = g.assigned.filter(p => !eczaciRol(p.role))}
+                      {@const rt = resmiTatilMi(depo.yil, depo.ay, g.day)}
+                      <tr class:secili-satir={seciliGun === g.day} class:hs={g.tatil} onclick={() => gunAc(g.day)}>
+                        <td class="rakam"><b>{g.day} {AYLAR[depo.ay]}</b></td>
+                        <td>{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</td>
+                        <td>{ec.map(p => p.name).join(", ") || "—"}</td>
+                        <td>{tk.map(p => p.name).join(", ") || "—"}</td>
+                        <td>{g.tatil ? g.prep[0]?.name ?? "—" : "—"}</td>
+                        <td>{g.tatil ? g.prep[1]?.name ?? "—" : "—"}</td>
+                        <td class="durum">
+                          {#if degistiMi(g)}<span class="etk degisti">değişti</span>{/if}
+                          {#if g.conflict || g.assigned.length < 2}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />kural esnetildi</span>{/if}
+                          {#if g.locked}<span class="etk elle"><Ikon ad="kilit" boyut={12} />elle</span>{/if}
+                          {#if rt}<span class="etk hsr">resmi tatil</span>{:else if g.tatil}<span class="etk hsr">hafta sonu</span>{/if}
+                        </td>
+                      </tr>
+                    {/each}
+                  {:else}
+                    <tr><td colspan="7" class="bos-sonuc">Bu süzgece uyan gün yok.</td></tr>
                   {/each}
                 </tbody>
               </table>
@@ -332,7 +385,6 @@
   .bant.hata { background: var(--hata-zemin); color: var(--hata); }
   .bant.tamam { background: var(--vurgu-zemin); color: var(--vurgu); }
   .bant.bilgi { background: var(--bilgi-zemin, #EEF5FC); color: var(--lacivert); font-weight: 500; }
-  .degisti-etiket { font-size: var(--f-xs); font-weight: 700; color: var(--izin); }
   .baglanti { border: 0; background: none; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; font-weight: 600; }
   .calisiyor { display: flex; gap: var(--b4); align-items: center; padding: var(--b4) var(--b5); margin-bottom: var(--b3); }
   .calisiyor p { color: var(--soluk); font-size: var(--f-sm); }
@@ -349,7 +401,27 @@
   .liste tbody tr { cursor: pointer; }
   .liste tbody tr:hover > * { background: var(--vurgu-zemin); }
   .liste tr.secili-satir > * { box-shadow: inset 0 2px 0 var(--altin), inset 0 -2px 0 var(--altin); }
-  .liste td:nth-child(n+3) { min-width: 150px; }
+  .liste td:nth-child(n+3):not(.durum) { min-width: 150px; }
+  .liste tr.hs > * { background: color-mix(in srgb, var(--acik-mavi) 14%, var(--yuzey)); }
+  .liste tr.grup > td { background: var(--panel-bas); font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--lacivert); padding-top: 5px; padding-bottom: 5px; cursor: default; }
+  .liste tbody tr.grup:hover > * { background: var(--panel-bas); }
+  .liste tr.secili-satir > * { background: color-mix(in srgb, var(--altin) 16%, var(--yuzey)); }
+  .durum, .liste td:first-child { white-space: nowrap; }
+  .etk { display: inline-flex; align-items: center; gap: 3px; font-size: var(--f-xs); font-weight: 600; padding: 1px 6px; border-radius: 2px; margin-right: 4px; }
+  .etk.degisti { background: color-mix(in srgb, var(--izin) 14%, var(--yuzey)); color: var(--izin); }
+  .etk.esnek { background: var(--hata-zemin); color: var(--hata); }
+  .etk.elle { background: var(--yuzey-2); color: var(--yazi-2); }
+  .etk.hsr { background: color-mix(in srgb, var(--acik-mavi) 30%, var(--yuzey)); color: var(--lacivert); }
+  .bos-sonuc { color: var(--soluk); text-align: center; padding: var(--b4); cursor: default; }
+  .filtreler { display: flex; flex-wrap: wrap; gap: var(--b2); align-items: center; justify-content: space-between; padding: var(--b3) var(--b4); border-bottom: 1px solid var(--cizgi); }
+  .cipler { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cip { border: 1px solid var(--cizgi); background: var(--yuzey); color: var(--yazi); padding: 5px 12px; border-radius: 999px; font-weight: 600; font-size: var(--f-sm); cursor: pointer; min-height: 32px; }
+  .cip span { color: var(--yazi-2); font-weight: 500; }
+  .cip[aria-pressed="true"] { background: var(--lacivert); border-color: var(--lacivert); color: #fff; }
+  .cip[aria-pressed="true"] span { color: #fff; }
+  .ara { display: flex; gap: 6px; }
+  .ara select, .ara input { min-height: 32px; font-size: var(--f-sm); }
+  .ara input { width: 180px; }
   .secili-gun { display: grid; gap: var(--b3); }
   .secili-gun .tarih { font-weight: 700; color: var(--lacivert); display: flex; align-items: center; gap: var(--b2); flex-wrap: wrap; }
   dl { margin: 0; display: grid; gap: 4px; }
@@ -375,5 +447,7 @@
   @media (max-width: 720px) {
     .karsilama { padding: var(--b5) var(--b4); }
     .adimlar { grid-template-columns: 1fr; }
+    .ara { width: 100%; }
+    .ara select, .ara input { flex: 1; min-width: 0; width: auto; }
         }
 </style>
