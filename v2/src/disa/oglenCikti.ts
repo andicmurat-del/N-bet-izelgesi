@@ -11,7 +11,7 @@ export interface OglenVerisi {
   ozet: { ad: string; rol: string; ay: number; ayCuma: number | null; yil: number; yilCuma: number | null }[];
 }
 
-/** Haftalık öğlen nöbeti: yalnız tablo, adlar ortalı; sayfa tablonun boyunda (A4 değil). */
+/** Haftalık öğlen nöbeti: yalnız tablo (başlık satırı yok), adlar ortalı; sayfa tablonun boyunda (A4 değil). */
 function haftalikPdf(v: OglenVerisi): Blob {
   const satirlar = v.haftalar.flat();
   const EN = 200, K = 4;
@@ -19,11 +19,9 @@ function haftalikPdf(v: OglenVerisi): Blob {
     doc.setProperties({ title: `${v.donem} öğlen nöbeti`, creator: "Nöbet Çizelgesi" });
     autoTable(doc, {
       startY: K, margin: { left: K, right: K, top: K, bottom: K },
-      head: [["Gün", "1. eczacı", "2. eczacı", "3. eczacı", "1. tekniker", "2. tekniker"]],
       body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, ...[0, 1, 2].map(i => buyukAd(g.e[i] ?? "")), ...[0, 1].map(i => buyukAd(g.t[i] ?? ""))]),
       theme: "grid",
       styles: { font: "CizelgeSans", fontSize: 12, cellPadding: 4, halign: "center", valign: "middle", textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.2 },
-      headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 232, 238], fontSize: 10.5 },
       columnStyles: { 0: { cellWidth: 34, fontStyle: "bold" }, 4: { lineWidth: { left: 0.6, right: 0.2, top: 0.2, bottom: 0.2 } } },
       didParseCell: h => { if (h.section === "body" && satirlar[h.row.index].dw === 4) h.cell.styles.fillColor = [244, 246, 248]; },
     });
