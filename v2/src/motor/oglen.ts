@@ -28,8 +28,8 @@ const GRUPLAR: Grup[] = ["e", "t"];
 export const oglenGrubu = (rol: string): Grup | null => (rol === "eczaci" ? "e" : rol === "teknisyen" ? "t" : null);
 
 /** amaç ağırlıkları (küçük daha iyi): haftada üçüncü kez çok ağır; haftada ikinci kez her seferinde ceza (kişi
- *  yetiyorsa herkes bir kez); haftada iki alma sırası yıllık eşitlikten önce; eşitlik nöbetçiden kaçınmaktan önce gelir; art arda iki Cuma haftada iki sırasıyla yarışabilsin diye ağır */
-const W = { hafta3: 1000, ikiSira: 30, hafta: 3, toplam: 2, cuma: 3, cumaArdArda: 25, nobetci: 0.5, ardArda: 0.2 };
+ *  yetiyorsa herkes bir kez); o hafta yazılabilen biri hiç yazılmamışken başkasına iki yazmak çok ağır; haftada iki alma sırası yıllık eşitlikten önce; eşitlik nöbetçiden kaçınmaktan önce gelir; art arda iki Cuma haftada iki sırasıyla yarışabilsin diye ağır */
+const W = { hafta3: 1000, bosKalan: 100, ikiSira: 30, hafta: 3, toplam: 2, cuma: 3, cumaArdArda: 25, nobetci: 0.5, ardArda: 0.2 };
 
 export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[]; elle?: true; sabit?: OglenSabit }
 export interface OglenSonucu { gunler: OglenGunSonucu[]; uyarilar: string[] }
@@ -190,6 +190,12 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
       gunler.forEach((_, i) => { if (haftaNo[i] === h) gunAday[i].forEach(id => { say[id] = (say[id] || 0) + 1; }); });
       ikiYazilabilir[h] = havuzId.filter(id => (say[id] || 0) >= 2);
     }
+    // o hafta en az bir gün yazılabilenler (önceki ayda o hafta zaten yazılmış olanlar sayılmaz)
+    const haftaAday: number[][] = [];
+    for (let h = 0; h <= sonHafta; h++) {
+      const k = new Set<number>(); gunler.forEach((_, i) => { if (haftaNo[i] === h) aday[g][i].forEach(id => k.add(id)); });
+      haftaAday[h] = [...k].filter(id => !(h === 0 && oncekiHafta[id]));
+    }
     const J = (): number => {
       const top: Record<number, number> = {}, cu: Record<number, number> = {}, hf: Record<string, number> = {};
       let j = 0;
@@ -212,6 +218,8 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
       }
       // haftada iki alma sırası: her haftanın sonunda (yılın önceki aylarındaki farkla birlikte) herkesin sayısı eşit
       // kalsın; kareler her hafta ayrı toplandığı için sıra da gözetilir (herkes bir kez almadan kimse ikinci kez almaz)
+      // haftada herkese bir: o hafta yazılabilen biri hiç yazılmamışken başkası iki alıyorsa
+      for (let h = 0; h <= sonHafta; h++) if (ikiHafta[h]?.length) haftaAday[h].forEach(id => { if (!hf[h + ":" + id]) j += W.bosKalan; });
       const r: Record<number, number> = {};
       havuz.forEach(s => { r[s.id] = devir.iki[s.id] || 0; });
       for (let h = 0; h <= sonHafta; h++) {
