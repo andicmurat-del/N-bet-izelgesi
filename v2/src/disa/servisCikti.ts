@@ -18,7 +18,7 @@ export interface ServisGunCiktisi {
 }
 
 type Rgb = [number, number, number];
-const YAZI: Rgb = [19, 33, 44], SOLUK: Rgb = [88, 105, 120], BASLIK: Rgb = [214, 232, 238], CIZGI: Rgb = [150, 160, 170];
+const YAZI: Rgb = [21, 38, 43], SOLUK: Rgb = [70, 89, 95], BASLIK: Rgb = [208, 230, 235], CIZGI: Rgb = [150, 160, 170];
 const ybMi = (sn: string) => /\sYB$/.test(sn);
 const sirala = <T extends { name: string }>(l: T[]) => [...l].sort((a, b) => Number(ybMi(b.name)) - Number(ybMi(a.name)) || a.name.localeCompare(b.name, "tr"));
 const servisSayisi = (v: ServisGunCiktisi) => v.kisiler.reduce((t, k) => t + k.items.length, 0);
@@ -101,7 +101,7 @@ export function servisTopluPdf(v: ServisGunCiktisi): Blob {
     theme: "grid" as const, head: [["Servis", "Hazırlayan"]], startY: 30, tableWidth: tw,
     styles: { font: "CizelgeSans", fontSize: fs, cellPadding: { top: dikey, bottom: dikey, left: pad, right: pad }, textColor: YAZI, lineColor: CIZGI, lineWidth: 0.15, valign: "middle" as const },
     headStyles: { font: "CizelgeSans", fontStyle: "bold" as const, fillColor: BASLIK },
-    alternateRowStyles: { fillColor: [243, 246, 248] as Rgb },
+    alternateRowStyles: { fillColor: [244, 248, 249] as Rgb },
     columnStyles: { 0: { cellWidth: tw - s2 }, 1: { fontStyle: "bold" as const, cellWidth: s2 } },
   };
   autoTable(doc, { ...ortak, body: satir.slice(0, yari), margin: { left: sol, right: W - sol - tw, bottom: K } });

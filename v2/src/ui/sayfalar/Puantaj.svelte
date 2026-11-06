@@ -221,7 +221,7 @@
   .buyuk b { font-size: 28px; color: var(--lacivert); line-height: 1.1; }
   .buyuk .soluk { font-size: var(--f-xs); }
   .cubuk { display: block; height: 8px; background: var(--yuzey-2); }
-  .cubuk i { display: block; height: 100%; background: var(--lacivert); }
+  .cubuk i { display: block; height: 100%; background: var(--vurgu); }
   .kisi-panel dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; margin: 0; font-size: var(--f-sm); }
   .kisi-panel dt { color: var(--yazi-2); }
   .kisi-panel dd { margin: 0; font-weight: 700; color: var(--lacivert); text-align: right; }

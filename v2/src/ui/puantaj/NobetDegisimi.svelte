@@ -243,7 +243,7 @@
   .aday { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 8px; align-items: center; padding: 7px 8px; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); text-align: left; cursor: pointer; color: var(--yazi); font: inherit; }
   .aday:hover { border-color: var(--lacivert); }
   .aday:focus-visible { outline: 2px solid var(--odak); outline-offset: 1px; }
-  .aday .av { grid-row: span 2; width: 30px; height: 30px; border-radius: 50%; background: var(--lacivert); color: #FFFFFF; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+  .aday .av { grid-row: span 2; width: 30px; height: 30px; border-radius: 50%; background: var(--vurgu); color: var(--vurgu-yazi); display: grid; place-items: center; font-size: 11px; font-weight: 700; }
   .aday b { font-size: var(--f-sm); color: var(--lacivert); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .aday small { font-size: 11px; color: var(--yazi-2); }
   .aday.s { border-color: var(--vurgu); background: var(--vurgu-zemin); box-shadow: inset 0 0 0 1px var(--vurgu); }

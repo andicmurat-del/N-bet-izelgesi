@@ -182,9 +182,9 @@
   .sag-arac { display: flex; gap: var(--b2); align-items: center; }
   .ust-cubuk { display: flex; flex-wrap: wrap; gap: var(--b3); justify-content: space-between; align-items: flex-end; margin-bottom: var(--b4); }
   .sekmeler { display: flex; gap: 2px; border-bottom: 1px solid var(--cizgi); overflow-x: auto; flex: 1; min-width: 0; }
-  .sekmeler button { min-height: 38px; padding: 0 14px; margin-bottom: -1px; border: 1px solid var(--cizgi); border-top: 3px solid transparent; border-radius: var(--r) var(--r) 0 0; background: var(--panel-bas); color: var(--yazi-2); font-weight: 600; cursor: pointer; white-space: nowrap; flex: none; }
-  .sekmeler button:hover { color: var(--lacivert); background: var(--tablo-bas); }
-  .sekmeler button.secili { background: var(--yuzey); color: var(--lacivert); border-top-color: var(--lacivert); border-bottom-color: var(--yuzey); }
+  .sekmeler button { min-height: 42px; padding: 0 16px; margin-bottom: -1px; border: 0; border-bottom: 3px solid transparent; border-radius: var(--r-kucuk) var(--r-kucuk) 0 0; background: transparent; color: var(--yazi-2); font-weight: 600; cursor: pointer; white-space: nowrap; flex: none; }
+  .sekmeler button:hover { color: var(--lacivert); background: var(--yuzey-2); }
+  .sekmeler button.secili { background: transparent; color: var(--vurgu); border-bottom-color: var(--vurgu); }
   .bant { padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; background: var(--vurgu-zemin); color: var(--vurgu); }
   .bos { padding: var(--b5); display: grid; gap: var(--b2); }
   .bos p { color: var(--yazi-2); }

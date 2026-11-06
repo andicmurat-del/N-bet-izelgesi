@@ -5,7 +5,7 @@
 </script>
 
 <svg viewBox="0 0 24 24" width={boyut} height={boyut} fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  {#if ad === "hastane"}<circle cx="12" cy="12" r="9" /><path d="M12 7.5v9M7.5 12h9" />
+  {#if ad === "hastane"}<path d="M3.5 11h17c0 4.6-3.4 8.2-8.5 8.2S3.5 15.6 3.5 11z" /><path d="M8.5 21.5h7" /><path d="m15.8 3.2-4.6 6.3" stroke-width="2.6" />
   {:else if ad === "bilgi"}<circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5M12 7.8v.01" />
   {:else if ad === "saat"}<circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" />
   {:else if ad === "takvim"}<rect x="3.5" y="5" width="17" height="15.5" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" />

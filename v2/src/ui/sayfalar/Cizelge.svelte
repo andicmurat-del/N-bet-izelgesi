@@ -22,6 +22,7 @@
   import OglenNobeti from "../cizelge/OglenNobeti.svelte";
   import CalismaListesi from "../cizelge/CalismaListesi.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
+  import KarsilamaResmi from "../ortak/KarsilamaResmi.svelte";
 
   // Günlük Eczane: nöbet listesi, çalışma listesi, öğlen nöbeti, hazırlama listesi, puantaj ve izinler alt sekmeleri
   // (acil eczane ayrı sayfada). gorunum dışarıdan da seçilebilir (başka sayfadan gelen bağlantı).
@@ -194,16 +195,19 @@
 
 {#if !depo.veri.staff.length}
   <section class="kart karsilama">
-    <h2>Nöbet çizelgesine hoş geldiniz</h2>
-    <p>Çizelge üç adımda hazırlanır: personeli girin, izinleri ve tatil günlerini işaretleyin, sonra "Çizelgeyi oluştur"a basın. Kurallar (nöbet ertesi izin, hafta sonu sınırları, fazla mesai eşitliği) kendiliğinden uygulanır.</p>
-    <ol class="adimlar">
-      <li><b>Personel</b><span>Eczacı, tekniker ve destek personeli</span></li>
-      <li><b>İzin ve tercihler</b><span>İzinli günler, resmi tatiller, istekler</span></li>
-      <li><b>Çizelge</b><span>Oluştur, gözden geçir, onayla</span></li>
-    </ol>
-    <div class="dugmeler">
-      <button class="dugme ana" onclick={() => git("kisiler")}><Ikon ad="kisiler" />Personel ekle</button>
+    <div class="metin">
+      <h2>Nöbet çizelgesine hoş geldiniz</h2>
+      <p>Çizelge üç adımda hazırlanır: personeli girin, izinleri ve tatil günlerini işaretleyin, sonra "Çizelgeyi oluştur"a basın. Kurallar (nöbet ertesi izin, hafta sonu sınırları, fazla mesai eşitliği) kendiliğinden uygulanır.</p>
+      <ol class="adimlar">
+        <li><b>Personel</b><span>Eczacı, tekniker ve destek personeli</span></li>
+        <li><b>İzin ve tercihler</b><span>İzinli günler, resmi tatiller, istekler</span></li>
+        <li><b>Çizelge</b><span>Oluştur, gözden geçir, onayla</span></li>
+      </ol>
+      <div class="dugmeler">
+        <button class="dugme ana" onclick={() => git("kisiler")}><Ikon ad="kisiler" />Personel ekle</button>
+      </div>
     </div>
+    <div class="resim"><KarsilamaResmi /></div>
   </section>
 {:else}
   <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Görünüm" telefonSutun={2} />
@@ -379,7 +383,9 @@
 {/if}
 
 <style>
-  .karsilama { padding: var(--b6); display: grid; gap: var(--b4); max-width: 760px; }
+  .karsilama { padding: var(--b6); display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--b6); align-items: center; max-width: 1040px; border-top: 3px solid var(--vurgu); }
+  .karsilama .metin { display: grid; gap: var(--b4); }
+  .karsilama .resim { padding: var(--b3); }
   .karsilama p { color: var(--yazi-2); max-width: 64ch; }
   .adimlar { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--b3); counter-reset: adim; }
   .adimlar li { counter-increment: adim; display: grid; align-content: start; gap: 2px; padding: var(--b3) var(--b4); border: 1px solid var(--cizgi); border-radius: var(--r); background: var(--yuzey-2); }
@@ -423,10 +429,12 @@
   .cipler { display: flex; flex-wrap: wrap; gap: 6px; }
   .cip { border: 1px solid var(--cizgi); background: var(--yuzey); color: var(--yazi); padding: 5px 12px; border-radius: 999px; font-weight: 600; font-size: var(--f-sm); cursor: pointer; min-height: 32px; }
   .cip span { color: var(--yazi-2); font-weight: 500; }
-  .cip[aria-pressed="true"] { background: var(--lacivert); border-color: var(--lacivert); color: #fff; }
-  .cip[aria-pressed="true"] span { color: #fff; }
+  .cip[aria-pressed="true"] { background: var(--vurgu); border-color: var(--vurgu); color: var(--vurgu-yazi); }
+  .cip[aria-pressed="true"] span { color: var(--vurgu-yazi); opacity: .85; }
   .ara { display: flex; gap: 6px; }
-  .ara select, .ara input { min-height: 32px; font-size: var(--f-sm); }
+  .ara select, .ara input { min-height: 34px; padding: 0 var(--b3); font-size: var(--f-sm); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); color: var(--yazi); }
+  .ara select:hover, .ara input:hover { border-color: var(--soluk); }
+  .ara select:focus-visible, .ara input:focus-visible { outline: none; border-color: var(--vurgu); box-shadow: 0 0 0 3px color-mix(in srgb, var(--vurgu) 22%, transparent); }
   .ara input { width: 180px; }
   .secili-gun { display: grid; gap: var(--b3); }
   .secili-gun .tarih { font-weight: 700; color: var(--lacivert); display: flex; align-items: center; gap: var(--b2); flex-wrap: wrap; }
@@ -451,7 +459,8 @@
     .yan-sutun { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
   }
   @media (max-width: 720px) {
-    .karsilama { padding: var(--b5) var(--b4); }
+    .karsilama { padding: var(--b5) var(--b4); grid-template-columns: minmax(0, 1fr); }
+    .karsilama .resim { order: -1; max-width: 260px; margin: 0 auto; padding: 0; }
     .adimlar { grid-template-columns: 1fr; }
     .ara { width: 100%; }
     .ara select, .ara input { flex: 1; min-width: 0; width: auto; }

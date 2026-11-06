@@ -105,11 +105,11 @@
   .s { display: flex; align-items: center; gap: 5px; font-size: var(--f-xs); color: var(--yazi-2); min-width: 0; }
   .s b { font-size: var(--f-sm); color: var(--lacivert); font-weight: 700; }
   .s i, .nokta { width: 8px; height: 8px; border-radius: 1px; flex: none; display: inline-block; }
-  .onay, .nokta.onay { background: var(--lacivert); }
+  .onay, .nokta.onay { background: var(--vurgu); }
   .haz, .nokta.haz { background: var(--haz); }
   .dst, .nokta.dst { background: var(--destek); }
   .s.onay, .s.haz, .s.dst, .s.yok { background: none; }
-  .s.onay i { background: var(--lacivert); }
+  .s.onay i { background: var(--vurgu); }
   .s.haz i { background: var(--haz); }
   .s.dst i { background: var(--destek); }
   .s.yok i, .nokta.yok { background: var(--cizgi); }
