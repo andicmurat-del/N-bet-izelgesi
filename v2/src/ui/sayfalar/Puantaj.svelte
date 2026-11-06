@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { puantajIzgarasi } from "../../veri/degisim.svelte";
+  import { ciktiPaketi } from "../../disa/yukle";
   // Aylık puantaj cetveli: çizelgeden gelen nöbet/hazırlama, nöbet ertesi izin ve izinler; hücre elle değiştirilebilir.
   import { puantajHesapla } from "../../motor";
-  import { depo, veriAnlik, duzKopya, ayCizelgesi, puantajKoduAyarla, puantajElleKodu } from "../../veri/depo.svelte";
+  import { depo, duzKopya, ayCizelgesi, puantajKoduAyarla, puantajElleKodu } from "../../veri/depo.svelte";
   import type { Kisi, PuantajKodu } from "../../veri/tipler";
   import { ROL_AD } from "../../veri/tipler";
   import { AYLAR, GUN_KISA, gunMetni } from "../../veri/tarih";
@@ -26,7 +28,7 @@
   let gorunum = $state<(typeof TUM_GORUNUMLER)[number]["ad"]>("cetvel");
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
-  const G = $derived.by(() => { const t = puantajHesapla(veriAnlik(), depo.yil, depo.ay) as Izgara; return { ...t, satirlar: t.satirlar.filter(r => kimler(r.s as Kisi)) }; });
+  const G = $derived.by(() => { const t = puantajIzgarasi(depo.yil, depo.ay) as Izgara; return { ...t, satirlar: t.satirlar.filter(r => kimler(r.s as Kisi)) }; });
   const elleSayisi = $derived(Object.values(depo.veri.puantaj[`${depo.yil}-${depo.ay}`] ?? {}).reduce((t, a) => t + Object.keys(a).length, 0));
 
   // özet şerit: fazla mesai aralığı (eczacı / tekniker ya da acil servis), toplam nöbet
@@ -82,7 +84,7 @@
   async function disaAktar(tur: "xlsx" | "pdf") {
     durum = "";
     try {
-      const m = await import("../../disa/puantajCikti");
+      const m = await ciktiPaketi();
       const ad = `${acil ? "acil-" : ""}puantaj-${depo.yil}-${String(depo.ay + 1).padStart(2, "0")}.${tur}`;
       const blob = tur === "xlsx" ? m.puantajKitabi(G, depo.yil, depo.ay, depo.veri.kurum.ad, acil) : m.puantajPdf(G, depo.yil, depo.ay, depo.veri.kurum.ad, c?.onay ?? null);
       durum = (await dosyaKaydet(ad, blob, blob.type || "application/pdf")) ? (tur === "pdf" ? "PDF" : "Excel dosyası") + " kaydedildi." : "";

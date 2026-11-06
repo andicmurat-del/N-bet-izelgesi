@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { ciktiPaketi } from "../../disa/yukle";
   // Günün servis dağıtımı: o gün çalışan teknikerler (puantajdan) servislere zorluk × hasta sayısına göre dengeli
   // dağıtılır. Kişi dağıtımdan çıkarılabilir, gün yeniden karıştırılabilir, bir servis elle başka teknikere verilebilir.
   // Geçmiş günler kendiliğinden değişmez; değiştirilirse sonraki günler de yeniden dengelenir.
   import { untrack } from "svelte";
   import { depo, veriAnlik, tatilMi } from "../../veri/depo.svelte";
   import { servisGunu, servisAtamaAdaylari } from "../../motor";
-  import { servisAyiniGuncelle, servisIslemYap, type ServisIslemi } from "../../veri/servis.svelte";
+  import { servisAyiniGuncelle, servisAyiOnbellekte, servisIslemYap, type ServisIslemi } from "../../veri/servis.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR, GUN_UZUN, gunSayisi, haftaGunu } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
@@ -32,9 +33,20 @@
   $effect(() => { y; m; untrack(() => { secGun = varsayilan(); }); });
 
   // ay açıkken her veri değişikliğinde (puantaj, kişi, ayar) dağıtım güncellenir; geçmiş günler korunur
-  let ay = $state({ cizelgeVar: false, kayitVar: false });
-  $effect(() => { ay = servisAyiniGuncelle(y, m); });
-  const gun = $derived(ay.cizelgeVar ? (servisGunu(veriAnlik(), y, m, secGun) as GunVerisi) : null);
+  // Ayın dağıtımı telefonda yarım saniyeyi geçebilir: sekme önce açılır, hesap ekran çizildikten sonra yapılır
+  // (önbellekte varsa hemen gelir).
+  let ay = $state<{ cizelgeVar: boolean; kayitVar: boolean } | null>(null);
+  $effect(() => {
+    const yy = y, mm = m;
+    veriAnlik();   // veri değişince yeniden
+    const hazir = servisAyiOnbellekte(yy, mm);
+    if (hazir) { ay = hazir; return; }
+    ay = null;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const r = requestAnimationFrame(() => { t = setTimeout(() => { ay = servisAyiniGuncelle(yy, mm); }, 0); });
+    return () => { cancelAnimationFrame(r); clearTimeout(t); };
+  });
+  const gun = $derived(ay?.cizelgeVar ? (servisGunu(veriAnlik(), y, m, secGun) as GunVerisi) : null);
 
   const ix = $derived(isGunleri.indexOf(secGun));
   const gunAdi = (d: number) => `${d} ${AYLAR[m]} ${y} ${GUN_UZUN[haftaGunu(y, m, d)]}`;
@@ -71,7 +83,7 @@
     if (!gun?.sonuc) return;
     hazirlaniyor = true;
     try {
-      const c = await import("../../disa/servisCikti");
+      const c = await ciktiPaketi();
       const v = ciktiVerisi(), blob = pdfTur === "tek" ? c.servisTekSayfaPdf(v) : pdfTur === "kisi" ? c.servisKisiPdf(v) : c.servisTopluPdf(v);
       const ad = `servis-${pdfTur === "toplu" ? "listesi" : "teknikerler"}-${y}-${String(m + 1).padStart(2, "0")}-${String(secGun).padStart(2, "0")}.pdf`;
       durum = (await dosyaKaydet(ad, blob, "application/pdf")) ? "PDF kaydedildi." : "";
@@ -82,7 +94,7 @@
   async function kopyala() {
     if (!gun?.sonuc) return;
     let t: string;
-    try { t = (await import("../../disa/servisCikti")).servisMetni(ciktiVerisi()); }
+    try { t = (await ciktiPaketi()).servisMetni(ciktiVerisi()); }
     catch (e) { durum = hataMetni(e, "Kopyalanamadı."); return; }
     try { await navigator.clipboard.writeText(t); durum = "Kopyalandı."; }
     catch {
@@ -96,7 +108,9 @@
   const enCok = $derived(gun?.sonuc ? Math.max(1, ...gun.sonuc.kisi.map(p => p.total)) : 1);
 </script>
 
-{#if !ay.cizelgeVar}
+{#if !ay}
+  <section class="kart bos" role="status" aria-live="polite"><p>Servis dağıtımı hazırlanıyor…</p></section>
+{:else if !ay.cizelgeVar}
   <section class="kart bos">
     <h2>{AYLAR[m]} {y} için nöbet çizelgesi yok</h2>
     <p>Servis dağıtımı nöbet çizelgesi oluşturulan aylar için yapılır; kimin o gün çalıştığı puantajdan gelir.</p>

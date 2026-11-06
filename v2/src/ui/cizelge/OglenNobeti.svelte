@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { puantajIzgarasi } from "../../veri/degisim.svelte";
+  import { ciktiPaketi } from "../../disa/yukle";
   import IslemAlani from "../ortak/IslemAlani.svelte";
   // Öğlen nöbeti: hafta içi öğle arasında eczanede kalanlar (Pzt–Prş 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker).
   // O günün çalışma listesinden (puantaj) yazılır; yıl boyunca toplam ve Cuma sayısı eşit tutulur.
   import { depo, veriAnlik, aydaCalisanlar, ayCizelgesi, oglenAyi, oglenKaydet, oglenAyiniSil, oglenGunuAyarla, resmiTatilMi, arifeMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
-  import { OGLEN_GEREK, oglenGrubu, oglenHesapla, oglenYillikHesapla, puantajHesapla } from "../../motor";
+  import { OGLEN_GEREK, oglenGrubu, oglenHesapla, oglenYillikHesapla } from "../../motor";
   import { AYLAR, GUN_UZUN, ayAdi, gunMetni, gunSayisi, haftaGunu, kisaAd } from "../../veri/tarih";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Pencere from "../ortak/Pencere.svelte";
@@ -37,7 +39,7 @@
   function sil() { if (!silOnayi) { silOnayi = true; return; } oglenAyiniSil(y, m); silOnayi = false; uyarilar = []; }
 
   // kayıttaki kişiler o gün hâlâ mesaide mi (sonradan izin / rapor girilmiş olabilir); o günün nöbetçileri
-  const G = $derived(kayit ? (puantajHesapla(veriAnlik(), y, m) as { satirlar: { s: { id: number }; cells: { kod: string; saat: number }[] }[] }) : null);
+  const G = $derived(kayit ? (puantajIzgarasi(y, m) as { satirlar: { s: { id: number }; cells: { kod: string; saat: number }[] }[] }) : null);
   const hucre = (id: number, d: number) => G?.satirlar.find(r => r.s.id === id)?.cells[d - 1];
   const calisiyor = (id: number, d: number) => { const h = hucre(id, d); return !!h && (h.kod === "M" || h.kod === "N" || (h.kod.startsWith("S:") && h.saat > 0)); };
   const nobetciMi = (id: number, d: number) => hucre(id, d)?.kod === "N";
@@ -90,7 +92,7 @@
     return n.length ? ` (${n.join(", ")})` : "";
   };
   // pencere için puantaj, kayıt olmasa da
-  const GP = $derived(acik ? (puantajHesapla(veriAnlik(), y, m) as { satirlar: { s: { id: number }; cells: { kod: string; saat: number }[] }[] }) : null);
+  const GP = $derived(acik ? (puantajIzgarasi(y, m) as { satirlar: { s: { id: number }; cells: { kod: string; saat: number }[] }[] }) : null);
   const hucreG = (id: number, d: number) => GP?.satirlar.find(r => r.s.id === id)?.cells[d - 1];
   const calisiyorG = (id: number, d: number) => { const h = hucreG(id, d); return !!h && (h.kod === "M" || h.kod === "N" || (h.kod.startsWith("S:") && h.saat > 0)); };
   const nobetciMiG = (id: number, d: number) => hucreG(id, d)?.kod === "N";
@@ -143,7 +145,7 @@
   async function pdf() {
     durum = "";
     try {
-      const { oglenPdf } = await import("../../disa/oglenCikti");
+      const { oglenPdf } = await ciktiPaketi();
       const h = pdfHaftalari[pdfHafta];
       const blob = oglenPdf({
         y, m, kurum: depo.veri.kurum.ad, donem: haftaMetni(h) + " " + y,

@@ -502,17 +502,7 @@ export function puantajKoduAyarla(y: number, m: number, id: number, gun: number,
 export const puantajElleKodu = (y: number, m: number, id: number, gun: number): PuantajKodu | undefined => depo.veri.puantaj[ayAnahtari(y, m)]?.[id]?.[gun];
 
 // ---------- ay içi sayımlar ----------
-export interface KisiAyOzeti { nobet: number; hazirlama: number; fazlaMesai: number; haftaSonu: number }
-export function ayOzeti(c: AyCizelgesi): Record<number, KisiAyOzeti> {
-  const o: Record<number, KisiAyOzeti> = {};
-  const al = (id: number) => (o[id] ??= { nobet: 0, hazirlama: 0, fazlaMesai: 0, haftaSonu: 0 });
-  for (const g of c.days) {
-    const hs = haftaSonuMu(c.year, c.month, g.day);
-    for (const p of g.assigned) { const x = al(p.id); x.nobet++; x.fazlaMesai += g.fazlaMesai; if (hs) x.haftaSonu++; }
-    for (const p of g.prep) { const x = al(p.id); x.hazirlama++; x.fazlaMesai += 8; }
-  }
-  return o;
-}
+export { ayOzeti, type KisiAyOzeti } from "./ozet";
 
 /** Ayda çalışan (başlangıç–bitiş aralığı ayla kesişen) kişiler */
 export function aydaCalisanlar(y: number, m: number): Kisi[] {

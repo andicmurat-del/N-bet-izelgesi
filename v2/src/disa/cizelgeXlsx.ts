@@ -2,7 +2,7 @@ import type { AyCizelgesi, Kisi } from "../veri/tipler";
 import { ROL_AD } from "../veri/tipler";
 import { AYLAR, GUN_UZUN, buyukAd, haftaGunu } from "../veri/tarih";
 import { xlsxKitap, type Hucre, type Sayfa } from "./xlsx";
-import { ayOzeti } from "../veri/depo.svelte";
+import { ayOzeti } from "../veri/ozet";
 
 /** Ayın çizelgesi: gün gün liste ve kişi başı özet (resmi çıktı: adlar büyük harf) */
 export function cizelgeKitabi(c: AyCizelgesi, kisiler: Kisi[], kurum: string, resmiTatil: (d: number) => boolean): Blob {

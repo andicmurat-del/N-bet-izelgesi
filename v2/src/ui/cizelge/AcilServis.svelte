@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { puantajIzgarasi } from "../../veri/degisim.svelte";
+  import { ciktiPaketi } from "../../disa/yukle";
   import IslemAlani from "../ortak/IslemAlani.svelte";
   import Bilgi from "../ortak/Bilgi.svelte";
   // Acil eczane nöbet listesi: günde 2 kişi; acil servis personeli ve "acilde nöbet tutar" işaretli eczacılar (kemoterapi dahil) arasından
   // otomatik oluşturulur (eczane çizelgesiyle çakışmadan), günler elle de düzenlenebilir (elle günler korunur).
   // Puantajda bu günler nöbet (24 saat) sayılır; ertesi gün mesai günüyse nöbet izni (Nİ), tatilse çalışılmadı (B) yazılır.
   import { depo, veriAnlik, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, acilKaydet, acilElleMi, resmiTatilMi, tatilMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
-  import { acilAdaylariHesapla, acilDenetle, acilHesapla, acilKadrosunda, acilSorunluGunler, puantajHesapla } from "../../motor";
+  import { acilAdaylariHesapla, acilDenetle, acilHesapla, acilKadrosunda, acilSorunluGunler } from "../../motor";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR as AYLAR_AD, GUN_KISA, GUN_UZUN, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
@@ -40,7 +42,7 @@
   const sorunluGunler = $derived(dolu ? acilSorunluGunler(veriAnlik(), y, m).map(x => ({ gun: x.gun, adlar: x.ids.map(ad) })) : []);
   const sorunluMu = (g: number) => sorunluGunler.some(x => x.gun === g);
   // kişi başı aylık özet (puantajdaki gibi; acil kadrosu, hazırlama yok)
-  const ozetSatirlari = $derived(dolu ? (puantajHesapla(veriAnlik(), y, m) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => acilKadrosunda(r.s)) as never : []);
+  const ozetSatirlari = $derived(dolu ? (puantajIzgarasi(y, m) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => acilKadrosunda(r.s)) as never : []);
   const bugun = new Date();
   const bugunMu = (d: number) => bugun.getFullYear() === y && bugun.getMonth() === m && bugun.getDate() === d;
 
@@ -75,7 +77,7 @@
   async function cikti(tur: "xlsx" | "pdf") {
     durum = "";
     try {
-      const { acilKitabi, acilPdf } = await import("../../disa/acilCikti");
+      const { acilKitabi, acilPdf } = await ciktiPaketi();
       const veri = { y, m, kurum: depo.veri.kurum.ad, gunler: gunler.map(g => ({ gun: g, dw: haftaGunu(y, m, g), tatil: tatilMi(y, m, g), resmi: resmiTatilMi(y, m, g), adlar: acilGunu(y, m, g).map(ad) })), ozet };
       const blob = tur === "xlsx" ? acilKitabi(veri) : acilPdf(veri);
       const ok = await dosyaKaydet(dosyaAdi(tur), blob, tur === "pdf" ? "application/pdf" : blob.type);

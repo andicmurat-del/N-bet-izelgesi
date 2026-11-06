@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ciktiPaketi } from "../../disa/yukle";
   import Bilgi from "../ortak/Bilgi.svelte";
   // Yıllık servis hazırlama raporu: kişi başı aylık yük ve servislerin kişilere dağılımı (payına göre renkli).
   import { untrack } from "svelte";
@@ -24,7 +25,7 @@
   async function excel() {
     if (!R) return;
     try {
-      const { servisYilKitabi } = await import("../../disa/servisCikti");
+      const { servisYilKitabi } = await ciktiPaketi();
       const blob = servisYilKitabi(R, yil, depo.veri.kurum.ad);
       durum = (await dosyaKaydet(`servis-raporu-${yil}.xlsx`, blob, blob.type)) ? "Excel dosyası kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }

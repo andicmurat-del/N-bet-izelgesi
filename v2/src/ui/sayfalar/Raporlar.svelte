@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ciktiPaketi } from "../../disa/yukle";
   import Bilgi from "../ortak/Bilgi.svelte";
   // Yıllık raporlar: özet (aylara göre fazla mesai, görev dağılımı), yıllık denge (beklenen paya göre fark), kişi geçmişi,
   // acil eczane ve öğlen nöbeti dağılımı, servis hazırlama.
@@ -44,7 +45,7 @@
   let durum = $state("");
   async function excel() {
     try {
-      const { yillikKitap } = await import("../../disa/raporCikti");
+      const { yillikKitap } = await ciktiPaketi();
       const blob = yillikKitap(R, depo.veri.kurum.ad);
       durum = (await dosyaKaydet(`yillik-rapor-${bolum === "acil" ? "acil-" : ""}${yil}.xlsx`, blob, blob.type)) ? "Excel dosyası kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }
