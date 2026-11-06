@@ -311,8 +311,8 @@
   .hafta { display: grid; text-align: left; gap: 1px; padding: 6px 14px; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); color: var(--lacivert); cursor: pointer; font: inherit; }
   .hafta b { font-size: var(--f-sm); }
   .hafta small { font-size: var(--f-xs); color: var(--yazi-2); }
-  .hafta[aria-pressed="true"] { background: var(--lacivert); border-color: var(--lacivert); color: #fff; }
-  .hafta[aria-pressed="true"] small { color: #C9D6E6; }
+  .hafta[aria-pressed="true"] { background: var(--vurgu); border-color: var(--vurgu); color: var(--vurgu-yazi); }
+  .hafta[aria-pressed="true"] small { color: var(--vurgu-yazi); opacity: .85; }
   .ust-duzen { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--b4); align-items: start; }
   .form { border-collapse: collapse; width: 100%; table-layout: fixed; }
   .form th, .form td { border: 1px solid var(--cizgi); text-align: left; }
@@ -342,7 +342,7 @@
   .yil { text-align: right; color: var(--soluk); font-size: var(--f-xs); }
   .kareler { display: flex; flex-wrap: wrap; gap: 2px; }
   .kare { display: inline-block; width: 14px; height: 11px; }
-  .kare.a { background: var(--lacivert); }
+  .kare.a { background: var(--vurgu); }
   .kare.c { background: var(--haz); }
   .lejant .kare { width: 9px; height: 9px; }
   .lejant { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--f-xs); color: var(--yazi-2); }
