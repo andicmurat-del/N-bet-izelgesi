@@ -40,7 +40,11 @@
       else { resmiTatilAyarla(y, m, d, false); arifeAyarla(y, m, d, false); }
     }
   }
-  function basla(d: number, e: PointerEvent) { if (e.button !== 0) return; uygula(d); suruk = true; }
+  // dokunmatik ekranda parmak sayfayı kaydırabilsin: işaret basınca değil dokunma bitince (click) konur,
+  // sürükleyerek işaretleme yalnız fare/kalemde
+  let dokunma = false;
+  function basla(d: number, e: PointerEvent) { dokunma = e.pointerType === "touch"; if (dokunma || e.button !== 0) return; uygula(d); suruk = true; }
+  function tikla(d: number) { if (dokunma) { dokunma = false; uygula(d); } }
   function gez(d: number) { if (suruk) uygula(d); }
   // herkesin tablosu: hücreye dokunmak / sürüklemek o kişinin o gününe seçili işareti koyar
   function uygulaKisi(id: number, d: number) {
@@ -49,7 +53,8 @@
     const once = tercihAl(id, depo.yil, depo.ay, d);
     tercihAyarla(id, depo.yil, depo.ay, d, arac === "temizle" || (once === arac && !suruk) ? null : arac);
   }
-  function baslaK(id: number, d: number, e: PointerEvent) { if (e.button !== 0) return; uygulaKisi(id, d); suruk = true; }
+  function baslaK(id: number, d: number, e: PointerEvent) { dokunma = e.pointerType === "touch"; if (dokunma || e.button !== 0) return; uygulaKisi(id, d); suruk = true; }
+  function tiklaK(id: number, d: number) { if (dokunma) { dokunma = false; uygulaKisi(id, d); } }
   function gezK(id: number, d: number) { if (suruk) uygulaKisi(id, d); }
   const pasifMi = (k: Kisi, d: number) => (!!k.baslangic && isoTarih(depo.yil, depo.ay, d) < k.baslangic) || (!!k.bitis && isoTarih(depo.yil, depo.ay, d) > k.bitis);
   const KOD: Record<Tercih, string> = { izinli: "İ", want: "+", avoid: "−", esVar: "E+", esYok: "E−" };
@@ -118,7 +123,7 @@
                   {@const pasif = pasifMi(k, d)}
                   {@const arasi = !t && B.izinArasiMi(k.id, depo.yil, depo.ay, d)}
                   <td class:hs={haftaSonuMu(depo.yil, depo.ay, d)} class:rt={resmiTatilMi(depo.yil, depo.ay, d)} class:arasi class:pasif>
-                    <button disabled={onayli || pasif} onpointerdown={e => baslaK(k.id, d, e)} onpointerenter={() => gezK(k.id, d)}
+                    <button disabled={onayli || pasif} onpointerdown={e => baslaK(k.id, d, e)} onclick={() => tiklaK(k.id, d)} onpointerenter={() => gezK(k.id, d)}
                       onkeydown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); uygulaKisi(k.id, d); } }}
                       aria-label="{k.name}, {gunMetni(depo.yil, depo.ay, d)}: {t ? TERCIH_AD[t] : arasi ? 'izin arası' : pasif ? 'dönem dışı' : 'işaret yok'}">{#if t}<i class="kod k-{t}">{KOD[t]}</i>{/if}</button>
                   </td>
@@ -158,7 +163,7 @@
             {@const rt = resmiTatilMi(y, m, d)}{@const ar = arifeMi(y, m, d)}{@const hs = haftaSonuMu(y, m, d)}
             <button class="gun" class:hs class:rt class:ar disabled={onayli}
               aria-label="{gunMetni(y, m, d)}{rt ? ', resmi tatil' : ''}{ar ? ', arife' : ''}"
-              onpointerdown={e => basla(d, e)} onpointerenter={() => gez(d)}
+              onpointerdown={e => basla(d, e)} onclick={() => tikla(d)} onpointerenter={() => gez(d)}
               onkeydown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); uygula(d); } }}>
               <span class="serit"><b class="rakam">{d}</b><span class="gunadi">{GUN_KISA[haftaGunu(y, m, d)]}</span>{#if rt}<span class="etiket">Resmi tatil</span>{:else if ar}<span class="etiket">Arife</span>{/if}</span>
               <span class="icerik"></span>
@@ -222,6 +227,7 @@
   .k-esYok { background: var(--esyok-zemin); color: var(--esyok); border-color: var(--esyok); }
   .herkes { border-collapse: separate; border-spacing: 0; font-size: var(--f-sm); width: 100%; user-select: none; touch-action: none; }
   .herkes.kilitli { opacity: .7; }
+  @media (pointer: coarse) { .herkes, .izgara { touch-action: manipulation; } }
   .herkes th, .herkes td { border-right: 1px solid var(--cizgi-acik); border-bottom: 1px solid var(--cizgi-acik); padding: 0; text-align: center; white-space: nowrap; }
   .herkes thead th { position: sticky; top: 0; z-index: 2; background: var(--tablo-bas); color: var(--lacivert); font-size: var(--f-xs); font-weight: 700; padding: 4px 0; min-width: 24px; }
   .herkes thead th small { display: block; font-size: 11px; font-weight: 600; color: var(--yazi-2); }
