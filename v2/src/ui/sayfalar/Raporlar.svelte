@@ -1,9 +1,8 @@
 <script lang="ts">
-  import SayfaBasligi from "../ortak/SayfaBasligi.svelte";
   import Bilgi from "../ortak/Bilgi.svelte";
   // Yıllık raporlar: özet (aylara göre fazla mesai, görev dağılımı), yıllık denge (beklenen paya göre fark), kişi geçmişi,
   // acil eczane ve öğlen nöbeti dağılımı, servis hazırlama.
-  import { yillikRaporHesapla } from "../../motor";
+  import { yillikRaporHesapla, acilKadrosunda } from "../../motor";
   import { depo, veriAnlik } from "../../veri/depo.svelte";
   import { ROL_AD, type Rol } from "../../veri/tipler";
   import { AYLAR } from "../../veri/tarih";
@@ -14,10 +13,19 @@
   import type { Rapor } from "../../disa/raporCikti";
 
 
+  // bolum: Günlük Eczane (eczane kadrosu: denge, öğlen, servis hazırlama) ya da Acil Eczane (acil kadrosu: acil nöbet dağılımı).
+  // Her bölümde yalnız o kadronun kişileri görünür.
+  let { bolum }: { bolum: "gunluk" | "acil" } = $props();
   let yil = $state(depo.yil);
-  let sekme = $state<"ozet" | "denge" | "kisi" | "acil" | "servis">("ozet");
-  const R = $derived(yillikRaporHesapla(veriAnlik(), yil) as Rapor);
-  const nobetci = (r: Rol) => r === "eczaci" || r === "teknisyen" || r === "nobetci";
+  let sekme = $state<"ozet" | "denge" | "kisi" | "acil" | "oglen" | "servis">("ozet");
+  const acilMi = (k: { id: number; role: string }) => { const st = depo.veri.staff.find(s => s.id === k.id); return st ? acilKadrosunda(st) : k.role === "servis"; };
+  const kapsam = (k: { id: number; role: string }) => (bolum === "acil" ? acilMi(k) : !acilMi(k));
+  const Ham = $derived(yillikRaporHesapla(veriAnlik(), yil) as Rapor);
+  const R = $derived({ ...Ham, V: { ...Ham.V, kisiler: Ham.V.kisiler.filter(kapsam) }, D: bolum === "acil" || !Ham.D ? null : { ...Ham.D, kisiler: Ham.D.kisiler.filter(x => kapsam(x.k)) } } as Rapor);
+  const SEKMELER = $derived(bolum === "acil"
+    ? [["ozet", "Özet"], ["kisi", "Kişi geçmişi"], ["acil", "Acil eczane nöbeti"]] as const
+    : [["ozet", "Özet"], ["denge", "Denge"], ["kisi", "Kişi geçmişi"], ["oglen", "Öğlen nöbeti"], ["servis", "Servis hazırlama"]] as const);
+  const nobetci = (r: Rol) => r === "eczaci" || r === "teknisyen" || r === "nobetci" || (bolum === "acil" && r === "servis");
   const duty = $derived(R.V.kisiler.filter(k => nobetci(k.role)));
   const toplamNobet = $derived(duty.reduce((t, k) => t + R.toplam[k.id].nobet, 0));
   const toplamFm = $derived(duty.reduce((t, k) => t + R.toplam[k.id].fm, 0));
@@ -38,37 +46,31 @@
     try {
       const { yillikKitap } = await import("../../disa/raporCikti");
       const blob = yillikKitap(R, depo.veri.kurum.ad);
-      durum = (await dosyaKaydet(`yillik-rapor-${yil}.xlsx`, blob, blob.type)) ? "Excel dosyası kaydedildi." : "";
+      durum = (await dosyaKaydet(`yillik-rapor-${bolum === "acil" ? "acil-" : ""}${yil}.xlsx`, blob, blob.type)) ? "Excel dosyası kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }
   }
 </script>
 
-<SayfaBasligi konum={["Raporlar"]} baslik="Raporlar" aciklama="Yılın fazla mesai ve görev dağılımı. Rakamlar puantaja göredir (gerçekleşen); yıllık denge çizelgeye göre hesaplanır (puantajdaki gönüllü değişimler sayılmaz).">
-  {#snippet islemler()}
-  <div class="yil" role="group" aria-label="Yıl seçimi">
-    <button class="dugme sade" onclick={() => yil--} aria-label="Önceki yıl"><Ikon ad="sol" /></button>
-    <span class="rakam">{yil}</span>
-    <button class="dugme sade" onclick={() => yil++} aria-label="Sonraki yıl"><Ikon ad="sag" /></button>
-  </div>
-  {/snippet}
-</SayfaBasligi>
-
+<p class="aciklama ust-not">{bolum === "acil" ? "Acil kadrosunun (acil servis personeli ve acilde nöbet tutan eczacılar) yıllık fazla mesai ve görev dağılımı." : "Günlük eczane kadrosunun yıllık fazla mesai ve görev dağılımı; acil kadrosu Acil Eczane > Raporlar'da."} Rakamlar puantaja göredir (gerçekleşen){bolum === "gunluk" ? "; yıllık denge çizelgeye göre hesaplanır (puantajdaki gönüllü değişimler sayılmaz)" : ""}.</p>
 <div class="ust-cubuk">
   <div class="sekmeler" role="tablist" aria-label="Rapor">
-    <button role="tab" aria-selected={sekme === "ozet"} class:secili={sekme === "ozet"} onclick={() => (sekme = "ozet")}>Özet</button>
-    <button role="tab" aria-selected={sekme === "denge"} class:secili={sekme === "denge"} onclick={() => (sekme = "denge")}>Denge</button>
-    <button role="tab" aria-selected={sekme === "kisi"} class:secili={sekme === "kisi"} onclick={() => (sekme = "kisi")}>Kişi geçmişi</button>
-    <button role="tab" aria-selected={sekme === "acil"} class:secili={sekme === "acil"} onclick={() => (sekme = "acil")}>Acil ve öğlen</button>
-    <button role="tab" aria-selected={sekme === "servis"} class:secili={sekme === "servis"} onclick={() => (sekme = "servis")}>Servis hazırlama</button>
+    {#each SEKMELER as [ad, baslik]}<button role="tab" aria-selected={sekme === ad} class:secili={sekme === ad} onclick={() => (sekme = ad)}>{baslik}</button>{/each}
   </div>
-  {#if R.V.kayitli && sekme !== "servis" && sekme !== "acil"}<button class="dugme" onclick={excel}><Ikon ad="indir" />Excel</button>{/if}
+  <div class="sag-arac">
+    <div class="yil" role="group" aria-label="Yıl seçimi">
+      <button class="dugme sade" onclick={() => yil--} aria-label="Önceki yıl"><Ikon ad="sol" /></button>
+      <span class="rakam">{yil}</span>
+      <button class="dugme sade" onclick={() => yil++} aria-label="Sonraki yıl"><Ikon ad="sag" /></button>
+    </div>
+    {#if R.V.kayitli && (sekme === "ozet" || sekme === "denge" || sekme === "kisi")}<button class="dugme" onclick={excel}><Ikon ad="indir" />Excel</button>{/if}
+  </div>
 </div>
 {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
 {#if sekme === "servis"}
   <ServisRaporu {yil} />
-{:else if sekme === "acil"}
-  <AcilOglenRaporu {yil} />
+{:else if sekme === "acil" || sekme === "oglen"}
+  <AcilOglenRaporu {yil} goster={sekme} />
 {:else if !R.V.kayitli}
   <div class="kart bos"><h2>{yil} yılı için kayıtlı çizelge yok</h2><p>Çizelge oluşturduğunuz aylar burada raporlanır.</p></div>
 {:else if sekme === "ozet"}
@@ -175,6 +177,8 @@
   .yil { display: inline-flex; align-items: center; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); }
   .yil .dugme { min-height: 34px; width: 36px; padding: 0; }
   .yil span { min-width: 72px; text-align: center; font-weight: 700; color: var(--lacivert); font-size: var(--f-md); }
+  .ust-not { margin-bottom: var(--b3); }
+  .sag-arac { display: flex; gap: var(--b2); align-items: center; }
   .ust-cubuk { display: flex; flex-wrap: wrap; gap: var(--b3); justify-content: space-between; align-items: flex-end; margin-bottom: var(--b4); }
   .sekmeler { display: flex; gap: 2px; border-bottom: 1px solid var(--cizgi); overflow-x: auto; flex: 1; min-width: 0; }
   .sekmeler button { min-height: 38px; padding: 0 14px; margin-bottom: -1px; border: 1px solid var(--cizgi); border-top: 3px solid transparent; border-radius: var(--r) var(--r) 0 0; background: var(--panel-bas); color: var(--yazi-2); font-weight: 600; cursor: pointer; white-space: nowrap; flex: none; }

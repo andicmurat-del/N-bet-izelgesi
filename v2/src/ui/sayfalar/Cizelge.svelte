@@ -15,6 +15,7 @@
   import Hazirlama from "./Hazirlama.svelte";
   import Puantaj from "./Puantaj.svelte";
   import Izinler from "./Izinler.svelte";
+  import Raporlar from "./Raporlar.svelte";
   import type { GunlukGorunum } from "./sayfaTipleri";
   import OglenNobeti from "../cizelge/OglenNobeti.svelte";
   import CalismaListesi from "../cizelge/CalismaListesi.svelte";
@@ -71,6 +72,7 @@
     { ad: "hazirlama", baslik: "Hazırlama Listesi", uzun: "Hazırlama Listesi", aciklama: "O gün çalışan teknikerlere servisler zorluk ve hasta sayısına göre dengeli dağıtılır." },
     { ad: "puantaj", baslik: "Puantaj", uzun: "Puantaj Cetveli", aciklama: "Gerçekleşen çalışma: nöbet, hazırlama, nöbet ertesi izin, yıllık izin ve rapor; fazla mesai hesabı." },
     { ad: "izinler", baslik: "İzinler", uzun: "İzinler ve Tercihler", aciklama: "İzinli günler, nöbet istekleri, eş durumu, resmi tatil ve arife işaretleri." },
+    { ad: "raporlar", baslik: "Raporlar", uzun: "Günlük Eczane Raporları", aciklama: "Yıllık fazla mesai, görev dağılımı, denge, öğlen nöbeti ve servis hazırlama (günlük eczane kadrosu)." },
   ] as const;
   const aktif = $derived(GORUNUMLER.find(g => g.ad === gorunum) ?? GORUNUMLER[0]);
 
@@ -204,7 +206,9 @@
 {:else}
   <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Görünüm" telefonSutun={2} />
 
-  {#if gorunum === "hazirlama"}
+  {#if gorunum === "raporlar"}
+    <Raporlar bolum="gunluk" />
+  {:else if gorunum === "hazirlama"}
     <Hazirlama {git} gomulu />
   {:else if gorunum === "puantaj"}
     <Puantaj {git} gomulu kimler={k => !acilKadrosunda(k)} />
