@@ -1,54 +1,54 @@
-/* Tasarım sistemi ("Lacivert Panel"): renk, yazı, boşluk, yarıçap ve gölge belirteçleri. Bileşenler yalnız bu belirteçleri kullanır.
-   Yerleşim: üstte tek parça koyu lacivert başlık bloğu (kurum, dönem, ana menü); altında açık zemin üzerinde yumuşak köşeli beyaz kartlar.
-   Etkin eylem rengi (birincil düğme, seçili sekme, seçili süzgeç) mavidir (--vurgu); lacivert başlık ve kurum rengidir. */
+/* Tasarım sistemi ("Petrol Panel"): renk, yazı, boşluk, yarıçap ve gölge belirteçleri. Bileşenler yalnız bu belirteçleri kullanır.
+   Yerleşim: üstte tek parça koyu petrol başlık bloğu (kurum, dönem, ana menü); altında açık zemin üzerinde yumuşak köşeli beyaz kartlar.
+   Etkin eylem rengi (birincil düğme, seçili sekme, seçili süzgeç) mavidir (--vurgu); petrol başlık ve kurum rengidir. */
 :root {
   /* yüzeyler */
-  --zemin: #EFF3F8;
+  --zemin: #EEF4F5;
   --yuzey: #FFFFFF;
-  --yuzey-2: #F6F8FB;         /* hafif zemin, üzerine gelinen satır */
-  --cizgi: #D5DEE9;
-  --cizgi-acik: #E6ECF3;
+  --yuzey-2: #F5F9FA;         /* hafif zemin, üzerine gelinen satır */
+  --cizgi: #D3DFE2;
+  --cizgi-acik: #E4ECEE;
   --panel-bas: #FFFFFF;       /* panel başlık bandı */
-  --tablo-bas: #F1F5FA;       /* tablo başlık satırı */
-  --hs-zemin: #EEF5FD;        /* hafta sonu satır / sütunu */
+  --tablo-bas: #EFF5F6;       /* tablo başlık satırı */
+  --hs-zemin: #ECF4F6;        /* hafta sonu satır / sütunu */
   /* kurum renkleri */
-  --lacivert: #12315A;
-  --serit: #0B2240;
-  --acik-mavi: #6AB0F3;
-  --baglanti: #1F66C8;
-  --nobet-hucre: #2B5C94;
+  --lacivert: #0E4A58;
+  --serit: #08333F;
+  --acik-mavi: #6CC4CF;
+  --baglanti: #0C7F8D;
+  --nobet-hucre: #1B6B7B;
   --altin: #D4A537;
   --secili-satir: #FFF5D1;    /* seçili satır (sarı) */
-  --menu-zemin: #12315A;      /* başlık bloğu: iki temada da lacivert */
-  --blok-ust: #0F2A4D;        /* başlık bloğu degradesinin üst ucu */
+  --menu-zemin: #0E4A58;      /* başlık bloğu: iki temada da lacivert */
+  --blok-ust: #0B404E;        /* başlık bloğu degradesinin üst ucu */
   /* yazı (yüzey üzerinde en az 4,5:1) */
-  --yazi: #172433;
-  --yazi-2: #475A6E;
-  --soluk: #566A7F;
+  --yazi: #15262B;
+  --yazi-2: #46595F;
+  --soluk: #566A70;
   /* görevler */
-  --ecz: #12315A;
-  --tek: #1F66C8;          --tek-zemin: #E1EEFC;
+  --ecz: #0E4A58;
+  --tek: #0C7F8D;          --tek-zemin: #DDF1F3;
   --haz: #7A4300;          --haz-zemin: #FBE8C8;
   --destek: #5E6B75;
   --acil: #8A2B62;         --acil-zemin: #F7E7F0;
   /* tercih işaretleri */
   --izin: #3F4B57;         --izin-zemin: #E8ECF1;
-  --ister: #1F66C8;        --ister-zemin: #E1EEFC;
+  --ister: #0C7F8D;        --ister-zemin: #DDF1F3;
   --istemez: #8A4B00;      --istemez-zemin: #FBE8C8;
-  --es: #12315A;           --es-zemin: #E6ECF4;
+  --es: #0E4A58;           --es-zemin: #E3EEF0;
   --esyok: #8A4A12;        --esyok-zemin: #F7EADD;
   /* tatil */
-  --tatil: #12315A;        --tatil-zemin: #EEF5FD;
+  --tatil: #0E4A58;        --tatil-zemin: #ECF4F6;
   --arife: #6B4300;        --arife-zemin: #FFF8EA;
   /* etkin eylem ve durum */
-  --vurgu: #1F66C8;        --vurgu-koyu: #1853A8;   --vurgu-yazi: #FFFFFF;   --vurgu-zemin: #E4EFFC;
+  --vurgu: #0C7F8D;        --vurgu-koyu: #0A6A76;   --vurgu-yazi: #FFFFFF;   --vurgu-zemin: #DDF1F3;
   --hata: #B3261E;         --hata-zemin: #FDF1F0;
   --dikkat: #6B4300;       --dikkat-zemin: #FFF8EA;
-  --bilgi: #1F66C8;        --bilgi-zemin: #EEF5FD;
-  --odak: #2B7BD6;
-  --golge: 0 1px 2px rgba(15, 42, 74, .05), 0 8px 20px -12px rgba(15, 42, 74, .16);
-  --golge-kucuk: 0 1px 2px rgba(15, 42, 74, .06);
-  --perde: rgba(11, 34, 64, .5);
+  --bilgi: #0C7F8D;        --bilgi-zemin: #EAF6F7;
+  --odak: #0C7F8D;
+  --golge: 0 1px 2px rgba(10, 52, 62, .05), 0 8px 20px -12px rgba(10, 52, 62, .16);
+  --golge-kucuk: 0 1px 2px rgba(10, 52, 62, .06);
+  --perde: rgba(6, 36, 44, .5);
 
   --yazi-govde: "Source Sans 3", "Segoe UI", system-ui, Arial, sans-serif;
   --yazi-baslik: "Source Sans 3", "Segoe UI", system-ui, Arial, sans-serif;
@@ -63,33 +63,33 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --zemin: #0A1422; --yuzey: #111E31; --yuzey-2: #15243A; --cizgi: #2A3D55; --cizgi-acik: #1F3048;
-    --panel-bas: #111E31; --tablo-bas: #172840; --hs-zemin: #15263D;
-    --lacivert: #A9CBF2; --serit: #06101E; --acik-mavi: #6AB0F3; --baglanti: #8EC1F0; --nobet-hucre: #2B5C94; --altin: #E2B952; --blok-ust: #0B1A30;
+    --zemin: #091619; --yuzey: #102226; --yuzey-2: #14292E; --cizgi: #29434A; --cizgi-acik: #1E343A;
+    --panel-bas: #102226; --tablo-bas: #163036; --hs-zemin: #13292E;
+    --lacivert: #9FD6DE; --serit: #050F12; --acik-mavi: #6CC4CF; --baglanti: #7FD0DA; --nobet-hucre: #1B6B7B; --altin: #E2B952; --blok-ust: #0A2A33;
     --yazi: #E3EAF2; --yazi-2: #B4C2D1; --soluk: #95A6B8;
-    --ecz: #A9CBF2; --tek: #8EC1F0; --tek-zemin: #1B3550; --haz: #F0C27A; --haz-zemin: #3D2E15; --destek: #AAB6BF; --acil: #EE9ACB; --acil-zemin: #3B1D30;
-    --izin: #D0D8E1; --izin-zemin: #2A3643; --ister: #8EC1F0; --ister-zemin: #1B3550; --istemez: #F0C27A; --istemez-zemin: #3D2E15;
-    --es: #A9CBF2; --es-zemin: #1D3047; --esyok: #EBB07A; --esyok-zemin: #3A2918;
-    --tatil: #A9CBF2; --tatil-zemin: #15263D; --arife: #E9CF7A; --arife-zemin: #2B2512;
-    --vurgu: #5BA8F0; --vurgu-koyu: #82BDF4; --vurgu-yazi: #06182B; --vurgu-zemin: #173352;
-    --hata: #F28B82; --hata-zemin: #3B1E1C; --dikkat: #E9C46A; --dikkat-zemin: #352B12; --bilgi: #8EC1F0; --bilgi-zemin: #1B2D45;
-    --odak: #8EC1F0; --perde: rgba(0, 0, 0, .6); --secili-satir: #3A3216;
+    --ecz: #9FD6DE; --tek: #7FD0DA; --tek-zemin: #17383F; --haz: #F0C27A; --haz-zemin: #3D2E15; --destek: #AAB6BF; --acil: #EE9ACB; --acil-zemin: #3B1D30;
+    --izin: #D0D8E1; --izin-zemin: #2A3643; --ister: #7FD0DA; --ister-zemin: #17383F; --istemez: #F0C27A; --istemez-zemin: #3D2E15;
+    --es: #9FD6DE; --es-zemin: #183238; --esyok: #EBB07A; --esyok-zemin: #3A2918;
+    --tatil: #9FD6DE; --tatil-zemin: #13292E; --arife: #E9CF7A; --arife-zemin: #2B2512;
+    --vurgu: #4DC0CE; --vurgu-koyu: #7AD2DC; --vurgu-yazi: #04171B; --vurgu-zemin: #12363D;
+    --hata: #F28B82; --hata-zemin: #3B1E1C; --dikkat: #E9C46A; --dikkat-zemin: #352B12; --bilgi: #7FD0DA; --bilgi-zemin: #14303A;
+    --odak: #7FD0DA; --perde: rgba(0, 0, 0, .6); --secili-satir: #3A3216;
     --golge: 0 1px 2px rgba(0, 0, 0, .35), 0 8px 20px -12px rgba(0, 0, 0, .6); --golge-kucuk: 0 1px 2px rgba(0, 0, 0, .4);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --zemin: #0A1422; --yuzey: #111E31; --yuzey-2: #15243A; --cizgi: #2A3D55; --cizgi-acik: #1F3048;
-  --panel-bas: #111E31; --tablo-bas: #172840; --hs-zemin: #15263D;
-  --lacivert: #A9CBF2; --serit: #06101E; --acik-mavi: #6AB0F3; --baglanti: #8EC1F0; --nobet-hucre: #2B5C94; --altin: #E2B952; --blok-ust: #0B1A30;
+  --zemin: #091619; --yuzey: #102226; --yuzey-2: #14292E; --cizgi: #29434A; --cizgi-acik: #1E343A;
+  --panel-bas: #102226; --tablo-bas: #163036; --hs-zemin: #13292E;
+  --lacivert: #9FD6DE; --serit: #050F12; --acik-mavi: #6CC4CF; --baglanti: #7FD0DA; --nobet-hucre: #1B6B7B; --altin: #E2B952; --blok-ust: #0A2A33;
   --yazi: #E3EAF2; --yazi-2: #B4C2D1; --soluk: #95A6B8;
-  --ecz: #A9CBF2; --tek: #8EC1F0; --tek-zemin: #1B3550; --haz: #F0C27A; --haz-zemin: #3D2E15; --destek: #AAB6BF; --acil: #EE9ACB; --acil-zemin: #3B1D30;
-  --izin: #D0D8E1; --izin-zemin: #2A3643; --ister: #8EC1F0; --ister-zemin: #1B3550; --istemez: #F0C27A; --istemez-zemin: #3D2E15;
-  --es: #A9CBF2; --es-zemin: #1D3047; --esyok: #EBB07A; --esyok-zemin: #3A2918;
-  --tatil: #A9CBF2; --tatil-zemin: #15263D; --arife: #E9CF7A; --arife-zemin: #2B2512;
-  --vurgu: #5BA8F0; --vurgu-koyu: #82BDF4; --vurgu-yazi: #06182B; --vurgu-zemin: #173352;
-  --hata: #F28B82; --hata-zemin: #3B1E1C; --dikkat: #E9C46A; --dikkat-zemin: #352B12; --bilgi: #8EC1F0; --bilgi-zemin: #1B2D45;
-  --odak: #8EC1F0; --perde: rgba(0, 0, 0, .6); --secili-satir: #3A3216;
+  --ecz: #9FD6DE; --tek: #7FD0DA; --tek-zemin: #17383F; --haz: #F0C27A; --haz-zemin: #3D2E15; --destek: #AAB6BF; --acil: #EE9ACB; --acil-zemin: #3B1D30;
+  --izin: #D0D8E1; --izin-zemin: #2A3643; --ister: #7FD0DA; --ister-zemin: #17383F; --istemez: #F0C27A; --istemez-zemin: #3D2E15;
+  --es: #9FD6DE; --es-zemin: #183238; --esyok: #EBB07A; --esyok-zemin: #3A2918;
+  --tatil: #9FD6DE; --tatil-zemin: #13292E; --arife: #E9CF7A; --arife-zemin: #2B2512;
+  --vurgu: #4DC0CE; --vurgu-koyu: #7AD2DC; --vurgu-yazi: #04171B; --vurgu-zemin: #12363D;
+  --hata: #F28B82; --hata-zemin: #3B1E1C; --dikkat: #E9C46A; --dikkat-zemin: #352B12; --bilgi: #7FD0DA; --bilgi-zemin: #14303A;
+  --odak: #7FD0DA; --perde: rgba(0, 0, 0, .6); --secili-satir: #3A3216;
   --golge: 0 1px 2px rgba(0, 0, 0, .35), 0 8px 20px -12px rgba(0, 0, 0, .6); --golge-kucuk: 0 1px 2px rgba(0, 0, 0, .4);
   color-scheme: dark;
 }

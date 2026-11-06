@@ -9,8 +9,8 @@ const STIL_NO: Record<Stil, number> = { baslik: 1, kalin: 2, tatil: 3, baslikTat
 const STILLER = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><i/><sz val="10"/><color rgb="FF555555"/><name val="Calibri"/></font></fonts>
-<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE4ECF7"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF6EBDD"/></patternFill></fill></fills>
-<borders count="2"><border/><border><left style="thin"><color rgb="FFC8D2DE"/></left><right style="thin"><color rgb="FFC8D2DE"/></right><top style="thin"><color rgb="FFC8D2DE"/></top><bottom style="thin"><color rgb="FFC8D2DE"/></bottom></border></borders>
+<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDEEEF1"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF6EBDD"/></patternFill></fill></fills>
+<borders count="2"><border/><border><left style="thin"><color rgb="FFCAD6DA"/></left><right style="thin"><color rgb="FFCAD6DA"/></right><top style="thin"><color rgb="FFCAD6DA"/></top><bottom style="thin"><color rgb="FFCAD6DA"/></bottom></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
 <cellXfs count="6">
 <xf numFmtId="0" xfId="0" fontId="0" fillId="0" borderId="1" applyBorder="1"/>

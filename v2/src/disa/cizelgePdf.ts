@@ -8,7 +8,7 @@ import { ROL_AD } from "../veri/tipler";
 import { AYLAR, GUN_KISA, GUN_UZUN, buyukAd, haftaGunu } from "../veri/tarih";
 import { ayOzeti } from "../veri/ozet";
 
-const RENK = { yazi: [23, 36, 51], soluk: [71, 90, 110], cizgi: [200, 210, 222], tatil: [251, 244, 234], baslik: [228, 236, 247], ecz: [18, 49, 90], tek: [31, 102, 200], haz: [143, 82, 12] } as const;
+const RENK = { yazi: [21, 38, 43], soluk: [70, 89, 95], cizgi: [202, 214, 218], tatil: [251, 244, 234], baslik: [222, 238, 241], ecz: [14, 74, 88], tek: [12, 127, 141], haz: [143, 82, 12] } as const;
 type Rgb = readonly [number, number, number];
 
 export interface PdfBilgi { kurum: string; resmiTatil: (d: number) => boolean; arife: (d: number) => boolean }
@@ -84,7 +84,7 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
   // lejant ve imza
   const ly = H - 15;
   doc.setFont("CizelgeSans", "normal"); doc.setFontSize(8); renk(RENK.soluk);
-  doc.text("Lacivert: eczacı · Mavi: tekniker · H1/H2: hazırlama (8 saat) · Gölgeli: hafta sonu ve resmi tatil. Nöbetçi ertesi gün izinlidir.", K, ly);
+  doc.text("Petrol: eczacı · Mavi: tekniker · H1/H2: hazırlama (8 saat) · Gölgeli: hafta sonu ve resmi tatil. Nöbetçi ertesi gün izinlidir.", K, ly);
   renk(RENK.yazi); doc.text("Onaylayan: ______________________________   İmza: ______________", W - K, ly, { align: "right" });
 
   // ---------- 2. sayfa: gün gün liste ----------
@@ -100,8 +100,8 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
         buyukAd(ec[0]?.name ?? ""), buyukAd(ec[1]?.name ?? ""), buyukAd(g.prep[0]?.name ?? ""), buyukAd(g.prep[1]?.name ?? ""), g.fazlaMesai + " sa"];
     }),
     // 31 gün tek sayfaya sığsın
-    styles: { font: "CizelgeSans", fontSize: 8, cellPadding: { top: 0.75, bottom: 0.75, left: 1.2, right: 1.2 }, textColor: [23, 36, 51], lineColor: [200, 210, 222], lineWidth: 0.15 },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [228, 236, 247], textColor: [23, 36, 51] },
+    styles: { font: "CizelgeSans", fontSize: 8, cellPadding: { top: 0.75, bottom: 0.75, left: 1.2, right: 1.2 }, textColor: [21, 38, 43], lineColor: [202, 214, 218], lineWidth: 0.15 },
+    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [222, 238, 241], textColor: [21, 38, 43] },
     columnStyles: { 7: { halign: "right" } },
     didParseCell: h => { if (h.section === "body" && c.days[h.row.index]?.tatil) h.cell.styles.fillColor = [251, 244, 234]; },
   });
@@ -115,8 +115,8 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
     startY: 24, margin: { left: K, right: K, bottom: 14 },
     head: [["Ad soyad", "Görev", "Nöbet", "Perşembe", "Cuma", "Cumartesi", "Pazar", "Hazırlama", "Fazla mesai"]],
     body: kisiler.filter(k => o[k.id]).map(k => [buyukAd(k.name), ROL_AD[k.role], o[k.id].nobet, say(k.id, 3), say(k.id, 4), say(k.id, 5), say(k.id, 6), o[k.id].hazirlama, o[k.id].fazlaMesai + " sa"]),
-    styles: { font: "CizelgeSans", fontSize: 9, cellPadding: 1.6, textColor: [23, 36, 51], lineColor: [200, 210, 222], lineWidth: 0.15 },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [228, 236, 247], textColor: [23, 36, 51] },
+    styles: { font: "CizelgeSans", fontSize: 9, cellPadding: 1.6, textColor: [21, 38, 43], lineColor: [202, 214, 218], lineWidth: 0.15 },
+    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [222, 238, 241], textColor: [21, 38, 43] },
     columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" }, 7: { halign: "right" }, 8: { halign: "right" } },
   });
   const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 120;

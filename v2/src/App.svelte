@@ -132,24 +132,24 @@
   /* ortak genişlik: en fazla 1360 px, ortalı; yan boşluk telefonda 16 px */
   .genislik { max-width: 1360px; margin: 0 auto; width: 100%; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   /* başlık bloğu: üst şerit, kurum bandı ve ana menü tek parça koyu lacivert yüzey; ince açık çizgilerle ayrılır */
-  .ust-serit { background: var(--serit); color: #B9CBE0; font-size: var(--f-xs); }
+  .ust-serit { background: var(--serit); color: #B5CED3; font-size: var(--f-xs); }
   .ust-serit .genislik { display: flex; align-items: center; justify-content: space-between; gap: var(--b3); min-height: 32px; }
   .serit-baglanti { border: 0; background: none; padding: 0; color: #FFFFFF; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-size: inherit; }
   .baslik-bandi { background: linear-gradient(180deg, var(--blok-ust), var(--menu-zemin)); color: #FFFFFF; }
   .baslik-bandi .genislik { display: flex; align-items: center; justify-content: space-between; gap: var(--b4); flex-wrap: wrap; min-height: 92px; padding-block: 14px; }
   .marka { display: flex; align-items: center; gap: 16px; min-width: 0; }
   .logo { display: block; width: 52px; height: 56px; flex: none; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .35)); }
-  .marka small { display: block; font-size: 12px; font-weight: 700; letter-spacing: .12em; color: #8FBDEF; line-height: 1.3; }
+  .marka small { display: block; font-size: 12px; font-weight: 700; letter-spacing: .12em; color: #7FD0DA; line-height: 1.3; }
   .marka b { display: block; font-size: 24px; font-weight: 700; color: #FFFFFF; line-height: 1.2; letter-spacing: -.01em; }
   .donem { display: flex; align-items: center; gap: var(--b3); }
-  .donem > span { font-size: var(--f-sm); font-weight: 600; color: #A9BFD8; }
-  .menu { background: var(--menu-zemin); border-top: 1px solid rgba(255, 255, 255, .1); box-shadow: 0 6px 16px -10px rgba(5, 18, 36, .7); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; }
+  .donem > span { font-size: var(--f-sm); font-weight: 600; color: #A8C9CF; }
+  .menu { background: var(--menu-zemin); border-top: 1px solid rgba(255, 255, 255, .1); box-shadow: 0 6px 16px -10px rgba(3, 24, 30, .7); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; }
   .menu .genislik { display: flex; align-items: stretch; justify-content: space-between; gap: var(--b3); padding-block: 6px; }
   .menu ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
   .menu ul::-webkit-scrollbar { display: none; }
-  .menu li button { height: 40px; padding: 0 18px; border: 0; border-radius: var(--r-kucuk); background: transparent; color: #CFDDEE; font-weight: 600; font-size: var(--f-md); cursor: pointer; white-space: nowrap; transition: background .14s, color .14s; }
+  .menu li button { height: 40px; padding: 0 18px; border: 0; border-radius: var(--r-kucuk); background: transparent; color: #CFE3E6; font-weight: 600; font-size: var(--f-md); cursor: pointer; white-space: nowrap; transition: background .14s, color .14s; }
   .menu li button:hover { background: rgba(255, 255, 255, .09); color: #FFFFFF; }
-  .menu li button.secili { background: rgba(106, 176, 243, .2); color: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(106, 176, 243, .45); }
+  .menu li button.secili { background: rgba(108, 196, 207, .2); color: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(108, 196, 207, .5); }
   .menu li button:focus-visible, .geri-al button:focus-visible { outline: 2px solid var(--acik-mavi); outline-offset: -2px; }
   .geri-al { display: flex; align-items: center; gap: 4px; flex: none; }
   .geri-al button { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: var(--r-kucuk); background: transparent; color: #FFFFFF; cursor: pointer; }
