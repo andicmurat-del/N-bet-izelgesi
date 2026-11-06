@@ -7,32 +7,31 @@
   import Ikon from "./ui/ortak/Ikon.svelte";
   import Cizelge from "./ui/sayfalar/Cizelge.svelte";
   import AcilEczane from "./ui/sayfalar/AcilEczane.svelte";
-  import Raporlar from "./ui/sayfalar/Raporlar.svelte";
-  import type { AcilGorunum, GunlukGorunum } from "./ui/sayfalar/sayfaTipleri";
-  import Kisiler from "./ui/sayfalar/Kisiler.svelte";
+  import type { AcilGorunum, AyarGorunum, GunlukGorunum } from "./ui/sayfalar/sayfaTipleri";
   import Ayarlar from "./ui/sayfalar/Ayarlar.svelte";
 
-  // ana bölümler: Günlük Eczane (nöbet, çalışma, öğlen, hazırlama listeleri, puantaj, izinler), Acil Eczane (nöbet
-  // listesi, izinler), raporlar, personel, ayarlar
+  // ana bölümler: Günlük Eczane (nöbet, çalışma, öğlen, hazırlama listeleri, puantaj, izinler, raporlar), Acil Eczane
+  // (nöbet listesi, puantaj, izinler, raporlar), Ayarlar (genel, personel)
   const SAYFALAR = [
     { ad: "gunluk", baslik: "Günlük Eczane", kisa: "Günlük", ikon: "takvim" },
     { ad: "acil", baslik: "Acil Eczane", kisa: "Acil", ikon: "acil" },
-    { ad: "raporlar", baslik: "Raporlar", ikon: "grafik" },
-    { ad: "kisiler", baslik: "Personel", ikon: "kisiler" },
     { ad: "ayarlar", baslik: "Ayarlar", ikon: "ayarlar" },
   ] as const;
   type SayfaAdi = (typeof SAYFALAR)[number]["ad"];
 
-  // eski bölüm adları (önceki sürümlerin bağlantıları ve sayfa içi düğmeler) Günlük Eczane'nin alt sekmelerine gider
-  type Hedef = SayfaAdi | "cizelge" | "puantaj" | "hazirlama" | "izinler";
-  const ESKI: Record<string, GunlukGorunum> = { cizelge: "nobet", puantaj: "puantaj", hazirlama: "hazirlama", izinler: "izinler" };
-  let gunlukAlt = $state<GunlukGorunum>("nobet"), acilAlt = $state<AcilGorunum>("acil");
-  const GUNLUK_ALT: GunlukGorunum[] = ["nobet", "liste", "oglen", "hazirlama", "puantaj", "izinler"];
+  // eski bölüm adları (önceki sürümlerin bağlantıları ve sayfa içi düğmeler): Günlük Eczane'nin alt sekmelerine gider;
+  // personel (kisiler) Ayarlar > Personel'e
+  type Hedef = SayfaAdi | "cizelge" | "puantaj" | "hazirlama" | "izinler" | "raporlar" | "kisiler";
+  const ESKI: Record<string, GunlukGorunum> = { cizelge: "nobet", puantaj: "puantaj", hazirlama: "hazirlama", izinler: "izinler", raporlar: "raporlar" };
+  let gunlukAlt = $state<GunlukGorunum>("nobet"), acilAlt = $state<AcilGorunum>("acil"), ayarAlt = $state<AyarGorunum>("genel");
+  const GUNLUK_ALT: GunlukGorunum[] = ["nobet", "liste", "oglen", "hazirlama", "puantaj", "izinler", "raporlar"];
   const hashOku = (): SayfaAdi => {
     const [h, alt] = location.hash.slice(1).split("/");
     if (ESKI[h]) { gunlukAlt = ESKI[h]; return "gunluk"; }
+    if (h === "kisiler") { ayarAlt = "personel"; return "ayarlar"; }
     if (h === "gunluk" && GUNLUK_ALT.includes(alt as GunlukGorunum)) gunlukAlt = alt as GunlukGorunum;
-    if (h === "acil" && (alt === "acil" || alt === "puantaj" || alt === "izinler")) acilAlt = alt;
+    if (h === "acil" && (alt === "acil" || alt === "puantaj" || alt === "izinler" || alt === "raporlar")) acilAlt = alt;
+    if (h === "ayarlar" && (alt === "genel" || alt === "personel")) ayarAlt = alt;
     return (SAYFALAR.find(s => s.ad === h)?.ad ?? "gunluk") as SayfaAdi;
   };
   let sayfa = $state<SayfaAdi>(hashOku());
@@ -63,8 +62,9 @@
     catch (e) { bildir(hataMetni(e, "Yedek kaydedilemedi.")); }
   }
   function git(hedef: Hedef) {
-    const ad: SayfaAdi = ESKI[hedef] ? "gunluk" : (hedef as SayfaAdi);
+    const ad: SayfaAdi = ESKI[hedef] ? "gunluk" : hedef === "kisiler" ? "ayarlar" : (hedef as SayfaAdi);
     if (ESKI[hedef]) gunlukAlt = ESKI[hedef];
+    if (hedef === "kisiler") ayarAlt = "personel";
     sayfa = ad;
     try { history.replaceState(null, "", "#" + ad); } catch { /* çerçeve izin vermezse yalnız durum değişir */ }
     document.getElementById("icerik")?.focus({ preventScroll: true });
@@ -111,9 +111,7 @@
     {#if depo.kayitSorunu}<div class="kayit-sorunu kutu hata" role="alert"><Ikon ad="uyari" />{depo.kayitSorunu}</div>{/if}
     {#if sayfa === "gunluk"}<Cizelge {git} bind:gorunum={gunlukAlt} />
     {:else if sayfa === "acil"}<AcilEczane {git} bind:gorunum={acilAlt} />
-    {:else if sayfa === "raporlar"}<Raporlar />
-    {:else if sayfa === "kisiler"}<Kisiler />
-    {:else}<Ayarlar />{/if}
+    {:else}<Ayarlar bind:gorunum={ayarAlt} />{/if}
   </main>
 
   <footer class="alt-bilgi">

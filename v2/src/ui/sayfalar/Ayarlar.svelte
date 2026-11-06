@@ -4,10 +4,20 @@
   import { depo, tumVeriyiSil, yedekVerisi, yedektenYukle, yuklemeOncesineDon, AYAR_VARSAYILAN } from "../../veri/depo.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Ikon from "../ortak/Ikon.svelte";
+  import Sekmeler from "../ortak/Sekmeler.svelte";
+  import Kisiler from "./Kisiler.svelte";
+  import type { AyarGorunum } from "./sayfaTipleri";
+
+  let { gorunum = $bindable("genel") }: { gorunum?: AyarGorunum } = $props();
+  const GORUNUMLER = [
+    { ad: "genel", baslik: "Genel", uzun: "Ayarlar", aciklama: "Kurum bilgileri, günlük ve acil eczane nöbet kuralları, puantaj ve yedek." },
+    { ad: "personel", baslik: "Personel", uzun: "Personel", aciklama: "Nöbet ve hazırlama tutan herkes. İşe yeni başlayan ya da ayrılan kişinin tarihlerini girin; o tarihlerin dışında görev yazılmaz." },
+  ] as const;
+  const aktif = $derived(GORUNUMLER.find(g => g.ad === gorunum) ?? GORUNUMLER[0]);
 
   let durum = $state<{ tur: "tamam" | "hata"; metin: string } | null>(null);
   let silOnayi = $state(false);
-  let dosyaGirdi: HTMLInputElement;
+  let dosyaGirdi = $state<HTMLInputElement>();
 
   async function yedekAl() {
     const t = new Date(), iki = (n: number) => String(n).padStart(2, "0");
@@ -32,7 +42,7 @@
     } catch (err) {
       console.error(err);
       durum = { tur: "hata", metin: "Dosya okunamadı." };
-    } finally { dosyaGirdi.value = ""; }
+    } finally { if (dosyaGirdi) dosyaGirdi.value = ""; }
   }
   function geriDon() {
     durum = yuklemeOncesineDon() ? { tur: "tamam", metin: "Yedek yüklemeden önceki verilere dönüldü." } : { tur: "hata", metin: "Önceki veriler bulunamadı." };
@@ -47,7 +57,12 @@
   }
 </script>
 
-<SayfaBasligi konum={["Ayarlar"]} baslik="Ayarlar" aciklama="Kurum bilgileri, günlük ve acil eczane nöbet kuralları, puantaj ve yedek." />
+<SayfaBasligi konum={["Ayarlar", aktif.baslik]} baslik={aktif.uzun} aciklama={aktif.aciklama} />
+<Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Ayarlar" />
+
+{#if gorunum === "personel"}
+  <Kisiler gomulu />
+{:else}
 
 <div class="bolumler">
   <section class="kart panel-blok bolum">
@@ -88,7 +103,7 @@
     <p class="aciklama">Veriler yalnız bu tarayıcıda durur. Tarayıcı verisi silinirse kaybolur; düzenli yedek alın. Yedek dosyasıyla başka bir bilgisayara da taşıyabilirsiniz.</p>
     <div class="dugmeler">
       <button class="dugme ana" onclick={yedekAl}><Ikon ad="indir" />Yedek al</button>
-      <button class="dugme" onclick={() => dosyaGirdi.click()}><Ikon ad="yukle" />Yedekten yükle</button>
+      <button class="dugme" onclick={() => dosyaGirdi?.click()}><Ikon ad="yukle" />Yedekten yükle</button>
       <input bind:this={dosyaGirdi} type="file" accept=".json,application/json" onchange={dosyaSecildi} hidden />
     </div>
     <p class="aciklama">Yedekten yükleme, bu tarayıcıdaki verilerin yerine geçer. Yanlış dosya seçerseniz hemen ardından önceki verilere dönebilirsiniz.</p>
@@ -106,6 +121,7 @@
 </div>
 
 {#if durum}<p class="durum {durum.tur}" role="status">{durum.metin}</p>{/if}
+{/if}
 
 <style>
   .bolumler { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--b4); align-items: start; }

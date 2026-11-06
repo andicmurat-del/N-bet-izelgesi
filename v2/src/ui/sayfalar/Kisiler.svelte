@@ -6,6 +6,8 @@
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
 
+  // gomulu: Ayarlar > Personel sekmesi olarak (başlık üst sayfada)
+  let { gomulu = false }: { gomulu?: boolean } = $props();
   const ROLLER: Rol[] = ["eczaci", "teknisyen", "destek", "nobetci", "servis"];
   let yeniAd = $state("");
   let yeniRol = $state<Rol>("eczaci");
@@ -59,7 +61,7 @@
   const tarihMetni = (t?: string) => { if (!t) return ""; const [y, m, d] = t.split("-").map(Number); return `${d} ${AYLAR[m - 1]} ${y}`; };
 </script>
 
-<SayfaBasligi konum={["Personel"]} baslik="Personel" aciklama="Nöbet ve hazırlama tutan herkes. İşe yeni başlayan ya da ayrılan kişinin tarihlerini girin; o tarihlerin dışında görev yazılmaz." />
+{#if !gomulu}<SayfaBasligi konum={["Personel"]} baslik="Personel" aciklama="Nöbet ve hazırlama tutan herkes. İşe yeni başlayan ya da ayrılan kişinin tarihlerini girin; o tarihlerin dışında görev yazılmaz." />{/if}
 
 <form class="kart ekle" onsubmit={ekle}>
   <label class="alan ad"><span>Ad soyad</span><input class="girdi" bind:value={yeniAd} maxlength="60" autocomplete="off" placeholder="ör. Zeynep Demir" /></label>

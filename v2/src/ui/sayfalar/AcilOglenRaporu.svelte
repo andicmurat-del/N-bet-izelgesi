@@ -7,7 +7,7 @@
   import { ROL_AD, type Rol } from "../../veri/tipler";
   import { AYLAR } from "../../veri/tarih";
 
-  let { yil }: { yil: number } = $props();
+  let { yil, goster }: { yil: number; goster: "acil" | "oglen" } = $props();
   type Satir = { id: number; ad: string; rol: string; aylar: number[]; top: number; tatil?: number; cuma?: number; pe?: number; cu?: number; cmt?: number; paz?: number; resmi?: number };
   type Ek = "tatil" | "cuma" | "pe" | "cu" | "cmt" | "paz" | "resmi";
   const R = $derived(acilOglenRaporuHesapla(veriAnlik(), yil) as { acil: Satir[]; oglen: Satir[]; acilAylar: boolean[]; oglenAylar: boolean[] });
@@ -21,7 +21,7 @@
   ]);
 </script>
 
-{#each bolumler as b (b.baslik)}
+{#each bolumler.filter((_, i) => (goster === "acil" ? i === 0 : i === 1)) as b (b.baslik)}
   <section class="blok panel-blok">
     <h2>{b.baslik}</h2>
     {#if !b.aylar.some(Boolean)}
