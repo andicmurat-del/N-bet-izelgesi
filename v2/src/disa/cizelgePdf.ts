@@ -6,7 +6,7 @@ import { yeniPdf } from "./pdfOrtak";
 import type { AyCizelgesi, Gorevli, Kisi } from "../veri/tipler";
 import { ROL_AD } from "../veri/tipler";
 import { AYLAR, GUN_KISA, GUN_UZUN, buyukAd, haftaGunu } from "../veri/tarih";
-import { ayOzeti } from "../veri/depo.svelte";
+import { ayOzeti } from "../veri/ozet";
 
 const RENK = { yazi: [19, 33, 44], soluk: [88, 105, 120], cizgi: [190, 200, 208], tatil: [251, 244, 234], baslik: [227, 238, 240], ecz: [11, 107, 93], tek: [45, 92, 156], haz: [143, 82, 12] } as const;
 type Rgb = readonly [number, number, number];

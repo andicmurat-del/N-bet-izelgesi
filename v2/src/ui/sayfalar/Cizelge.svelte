@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { puantajIzgarasi } from "../../veri/degisim.svelte";
+  import { ciktiPaketi } from "../../disa/yukle";
   import { depo, veriAnlik, duzKopya, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import { arkaPlandaOlustur } from "../../motor/istemci";
-  import { acilKadrosunda, puantajHesapla, uyariSiniflandir } from "../../motor";
+  import { acilKadrosunda, uyariSiniflandir } from "../../motor";
   import { cizelgeKitabi } from "../../disa/cizelgeXlsx";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR, GUN_UZUN, ayAdi, gunMetni, haftaGunu } from "../../veri/tarih";
@@ -28,7 +30,7 @@
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
   // acilde nöbet tutanlar (acil servis personeli, acilde tutan eczacılar) eczane çizelgesine girmez; nöbetleri Acil Eczane'de
   // kişi başı aylık özet (puantajdaki gibi; günlük eczane kadrosu)
-  const ozetSatirlari = $derived(c ? (puantajHesapla(veriAnlik(), depo.yil, depo.ay) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => !acilKadrosunda(r.s)) as never : []);
+  const ozetSatirlari = $derived(c ? (puantajIzgarasi(depo.yil, depo.ay) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => !acilKadrosunda(r.s)) as never : []);
   const kisiler = $derived(aydaCalisanlar(depo.yil, depo.ay).filter(k => !acilKadrosunda(k)));
   const nobetci = $derived(kisiler.filter(k => k.role !== "destek"));
   const eczaci = $derived(kisiler.filter(k => k.role === "eczaci" || k.role === "nobetci"));
@@ -38,7 +40,7 @@
   // Her gün nöbetçiler ve hazırlamacılar puantajdan okunur; değişmeyen kişi yerinde kalır, değişenin yerine yeni gelen yazılır.
   const guncel = $derived.by(() => {
     if (!c) return null;
-    const G = puantajHesapla(veriAnlik(), depo.yil, depo.ay) as { satirlar: { s: Gorevli & { acilTutar?: true }; cells: { kod: string; acil?: boolean }[] }[] };
+    const G = puantajIzgarasi(depo.yil, depo.ay) as { satirlar: { s: Gorevli & { acilTutar?: true }; cells: { kod: string; acil?: boolean }[] }[] };
     const gorevli = (s: Gorevli): Gorevli => ({ id: s.id, name: s.name, role: s.role });
     const sirala = (eski: Gorevli[], yeni: Gorevli[]) => {
       const idler = new Set(yeni.map(k => k.id)), kalan = yeni.filter(k => !eski.some(p => p.id === k.id));
@@ -175,7 +177,7 @@
     const y = c.year, m = c.month;
     pdfHazirlaniyor = true; durum = "";
     try {
-      const { cizelgePdf } = await import("../../disa/cizelgePdf");
+      const { cizelgePdf } = await ciktiPaketi();
       const blob = cizelgePdf(duzKopya(goster) as any, duzKopya(depo.veri.staff) as any, { kurum: depo.veri.kurum.ad, resmiTatil: d => resmiTatilMi(y, m, d), arife: d => arifeMi(y, m, d) });
       const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}${ekAd()}.pdf`, blob, "application/pdf");
       durum = ok ? "PDF kaydedildi." : "";

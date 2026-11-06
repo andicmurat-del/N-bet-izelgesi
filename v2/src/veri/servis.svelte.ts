@@ -1,6 +1,6 @@
 // Servis hazırlama: motorun (src/motor/servis) hesapladığı ay kayıtlarını ve servis ayarlarını saklar.
 // Motor verinin kopyasıyla çalışır; burada yalnız değişen ay kaydı depo.veri.servisKayit'e yazılır.
-import { depo, duzKopya } from "./depo.svelte";
+import { depo, duzKopya, veriAnlik } from "./depo.svelte";
 import { servisAyHesapla, servisIslem, servisListesi, servisYillik } from "../motor";
 import type { ServisAyKaydi } from "./tipler";
 
@@ -18,11 +18,23 @@ const anahtar = (y: number, m: number) => `${y}-${m}`;
 const kopya = () => duzKopya(depo.veri);
 
 /** Ayın dağıtımını puantaja ve ayarlara göre günceller; değiştiyse kaydeder. */
+// Ayın dağıtımı pahalıdır (telefonda yarım saniyeyi geçer): veri değişmediyse (paylaşılan anlık kopya aynıysa) son sonuç
+// yeniden kullanılır; sekme her açıldığında baştan hesaplanmaz.
+let son: { v: object; y: number; m: number; r: { cizelgeVar: boolean; kayitVar: boolean } } | null = null;
+/** Önbellekte bu veri ve ay için sonuç varsa döner (hesap yapmaz) */
+export function servisAyiOnbellekte(y: number, m: number): { cizelgeVar: boolean; kayitVar: boolean } | null {
+  return son && son.v === veriAnlik() && son.y === y && son.m === m ? son.r : null;
+}
 export function servisAyiniGuncelle(y: number, m: number): { cizelgeVar: boolean; kayitVar: boolean } {
+  const v = veriAnlik();
+  if (son && son.v === v && son.y === y && son.m === m) return son.r;
   const r = servisAyHesapla(kopya(), y, m, {}) as { cizelgeVar: boolean; kayit: ServisAyKaydi | null; degisti: boolean; sil?: boolean };
   if (r.sil) delete depo.veri.servisKayit[anahtar(y, m)];
   else if (r.degisti && r.kayit) depo.veri.servisKayit[anahtar(y, m)] = r.kayit;
-  return { cizelgeVar: r.cizelgeVar, kayitVar: !!depo.veri.servisKayit[anahtar(y, m)] };
+  const sonuc = { cizelgeVar: r.cizelgeVar, kayitVar: !!depo.veri.servisKayit[anahtar(y, m)] };
+  // kayıt yazıldıysa anlık kopya yenilenir; yeni kopya bu sonucun karşılığıdır (yeniden hesap aynı kaydı verir)
+  son = { v: veriAnlik(), y, m, r: sonuc };
+  return sonuc;
 }
 
 export function servisIslemYap(y: number, m: number, islem: ServisIslemi) {

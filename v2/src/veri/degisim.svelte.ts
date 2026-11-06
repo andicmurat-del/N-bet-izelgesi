@@ -17,7 +17,17 @@ const IZIN_KODLARI: PuantajKodu[] = ["YI", "R", "NI", "DI"];
 /** Değişim isteği: tur "devir" yerine tutma; "takas" karşılıklı (gun2'deki görevi yer → cik alır) */
 export interface DegisimIstegi { y: number; m: number; gorev: Gorev; tur: "devir" | "takas"; gun: number; cik: number; yer: number; gun2?: number; gorev2?: Gorev; not?: string }
 
-export const puantajIzgarasi = (y: number, m: number) => puantajHesapla(veriAnlik(), y, m) as Izgara;
+// Ayın puantajı birçok sekmede gerekir; veri değişmedikçe (paylaşılan anlık kopya aynı kaldıkça) bir kez hesaplanır.
+// Sonuç salt okunur kullanılır.
+let puantajOnbellek: { v: object; s: Map<string, Izgara> } | null = null;
+export function puantajIzgarasi(y: number, m: number): Izgara {
+  const v = veriAnlik();
+  if (puantajOnbellek?.v !== v) puantajOnbellek = { v, s: new Map() };
+  const k = y + "-" + m;
+  let G = puantajOnbellek.s.get(k);
+  if (!G) { G = puantajHesapla(v, y, m) as Izgara; puantajOnbellek.s.set(k, G); }
+  return G;
+}
 const kisiAdi = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş)";
 const ayKodlari = (y: number, m: number) => (depo.veri.puantaj[ayAnahtari(y, m)] ??= {});
 function kodYaz(y: number, m: number, id: number, gun: number, kod: PuantajKodu | null) {
