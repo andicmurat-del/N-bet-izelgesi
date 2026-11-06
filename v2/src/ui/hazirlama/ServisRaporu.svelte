@@ -4,7 +4,7 @@
   // Yıllık servis hazırlama raporu: kişi başı aylık yük ve servislerin kişilere dağılımı (payına göre renkli).
   import { untrack } from "svelte";
   import { depo } from "../../veri/depo.svelte";
-  import { servisYilRaporu, type ServisYilRaporu } from "../../veri/servis.svelte";
+  import { servisYilRaporu, servisYilRaporuOnbellekte, type ServisYilRaporu } from "../../veri/servis.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
@@ -12,8 +12,15 @@
   let { yil }: { yil: number } = $props();
   const AY3 = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
   // rapor açılınca (ve yıl değişince) çizelgesi olan ayların dağıtımı güncellenip kaydedilir
-  let R = $state<ServisYilRaporu | null>(null);
-  $effect(() => { const y = yil; R = untrack(() => servisYilRaporu(y)); });
+  // hesap birkaç yüz ms sürebilir: sekme önce açılır, rapor bir sonraki karede hesaplanır (dokunuş bekletilmez)
+  let R = $state<ServisYilRaporu | null>(null), hesaplaniyor = $state(true);
+  $effect(() => {
+    const y = yil; const hazir = untrack(() => servisYilRaporuOnbellekte(y));
+    if (hazir) { R = hazir; hesaplaniyor = false; return; }
+    hesaplaniyor = true; let iptal = false;
+    requestAnimationFrame(() => setTimeout(() => { if (iptal) return; R = untrack(() => servisYilRaporu(y)); hesaplaniyor = false; }, 0));
+    return () => { iptal = true; };
+  });
 
   const binlik = (v: number) => Math.round(v).toLocaleString("tr-TR");
   const virgul = (v: number) => (Math.round(v * 10) / 10).toLocaleString("tr-TR");
@@ -32,7 +39,9 @@
   }
 </script>
 
-{#if !R || !R.kayitli}
+{#if hesaplaniyor}
+  <p class="aciklama" role="status">Servis raporu hazırlanıyor…</p>
+{:else if !R || !R.kayitli}
   <div class="kart bos"><h2>{yil} yılı için servis kaydı yok</h2><p>Nöbet çizelgesi oluşturulan ayların servis dağıtımı burada raporlanır.</p></div>
 {:else}
   <div class="ust">

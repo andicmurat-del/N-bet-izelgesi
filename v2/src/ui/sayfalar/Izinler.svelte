@@ -95,7 +95,7 @@
     </div>
   </IslemAlani>
 
-  <p class="kutu bilgi kullanim"><Ikon ad="bilgi" boyut={16} /><span>Bir işaret türü seçip {mod === "kisi" ? "tablodaki hücrelere" : "takvimdeki günlere"} dokunun; basılı tutup gezdirerek birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır. Tercihler çizelge oluşturulurken dikkate alınır; çizelge zaten varsa yeniden oluşturun.</span></p>
+  <p class="kutu bilgi kullanim"><Ikon ad="bilgi" boyut={16} /><span>Bir işaret türü seçip {mod === "kisi" ? "tablodaki hücrelere" : "takvimdeki günlere"} dokunun; bilgisayarda fareyle basılı tutup gezdirerek birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır. Tercihler çizelge oluşturulurken dikkate alınır; çizelge zaten varsa yeniden oluşturun.</span></p>
   {#if onayli}<p class="kutu dikkat onay-not" role="status">Bu ayın çizelgesi onaylı; işaretler değiştirilemez. Değiştirmek için önce Günlük Eczane Nöbet Listesi'nde onayı kaldırın.</p>{/if}
 
   {#if mod === "kisi"}

@@ -70,11 +70,18 @@
   const gunAdi = (g: number) => gunMetni(y, m, g);
   // takvimde aralık seçimi: basılı tutup sürükle; ya da önce başlangıca, sonra bitişe dokun
   let suruk = $state(false), capa = 1, tekSecim = false;
+  // dokunmatikte parmak takvim üzerinde sayfayı kaydırabilsin: seçim basınca değil dokunma bitince (click)
+  let dokunma = false;
   function takvimBas(d: number, e: PointerEvent) {
-    if (e.button !== 0) return;
+    dokunma = e.pointerType === "touch";
+    if (dokunma || e.button !== 0) return;
+    sec(d);
+    suruk = true;
+  }
+  function takvimTikla(d: number) { if (dokunma) { dokunma = false; sec(d); } }
+  function sec(d: number) {
     if (tekSecim && bas === bit && d > bas) { bit = d; tekSecim = false; }
     else { bas = d; bit = d; capa = d; tekSecim = true; }
-    suruk = true;
   }
   function takvimGez(d: number) { if (!suruk) return; bas = Math.min(capa, d); bit = Math.max(capa, d); if (d !== capa) tekSecim = false; }
   const KOD_YAZI: Record<string, string> = { N: "Nöbet", H: "Hazırlama", NI: "Nİ", YI: "Yİ", R: "R", DI: "Dİ" };
@@ -120,7 +127,7 @@
         {#each TURLER as t}<label class:secili={tur === t}><input type="radio" name="izin-tur" value={t} bind:group={tur} />{IZIN_AD[t].replace(/ \(.*\)$/, "")}</label>{/each}
       </fieldset>
     </div>
-    <p class="ipucu">Takvimde başlangıç gününe dokunup bitiş gününe kadar sürükleyin (ya da önce başlangıca, sonra bitişe dokunun).{r ? " Kişinin görevleri takvimde görünür." : ""}</p>
+    <p class="ipucu">Takvimde önce başlangıç gününe, sonra bitiş gününe dokunun (bilgisayarda fareyle sürükleyerek de seçebilirsiniz).{r ? " Kişinin görevleri takvimde görünür." : ""}</p>
     <div class="takvim" role="group" aria-label="Tarih aralığı">
       {#each GUN_KISA as d}<div class="bas" aria-hidden="true">{d}</div>{/each}
       {#each { length: haftaGunu(y, m, 1) } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
@@ -129,7 +136,7 @@
         {@const sec = g.gun >= bas && g.gun <= bit}
         <button class="gun" class:hs={g.tatil} class:sec class:ilk={sec && g.gun === bas} class:son={sec && g.gun === bit}
           aria-pressed={sec} aria-label="{gunAdi(g.gun)}{c && KOD_YAZI[c.kod] ? ', ' + KOD_YAZI[c.kod] : ''}"
-          onpointerdown={e => takvimBas(g.gun, e)} onpointerenter={() => takvimGez(g.gun)}
+          onpointerdown={e => takvimBas(g.gun, e)} onclick={() => takvimTikla(g.gun)} onpointerenter={() => takvimGez(g.gun)}
           onkeydown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (tekSecim && bas === bit && g.gun > bas) { bit = g.gun; tekSecim = false; } else { bas = bit = capa = g.gun; tekSecim = true; } } }}>
           <b class="rakam">{g.gun}</b>
           {#if c && KOD_YAZI[c.kod]}<span class="gv k-{c.acil ? 'A' : c.kod}">{c.acil ? "Acil" : KOD_YAZI[c.kod]}</span>{/if}
@@ -283,7 +290,7 @@
   .k-NI { background: var(--es-zemin); color: var(--es); }
   .k-DI { background: var(--yuzey); color: var(--yazi-2); box-shadow: inset 0 0 0 1px var(--cizgi); }
   @media (max-width: 1100px) { .duzen { grid-template-columns: 1fr; } }
-  @media (pointer: coarse) { .takvim { touch-action: auto; } }
+  @media (pointer: coarse) { .takvim { touch-action: manipulation; } }
   @media (max-width: 720px) { .ust-form { grid-template-columns: 1fr; } .takvim .gun { min-height: 50px; padding: 3px; } .gv { font-size: 0; width: 8px; height: 8px; padding: 0; border-radius: 50%; } }
   @media (max-width: 480px) { .kart { padding: 0 var(--b4) var(--b4); } .iki { grid-template-columns: 1fr; } }
 </style>

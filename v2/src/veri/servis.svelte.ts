@@ -67,8 +67,15 @@ export interface ServisYilRaporu {
   matris: { servisler: { sn: string; grup: "yb" | "cok" | "tek"; say: Record<string, number>; pay: Record<string, number> }[]; gun: Record<string, number> };
 }
 /** Yılın raporu: önce çizelgesi olan ayların dağıtımı güncellenir ve kaydedilir */
+// yıllık rapor da aynı veri ve yıl için bir kez hesaplanır (sekmeye yeniden girince bekletmez)
+let sonYil: { v: object; yil: number; r: ServisYilRaporu } | null = null;
+export function servisYilRaporuOnbellekte(yil: number): ServisYilRaporu | null {
+  return sonYil && sonYil.v === veriAnlik() && sonYil.yil === yil ? sonYil.r : null;
+}
 export function servisYilRaporu(yil: number): ServisYilRaporu {
+  const hazir = servisYilRaporuOnbellekte(yil); if (hazir) return hazir;
   const r = servisYillik(kopya(), yil) as ServisYilRaporu & { kayitlar: Record<string, ServisAyKaydi | null> };
   for (const [k, v] of Object.entries(r.kayitlar)) { if (v) depo.veri.servisKayit[k] = v; else delete depo.veri.servisKayit[k]; }
+  sonYil = { v: veriAnlik(), yil, r };
   return r;
 }
