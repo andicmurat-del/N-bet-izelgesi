@@ -21,9 +21,9 @@ function haftalikPdf(v: OglenVerisi): Blob {
       startY: K, margin: { left: K, right: K, top: K, bottom: K },
       body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, ...[0, 1, 2].map(i => buyukAd(g.e[i] ?? "")), ...[0, 1].map(i => buyukAd(g.t[i] ?? ""))]),
       theme: "grid",
-      styles: { font: "CizelgeSans", fontSize: 12, cellPadding: 4, halign: "center", valign: "middle", textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.2 },
+      styles: { font: "CizelgeSans", fontSize: 12, cellPadding: 4, halign: "center", valign: "middle", textColor: [23, 36, 51], lineColor: [150, 160, 170], lineWidth: 0.2 },
       columnStyles: { 0: { cellWidth: 34, fontStyle: "bold" }, 4: { lineWidth: { left: 0.6, right: 0.2, top: 0.2, bottom: 0.2 } } },
-      didParseCell: h => { if (h.section === "body" && satirlar[h.row.index].dw === 4) h.cell.styles.fillColor = [244, 246, 248]; },
+      didParseCell: h => { if (h.section === "body" && satirlar[h.row.index].dw === 4) h.cell.styles.fillColor = [244, 247, 251]; },
     });
     return (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 100;
   };
@@ -50,13 +50,13 @@ export function oglenPdf(v: OglenVerisi): Blob {
     head: [["Gün", "1. eczacı", "2. eczacı", "3. eczacı", "1. tekniker", "2. tekniker"]],
     body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, ...[0, 1, 2].map(i => buyukAd(g.e[i] ?? "")), ...[0, 1].map(i => buyukAd(g.t[i] ?? ""))]),
     theme: "grid",
-    styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 1.8, textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.15 },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 232, 238] },
+    styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 1.8, textColor: [23, 36, 51], lineColor: [150, 160, 170], lineWidth: 0.15 },
+    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 228, 246] },
     columnStyles: { 0: { cellWidth: 26, fontStyle: "bold" }, 4: { lineWidth: { left: 0.6, right: 0.15, top: 0.15, bottom: 0.15 } } },
     didParseCell: h => {
       if (h.section !== "body") return;
       const g = satirlar[h.row.index];
-      if (g.dw === 4) h.cell.styles.fillColor = [244, 246, 248];
+      if (g.dw === 4) h.cell.styles.fillColor = [244, 247, 251];
       if (g.ilk && h.row.index > 0) { h.cell.styles.lineWidth = { top: 0.6, bottom: 0.15, left: 0.15, right: 0.15 }; }
     },
   });
@@ -67,8 +67,8 @@ export function oglenPdf(v: OglenVerisi): Blob {
       head: [["Ad soyad", "Bu ay", "Bu ay Cuma", `Yıl (${v.y})`, "Yıl Cuma"]],
       body: v.ozet.map(o => [`${buyukAd(o.ad)}  (${o.rol})`, String(o.ay), o.ayCuma === null ? "–" : String(o.ayCuma), String(o.yil), o.yilCuma === null ? "–" : String(o.yilCuma)]),
       theme: "grid",
-      styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 1.6, textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.15, halign: "center" },
-      headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 232, 238] },
+      styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 1.6, textColor: [23, 36, 51], lineColor: [150, 160, 170], lineWidth: 0.15, halign: "center" },
+      headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 228, 246] },
       columnStyles: { 0: { halign: "left" } },
     });
   }

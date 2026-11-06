@@ -48,13 +48,13 @@ export function acilPdf(v: AcilVerisi): Blob {
     head: [GUN_UZUN],
     body: haftalar.map(h => h.map(g => (g ? `${g.gun}${g.resmi ? "  Resmi tatil" : ""}\n${g.adlar.map(buyukAd).join("\n") || " "}` : ""))),
     theme: "grid",
-    styles: { font: "CizelgeSans", fontSize: 9, cellPadding: 2.2, valign: "top", textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.15, minCellHeight: 24 },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 232, 238], halign: "center", minCellHeight: 0 },
+    styles: { font: "CizelgeSans", fontSize: 9, cellPadding: 2.2, valign: "top", textColor: [23, 36, 51], lineColor: [150, 160, 170], lineWidth: 0.15, minCellHeight: 24 },
+    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 228, 246], halign: "center", minCellHeight: 0 },
     didParseCell: h => {
       if (h.section !== "body") return;
       const g = haftalar[h.row.index][h.column.index];
       if (g?.tatil) h.cell.styles.fillColor = [251, 240, 224];
-      if (!g) h.cell.styles.fillColor = [244, 246, 248];
+      if (!g) h.cell.styles.fillColor = [244, 247, 251];
     },
   });
   const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 150;
@@ -64,8 +64,8 @@ export function acilPdf(v: AcilVerisi): Blob {
       head: [["Ad soyad", "Nöbet", "Hafta sonu / tatil", "Nöbet günleri"]],
       body: v.ozet.map(o => [buyukAd(o.ad), String(o.gunler.length), String(o.tatil), o.gunler.join(", ")]),
       theme: "grid",
-      styles: { font: "CizelgeSans", fontSize: 9, cellPadding: 1.8, textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.15 },
-      headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 232, 238] },
+      styles: { font: "CizelgeSans", fontSize: 9, cellPadding: 1.8, textColor: [23, 36, 51], lineColor: [150, 160, 170], lineWidth: 0.15 },
+      headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 228, 246] },
       columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 20, halign: "center" }, 2: { cellWidth: 34, halign: "center" } },
     });
   }

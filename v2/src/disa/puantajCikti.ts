@@ -51,8 +51,8 @@ export function puantajPdf(G: Izgara, y: number, m: number, kurum: string, onay:
     body: G.satirlar.map((r, i) => [String(i + 1), ONEK[r.s.role] + buyukAd(r.s.name), ...r.cells.map((h, k) => kodMetni(h.kod, h.saat, G.gunler[k].arife)), String(r.toplam), r.aylik === null ? "–" : String(r.aylik), String(r.fm), String(r.fmGunduz), String(r.fmGece)]),
     theme: "grid",
     // kişi sayısı azsa satırlar yükselir: tablo sayfayı doldurur, hücreler okunur kalır
-    styles: { font: "CizelgeSans", fontSize: 7.5, cellPadding: { top: Math.min(3, Math.max(0.8, 60 / Math.max(1, G.satirlar.length))), bottom: Math.min(3, Math.max(0.8, 60 / Math.max(1, G.satirlar.length))), left: 0.5, right: 0.5 }, halign: "center", valign: "middle", textColor: [19, 33, 44], lineColor: [150, 160, 170], lineWidth: 0.12, overflow: "visible" },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 232, 238], textColor: [19, 33, 44], fontSize: 6.5, cellPadding: 0.8 },
+    styles: { font: "CizelgeSans", fontSize: 7.5, cellPadding: { top: Math.min(3, Math.max(0.8, 60 / Math.max(1, G.satirlar.length))), bottom: Math.min(3, Math.max(0.8, 60 / Math.max(1, G.satirlar.length))), left: 0.5, right: 0.5 }, halign: "center", valign: "middle", textColor: [23, 36, 51], lineColor: [150, 160, 170], lineWidth: 0.12, overflow: "visible" },
+    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [214, 228, 246], textColor: [23, 36, 51], fontSize: 6.5, cellPadding: 0.8 },
     columnStyles: { 0: { cellWidth: 6 }, 1: { halign: "left", cellWidth: 42, overflow: "linebreak", fontSize: 7.5 } },
     didParseCell: h => {
       if (tatilSutun.has(h.column.index)) h.cell.styles.fillColor = h.section === "head" ? [236, 218, 190] : [251, 240, 224];

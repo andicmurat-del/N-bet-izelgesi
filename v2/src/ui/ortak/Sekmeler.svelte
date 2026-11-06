@@ -1,6 +1,5 @@
 <script lang="ts" generics="T extends string">
-  // Sayfa içi görünüm seçici: klasör tipi sekmeler. Pasifler gri zeminli, seçili olan beyaz ve üstünde 3 px lacivert
-  // çizgi; telefonda yatay kayar.
+  // Sayfa içi görünüm seçici: alt çizgili sekmeler. Seçili sekme mavi ve altında 3 px çizgi; telefonda yatay kayar.
   import Ikon from "./Ikon.svelte";
   type Secenek = { ad: T; baslik: string; kisa?: string; ikon?: string };
   // telefonSutun: eski düzenden kalan seçenek (artık sekmeler telefonda yatay kayar)
@@ -16,11 +15,11 @@
 </div>
 
 <style>
-  .sekmeler { display: flex; gap: 2px; margin-bottom: var(--b4); border-bottom: 1px solid var(--cizgi); overflow-x: auto; scrollbar-width: thin; }
-  button { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px; margin-bottom: -1px; border: 1px solid var(--cizgi); border-bottom-color: var(--cizgi); border-top: 3px solid transparent;
-    border-radius: var(--r) var(--r) 0 0; background: var(--panel-bas); color: var(--yazi-2); font-weight: 600; cursor: pointer; white-space: nowrap; flex: none; }
-  button:hover { color: var(--lacivert); background: var(--tablo-bas); }
-  button.secili { background: var(--yuzey); color: var(--lacivert); border-top-color: var(--lacivert); border-bottom-color: var(--yuzey); }
+  .sekmeler { display: flex; gap: var(--b1); margin-bottom: var(--b4); border-bottom: 1px solid var(--cizgi); overflow-x: auto; scrollbar-width: thin; }
+  button { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 0 16px; margin-bottom: -1px; border: 0; border-bottom: 3px solid transparent;
+    border-radius: var(--r-kucuk) var(--r-kucuk) 0 0; background: transparent; color: var(--yazi-2); font-weight: 600; cursor: pointer; white-space: nowrap; flex: none; transition: background .14s, color .14s; }
+  button:hover { color: var(--lacivert); background: var(--yuzey-2); }
+  button.secili { color: var(--vurgu); border-bottom-color: var(--vurgu); background: transparent; }
   button :global(svg) { color: var(--soluk); }
-  button.secili :global(svg) { color: var(--lacivert); }
+  button.secili :global(svg) { color: var(--vurgu); }
 </style>

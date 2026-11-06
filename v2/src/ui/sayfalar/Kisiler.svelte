@@ -164,7 +164,7 @@
   .anahtar i { position: relative; width: 28px; height: 16px; border-radius: 8px; background: var(--cizgi); transition: background .15s; flex: none; }
   .anahtar i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #FFFFFF; transition: left .15s; }
   .anahtar:has(input:checked) { color: var(--lacivert); }
-  .anahtar:has(input:checked) i { background: var(--lacivert); }
+  .anahtar:has(input:checked) i { background: var(--vurgu); }
   .anahtar:has(input:checked) i::after { left: 14px; }
   .anahtar:has(input:focus-visible) i { outline: 2px solid var(--odak); outline-offset: 2px; }
   .duz { padding: 4px 6px; }
