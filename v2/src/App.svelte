@@ -5,6 +5,7 @@
   import { ayAdi } from "./veri/tarih";
   import AySecici from "./ui/ortak/AySecici.svelte";
   import Ikon from "./ui/ortak/Ikon.svelte";
+  import Amblem from "./ui/ortak/Amblem.svelte";
   import Cizelge from "./ui/sayfalar/Cizelge.svelte";
   import AcilEczane from "./ui/sayfalar/AcilEczane.svelte";
   import type { AcilGorunum, AyarGorunum, GunlukGorunum } from "./ui/sayfalar/sayfaTipleri";
@@ -84,7 +85,7 @@
   <header class="baslik-bandi">
     <div class="genislik">
       <div class="marka">
-        <span class="logo" aria-hidden="true"><Ikon ad="hastane" boyut={30} /></span>
+        <span class="logo" aria-hidden="true"><Amblem /></span>
         <div>
           <small>{(depo.veri.kurum.ad || "Hastane Eczanesi").toLocaleUpperCase("tr")}</small>
           <b>Nöbet Çizelgesi Yönetim Sistemi</b>
@@ -127,7 +128,7 @@
 <style>
   .atla { position: absolute; left: -999px; top: 8px; z-index: 50; background: var(--yuzey); padding: var(--b2) var(--b3); border-radius: var(--r-kucuk); }
   .atla:focus { left: 8px; }
-  .kabuk { display: flex; flex-direction: column; min-height: 100%; }
+  .kabuk { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
   /* ortak genişlik: en fazla 1360 px, ortalı; yan boşluk telefonda 16 px */
   .genislik { max-width: 1360px; margin: 0 auto; width: 100%; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   /* 1. üst şerit */
@@ -138,7 +139,7 @@
   .baslik-bandi { background: var(--yuzey); border-bottom: 1px solid var(--cizgi); }
   .baslik-bandi .genislik { display: flex; align-items: center; justify-content: space-between; gap: var(--b4); flex-wrap: wrap; min-height: 84px; padding-block: 10px; }
   .marka { display: flex; align-items: center; gap: 14px; min-width: 0; }
-  .logo { display: grid; place-items: center; width: 52px; height: 52px; border-radius: var(--r-kucuk); background: var(--menu-zemin); color: #FFFFFF; flex: none; }
+  .logo { display: block; width: 52px; height: 56px; flex: none; }
   .marka small { display: block; font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--yazi-2); line-height: 1.3; }
   .marka b { display: block; font-size: 22px; font-weight: 700; color: var(--lacivert); line-height: 1.2; }
   .donem { display: flex; align-items: center; gap: var(--b3); }
@@ -169,8 +170,7 @@
   @media (max-width: 860px) {
     .ust-serit .sag { display: none; }
     .baslik-bandi .genislik { min-height: 0; padding-block: 10px; gap: var(--b2); }
-    .logo { width: 40px; height: 40px; }
-    .logo :global(svg) { width: 24px; height: 24px; }
+    .logo { width: 38px; height: 42px; }
     .marka b { font-size: 17px; }
     .donem > span { display: none; }
     .donem { width: 100%; }
