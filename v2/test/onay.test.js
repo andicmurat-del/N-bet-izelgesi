@@ -95,6 +95,15 @@ describe("onay listesi masaları", () => {
     expect(g.masa.some(h => h?.tekniker)).toBe(false);
   });
 
+  test("nöbet günü (eczane ya da acil) masada; nöbet ertesi değil", () => {
+    const v = JSON.parse(JSON.stringify(veri)); v.puantaj = {};
+    v.acil = { "2026-10": { 9: [9] } };   // E9 (acilde tutan) 9 Kasım acil nöbetinde, 10 Kasım nöbet ertesi
+    const H2 = onayHaftasiHesapla(v, 2026, 10, 9);
+    const oturan = g => [...g.masa, ...g.joker].filter(h => h?.id).map(h => h.ad);
+    expect(oturan(H2.gunler[0])).toContain("E9");
+    expect(oturan(H2.gunler[1])).not.toContain("E9");
+  });
+
   test("yerleşim girilmeden önceki haftada liste yok", () => {
     expect(onayHaftasiHesapla(veri, 2026, 10, 2).yerlesim).toBe(null);
   });
