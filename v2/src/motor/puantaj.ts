@@ -1,6 +1,6 @@
 // Aylık puantaj cetveli: kişi başı gün gün kod (M, N, H, NI, YI, R, DI, B, P) ve saat, toplamlar, fazla mesai ve
 // 08:00-20:00 / 20:00-08:00 dilimleri. Çizelge + puantajdaki elle değişiklikler + acil servis nöbetleri birlikte okunur.
-import { aktifAydaMi, aktifGunMu, type Baglam } from "./baglam";
+import { acildeTutanEczaci, aktifAydaMi, aktifGunMu, type Baglam } from "./baglam";
 import { AYLAR, ayAnahtari, ayGunSayisi, CUMA, CUMARTESI, haftaGunu, oncekiAy, PAZAR, PERSEMBE, sonrakiAy } from "./takvim";
 import type { Kisi } from "../veri/tipler";
 
@@ -63,8 +63,9 @@ export function puantajIzgarasi(B: Baglam, y: number, m: number): PuantajIzgaras
       const acilVar = !!(acilAy[g.gun] && acilAy[g.gun].indexOf(st.id) >= 0);
       if (o) {
         kod = o;
-        // acil servis nöbetçi eczacısına puantajda elle yazılan nöbet, eczane nöbeti değil acil servis nöbetidir
-        if (o === "N" && (st.role === "servis" || acilVar)) acilFlag = true;
+        // acil servis personeline ya da acilde nöbet tutan eczacıya puantajda yazılan nöbet (elle ya da acil nöbet
+        // değişimiyle), eczane nöbeti değil acil servis nöbetidir
+        if (o === "N" && (st.role === "servis" || acilVar || acildeTutanEczaci(st))) acilFlag = true;
       } else {
         const sd = sch && sch.days[i];
         if (!aktifGunMu(st, y, m, g.gun)) kod = "P";

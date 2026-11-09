@@ -18,13 +18,13 @@
 
   // gomulu: Günlük Eczane / Acil Eczane sayfasının alt sekmesi olarak (başlık ve ay seçici üst sayfada).
   // kimler: cetvelde ve izin/rapor kaydında görünen kişiler (o bölümün kadrosu); acil: Acil Eczane puantajı
-  // (eczane nöbet değişimi sekmesi yok; acil nöbeti Acil Eczane Nöbet Listesi'nden değiştirilir)
+  // (nöbet değişimi acil nöbetleri ve acil kadrosuyla)
   let { git, gomulu = false, kimler = () => true, acil = false }: {
     git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; gomulu?: boolean; kimler?: (k: Kisi) => boolean; acil?: boolean;
   } = $props();
 
   const TUM_GORUNUMLER = [{ ad: "cetvel", baslik: "Cetvel", ikon: "tablo" }, { ad: "izin", baslik: "İzin ve rapor", kisa: "İzin", ikon: "izin" }, { ad: "degisim", baslik: "Nöbet değişimi", kisa: "Değişim", ikon: "karisik" }] as const;
-  const GORUNUMLER = $derived(acil ? TUM_GORUNUMLER.filter(g => g.ad !== "degisim") : TUM_GORUNUMLER);
+  const GORUNUMLER = TUM_GORUNUMLER;
   let gorunum = $state<(typeof TUM_GORUNUMLER)[number]["ad"]>("cetvel");
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
@@ -105,7 +105,7 @@
   </IslemAlani>
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
   {#if gorunum === "izin"}<IzinRapor {kimler} />
-  {:else if gorunum === "degisim"}<NobetDegisimi />
+  {:else if gorunum === "degisim"}<NobetDegisimi {acil} />
   {:else}
   <div class="ozet-serit">
     <div><small>Aylık normal mesai</small><b>{G.mesaiToplam} sa</b><span>Çalışma günleri × günlük mesai</span></div>

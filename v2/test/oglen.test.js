@@ -87,6 +87,18 @@ describe("öğlen nöbeti", () => {
     expect(tekrar).toBeLessThanOrEqual(5);   // kuraldan önce 7 (haftada iki sırası ve pay kuralıyla birlikte)
   });
 
+  test("haftada iki alan eczacının iki öğlen nöbeti mümkünse art arda günlere düşmez", () => {
+    let ard = 0, iki = 0;
+    for (const m of [10, 11]) {
+      const k = veri.oglen[`${Y}-${m}`], gunler = Object.keys(k).map(Number).sort((a, b) => a - b);
+      for (let i = 1; i < gunler.length; i++) if (gunler[i] === gunler[i - 1] + 1) ard += k[gunler[i]].e.filter(id => k[gunler[i - 1]].e.includes(id)).length;
+      iki += gunler.length;
+    }
+    expect(iki).toBeGreaterThan(0);
+    // Kasım 12–13: E1'in o hafta nöbet dışı yalnız iki boş günü var (zorunlu); 25–26: Cuma eşitliği için kalır
+    expect(ard).toBeLessThanOrEqual(2);
+  });
+
   test("haftada iki öğlen nöbeti sırayla: herkes bir kez iki almadan kimse yeniden iki almaz", () => {
     // haftalar Pazartesi'ye göre (ay geçişindeki hafta tek hafta sayılır)
     const hf = {};

@@ -1,11 +1,12 @@
 <script lang="ts">
   import Bilgi from "../ortak/Bilgi.svelte";
-  // Nöbet değişimi: takvimde bir görev (nöbet ya da hazırlama) seçilir; yerine tutacak kişi seçilir ya da
-  // karşılıklı takas için ikinci görev seçilir. Kurallar varsayımsal puantajla denetlenir. Değişim yalnız puantaja
-  // yansır; yıllık denge çizelgeye göre kalır. Bu ayın değişimleri listelenir, geri alınabilir.
+  // Nöbet değişimi (yerine tutma): takvimde bir görev seçilir (günlük eczanede nöbet ya da hazırlama, acil eczanede
+  // acil nöbeti), yerine tutacak kişi seçilir. Kurallar varsayımsal puantajla denetlenir. Değişim yalnız puantaja
+  // yansır; yıllık denge çizelgeye / acil listesine göre kalır. Bu ayın değişimleri listelenir, geri alınabilir
+  // (eskiden yapılmış karşılıklı takaslar da geçmişte görünür ve geri alınabilir).
   import { tick, untrack } from "svelte";
   import { depo, veriAnlik, ayCizelgesi } from "../../veri/depo.svelte";
-  import { degisimDenetle, yerineAdaylarHesapla } from "../../motor";
+  import { acilDegisimDenetle, acilYerineAdaylarHesapla, degisimDenetle, yerineAdaylarHesapla } from "../../motor";
   import { degisimUygula, degisimGeriAl, ayDegisimleri, puantajIzgarasi, IZIN_AD, type Gorev, type DegisimIstegi, type IzinTuru } from "../../veri/degisim.svelte";
   import { GUN_KISA, gunMetni, haftaGunu, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
@@ -14,16 +15,21 @@
   type Aday = { id: number; ad: string; engel: number; uyari: number; yil: number; k: Kontrol };
   type Secim = { id: number; gun: number; kod: Gorev };
 
+  // acil: Acil Eczane puantajında; yalnız acil nöbetleri ve acil kadrosu
+  let { acil = false }: { acil?: boolean } = $props();
   const y = $derived(depo.yil), m = $derived(depo.ay);
-  const cizelgeVar = $derived(!!ayCizelgesi(y, m)?.days.some(g => g.assigned.length));
+  const cizelgeVar = $derived(acil ? Object.values(depo.veri.acil[`${y}-${m}`] ?? {}).some(l => l.length) : !!ayCizelgesi(y, m)?.days.some(g => g.assigned.length));
   const G = $derived(puantajIzgarasi(y, m));
   const gorevliler = (gun: number) => {
     const N: { id: number; ad: string; rol: string }[] = [], H: typeof N = [];
-    for (const r of G.satirlar) { const c = r.cells[gun - 1]; if (c?.kod === "N" && !c.acil) N.push({ id: r.s.id, ad: r.s.name, rol: r.s.role }); else if (c?.kod === "H") H.push({ id: r.s.id, ad: r.s.name, rol: r.s.role }); }
+    for (const r of G.satirlar) { const c = r.cells[gun - 1]; if (c?.kod === "N" && c.acil === acil) N.push({ id: r.s.id, ad: r.s.name, rol: r.s.role }); else if (!acil && c?.kod === "H") H.push({ id: r.s.id, ad: r.s.name, rol: r.s.role }); }
     N.sort((a, b) => Number(b.rol === "eczaci" || b.rol === "nobetci") - Number(a.rol === "eczaci" || a.rol === "nobetci"));
     return { N, H };
   };
-  const degisenGunler = $derived(new Set(ayDegisimleri(y, m).map(z => z.gun)));
+  // değişimin hangi listeye ait olduğu: acil kadrosuna yapılan nöbet değişimi acil listesindedir
+  const acilKisi = (id: number) => { const k = depo.veri.staff.find(s => s.id === id); return !!k && (k.role === "servis" || ((k.role === "eczaci" || k.role === "nobetci") && !!k.acilTutar)); };
+  const buListede = (z: { yer: number; gorev?: string; yerYeni?: string; sebep?: string }) => acil ? !z.sebep && z.yerYeni === "N" && acilKisi(z.yer) : !(z.yerYeni === "N" && acilKisi(z.yer) && !z.sebep);
+  const degisenGunler = $derived(new Set(ayDegisimleri(y, m).filter(buListede).map(z => z.gun)));
   const bugun = new Date();
   const bugunMu = (d: number) => bugun.getFullYear() === y && bugun.getMonth() === m && bugun.getDate() === d;
   const tumAdlar = $derived(depo.veri.staff.map(k => k.name));
@@ -31,49 +37,44 @@
   const ad = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş)";
   const gorevAdi = (k: Gorev) => (k === "H" ? "hazırlama" : "nöbet");
 
-  let tur = $state<"devir" | "takas">("devir");
-  let s1 = $state<Secim | null>(null), s2 = $state<Secim | null>(null);
+  let s1 = $state<Secim | null>(null);
   let yer = $state("");
   let not = $state("");
   let onayAdimi = $state(false);
   let durum = $state<{ tur: "tamam" | "hata"; metin: string } | null>(null);
-  const temizle = () => { s1 = null; s2 = null; yer = ""; not = ""; onayAdimi = false; };
-  $effect(() => { y; m; tur; untrack(temizle); });
+  const temizle = () => { s1 = null; yer = ""; not = ""; onayAdimi = false; };
+  $effect(() => { y; m; untrack(temizle); });
   const ayni = (a: Secim | null, b: Secim) => !!a && a.id === b.id && a.gun === b.gun && a.kod === b.kod;
   function sec(x: Secim) {
     durum = null; onayAdimi = false;
     if (ayni(s1, x)) { temizle(); return; }
-    if (ayni(s2, x)) { s2 = null; return; }
-    if (tur === "devir" || !s1 || s1.id === x.id) { s1 = x; s2 = null; yer = ""; }
-    else s2 = x;
+    s1 = x; yer = "";
     // dar ekranda panel takvimin altında kalır: seçimden sonra görünür yapılır
     if (innerWidth <= 1100) tick().then(() => panel?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
   }
   let panel = $state<HTMLElement>();
 
-  const adaylar = $derived(tur === "devir" && s1 ? (yerineAdaylarHesapla(veriAnlik(), y, m, s1.gun, s1.id, s1.kod) as Aday[]) : []);
-  $effect(() => { if (tur === "devir" && s1 && !adaylar.some(a => String(a.id) === yer)) yer = String((adaylar.find(a => !a.engel) ?? adaylar[0])?.id ?? ""); });
+  const adaylar = $derived(s1 ? ((acil ? acilYerineAdaylarHesapla(veriAnlik(), y, m, s1.gun, s1.id) : yerineAdaylarHesapla(veriAnlik(), y, m, s1.gun, s1.id, s1.kod)) as Aday[]) : []);
+  $effect(() => { if (s1 && !adaylar.some(a => String(a.id) === yer)) yer = String((adaylar.find(a => !a.engel) ?? adaylar[0])?.id ?? ""); });
   const enUygun = $derived((adaylar.find(a => !a.engel && !a.uyari) ?? adaylar.find(a => !a.engel))?.id);
   const istek = $derived.by((): DegisimIstegi | null => {
     if (!s1) return null;
-    if (tur === "devir") return yer ? { y, m, gorev: s1.kod, tur, gun: s1.gun, cik: s1.id, yer: Number(yer) } : null;
-    return s2 ? { y, m, gorev: s1.kod, gorev2: s2.kod, tur, gun: s1.gun, cik: s1.id, yer: s2.id, gun2: s2.gun } : null;
+    return yer ? { y, m, gorev: s1.kod, tur: "devir", gun: s1.gun, cik: s1.id, yer: Number(yer) } : null;
   });
-  const ayniGun = $derived(tur === "takas" && !!s1 && !!s2 && s1.gun === s2.gun);
-  const kontrol = $derived(istek && !ayniGun ? (degisimDenetle(veriAnlik(), istek) as Kontrol) : null);
+  const kontrol = $derived(istek ? ((acil ? acilDegisimDenetle(veriAnlik(), y, m, istek.gun, istek.cik, istek.yer) : degisimDenetle(veriAnlik(), istek)) as Kontrol) : null);
   $effect(() => { istek; onayAdimi = false; });
 
   function uygula() {
-    if (!istek || ayniGun) return;
+    if (!istek) return;
     if (kontrol?.engel.length && !onayAdimi) { onayAdimi = true; return; }
     degisimUygula({ ...istek, not: not.trim() });
-    durum = { tur: "tamam", metin: tur === "takas" ? "Karşılıklı takas puantaja işlendi." : "Değişim puantaja işlendi." };
+    durum = { tur: "tamam", metin: "Değişim puantaja işlendi." };
     temizle();
   }
 
   // bu ayın değişimleri (takasın iki yarısı tek satır)
   const satirlar = $derived.by(() => {
-    const L = [...ayDegisimleri(y, m)].reverse(), goruldu = new Set<string>(), out: { id: number; metin: string; tur: string; zaman: number; not?: string }[] = [];
+    const L = [...ayDegisimleri(y, m)].filter(buListede).reverse(), goruldu = new Set<string>(), out: { id: number; metin: string; tur: string; zaman: number; not?: string }[] = [];
     for (const x of L) {
       if (x.grup) {
         if (goruldu.has(x.grup)) continue;
@@ -98,14 +99,9 @@
   <section class="kart bos"><h2>Bu ayın çizelgesi yok</h2><p>Nöbet değişimi oluşturulmuş çizelge üzerinde yapılır.</p></section>
 {:else}
   <div class="ust">
-    <fieldset class="turler">
-      <legend class="gizli">Değişim türü</legend>
-      <label class:secili={tur === "devir"}><input type="radio" name="dg-tur" value="devir" bind:group={tur} />Yerine tutma</label>
-      <label class:secili={tur === "takas"}><input type="radio" name="dg-tur" value="takas" bind:group={tur} />Karşılıklı takas</label>
-    </fieldset>
-    <p class="adim" aria-live="polite">{tur === "devir" ? (s1 ? "Yerine tutacak kişiyi seçin." : "Takvimde devredilecek nöbete ya da hazırlamaya dokunun.") : !s1 ? "Takvimde takas edilecek ilk görevi seçin." : !s2 ? "Şimdi karşılığında alınacak görevi seçin (başka bir kişinin)." : "Kuralları kontrol edip uygulayın."}</p>
+    <p class="adim" aria-live="polite">{s1 ? "Yerine tutacak kişiyi seçin." : acil ? "Takvimde devredilecek acil nöbetine dokunun." : "Takvimde devredilecek nöbete ya da hazırlamaya dokunun."}</p>
   </div>
-  <Bilgi baslik="Nasıl çalışır?"><p>Değişimler yalnız puantaja yansır; yıllık denge çizelgeye göre hesaplandığı için kimsenin sonraki aylardaki payı değişmez. Nöbet ile nöbet, hazırlama ile hazırlama ya da nöbet ile hazırlama takas edilebilir.</p></Bilgi>
+  <Bilgi baslik="Nasıl çalışır?"><p>Bir kişinin {acil ? "acil nöbetini" : "nöbetini ya da hazırlamasını"} başka biri tutar. Değişimler yalnız puantaja yansır; yıllık denge {acil ? "acil nöbet listesine" : "çizelgeye"} göre hesaplandığı için kimsenin sonraki aylardaki payı değişmez.</p></Bilgi>
 
   <div class="duzen">
     <section class="panel-blok takvim-kutu" aria-label="Görevler">
@@ -119,11 +115,11 @@
             <span class="cipler">
               {#each gr.N as p}
                 {@const x = { id: p.id, gun: g.gun, kod: "N" as Gorev }}
-                <button class="cip" class:sec1={ayni(s1, x)} class:sec2={ayni(s2, x)} aria-pressed={ayni(s1, x) || ayni(s2, x)} onclick={() => sec(x)} aria-label="{p.ad}, {gunMetni(y, m, g.gun)} nöbet"><span class="gorev {p.rol === 'teknisyen' ? 'tek' : p.rol === 'destek' ? 'des' : 'ecz'}">{p.rol === "teknisyen" ? "TEK" : p.rol === "destek" ? "DES" : "ECZ"}</span><span class="ad">{p.ad}</span><span class="ad-kisa">{kisa(p.ad)}</span></button>
+                <button class="cip" class:sec1={ayni(s1, x)} aria-pressed={ayni(s1, x)} onclick={() => sec(x)} aria-label="{p.ad}, {gunMetni(y, m, g.gun)} nöbet"><span class="gorev {p.rol === 'teknisyen' || p.rol === 'servis' ? 'tek' : p.rol === 'destek' ? 'des' : 'ecz'}">{p.rol === "teknisyen" ? "TEK" : p.rol === "servis" ? "SRV" : p.rol === "destek" ? "DES" : "ECZ"}</span><span class="ad">{p.ad}</span><span class="ad-kisa">{kisa(p.ad)}</span></button>
               {/each}
               {#each gr.H as p, i}
                 {@const x = { id: p.id, gun: g.gun, kod: "H" as Gorev }}
-                <button class="cip h" class:sec1={ayni(s1, x)} class:sec2={ayni(s2, x)} aria-pressed={ayni(s1, x) || ayni(s2, x)} onclick={() => sec(x)} aria-label="{p.ad}, {gunMetni(y, m, g.gun)} hazırlama"><span class="gorev haz">H{i + 1}</span><span class="ad">{p.ad}</span><span class="ad-kisa">{kisa(p.ad)}</span></button>
+                <button class="cip h" class:sec1={ayni(s1, x)} aria-pressed={ayni(s1, x)} onclick={() => sec(x)} aria-label="{p.ad}, {gunMetni(y, m, g.gun)} hazırlama"><span class="gorev haz">H{i + 1}</span><span class="ad">{p.ad}</span><span class="ad-kisa">{kisa(p.ad)}</span></button>
               {/each}
             </span>
           </div>
@@ -134,33 +130,24 @@
     <div class="yan">
     <aside class="kart panel" aria-label="Değişim" bind:this={panel}>
       {#if !s1}
-        <p class="bos-panel"><b>{tur === "devir" ? "Yerine tutma" : "Karşılıklı takas"}</b><br />{tur === "devir" ? "Takvimde bir kişinin nöbetine ya da hazırlamasına (H) dokunun, sonra yerine tutacak kişiyi seçin." : "Takvimde iki görev seçin: ilki bir kişinin, ikincisi başka bir kişinin görevi. İki kişi görevlerini karşılıklı değiştirir."}</p>
+        <p class="bos-panel"><b>Yerine tutma</b><br />{acil ? "Takvimde bir kişinin acil nöbetine dokunun, sonra yerine tutacak kişiyi seçin." : "Takvimde bir kişinin nöbetine ya da hazırlamasına (H) dokunun, sonra yerine tutacak kişiyi seçin."}</p>
       {:else}
         <div class="secili-gorev"><b>{gunMetni(y, m, s1.gun)} · {gorevAdi(s1.kod)}</b><span>{ad(s1.id)}</span></div>
-        {#if tur === "devir"}
           <div class="adaylar-bas">Yerine {s1.kod === "H" ? "hazırlama yapabilecekler" : "tutabilecekler"}</div>
           <div class="adaylar" role="radiogroup" aria-label="Yerine tutacak kişi">
             {#each adaylar as a, i (a.id)}
               <button class="aday" class:s={String(a.id) === yer} class:kot={!!a.engel} role="radio" aria-checked={String(a.id) === yer} onclick={() => (yer = String(a.id))}>
                 <span class="av" aria-hidden="true">{a.ad.split(" ").map(x => x[0]).join("").slice(0, 2).toLocaleUpperCase("tr")}</span>
                 <b>{a.ad}</b>
-                <small>{a.engel ? "Kural dışı" : a.uyari ? "Uyarı var" : a.id === enUygun ? "En uygun" : "Uygun"} · yıl {a.yil} {gorevAdi(s1.kod)}</small>
+                <small>{a.engel ? "Kural dışı" : a.uyari ? "Uyarı var" : a.id === enUygun ? "En uygun" : "Uygun"} · yıl {a.yil} {acil ? "acil nöbeti" : gorevAdi(s1.kod)}</small>
               </button>
             {:else}<p class="bos-panel">Uygun kişi yok.</p>{/each}
           </div>
-        {:else if s2}
-          <div class="ok" aria-hidden="true">⇅</div>
-          <div class="secilen"><span class="etiket sec2">{ad(s2.id)}</span><span>{gunMetni(y, m, s2.gun)} · {gorevAdi(s2.kod)}</span></div>
-          <p class="aciklama">{ad(s2.id)}, {s1.gun}. günün {gorevAdi(s1.kod)} görevini; {ad(s1.id)}, {s2.gun}. günün {gorevAdi(s2.kod)} görevini alır.</p>
-        {:else}
-          <p class="bos-panel">Şimdi karşılığında alınacak görevi seçin: başka bir kişinin nöbeti ya da hazırlaması.</p>
-        {/if}
 
         {#if istek}
           <label class="alan"><span>Not (isteğe bağlı)</span><input class="girdi" bind:value={not} maxlength="160" placeholder="ör. kişisel mazeret" /></label>
           <div class="kontrol" aria-live="polite">
-            {#if ayniGun}<p class="satir hata"><Ikon ad="uyari" boyut={15} /><span><b>Kural dışı:</b> Aynı günün iki görevi takas edilemez. Farklı bir gün seçin ya da yerine tutma kullanın.</span></p>
-            {:else if kontrol}
+            {#if kontrol}
               {#each kontrol.engel as t}<p class="satir hata"><Ikon ad="uyari" boyut={15} /><span><b>Kural dışı:</b> {t}</span></p>{/each}
               {#each kontrol.uyari as t}<p class="satir uyari"><Ikon ad="uyari" boyut={15} /><span>{t}</span></p>{/each}
               {#if !kontrol.engel.length && !kontrol.uyari.length}<p class="satir tamam"><Ikon ad="tamam" boyut={15} />Kural sorunu yok.</p>{/if}
@@ -170,7 +157,7 @@
         {/if}
         {#if onayAdimi}<p class="onay" role="alert">Bu değişimde kural dışı durum var. Yine de uygulamak için tekrar basın.</p>{/if}
         <div class="dugmeler">
-          <button class="dugme ana genis" onclick={uygula} disabled={!istek || ayniGun}><Ikon ad="tamam" />{onayAdimi ? "Yine de uygula" : tur === "devir" ? "Yerine yaz" : "Takası uygula"}</button>
+          <button class="dugme ana genis" onclick={uygula} disabled={!istek}><Ikon ad="tamam" />{onayAdimi ? "Yine de uygula" : "Yerine yaz"}</button>
           <button class="dugme sade" onclick={temizle}>Vazgeç</button>
         </div>
       {/if}
@@ -202,12 +189,6 @@
   .bos { padding: var(--b5); display: grid; gap: var(--b2); }
   .bos p { color: var(--yazi-2); }
   .ust { display: flex; flex-wrap: wrap; gap: var(--b3); align-items: center; margin-bottom: var(--b2); }
-  .gizli { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  fieldset { border: 0; margin: 0; padding: 0; }
-  .turler { display: flex; flex-wrap: wrap; gap: var(--b2); }
-  .turler label { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 var(--b3); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); cursor: pointer; font-weight: 500; background: var(--yuzey); }
-  .turler label.secili { border-color: var(--vurgu); background: var(--vurgu-zemin); color: var(--vurgu); }
-  .turler input { accent-color: var(--vurgu); }
   .adim { font-size: var(--f-sm); font-weight: 500; color: var(--yazi-2); }
   .aciklama { font-size: var(--f-sm); color: var(--soluk); margin-bottom: var(--b3); max-width: 90ch; }
   .duzen { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--b4); align-items: start; }
@@ -230,7 +211,6 @@
   .cip.h .ad { font-weight: 400; color: var(--yazi-2); }
   .cip:not(.h) + .cip.h { margin-top: 3px; border-top: 1px dashed var(--cizgi); border-top-left-radius: 0; border-top-right-radius: 0; }
   .cip.sec1 { border-color: var(--vurgu); background: var(--vurgu-zemin); box-shadow: inset 0 0 0 1px var(--vurgu); }
-  .cip.sec2 { border-color: var(--izin); background: var(--izin-zemin); box-shadow: inset 0 0 0 1px var(--izin); }
   .ad-kisa { display: none; }
   .duzen { grid-template-columns: minmax(0, 1fr) 340px; }
   .yan { display: grid; gap: var(--b3); align-content: start; }
@@ -261,11 +241,6 @@
   .geri { border: 0; background: none; padding: 2px 0; color: var(--baglanti); font: inherit; font-size: var(--f-xs); font-weight: 700; cursor: pointer; white-space: nowrap; }
   .geri:hover { text-decoration: underline; }
   .bos-panel { font-size: var(--f-sm); color: var(--yazi-2); }
-  .secilen { display: grid; gap: 2px; font-size: var(--f-sm); color: var(--yazi-2); }
-  .etiket { justify-self: start; padding: 2px 8px; border-radius: 6px; font-weight: 600; color: var(--yazi); }
-  .etiket.sec1 { background: var(--vurgu-zemin); box-shadow: inset 0 0 0 1px var(--vurgu); }
-  .etiket.sec2 { background: var(--izin-zemin); box-shadow: inset 0 0 0 1px var(--izin); }
-  .ok { font-size: 20px; color: var(--soluk); line-height: 1; }
   .kontrol { display: grid; gap: 6px; }
   .satir { display: flex; gap: var(--b2); align-items: flex-start; font-size: var(--f-sm); padding: 6px 10px; border-radius: var(--r-kucuk); }
   .satir :global(svg) { flex: none; margin-top: 2px; }

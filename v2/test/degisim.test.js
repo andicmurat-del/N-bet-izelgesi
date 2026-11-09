@@ -1,6 +1,6 @@
 // Puantaj değişim denetimi ve yerine geçecek aday önerisi (eski uygulamadan taşınan kurallar).
 import { describe, test, expect } from "vitest";
-import { cizelgeOlustur, degisimDenetle, yerineAdaylarHesapla, puantajHesapla, yillikRaporHesapla } from "../src/motor";
+import { acilDegisimDenetle, acilYerineAdaylarHesapla, cizelgeOlustur, degisimDenetle, yerineAdaylarHesapla, puantajHesapla, yillikRaporHesapla } from "../src/motor";
 
 const adlar = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 const veri = {
@@ -99,5 +99,31 @@ describe("rapor nedeniyle yerine tutma", () => {
     if (i >= 0) expect(uygun.slice(0, i).length).toBe(uygun.filter(a => a.yerine === 0).length);
     expect(uygun[0].yerine).toBe(0);
     expect(l.find(a => a.id === yer)?.yerine ?? 1).toBe(1);
+  });
+});
+
+describe("acil eczane nöbet değişimi (yerine tutma)", () => {
+  // acil kadrosu: 4 acil servis personeli + acilde tutan bir eczacı; acil nöbetleri elle yazılır
+  const v = {
+    staff: [
+      { id: 1, name: "S1", role: "servis" }, { id: 2, name: "S2", role: "servis" }, { id: 3, name: "S3", role: "servis" }, { id: 4, name: "S4", role: "servis" },
+      { id: 5, name: "AE", role: "eczaci", acilTutar: true }, { id: 6, name: "GE", role: "eczaci" },
+    ],
+    prefs: {}, manualTatil: {}, arife: {}, settings: {}, schedules: {}, puantaj: {}, oglen: {},
+    acil: { [`${Y}-${M}`]: { 5: [1, 2], 6: [3, 4], 7: [1, 5] } },
+  };
+  test("adaylar yalnız acil kadrosu; art arda nöbet olacak kişi kural dışı", () => {
+    const l = acilYerineAdaylarHesapla(v, Y, M, 5, 1);
+    expect(l.map(a => a.id).sort()).toEqual([2, 3, 4, 5]);
+    expect(l.find(a => a.id === 3).engel).toBeGreaterThan(0);          // 6'sında nöbetçi
+    expect(l.find(a => a.id === 2).engel).toBeGreaterThan(0);          // o gün zaten nöbetçi
+    expect(l[0].engel).toBe(0);
+    expect(acilDegisimDenetle(v, Y, M, 5, 1, 6).engel.some(t => t.includes("acil kadrosunda değil"))).toBe(true);
+  });
+  test("acilde tutan eczacıya yazılan nöbet puantajda acil nöbeti sayılır (eczane nöbeti değil)", () => {
+    const w = { ...v, puantaj: { [`${Y}-${M}`]: { 1: { 9: "M" }, 5: { 9: "N" } } } };
+    const c = puantajHesapla(w, Y, M).satirlar.find(r => r.s.id === 5).cells[8];
+    expect(c.kod).toBe("N");
+    expect(c.acil).toBe(true);
   });
 });
