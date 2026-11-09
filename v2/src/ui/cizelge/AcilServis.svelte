@@ -13,10 +13,13 @@
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
   import AylikOzet from "../ortak/AylikOzet.svelte";
+  import VurguSecici from "../ortak/VurguSecici.svelte";
 
   let { git }: { git: (ad: "kisiler") => void } = $props();
 
   const y = $derived(depo.yil), m = $derived(depo.ay);
+  // kişiyi vurgula: seçilen kişinin acil nöbet günleri takvimde işaretlenir (özet tablosundan da seçilir)
+  let vurgu = $state<number | null>(null);
   const adaylar = $derived(aydaCalisanlar(y, m).filter(k => acilKadrosunda(k)).sort((a, b) => a.name.localeCompare(b.name, "tr")));
   let uyarilar = $state<string[]>([]);
   // onaylı ay: liste kilitli (yeniden oluşturma, silme, elle değiştirme yok); yalnız sonradan izin / rapor alan kişinin
@@ -119,17 +122,17 @@
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
   <section class="panel takvim-kutu" aria-label="{ayAdi(y, m)} acil eczane nöbetleri">
-    <div class="panel-bas"><h2>{ayAdi(y, m)} acil eczane nöbetleri</h2></div>
-    <div class="takvim">
+    <div class="panel-bas"><h2>{ayAdi(y, m)} acil eczane nöbetleri</h2><VurguSecici kisiler={adaylar} bind:vurgu /></div>
+    <div class="takvim" class:vurgulu={vurgu !== null}>
       {#each GUN_KISA as g}<div class="bas" aria-hidden="true">{g}</div>{/each}
       {#each { length: haftaGunu(y, m, 1) } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
       {#each gunler as g (g)}
         {@const l = acilGunu(y, m, g)}
-        <button class="gun" class:tatil={tatilMi(y, m, g)} class:bugun={bugunMu(g)} class:dolu={l.length} class:sorunlu={sorunluMu(g)} onclick={() => gunAc(g)}
+        <button class="gun" class:tatil={tatilMi(y, m, g)} class:bugun={bugunMu(g)} class:dolu={l.length} class:sorunlu={sorunluMu(g)} class:vurgu={vurgu !== null && l.includes(vurgu)} class:soluk={vurgu !== null && !l.includes(vurgu)} onclick={() => gunAc(g)}
           aria-label="{gunMetni(y, m, g)}: acil eczane nöbetçisi {l.map(ad).join(' ve ') || 'yok'}">
           <span class="ust serit"><b class="no rakam">{g}</b>{#if acilElleMi(y, m, g)}<span class="elle" title="Elle düzenlendi; yeniden oluşturmada korunur">elle</span>{/if}<span class="gunadi">{GUN_KISA[haftaGunu(y, m, g)]}</span>{#if resmiTatilMi(y, m, g)}<span class="etiket">Resmi tatil</span>{/if}</span>
           <span class="kisiler">
-            {#each l as id}<span class="kisi"><span class="isaret servis"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span></span>{:else}<span class="yok"><span class="ad">Nöbetçi yok</span><span class="ad-kisa" aria-hidden="true">–</span></span>{/each}
+            {#each l as id}<span class="kisi" class:ben={id === vurgu}><span class="isaret servis"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span></span>{:else}<span class="yok"><span class="ad">Nöbetçi yok</span><span class="ad-kisa" aria-hidden="true">–</span></span>{/each}
           </span>
         </button>
       {/each}
@@ -137,7 +140,7 @@
   </section>
 
   <div class="blok">
-    {#if dolu}<AylikOzet satirlar={ozetSatirlari} baslik="Kişi özeti" hazirlama={false} />
+    {#if dolu}<AylikOzet satirlar={ozetSatirlari} baslik="Kişi özeti" hazirlama={false} bind:vurgu />
     {:else}<h2>Kişi özeti</h2><p class="aciklama">Bu ay için henüz acil eczane nöbet listesi oluşturulmadı.</p>{/if}
   </div>
 {/if}
@@ -195,6 +198,9 @@
   .gun.bugun .serit b { text-decoration: underline; text-underline-offset: 3px; }
   .gun.sorunlu { background: var(--dikkat-zemin); }
   .gun.sorunlu .serit { box-shadow: inset 0 -2px 0 var(--dikkat); }
+  .vurgulu .gun.soluk { opacity: .38; }
+  .vurgulu .gun.vurgu { box-shadow: inset 0 0 0 2px var(--lacivert); }
+  .kisi.ben { background: var(--vurgu-zemin); box-shadow: 0 0 0 2px var(--vurgu-zemin); border-radius: 3px; }
   .bant { display: block; }
   .bant.bilgi { background: var(--bilgi-zemin); color: var(--bilgi); }
   .oneri { display: grid; gap: 6px; padding: var(--b3); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey-2); margin-bottom: var(--b3); }

@@ -12,6 +12,7 @@
   import IslemAlani from "../ortak/IslemAlani.svelte";
   import Ikon from "../ortak/Ikon.svelte";
   import Takvim from "../cizelge/Takvim.svelte";
+  import VurguSecici from "../ortak/VurguSecici.svelte";
   import AylikOzet from "../ortak/AylikOzet.svelte";
   import GunPenceresi from "../cizelge/GunPenceresi.svelte";
   import Hazirlama from "./Hazirlama.svelte";
@@ -273,14 +274,6 @@
     </div>
   {/if}
 
-  {#snippet vurguSecici()}
-    <label class="vurgu-sec" class:aktif={vurgu !== null}><Ikon ad="kisiler" boyut={15} /><span class="gizli-yazi">Kişiyi vurgula</span>
-      <select value={vurgu === null ? "" : String(vurgu)} onchange={e => (vurgu = e.currentTarget.value ? Number(e.currentTarget.value) : null)} aria-label="Kişiyi vurgula">
-        <option value="">Kişiyi vurgula</option>{#each nobetci as k (k.id)}<option value={String(k.id)}>{k.name}</option>{/each}
-      </select>
-      {#if vurgu !== null}<button type="button" class="vurgu-x" onclick={() => (vurgu = null)} aria-label="Vurgulamayı kaldır">×</button>{/if}
-    </label>
-  {/snippet}
   {#snippet adlar(l: { id: number; name: string }[])}
     {#each l as p, i (p.id)}{i ? ", " : ""}{#if p.id === vurgu}<mark class="vurgu-ad">{p.name}</mark>{:else}{p.name}{/if}{:else}—{/each}
   {/snippet}
@@ -290,13 +283,13 @@
         {#if nobetGorunum === "takvim"}
           <section class="panel" aria-label="Takvim">
             <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet takvimi{goster !== c ? " · güncel" : ""}</h2>
-              {@render vurguSecici()}
+              <VurguSecici kisiler={nobetci} bind:vurgu />
               <p class="lejant"><span><span class="gorev ecz">ECZ</span>Eczacı</span><span><span class="gorev tek">TEK</span>Tekniker</span><span><span class="gorev haz">H1</span>Hazırlama</span><span class="kirmizi"><Ikon ad="uyari" boyut={14} />Kural esnetildi</span><span><Ikon ad="kilit" boyut={13} />Elle</span></p></div>
             <Takvim c={goster!} {vurgu} secili={seciliGun} {gunAc} degisen={goster !== c ? guncel?.degisen : undefined} />
           </section>
         {:else}
           <section class="panel" aria-label="Liste">
-            <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet listesi{goster !== c ? " · güncel" : ""}</h2>{@render vurguSecici()}</div>
+            <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet listesi{goster !== c ? " · güncel" : ""}</h2><VurguSecici kisiler={nobetci} bind:vurgu /></div>
             <div class="filtreler">
               <div class="cipler" role="group" aria-label="Günleri süz">
                 {#each FILTRELER as [f, ad]}<button class="cip" aria-pressed={filtre === f} onclick={() => (filtre = f)}>{ad} <span class="rakam">{filtreSayisi[f]}</span></button>{/each}
@@ -427,13 +420,6 @@
   .liste tbody tr.vurgulu > * { background: color-mix(in srgb, var(--altin) 16%, var(--yuzey)); }
   .liste tbody tr.vurgulu > :first-child { box-shadow: inset 3px 0 0 var(--altin); }
   .vurgu-ad { background: color-mix(in srgb, var(--altin) 35%, transparent); color: inherit; font-weight: 700; padding: 0 3px; border-radius: 3px; }
-  .vurgu-sec { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 0 4px 0 8px; min-height: 34px; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); color: var(--yazi-2); }
-  .vurgu-sec.aktif { border-color: var(--altin); box-shadow: inset 0 0 0 1px var(--altin); color: var(--yazi); }
-  .vurgu-sec select { border: 0; background: transparent; font: inherit; font-size: var(--f-sm); color: inherit; min-height: 32px; max-width: 180px; cursor: pointer; }
-  .vurgu-sec select:focus-visible { outline: 2px solid var(--odak); outline-offset: 1px; }
-  .vurgu-x { border: 0; background: transparent; font-size: 18px; line-height: 1; width: 28px; height: 28px; cursor: pointer; color: var(--yazi-2); border-radius: 50%; }
-  .vurgu-x:hover { background: var(--yuzey-2); }
-  .gizli-yazi { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .liste tr.secili-satir > * { box-shadow: inset 0 2px 0 var(--altin), inset 0 -2px 0 var(--altin); }
   .liste td:nth-child(n+3):not(.durum) { min-width: 150px; }
   .liste tr.hs > * { background: color-mix(in srgb, var(--acik-mavi) 14%, var(--yuzey)); }
