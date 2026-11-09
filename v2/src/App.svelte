@@ -25,7 +25,7 @@
   type Hedef = SayfaAdi | "cizelge" | "puantaj" | "hazirlama" | "izinler" | "raporlar" | "kisiler";
   const ESKI: Record<string, GunlukGorunum> = { cizelge: "nobet", puantaj: "puantaj", hazirlama: "hazirlama", izinler: "izinler", raporlar: "raporlar" };
   let gunlukAlt = $state<GunlukGorunum>("nobet"), acilAlt = $state<AcilGorunum>("acil"), ayarAlt = $state<AyarGorunum>("genel");
-  const GUNLUK_ALT: GunlukGorunum[] = ["nobet", "liste", "oglen", "hazirlama", "puantaj", "izinler", "raporlar"];
+  const GUNLUK_ALT: GunlukGorunum[] = ["nobet", "liste", "oglen", "onay", "hazirlama", "puantaj", "izinler", "raporlar"];
   const hashOku = (): SayfaAdi => {
     const [h, alt] = location.hash.slice(1).split("/");
     if (ESKI[h]) { gunlukAlt = ESKI[h]; return "gunluk"; }

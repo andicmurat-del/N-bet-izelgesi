@@ -35,6 +35,8 @@ export class Baglam {
   acilElle: Nesne<Nesne<true>>;
   oglen: Nesne<Nesne<{ e: number[]; t: number[]; elle?: true; sabit?: { e: number[]; t: number[]; be?: number; bt?: number } }>>;
   servisKayit: Nesne<any>;
+  /** onay listesi masaları: haftanın Pazartesi'si ("YYYY-AA-GG") → kişi id → sıradaki yer (girilen haftalar) */
+  readonly onayYerlesim: Record<string, Record<string, number>>;
   /** puantajdaki değişim kayıtları (nöbet değişimi, izin/rapor nedeniyle yerine geçme) */
   degisimler: Degisimi[];
   /** yıllık eşitlik için çizelgeler: izin/rapor nedeniyle yerine geçmeler görevden çıkanın sayılır */
@@ -47,6 +49,7 @@ export class Baglam {
     this.prefs = nesne(v.prefs); this.manualTatil = nesne(v.manualTatil); this.arife = nesne(v.arife);
     this.settings = nesne(v.settings); this.schedules = nesne(v.schedules); this.puantaj = nesne(v.puantaj); this.acil = nesne(v.acil); this.acilElle = nesne(v.acilElle); this.oglen = nesne(v.oglen);
     this.servisKayit = nesne(v.servisKayit);
+    this.onayYerlesim = nesne(nesne(v.onayMasa).yerlesim);
     this.degisimler = Array.isArray(v.degisimler) ? v.degisimler.filter((z: unknown) => z && typeof z === "object") : [];
     this.dengeSchedules = this.dengeKur();
   }
