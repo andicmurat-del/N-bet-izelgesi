@@ -288,7 +288,7 @@
           <section class="panel" aria-label="Takvim">
             <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet takvimi{goster !== c ? " · güncel" : ""}</h2>
               <VurguSecici kisiler={nobetci} bind:vurgu />
-              <p class="lejant"><span><span class="gorev ecz">ECZ</span>Eczacı</span><span><span class="gorev tek">TEK</span>Tekniker</span><span><span class="gorev haz">H1</span>Hazırlama</span><span class="kirmizi"><Ikon ad="uyari" boyut={14} />Kural esnetildi</span><span><Ikon ad="kilit" boyut={13} />Elle</span></p></div>
+              <p class="lejant"><span class="lj-ecz">Eczacı</span><span class="lj-tek">Tekniker</span><span class="lj-haz">Haz. Hazırlama</span><span class="kirmizi"><Ikon ad="uyari" boyut={14} />Kural esnetildi</span><span><Ikon ad="kilit" boyut={13} />Elle</span></p></div>
             <Takvim c={goster!} {vurgu} secili={seciliGun} {gunAc} degisen={goster !== c ? guncel?.degisen : undefined} />
           </section>
         {:else}
@@ -421,6 +421,9 @@
   .lejant > span { display: inline-flex; align-items: center; gap: 5px; }
   .kirmizi { color: var(--hata); }
   .liste tbody tr { cursor: pointer; }
+  .lj-ecz { font-weight: 700; color: var(--lacivert); }
+  .lj-tek { font-weight: 600; color: var(--tek); }
+  .lj-haz { color: var(--haz); }
   .liste tbody tr:hover > * { background: var(--vurgu-zemin); }
   .liste tbody tr.vurgulu > * { background: color-mix(in srgb, var(--altin) 16%, var(--yuzey)); }
   .liste tbody tr.vurgulu > :first-child { box-shadow: inset 3px 0 0 var(--altin); }
