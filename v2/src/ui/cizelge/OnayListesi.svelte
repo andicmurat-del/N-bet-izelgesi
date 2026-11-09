@@ -87,7 +87,7 @@
   {#each haftalar as h, i}<button class="hafta" aria-pressed={secili === i} onclick={() => (secili = i)}><b>{i + 1}. hafta</b><small>{haftaMetni(h)}</small></button>{/each}
 </div>
 
-<Bilgi baslik="Onay masaları nasıl dağıtılır?"><p>Her eczacı (acilde tutanlar dahil, kemoterapi eczacıları hariç) hafta boyunca aynı yerde oturur, her hafta sıradaki yere geçer: Masa 1 → Masa 3 → Masa 2 → Masa 4 → Joker → Masa 5 → Joker → Masa 6 (9. kişi sona joker olarak eklenir). O gün çalışmayanın (nöbet ertesi, izin, rapor) masasına sıradaki joker oturur; joker görevini yapmış sayılır. Jokerler eksik masaları doldurduktan sonra 2 ya da daha çok joker kalırsa ilki Masa 7'ye oturur, kalanlar joker olarak kalır. İlk 6 masa yine dolmazsa o günün hazırlama teknikerlerinden biri oturur (yıl boyunca sırayla). Hafta içi, arife dahil; resmi tatilde liste yok.</p></Bilgi>
+<Bilgi baslik="Onay masaları nasıl dağıtılır?"><p>Her eczacı (acilde tutanlar dahil, kemoterapi eczacıları hariç) hafta boyunca aynı yerde oturur, her hafta sıradaki yere geçer: Masa 1 → Masa 3 → Masa 2 → Masa 4 → Joker → Masa 5 → Joker → Masa 6 (9. kişi sona joker olarak eklenir). O gün çalışmayanın (nöbet ertesi, izin, rapor) masasına sıradaki joker oturur; joker görevini yapmış sayılır. Jokerler eksik masaları doldurduktan sonra 2 ya da daha çok joker kalırsa ilki Masa 7'ye oturur, kalanlar joker olarak kalır. Yeri henüz girilmemiş eczacı ekstra joker olur. İlk 6 masa yine dolmazsa o günün hazırlama teknikerlerinden biri oturur (yıl boyunca sırayla). İşten ayrılanın yeri sıradan kendiliğinden düşer. Hafta içi, arife dahil; resmi tatilde liste yok.</p></Bilgi>
 
 {#if H}
   {#if duzenle}
@@ -118,8 +118,8 @@
     <section class="kart bos"><h2>Yerleşim henüz girilmedi</h2><p>Onay listesinin başlaması için bir haftada kimin hangi masada ya da joker olduğunu bir kez girin; sonraki haftalar sırayla kendiliğinden ilerler.</p>
       <button class="dugme ana" onclick={duzenlemeyiAc}><Ikon ad="duzenle" />Yerleşimi gir</button></section>
   {:else}
-    <p class="aciklama">{H.yerlesim.girildi ? "Bu haftanın yerleşimi elle girildi." : `Yerleşim ${capaMetni} haftasından sırayla ilerliyor.`}</p>
-    {#if H.sirasiz.length}<p class="bant dikkat"><Ikon ad="uyari" boyut={16} />{H.sirasiz.join(", ")} sırada değil (yeni gelen olabilir). "Bu haftanın yerleşimini düzenle" ile yerini seçin.</p>{/if}
+    <p class="aciklama">{H.yerlesim.girildi ? "Bu haftanın yerleşimi elle girildi." : `Yerleşim ${capaMetni} haftasından sırayla ilerliyor.`}{H.yerlesim.ayrilanlar.length ? ` İşten ayrılan ${H.yerlesim.ayrilanlar.join(", ")} sıradan çıkarıldı; sıra ${H.yerlesim.n} yerle devam ediyor.` : ""}</p>
+    {#if H.sirasiz.length}<p class="bant dikkat"><Ikon ad="uyari" boyut={16} />{H.sirasiz.join(", ")} sırada değil (yeni gelen olabilir); yeri girilene kadar ekstra joker olarak oturur. "Bu haftanın yerleşimini düzenle" ile yerini seçin.</p>{/if}
     {#each H.gunler.filter(g => g.uyari.length) as g}<p class="bant hata">{g.d} {AYLAR[g.m]}: {g.uyari.join(" ")}</p>{/each}
     <section class="panel" aria-label="{haftaMetni(hafta)} onay listesi masaları">
       <div class="panel-bas"><h2>{haftaMetni(hafta)} onay masaları</h2>

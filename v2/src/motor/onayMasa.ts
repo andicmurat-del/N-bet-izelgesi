@@ -4,10 +4,12 @@
 // Bir hafta boyunca herkes aynı yerde oturur. Günlük dağıtım (hafta içi, arife dahil, resmi tatil hariç):
 //   1. Masa sahibi o gün çalışıyorsa (puantajda mesai ya da nöbet; nöbet ertesi, izin, rapor yok) masasında oturur.
 //   2. Boş kalan ilk 6 masaya o gün çalışan jokerler sırayla geçer (joker görevini yapmış sayılır, masanın değil).
-//   3. Geriye 2 ya da daha çok joker kalırsa ilki Masa 7'ye oturur; kalanlar joker.
+//   3. Sırada olmayan (yeri girilmemiş) ama o gün çalışan eczacılar ekstra joker olur. Geriye 2 ya da daha çok joker
+//      kalırsa ilki Masa 7'ye oturur; kalanlar joker.
 //   4. İlk 6 masadan hâlâ boş varsa o günün hazırlama teknikerlerinden biri oturur; yıl boyunca sırayla (en az oturan).
 // Yerleşim kullanıcıdan gelir: bir haftanın kimin hangi yerde olduğu girilir, sonraki haftalar oradan kendiliğinden ilerler;
-// kadro değişince yeni haftanın yerleşimi yeniden girilir (en son girilen önceki hafta esas alınır).
+// kadro değişince yeni haftanın yerleşimi yeniden girilir (en son girilen önceki hafta esas alınır); işten ayrılan
+// kişinin yeri kendiliğinden sıradan düşer.
 import { aktifGunMu, type Baglam } from "./baglam";
 import { puantajIzgarasi, type PuantajIzgarasi } from "./puantaj";
 import { ayAnahtari, gunKaydir, haftaGunu } from "./takvim";
@@ -35,15 +37,31 @@ export function pazartesi(y: number, m: number, d: number): [number, number, num
 
 export type OnayYerlesimi = Record<string, Record<string, number>>;
 
-/** o haftanın yerleşimi: kişi id → sıradaki yer; esas alınan (girilen) hafta; sıra uzunluğu */
+/** o haftanın yerleşimi: kişi id → sıradaki yer; esas alınan (girilen) hafta; sıra uzunluğu. Girilen haftadan hafta
+ *  hafta ilerlenir; işten ayrılan (o hafta hiç çalışma günü kalmayan) kişi sıradan çıkar: sıra 8'den uzunsa en sondaki
+ *  yer düşer, o yerdeki kişi ayrılanın yerine geçer (kimsenin yeri değişmez); 8 ya da daha kısaysa yeri boş döner. */
 export function haftaYerlesimi(B: Baglam, py: number, pm: number, pd: number) {
   const Y = B.onayYerlesim, bu = iso(py, pm, pd);
   const capa = Object.keys(Y).filter(k => k <= bu && Object.keys(Y[k] ?? {}).length).sort().pop();
   if (!capa) return null;
-  const a = Y[capa], n = Math.max(TEMEL.length, Object.keys(a).length), fark = Math.round((gunNo(py, pm, pd) - gunNo(...coz(capa))) / 7);
   const yer: Record<number, number> = {};
-  for (const [id, s] of Object.entries(a)) yer[Number(id)] = (((s + fark) % n) + n) % n;
-  return { capa, girildi: capa === bu, yer, n, dongu: onayDongusu(n) };
+  for (const [id, s] of Object.entries(Y[capa])) yer[Number(id)] = s;
+  let n = Math.max(TEMEL.length, Object.keys(yer).length);
+  const hafta = Math.round((gunNo(py, pm, pd) - gunNo(...coz(capa))) / 7);
+  let [a, b, c] = coz(capa);
+  const ayrilanlar: string[] = [];
+  for (let h = 0; h <= hafta; h++) {
+    if (h > 0) { for (const id of Object.keys(yer)) yer[Number(id)] = (yer[Number(id)] + 1) % n; [a, b, c] = gunKaydir(a, b, c, 7); }
+    for (const id of Object.keys(yer).map(Number)) {
+      const s = B.kisi(id);
+      const calisir = !!s && [0, 1, 2, 3, 4].some(i => aktifGunMu(s, ...gunKaydir(a, b, c, i)));
+      // yalnız ayrılan (bitiş tarihi geçmiş) çıkar; henüz başlamamış olan sırada kalır
+      if (calisir || !s?.bitis || s.bitis >= iso(a, b, c)) continue;
+      const f = yer[id]; delete yer[id]; ayrilanlar.push(s.name);
+      if (n > TEMEL.length) { const sonId = Object.keys(yer).map(Number).find(k => yer[k] === n - 1); if (sonId !== undefined) yer[sonId] = f; n--; }
+    }
+  }
+  return { capa, girildi: capa === bu, yer, n, dongu: onayDongusu(n), ayrilanlar };
 }
 
 export interface OnayHucre { id: number | null; ad: string; not?: string; tekniker?: true }
@@ -72,7 +90,9 @@ function gunHesapla(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: numb
     if (id !== undefined && calisiyor(id)) g.masa[no - 1] = { id, ad: ad(id) };
     else { g.masa[no - 1] = { id: null, ad: "" }; bos.push(no); }
   }
-  const gelen = jokerler.filter(j => calisiyor(j.id));
+  // sırada olmayan (yeri girilmemiş) ama o gün çalışan eczacılar jokerlerden sonra ekstra joker olur
+  const sirasiz = B.staff.filter(k => onayEczacisi(k) && Yh.yer[k.id] === undefined && calisiyor(k.id)).sort((x, y) => x.name.localeCompare(y.name, "tr")).map(k => ({ id: k.id, no: 99 }));
+  const gelen = [...jokerler.filter(j => calisiyor(j.id)), ...sirasiz];
   for (const no of [...bos]) {
     const j = gelen.shift(); if (!j) break;
     const sahip = masaSahibi[no];

@@ -72,6 +72,29 @@ describe("onay listesi masaları", () => {
     expect(tek).toEqual(["T1", "T2"]);
   });
 
+  test("işten ayrılanın yeri sıradan düşer: en sondaki yerdeki kişi onun yerine geçer, kimsenin yeri değişmez", () => {
+    const v = JSON.parse(JSON.stringify(veri)); v.puantaj = {};
+    v.staff.find(s => s.id === 2).bitis = "2026-11-13";   // E2 13 Kasım'da ayrılıyor
+    const S = onayHaftasiHesapla(v, 2026, 10, 16);
+    expect(S.yerlesim.n).toBe(8);
+    expect(S.yerlesim.ayrilanlar).toEqual(["E2"]);
+    const yer = Object.fromEntries(S.kisiler.map(k => [k.ad, yerAdi(k.yer)]));
+    // ilerleyince E2 Masa 2'ye geçecekti; sıranın son yerine (Joker 3) geçecek olan E8 onun yerini alır
+    expect(yer.E1).toBe("Masa 3");
+    expect(yer.E8).toBe("Masa 2");
+    expect(yer.E9).toBe("Masa 1");
+    expect(S.kisiler.some(k => k.ad === "E2")).toBe(false);
+    expect(S.gunler[0].masa.slice(0, 6).every(h => h.id)).toBe(true);
+  });
+
+  test("yeri girilmemiş eczacı ekstra joker olur (teknikerden önce)", () => {
+    const v = JSON.parse(JSON.stringify(veri));
+    v.staff.push({ id: 50, name: "Yeni", role: "eczaci" });
+    const g = onayHaftasiHesapla(v, 2026, 10, 11).gunler[2];   // 11 Kasım: E1–E4 yok
+    expect(g.masa[3]).toMatchObject({ ad: "Yeni" });
+    expect(g.masa.some(h => h?.tekniker)).toBe(false);
+  });
+
   test("yerleşim girilmeden önceki haftada liste yok", () => {
     expect(onayHaftasiHesapla(veri, 2026, 10, 2).yerlesim).toBe(null);
   });
