@@ -13,7 +13,7 @@ import { ayAnahtari, ayGunSayisi, AYLAR, CUMA, CUMARTESI, gunKaydir, haftaGunu, 
 /** acil nöbetine yazılabilir mi: acil servis personeli ya da "acilde nöbet tutar" işaretli eczacı / kemoterapi eczacısı */
 export const acilKadrosunda = (s: { role: string; acilTutar?: true }) => s.role === "servis" || ((s.role === "eczaci" || s.role === "nobetci") && !!s.acilTutar);
 /** günde acil nöbetçi sayısı */
-export const ACIL_GUNLUK = 2;
+const ACIL_GUNLUK = 2;
 
 /** amaç ağırlıkları (küçük daha iyi) */
 const W = { ardArda: 1000, ucBes: 500, eksik: 5000, hsFazla: 60, araIki: 3, toplam: 6, tur: 3, fm: 8, istemiyor: 20, istiyor: 1, esVar: 300, izinOnce: 200 };

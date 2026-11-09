@@ -64,6 +64,9 @@ function kisiGunImzasi(i: unknown): string {
 const teknikerSatirlari = (G: PuantajIzgarasi) => G.satirlar.filter(r => r.s.role === "teknisyen");
 
 /** servis hesabının bağlamı: veri, servis listesi, bugün (YYYYAAGG; öncesi geçmiş sayılır) */
+/** adım adım çalışan hesabı sonuna kadar çalıştırır */
+export function sonaKadar<T>(g: Generator<void, T>): T { for (;;) { const r = g.next(); if (r.done) return r.value; } }
+
 export class ServisMotoru {
   readonly servisler: Servis[];
   private readonly adla: Map<string, Servis>;
@@ -150,9 +153,13 @@ export class ServisMotoru {
 
   /** Ayın tüm mesai günlerini hesaplar. Denge ay içinde kurulur: her ay sıfırdan başlar, önceki ayların dağıtımı bu ayı
    *  etkilemez (eski uygulama aynı yılın önceki aylarını da birikime katıyordu). Dönüş: kayıt değişti mi. */
-  ayHesapla(y: number, m: number, opts: HesapSecenegi = {}): boolean {
+  ayHesapla(y: number, m: number, opts: HesapSecenegi = {}): boolean { return sonaKadar(this.ayHesaplaAdim(y, m, opts)); }
+  /** ayHesapla'nın adım adım hâli: dağıtılan her günden sonra durur (ekran donmasın diye parça parça çalıştırılabilir;
+   *  sonuç ayHesapla ile birebir aynı) */
+  *ayHesaplaAdim(y: number, m: number, opts: HesapSecenegi = {}): Generator<void, boolean> {
     const R = this.kayit(y, m, true), once = JSON.stringify(R);
     let G: PuantajIzgarasi; try { G = puantajIzgarasi(this.B, y, m); } catch { return false; }
+    yield;
     const dim = ayGunSayisi(y, m), bugun = this.bugun, cfg = this.ayarImzasi();
     const svcs = this.servisler.filter(s => s.on);
     const cum: Record<string, Birikim> = {}; let degisti = false;
@@ -187,6 +194,7 @@ export class ServisMotoru {
       else rec.z = eski.z;
       R.gun[d] = rec;
       this.birikimEkle(cum, rec);
+      yield;
     }
     return JSON.stringify(R) !== once;
   }

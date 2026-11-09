@@ -135,7 +135,7 @@
         <div class="secili-gorev"><b>{gunMetni(y, m, s1.gun)} · {gorevAdi(s1.kod)}</b><span>{ad(s1.id)}</span></div>
           <div class="adaylar-bas">Yerine {s1.kod === "H" ? "hazırlama yapabilecekler" : "tutabilecekler"}</div>
           <div class="adaylar" role="radiogroup" aria-label="Yerine tutacak kişi">
-            {#each adaylar as a, i (a.id)}
+            {#each adaylar as a (a.id)}
               <button class="aday" class:s={String(a.id) === yer} class:kot={!!a.engel} role="radio" aria-checked={String(a.id) === yer} onclick={() => (yer = String(a.id))}>
                 <span class="av" aria-hidden="true">{a.ad.split(" ").map(x => x[0]).join("").slice(0, 2).toLocaleUpperCase("tr")}</span>
                 <b>{a.ad}</b>

@@ -1,7 +1,7 @@
 // Servis hazırlama: motorun (src/motor/servis) hesapladığı ay kayıtlarını ve servis ayarlarını saklar.
 // Motor verinin kopyasıyla çalışır; burada yalnız değişen ay kaydı depo.veri.servisKayit'e yazılır.
 import { depo, duzKopya, veriAnlik } from "./depo.svelte";
-import { servisAyHesapla, servisIslem, servisListesi, servisYillik } from "../motor";
+import { servisAyHesaplaAdim, servisIslem, servisListesi, servisYillikAdim } from "../motor";
 import type { ServisAyKaydi } from "./tipler";
 
 export type ServisIslemi =
@@ -15,9 +15,9 @@ export type ServisIslemi =
 export interface ServisBilgisi { id: number; name: string; z: number; h: number; multi: boolean; on: boolean; z0: number; h0: number; multi0: boolean; ekstra: boolean; yb: boolean; zor: boolean; grup: boolean }
 
 const anahtar = (y: number, m: number) => `${y}-${m}`;
+// motor girdiyi kopyalayarak çalışır: uzun hesaplara paylaşılan anlık kopya (veriAnlik) doğrudan verilir
 const kopya = () => duzKopya(depo.veri);
 
-/** Ayın dağıtımını puantaja ve ayarlara göre günceller; değiştiyse kaydeder. */
 // Ayın dağıtımı pahalıdır (telefonda yarım saniyeyi geçer): veri değişmediyse (paylaşılan anlık kopya aynıysa) son sonuç
 // yeniden kullanılır; sekme her açıldığında baştan hesaplanmaz.
 let son: { v: object; y: number; m: number; r: { cizelgeVar: boolean; kayitVar: boolean } } | null = null;
@@ -25,16 +25,38 @@ let son: { v: object; y: number; m: number; r: { cizelgeVar: boolean; kayitVar: 
 export function servisAyiOnbellekte(y: number, m: number): { cizelgeVar: boolean; kayitVar: boolean } | null {
   return son && son.v === veriAnlik() && son.y === y && son.m === m ? son.r : null;
 }
-export function servisAyiniGuncelle(y: number, m: number): { cizelgeVar: boolean; kayitVar: boolean } {
-  const v = veriAnlik();
-  if (son && son.v === v && son.y === y && son.m === m) return son.r;
-  const r = servisAyHesapla(kopya(), y, m, {}) as { cizelgeVar: boolean; kayit: ServisAyKaydi | null; degisti: boolean; sil?: boolean };
+type AySonucu = { cizelgeVar: boolean; kayit: ServisAyKaydi | null; degisti: boolean; sil?: boolean };
+function aySonucunuIsle(y: number, m: number, r: AySonucu) {
   if (r.sil) delete depo.veri.servisKayit[anahtar(y, m)];
   else if (r.degisti && r.kayit) depo.veri.servisKayit[anahtar(y, m)] = r.kayit;
   const sonuc = { cizelgeVar: r.cizelgeVar, kayitVar: !!depo.veri.servisKayit[anahtar(y, m)] };
   // kayıt yazıldıysa anlık kopya yenilenir; yeni kopya bu sonucun karşılığıdır (yeniden hesap aynı kaydı verir)
   son = { v: veriAnlik(), y, m, r: sonuc };
   return sonuc;
+}
+
+/** Adım adım hesabı küçük dilimlerle çalıştırır; dilimler arasında ekran çizilir ve dokunuşlar yanıtlanır (donma olmaz). */
+function parcaParca<T>(g: Generator<void, T>, dilimMs = 30): Promise<T> {
+  return new Promise((coz, reddet) => {
+    const adim = () => {
+      try {
+        const t0 = performance.now();
+        for (;;) { const r = g.next(); if (r.done) { coz(r.value); return; } if (performance.now() - t0 > dilimMs) break; }
+        setTimeout(adim, 0);
+      } catch (e) { reddet(e); }
+    };
+    setTimeout(adim, 0);
+  });
+}
+/** Ayın dağıtımını puantaja ve ayarlara göre günceller, değiştiyse kaydeder. Ekranı dondurmaz: hesap küçük parçalar
+ *  hâlinde yapılır; hesap sürerken veri değişirse yeniden hesaplanır. */
+export async function servisAyiniArkadaGuncelle(y: number, m: number): Promise<{ cizelgeVar: boolean; kayitVar: boolean }> {
+  for (;;) {
+    const v = veriAnlik();
+    if (son && son.v === v && son.y === y && son.m === m) return son.r;
+    const r = await parcaParca(servisAyHesaplaAdim(v, y, m, {}) as Generator<void, AySonucu>);
+    if (veriAnlik() === v) return aySonucunuIsle(y, m, r);
+  }
 }
 
 export function servisIslemYap(y: number, m: number, islem: ServisIslemi) {
@@ -66,16 +88,21 @@ export interface ServisYilRaporu {
   kisi: { id: number; ad: string; ay: ({ gun: number; w: number; l: number } | null)[]; gun: number; l: number; fl: number; w: number; y: number; adet: number; sapma: number }[];
   matris: { servisler: { sn: string; grup: "yb" | "cok" | "tek"; say: Record<string, number>; pay: Record<string, number> }[]; gun: Record<string, number> };
 }
-/** Yılın raporu: önce çizelgesi olan ayların dağıtımı güncellenir ve kaydedilir */
 // yıllık rapor da aynı veri ve yıl için bir kez hesaplanır (sekmeye yeniden girince bekletmez)
 let sonYil: { v: object; yil: number; r: ServisYilRaporu } | null = null;
 export function servisYilRaporuOnbellekte(yil: number): ServisYilRaporu | null {
   return sonYil && sonYil.v === veriAnlik() && sonYil.yil === yil ? sonYil.r : null;
 }
-export function servisYilRaporu(yil: number): ServisYilRaporu {
-  const hazir = servisYilRaporuOnbellekte(yil); if (hazir) return hazir;
-  const r = servisYillik(kopya(), yil) as ServisYilRaporu & { kayitlar: Record<string, ServisAyKaydi | null> };
+function yilSonucunuIsle(yil: number, r: ServisYilRaporu & { kayitlar: Record<string, ServisAyKaydi | null> }): ServisYilRaporu {
   for (const [k, v] of Object.entries(r.kayitlar)) { if (v) depo.veri.servisKayit[k] = v; else delete depo.veri.servisKayit[k]; }
   sonYil = { v: veriAnlik(), yil, r };
   return r;
+}
+/** Yılın raporu (ekranı dondurmadan): çizelgesi olan ayların dağıtımı güncellenir ve kaydedilir */
+export async function servisYilRaporuArkada(yil: number): Promise<ServisYilRaporu> {
+  for (;;) {
+    const v = veriAnlik(), hazir = servisYilRaporuOnbellekte(yil); if (hazir) return hazir;
+    const r = await parcaParca(servisYillikAdim(v, yil) as Generator<void, ServisYilRaporu & { kayitlar: Record<string, ServisAyKaydi | null> }>);
+    if (veriAnlik() === v) return yilSonucunuIsle(yil, r);
+  }
 }

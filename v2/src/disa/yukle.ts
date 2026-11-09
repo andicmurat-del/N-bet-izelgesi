@@ -1,5 +1,6 @@
-// Çıktı paketini (PDF / Excel) ilk kullanımda yükler. Paket derlemede ayrı bir betik olarak hazırlanır ve metin olarak
-// gömülür (vite.config.ts: virtual:cikti-paketi); ilk istekte sayfaya eklenip çalıştırılır, sonra önbellekte kalır.
+// Çıktı paketini (PDF / Excel) ilk kullanımda yükler. Paket derlemede ayrı bir betik olarak hazırlanır ve sayfaya
+// çalıştırılmayan bir betik bloğu (#cikti-paketi) olarak gömülür (vite.config.ts); ilk istekte çalıştırılır, sonra
+// önbellekte kalır. Geliştirme sunucusunda kod içe aktarılan metinden gelir.
 import kod from "virtual:cikti-paketi";
 
 type Paket = typeof import("./paket");
@@ -9,7 +10,7 @@ export function ciktiPaketi(): Promise<Paket> {
   yukleniyor ??= new Promise<Paket>((tamam, hata) => {
     try {
       const s = document.createElement("script");
-      s.textContent = kod;
+      s.textContent = document.getElementById("cikti-paketi")?.textContent || kod;
       document.head.appendChild(s);
       s.remove();
       const p = (globalThis as unknown as { __ciktiPaketi?: Paket }).__ciktiPaketi;

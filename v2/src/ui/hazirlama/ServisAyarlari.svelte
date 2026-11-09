@@ -45,7 +45,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
 <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Servis listesi">
   <table>
-    <thead><tr><th class="sol" scope="col">Servis</th><th scope="col">Zorluk</th><th scope="col">Hasta</th><th scope="col">Çok günlük</th><th scope="col">Günlük yük</th><th scope="col"><span class="gizli">İşlem</span></th></tr></thead>
+    <thead><tr><th class="sol" scope="col">Servis</th><th scope="col">Zorluk</th><th scope="col">Hasta</th><th scope="col">Çok günlük</th><th scope="col">Günlük yük</th><th scope="col"><span class="gizli-yazi">İşlem</span></th></tr></thead>
     <tbody>
       {#each gorunen as s (s.name)}
         <tr class:kapali={!s.on}>
@@ -96,7 +96,6 @@
   .etk.zor { color: var(--haz); }
   tr.kapali th, tr.kapali td { color: var(--soluk); }
   tr.kapali .ad { text-decoration: line-through; }
-  .gizli { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .yeni { padding: 0 var(--b4) var(--b4); margin-top: var(--b4); display: grid; gap: var(--b3); }
   .yeni h2 { font-size: var(--f-lg); }
   .alanlar { display: flex; flex-wrap: wrap; gap: var(--b3); align-items: flex-end; }

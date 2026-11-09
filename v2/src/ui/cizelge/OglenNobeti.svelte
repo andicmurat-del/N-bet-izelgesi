@@ -67,7 +67,6 @@
   const SIRA: Partial<Record<Rol, number>> = { eczaci: 0, teknisyen: 1 };
   const ozet = $derived(kisiler.slice().sort((a, b) => (SIRA[a.role] ?? 9) - (SIRA[b.role] ?? 9) || a.name.localeCompare(b.name, "tr"))
     .map(k => ({ k, ...(yillik[k.id] ?? { top: 0, cuma: 0, ay: 0, ayCuma: 0 }) })));
-  const ROL_KISA: Partial<Record<Rol, string>> = { eczaci: "eczacı", teknisyen: "tekniker" };
 
   // elle düzenleme: bir güne dokunulur, eczacı ve tekniker yerleri seçilir; bu gün otomatik oluşturmada korunur
   let acik = $state(false), gun = $state(1), se = $state<string[]>([]), st = $state<string[]>([]);
@@ -196,7 +195,7 @@
           <p class="lejant"><span><b class="nb">N</b> o günün nöbetçisi</span><span><span class="elle-ornek">Ad</span> elle yazıldı</span><span>Değiştirmek için hücreye dokunun</span></p></div>
         <div class="tablo-kap">
           <table class="form">
-            <thead><tr><th class="yer"></th>{#each haftaGunleri as d (d)}<th class:cuma={haftaGunu(y, m, d) === 4} class:bugun={bugunMu(d)}>{d} {AYLAR[m]}<small>{GUN_UZUN[haftaGunu(y, m, d)]}</small></th>{/each}</tr></thead>
+            <thead><tr><th class="yer"><span class="gizli-yazi">Yer</span></th>{#each haftaGunleri as d (d)}<th class:cuma={haftaGunu(y, m, d) === 4} class:bugun={bugunMu(d)}>{d} {AYLAR[m]}<small>{GUN_UZUN[haftaGunu(y, m, d)]}</small></th>{/each}</tr></thead>
             <tbody>
               {#each satirlar as r (r.g + r.i)}
                 <tr class={r.g}>

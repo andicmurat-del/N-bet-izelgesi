@@ -8,10 +8,10 @@
   import IslemAlani from "../ortak/IslemAlani.svelte";
   import Ikon from "../ortak/Ikon.svelte";
 
-  // gomulu: Günlük Eczane / Acil Eczane sayfasının alt sekmesi olarak; kimler: listelenecek kişiler (o kadronun
+  // kimler: listelenecek kişiler (o kadronun
   // nöbet tutanları); onayKilidi: eczane çizelgesi onaylıysa işaretler kilitlensin mi (acil listesinde onay yok)
-  let { git, gomulu = false, kimler = () => true, onayKilidi = true }: {
-    git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; gomulu?: boolean; kimler?: (k: Kisi) => boolean; onayKilidi?: boolean;
+  let { git, kimler = () => true, onayKilidi = true }: {
+    git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; kimler?: (k: Kisi) => boolean; onayKilidi?: boolean;
   } = $props();
 
   type Mod = "kisi" | "tatil";

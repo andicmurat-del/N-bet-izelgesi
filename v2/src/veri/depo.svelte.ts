@@ -63,8 +63,9 @@ export function veriyiDogrula(ham: unknown): Veri {
     }));
   const tercihler: Tercih[] = ["izinli", "want", "avoid", "esVar", "esYok"];
   for (const [k, t] of Object.entries(nesne(o.prefs))) if (tercihler.includes(t)) v.prefs[k] = t;
-  for (const k of Object.keys(nesne(o.manualTatil))) v.manualTatil[k] = true;
-  for (const k of Object.keys(nesne(o.arife))) v.arife[k] = true;
+  // yalnız işaretli günler (eski kayıtlarda kaldırılan işaret false olarak durabilir)
+  for (const [k, x] of Object.entries(nesne(o.manualTatil))) if (x) v.manualTatil[k] = true;
+  for (const [k, x] of Object.entries(nesne(o.arife))) if (x) v.arife[k] = true;
   const s = nesne(o.settings);
   const sayi = (x: unknown, a: number, b: number, vars: number) => (x !== null && x !== "" && Number.isFinite(Number(x)) && Number(x) >= a && Number(x) <= b ? Number(x) : vars);
   v.settings = {
@@ -116,7 +117,8 @@ export function veriyiDogrula(ham: unknown): Veri {
       .map((p: any) => ({ id: p.id, name: String(p.name ?? ""), role: roller.includes(p.role) ? p.role : "eczaci" }));
     v.schedules[k] = {
       year: c.year, month: c.month,
-      days: c.days.map((g: unknown, i: number) => {
+      // Array.from: dizide eksik (silinmiş) gün de boş gün olarak kurulur (map boşlukları atlardı)
+      days: Array.from({ length: c.days.length }, (_, i: number) => c.days[i]).map((g: unknown, i: number) => {
         const x = nesne(g);
         return { day: i + 1, tatil: x.tatil === true, conflict: x.conflict === true, fazlaMesai: Number.isFinite(Number(x.fazlaMesai)) ? Number(x.fazlaMesai) : 0,
           assigned: gorevli(x.assigned), prep: gorevli(x.prep), locked: x.locked === true };
@@ -518,7 +520,6 @@ export function puantajKoduAyarla(y: number, m: number, id: number, gun: number,
 export const puantajElleKodu = (y: number, m: number, id: number, gun: number): PuantajKodu | undefined => depo.veri.puantaj[ayAnahtari(y, m)]?.[id]?.[gun];
 
 // ---------- ay içi sayımlar ----------
-export { ayOzeti, type KisiAyOzeti } from "./ozet";
 
 /** Ayda çalışan (başlangıç–bitiş aralığı ayla kesişen) kişiler */
 export function aydaCalisanlar(y: number, m: number): Kisi[] {

@@ -7,18 +7,12 @@ export interface OlusturmaSonucu { days: Gun[] | null; warnings: string[] }
 // Bazı gömülü sayfalar (claude.ai artifact görünümü gibi) arka plan işçisini engeller; bir kez engellenince bir daha denenmez.
 let isciEngelli = false;
 
-/** İşçi açılamazsa aynı hesap sayfanın kendisinde yapılır; bu sırada ekran birkaç saniye donabilir. */
-function sayfadaOlustur(veri: Veri, yil: number, ay: number, varyasyon: number): Promise<OlusturmaSonucu> {
-  return new Promise((coz, reddet) => setTimeout(() => {
-    try { coz(cizelgeOlustur(veri, yil, ay, { varyasyon })); } catch (e) { reddet(e); }
-  }, 30));   // "hazırlanıyor" yazısı ekrana çizilsin diye kısa bekleme
-}
-
-/** Ayın çizelgesini arka planda oluşturur. veri düz bir kopya olmalı (veriAnlik). */
-export function arkaPlandaOlustur(veri: Veri, yil: number, ay: number, varyasyon = 0): Promise<OlusturmaSonucu> {
-  if (isciEngelli) return sayfadaOlustur(veri, yil, ay, varyasyon);
+/** İşçide bir hesap: açılamazsa (engelli sayfa) aynı hesap sayfada yapılır. */
+function isciyle<T>(mesaj: object, sayfada: () => T): Promise<T> {
+  const yedek = () => new Promise<T>((coz, reddet) => setTimeout(() => { try { coz(sayfada()); } catch (e) { reddet(e); } }, 30));
+  if (isciEngelli) return yedek();
   let isci: Worker;
-  try { isci = new Isci(); } catch { isciEngelli = true; return sayfadaOlustur(veri, yil, ay, varyasyon); }
+  try { isci = new Isci(); } catch { isciEngelli = true; return yedek(); }
   return new Promise((coz, reddet) => {
     isci.onmessage = (e: MessageEvent) => {
       isci.terminate();
@@ -30,8 +24,14 @@ export function arkaPlandaOlustur(veri: Veri, yil: number, ay: number, varyasyon
       e.preventDefault();
       isci.terminate();
       isciEngelli = true;
-      sayfadaOlustur(veri, yil, ay, varyasyon).then(coz, reddet);
+      yedek().then(coz, reddet);
     };
-    isci.postMessage({ veri, yil, ay, varyasyon });
+    isci.postMessage(mesaj);
   });
 }
+
+/** Ayın çizelgesini arka planda oluşturur. veri düz bir kopya olmalı (veriAnlik). */
+export function arkaPlandaOlustur(veri: Veri, yil: number, ay: number, varyasyon = 0): Promise<OlusturmaSonucu> {
+  return isciyle({ veri, yil, ay, varyasyon }, () => cizelgeOlustur(veri, yil, ay, { varyasyon }) as OlusturmaSonucu);
+}
+

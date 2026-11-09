@@ -179,7 +179,7 @@ function kisiYillik(V: YilVerisi, id: number) {
 
 type DengeAnahtari = "nobet" | "pe" | "cu" | "cmt" | "paz" | "prep" | "rt" | "fm";
 /** yıllık denge sütunları */
-export const DENGE_KOL: { k: DengeAnahtari; t: string; saat?: boolean }[] = [
+const DENGE_KOL: { k: DengeAnahtari; t: string; saat?: boolean }[] = [
   { k: "nobet", t: "Nöbet sayısı" }, { k: "pe", t: "Perşembe" }, { k: "cu", t: "Cuma" }, { k: "cmt", t: "Cumartesi" }, { k: "paz", t: "Pazar" },
   { k: "prep", t: "Hazırlama" }, { k: "rt", t: "Resmi tatil" }, { k: "fm", t: "Fazla mesai", saat: true },
 ];

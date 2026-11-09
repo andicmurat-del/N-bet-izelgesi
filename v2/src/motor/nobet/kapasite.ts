@@ -9,7 +9,7 @@ import type { AramaKurulumu } from "./kurulum";
 
 /** Kişinin müsait günlerinde (av) kurallara uyan en çok görev sayısı: görevler bitişik günlere düşmez, nöbetlerde
  *  5 günde 3 nöbet (x, x+2, x+4) olmaz. hazirlamaDa: tatil günlerinde hazırlama da sayılır. */
-export function enCokGorev(av: boolean[], tatil: boolean[], hazirlamaDa: boolean): number {
+function enCokGorev(av: boolean[], tatil: boolean[], hazirlamaDa: boolean): number {
   // durum: son 4 günün görevi, 2'şer bit (en düşük bitler dün): 0 boş, 1 nöbet, 2 hazırlama
   let dp = new Map<number, number>([[0, 0]]);
   for (let d = 0; d < av.length; d++) {

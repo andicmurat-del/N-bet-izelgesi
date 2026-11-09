@@ -3,12 +3,16 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import { build, type Plugin } from "vite";
 
-// Çıktı paketi (PDF / Excel: jsPDF ve gömülü yazı tipi) ayrı derlenir ve ana pakete metin olarak gömülür; ilk çıktı
-// isteğinde çalıştırılır (src/disa/yukle.ts). Böylece açılışta yüzlerce KB kod çözümlenmez.
+// Çıktı paketi (PDF / Excel: jsPDF ve gömülü yazı tipi) ayrı derlenir; ilk çıktı isteğinde çalıştırılır
+// (src/disa/yukle.ts). Derlemede HTML'e çalıştırılmayan bir <script type="text/plain"> olarak eklenir: tarayıcı açılışta
+// bu yarım MB'lık kodu ne çözümler ne de ana betiğin içinde dizgi olarak taşır. Geliştirme sunucusunda metin olarak
+// içe aktarılır.
 function ciktiPaketi(): Plugin {
   const ID = "virtual:cikti-paketi", RID = "\0" + ID;
+  let derleme = false, kod = "";
   return {
     name: "cikti-paketi",
+    configResolved: c => { derleme = c.command === "build"; },
     resolveId: id => (id === ID ? RID : null),
     async load(id) {
       if (id !== RID) return null;
@@ -21,9 +25,13 @@ function ciktiPaketi(): Plugin {
         },
       });
       const cikti = (Array.isArray(r) ? r[0] : r) as { output: { type: string; code?: string }[] };
-      const kod = cikti.output.find(o => o.type === "chunk")!.code!;
       // HTML içine gömüleceği için "</script" kaçırılır (JS'de <\/script aynı anlama gelir)
-      return "export default " + JSON.stringify(kod.replace(/<\/(script)/gi, "<\\/$1"));
+      kod = cikti.output.find(o => o.type === "chunk")!.code!.replace(/<\/(script)/gi, "<\\/$1");
+      return "export default " + JSON.stringify(derleme ? "" : kod);
+    },
+    transformIndexHtml: {
+      order: "post",
+      handler: html => (derleme && kod ? html.replace("</body>", () => `<script type="text/plain" id="cikti-paketi">${kod}</script></body>`) : html),
     },
   };
 }

@@ -218,11 +218,11 @@
   {#if gorunum === "raporlar"}
     <Raporlar bolum="gunluk" />
   {:else if gorunum === "hazirlama"}
-    <Hazirlama {git} gomulu />
+    <Hazirlama {git} />
   {:else if gorunum === "puantaj"}
-    <Puantaj {git} gomulu kimler={k => !acilKadrosunda(k)} />
+    <Puantaj {git} kimler={k => !acilKadrosunda(k)} />
   {:else if gorunum === "izinler"}
-    <Izinler {git} gomulu kimler={k => !acilKadrosunda(k)} />
+    <Izinler {git} kimler={k => !acilKadrosunda(k)} />
   {:else if gorunum === "onay"}
     <OnayListesi />
   {:else if gorunum === "oglen"}
@@ -303,7 +303,8 @@
                 <input type="search" bind:value={ara} placeholder="Ad ara" aria-label="Ad ara" />
               </div>
             </div>
-            <div class="tablo-kap">
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin) -->
+            <div class="tablo-kap" tabindex="0" role="region" aria-label="Nöbet listesi tablosu">
               <table class="tablo liste">
                 <thead><tr><th>Tarih</th><th>Gün</th><th>Nöbetçi eczacı</th><th>Nöbetçi tekniker</th><th>Hazırlama 1</th><th>Hazırlama 2</th><th>Durum</th></tr></thead>
                 <tbody>

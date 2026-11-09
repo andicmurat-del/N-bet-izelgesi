@@ -15,7 +15,7 @@
   --lacivert: #0E4A58;
   --serit: #08333F;
   --acik-mavi: #6CC4CF;
-  --baglanti: #0C7F8D;
+  --baglanti: #0A727F;
   --nobet-hucre: #1B6B7B;
   --altin: #D4A537;
   --secili-satir: #FFF5D1;    /* seçili satır (sarı) */
@@ -27,13 +27,13 @@
   --soluk: #566A70;
   /* görevler */
   --ecz: #0E4A58;
-  --tek: #0C7F8D;          --tek-zemin: #DDF1F3;
+  --tek: #0A727F;          --tek-zemin: #DDF1F3;
   --haz: #7A4300;          --haz-zemin: #FBE8C8;
   --destek: #5E6B75;
   --acil: #8A2B62;         --acil-zemin: #F7E7F0;
   /* tercih işaretleri */
   --izin: #3F4B57;         --izin-zemin: #E8ECF1;
-  --ister: #0C7F8D;        --ister-zemin: #DDF1F3;
+  --ister: #0A727F;        --ister-zemin: #DDF1F3;
   --istemez: #8A4B00;      --istemez-zemin: #FBE8C8;
   --es: #0E4A58;           --es-zemin: #E3EEF0;
   --esyok: #8A4A12;        --esyok-zemin: #F7EADD;
@@ -41,11 +41,11 @@
   --tatil: #0E4A58;        --tatil-zemin: #ECF4F6;
   --arife: #6B4300;        --arife-zemin: #FFF8EA;
   /* etkin eylem ve durum */
-  --vurgu: #0C7F8D;        --vurgu-koyu: #0A6A76;   --vurgu-yazi: #FFFFFF;   --vurgu-zemin: #DDF1F3;
+  --vurgu: #0A727F;        --vurgu-koyu: #085E69;   --vurgu-yazi: #FFFFFF;   --vurgu-zemin: #DDF1F3;
   --hata: #B3261E;         --hata-zemin: #FDF1F0;
   --dikkat: #6B4300;       --dikkat-zemin: #FFF8EA;
-  --bilgi: #0C7F8D;        --bilgi-zemin: #EAF6F7;
-  --odak: #0C7F8D;
+  --bilgi: #0A727F;        --bilgi-zemin: #EAF6F7;
+  --odak: #0A727F;
   --golge: 0 1px 2px rgba(10, 52, 62, .05), 0 8px 20px -12px rgba(10, 52, 62, .16);
   --golge-kucuk: 0 1px 2px rgba(10, 52, 62, .06);
   --perde: rgba(6, 36, 44, .5);
@@ -199,3 +199,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--vurgu); }
 .isaret.servis { border-radius: 2px; background: var(--acil); transform: rotate(45deg) scale(.85); }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* yalnız ekran okuyucuya görünen yazı */
+.gizli-yazi { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

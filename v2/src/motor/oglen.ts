@@ -37,7 +37,7 @@ export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: numbe
 export interface OglenSonucu { gunler: OglenGunSonucu[]; uyarilar: string[] }
 
 /** öğlen nöbeti yazılan günler: hafta içi, resmi tatil ve arife değil */
-export function oglenGunuMu(B: Baglam, y: number, m: number, d: number): boolean {
+function oglenGunuMu(B: Baglam, y: number, m: number, d: number): boolean {
   return haftaGunu(y, m, d) <= CUMA && !B.tatilMi(y, m, d) && !B.arifeMi(y, m, d);
 }
 
@@ -194,7 +194,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
     const ilkSerbest = sabit[g].map(l => l.length);
     // bu ayın payı: yerler kişinin yazılabildiği günlere göre bölünür (izinli günler paydan düşer)
     const havuzId = havuz.map(s => s.id), gunAday = gunler.map((_, i) => [...new Set([...mevcutG[g][i], ...sabit[g][i]])]);
-    const pay = aylikPay(havuzId, new Set(havuz.filter(s => s.cumaMuaf).map(s => s.id)), gunler.map((x, i) => ({ aday: gunAday[i], yer: gerek[g][i], cuma: cumaMi[i], hafta: haftaNo[i] })), {});
+    const pay = aylikPay(havuzId, new Set(havuz.filter(s => s.cumaMuaf).map(s => s.id)), gunler.map((_, i) => ({ aday: gunAday[i], yer: gerek[g][i], cuma: cumaMi[i], hafta: haftaNo[i] })), {});
     // haftada iki payı için: o hafta en az iki gün kadroda olanlar
     const ikiYazilabilir: number[][] = [];
     for (let h = 0; h <= sonHafta; h++) {

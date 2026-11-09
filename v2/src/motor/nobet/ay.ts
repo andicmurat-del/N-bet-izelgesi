@@ -26,7 +26,7 @@ export interface AyBilgisi {
 export interface EsDurumu { secilen: Kisi[]; dusen: Kisi[] }
 
 /** yıl içinde (önceki aylarda) kişinin eş durumu isteğinin karşılandığı gün sayısı */
-export function esKarsilanan(B: Baglam, y: number, m: number): Record<number, number> {
+function esKarsilanan(B: Baglam, y: number, m: number): Record<number, number> {
   const k: Record<number, number> = {};
   for (let mm = 0; mm < m; mm++) {
     const sc = B.dengeCizelgesi(y, mm);
@@ -37,7 +37,7 @@ export function esKarsilanan(B: Baglam, y: number, m: number): Record<number, nu
 
 /** Bir günün eş durumu istekleri. Hepsi birlikte yazılamıyorsa (günde 2 nöbetçi, en az 1 eczacı) yıl içinde eş durumu isteği
  *  daha az karşılanan seçilir, diğerine uyarı verilir: ör. iki tekniker aynı gün isterse biri yazılır, öbür yer eczacının. */
-export function esDurumuSec(B: Baglam, y: number, m: number, d: number, kadro: Kisi[], karsilanan: Record<number, number>): EsDurumu {
+function esDurumuSec(B: Baglam, y: number, m: number, d: number, kadro: Kisi[], karsilanan: Record<number, number>): EsDurumu {
   const istek = kadro.filter(s => B.tercih(s.id, y, m, d) === "esVar" && aktifGunMu(s, y, m, d));
   if (istek.length <= 1) return { secilen: istek, dusen: [] };
   const sirali = istek.slice().sort((a, b) => (karsilanan[a.id] || 0) - (karsilanan[b.id] || 0) || a.id - b.id);
