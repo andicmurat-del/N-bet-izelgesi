@@ -1,5 +1,5 @@
 // Onay listesi masaları: haftalık PDF (A4 yatay; satırlarda haftanın günleri, sütunlarda masalar ve jokerler).
-// Resmi çıktı: adlar büyük harf; jokerin / teknikerin kimin yerine oturduğu hücrede ikinci satırda.
+// Resmi çıktı: adlar büyük harf; joker / teknikerin eksik masaya oturduğu hücre renkli.
 import { autoTable } from "jspdf-autotable";
 import { yeniPdf } from "./pdfOrtak";
 import { buyukAd } from "../veri/tarih";
@@ -11,7 +11,7 @@ export interface OnayCiktiVerisi {
   /** sütun başlıkları (ör. "Pazartesi 9 Kasım"); tatil: o gün liste yok */
   gunler: { baslik: string; tatil: boolean }[];
   /** yerler (tabloda sütun): yer adı ve gün gün hücre (ad, açıklama) */
-  satirlar: { yer: string; hucre: { ad: string; not?: string; bos?: boolean }[] }[];
+  satirlar: { yer: string; hucre: { ad: string; not?: string; bos?: boolean; yerine?: boolean }[] }[];
   notlar: string[];
 }
 
@@ -36,7 +36,7 @@ export function onayPdf(v: OnayCiktiVerisi): Blob {
       if (h.column.index === 0) return;
       const c = v.satirlar[h.column.index - 1].hucre[h.row.index];
       if (c?.bos) { h.cell.styles.fillColor = [253, 226, 226]; h.cell.styles.textColor = [160, 30, 30]; h.cell.styles.fontStyle = "bold"; }
-      else if (c?.not?.includes("yerine")) h.cell.styles.fillColor = [255, 246, 222];
+      else if (c?.yerine) h.cell.styles.fillColor = [255, 246, 222];
     },
   });
   const H = doc.internal.pageSize.getHeight();

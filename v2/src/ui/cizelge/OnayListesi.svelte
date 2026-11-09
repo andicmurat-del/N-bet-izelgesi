@@ -64,7 +64,7 @@
       const { onayPdf } = await ciktiPaketi();
       const g = H.gunler;
       const satirlar = [
-        ...Array.from({ length: 7 }, (_, i) => ({ yer: `Masa ${i + 1}`, hucre: g.map(x => ({ ad: x.masa[i]?.ad ?? "", not: x.masa[i]?.not, bos: !x.tatil && i < 6 && !x.masa[i]?.id })) })),
+        ...Array.from({ length: 7 }, (_, i) => ({ yer: `Masa ${i + 1}`, hucre: g.map(x => ({ ad: x.masa[i]?.ad ?? "", yerine: !!x.masa[i]?.not?.includes("yerine"), bos: !x.tatil && i < 6 && !x.masa[i]?.id })) })),
         ...Array.from({ length: jokerSatir }, (_, i) => ({ yer: `Joker ${i + 1}`, hucre: g.map(x => ({ ad: x.joker[i]?.ad ?? "", not: x.joker[i]?.not })) })),
       ];
       const blob = onayPdf({
@@ -135,7 +135,7 @@
                   {#each Array.from({ length: 7 }, (_, i) => i) as i}
                     {@const h = g.masa[i]}
                     {#if !h?.id}<td class:bos={i < 6} class:ek={i === 6}>{i < 6 ? "Boş" : "–"}</td>
-                    {:else}<td class:yerine={!!h.not?.includes("yerine")} class:ek={i === 6}><b>{h.ad}</b>{#if h.not}<small>{h.not}</small>{/if}</td>{/if}
+                    {:else}<td class:yerine={!!h.not?.includes("yerine")} class:ek={i === 6} title={h.not}><b>{h.ad}</b></td>{/if}
                   {/each}
                   {#each Array.from({ length: jokerSatir }, (_, i) => i) as i}
                     {@const h = g.joker[i]}
