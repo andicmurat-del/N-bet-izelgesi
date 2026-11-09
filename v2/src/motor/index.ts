@@ -23,7 +23,7 @@ import { oglenOlustur, oglenOnarimlari, oglenYillik } from "./oglen";
 import { onayHaftasi, pazartesi } from "./onayMasa";
 import { puantajIzgarasi } from "./puantaj";
 import { acilAdaylari, acilDenetle as acilDenetimi, acilOglenRaporu, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
-import { ServisMotoru, type HesapSecenegi } from "./servis/ay";
+import { ServisMotoru, sonaKadar, type AyKaydi, type HesapSecenegi } from "./servis/ay";
 import { ybMi, zorMu } from "./servis/liste";
 import { tarihNo } from "./takvim";
 
@@ -31,8 +31,8 @@ export { AGIRLIK, FM_MAX_FARK, AYAR_VARSAYILAN } from "./sabitler";
 export { PUANTAJ_KODLARI } from "./puantaj";
 export { uyariSiniflandir } from "./raporlar";
 export { OGLEN_GEREK, oglenGrubu } from "./oglen";
-export { ACIL_GUNLUK, acilKadrosunda } from "./acil";
-export { onayDongusu, onayEczacisi, yerAdi, type Yer, type OnayHaftasi, type OnayGunu, type OnayHucre } from "./onayMasa";
+export { acilKadrosunda } from "./acil";
+export { onayDongusu, yerAdi, type Yer, type OnayHaftasi, type OnayGunu, type OnayHucre } from "./onayMasa";
 export { ZOR_ESIK as SERVIS_ZOR_ESIK } from "./servis/liste";
 export type { CizelgeSonucu } from "./nobet/olustur";
 
@@ -121,11 +121,16 @@ export function servisListesi(veri: unknown) {
 
 /** Ayın dağıtımını günceller → {cizelgeVar, kayit (ayın kaydı ya da null), degisti, sil (çizelgesi silinen ayın kaydı silinmeli)} */
 export function servisAyHesapla(veri: unknown, y: number, m: number, opts: HesapSecenegi | null | undefined, bugun?: number) {
+  return sonaKadar(servisAyHesaplaAdim(veri, y, m, opts, bugun));
+}
+/** servisAyHesapla'nın adım adım hâli (her dağıtılan günden sonra durur; ekran donmadan parça parça çalıştırılır) */
+export function* servisAyHesaplaAdim(veri: unknown, y: number, m: number, opts: HesapSecenegi | null | undefined, bugun?: number): Generator<void, { cizelgeVar: boolean; kayit: AyKaydi | null; degisti: boolean; sil?: boolean }> {
   const S = servisMotoru(veri, bugun);
+  yield;   // verinin kopyası alındı; ekran bir kare çizilebilir
   opts = opts || {};
   if (!S.cizelgeVar(y, m)) return { cizelgeVar: false, kayit: null, degisti: false, sil: !!S.B.servisKayit[y + "-" + m] && !S.gecmisAy(y, m) };
   if (!opts.zorla && !S.otoHesaplanir(y, m)) return { cizelgeVar: true, kayit: S.kayitKopyasi(y, m), degisti: false };
-  const degisti = S.ayHesapla(y, m, opts);
+  const degisti = yield* S.ayHesaplaAdim(y, m, opts);
   return { cizelgeVar: true, kayit: S.kayitKopyasi(y, m), degisti };
 }
 
@@ -194,14 +199,16 @@ export function servisAtamaAdaylari(veri: unknown, y: number, m: number, d: numb
 
 /** Yılın servis raporu. Önce çizelgesi olan ayların dağıtımı güncellenir; dönüşte güncellenen kayıtlar (kayitlar) ve
  *  rapor verisi: kişi başı aylık yük, servis × kişi dağılımı. */
-export function servisYillik(veri: unknown, yil: number, bugun?: number) {
+export function servisYillik(veri: unknown, yil: number, bugun?: number) { return sonaKadar(servisYillikAdim(veri, yil, bugun)); }
+/** servisYillik'in adım adım hâli */
+export function* servisYillikAdim(veri: unknown, yil: number, bugun?: number) {
   const S = servisMotoru(veri, bugun);
   const kayitlar: Record<string, unknown> = {};
   for (let mm = 0; mm < 12; mm++) {
     const k = yil + "-" + mm;
     if (!S.cizelgeVar(yil, mm)) { if (S.B.servisKayit[k] && !S.gecmisAy(yil, mm)) { delete S.B.servisKayit[k]; kayitlar[k] = null; } continue; }
     if (!S.otoHesaplanir(yil, mm)) continue;
-    if (S.ayHesapla(yil, mm, {})) kayitlar[k] = S.kayitKopyasi(yil, mm);
+    if (yield* S.ayHesaplaAdim(yil, mm, {})) kayitlar[k] = S.kayitKopyasi(yil, mm);
   }
   const Y = S.yillikVeri(yil), adlar: Record<number, string> = {};
   Y.ids.forEach(id => { adlar[id] = Y.ad(id); });

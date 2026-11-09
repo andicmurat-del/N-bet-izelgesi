@@ -26,9 +26,9 @@
 {#if gorunum === "raporlar"}
   <Raporlar bolum="acil" />
 {:else if gorunum === "puantaj"}
-  <Puantaj {git} gomulu acil kimler={k => acilKadrosunda(k)} />
+  <Puantaj {git} acil kimler={k => acilKadrosunda(k)} />
 {:else if gorunum === "izinler"}
-  <Izinler {git} gomulu kimler={k => acilKadrosunda(k)} onayKilidi={false} />
+  <Izinler {git} kimler={k => acilKadrosunda(k)} onayKilidi={false} />
 {:else}
   <AcilServis git={() => git("kisiler")} />
 {/if}

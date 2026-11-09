@@ -16,11 +16,10 @@
   import NobetDegisimi from "../puantaj/NobetDegisimi.svelte";
   import AylikOzet from "../ortak/AylikOzet.svelte";
 
-  // gomulu: Günlük Eczane / Acil Eczane sayfasının alt sekmesi olarak (başlık ve ay seçici üst sayfada).
   // kimler: cetvelde ve izin/rapor kaydında görünen kişiler (o bölümün kadrosu); acil: Acil Eczane puantajı
   // (nöbet değişimi acil nöbetleri ve acil kadrosuyla)
-  let { git, gomulu = false, kimler = () => true, acil = false }: {
-    git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; gomulu?: boolean; kimler?: (k: Kisi) => boolean; acil?: boolean;
+  let { git, kimler = () => true, acil = false }: {
+    git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; kimler?: (k: Kisi) => boolean; acil?: boolean;
   } = $props();
 
   const TUM_GORUNUMLER = [{ ad: "cetvel", baslik: "Cetvel", ikon: "tablo" }, { ad: "izin", baslik: "İzin ve rapor", kisa: "İzin", ikon: "izin" }, { ad: "degisim", baslik: "Nöbet değişimi", kisa: "Değişim", ikon: "karisik" }] as const;
@@ -145,7 +144,7 @@
             {#each r.cells as h, i}
               {@const g = G.gunler[i]}
               <td class="k-{h.kod}" class:tatil={g.tatil} class:ov={h.ov} class:acil={h.acil}>
-                <button onclick={() => hucreAc(r, i)} aria-label="{r.s.name}, {gunMetni(depo.yil, depo.ay, g.gun)}: {h.acil ? 'Acil eczane nöbeti (24 saat)' : (KOD_AD[h.kod] ?? h.kod)}{h.ov ? ' (elle)' : ''}">{#if h.kod === "M" && !g.arife}<i class="nokta" aria-hidden="true"></i>{:else}{kodMetni(h.kod, h.saat, g.arife)}{/if}</button>
+                <button onclick={() => hucreAc(r, i)} aria-label="{h.kod === "M" && !g.arife ? "" : kodMetni(h.kod, h.saat, g.arife) + " · "}{r.s.name}, {gunMetni(depo.yil, depo.ay, g.gun)}: {h.acil ? 'Acil eczane nöbeti (24 saat)' : (KOD_AD[h.kod] ?? h.kod)}{h.ov ? ' (elle)' : ''}">{#if h.kod === "M" && !g.arife}<i class="nokta" aria-hidden="true"></i>{:else}{kodMetni(h.kod, h.saat, g.arife)}{/if}</button>
               </td>
             {/each}
             <td class="ozet ilk fm rakam">{r.fm}</td>

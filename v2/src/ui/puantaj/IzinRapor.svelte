@@ -9,7 +9,7 @@
   import { yerineAdaylarHesapla } from "../../motor";
   import { izinUygula, izinSil, ayIzinleri, puantajIzgarasi, IZIN_AD, IZIN_KISA, type IzinTuru, type Gorev } from "../../veri/degisim.svelte";
   import { ROL_AD, type Kisi } from "../../veri/tipler";
-  import { GUN_KISA, gunMetni, gunSayisi, haftaGunu } from "../../veri/tarih";
+  import { GUN_KISA, gunMetni, haftaGunu } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
 
   // kimler: kayıt girilebilen ve listelenen kişiler (Günlük Eczane / Acil Eczane kadrosu)
@@ -17,7 +17,7 @@
   type Kontrol = { engel: string[]; uyari: string[]; bilgi: string[] };
   type Aday = { id: number; ad: string; rol: string; engel: number; uyari: number; yil: number; fm: number; yerine: number; k: Kontrol };
 
-  const y = $derived(depo.yil), m = $derived(depo.ay), dim = $derived(gunSayisi(y, m));
+  const y = $derived(depo.yil), m = $derived(depo.ay);
   const SIRA: Record<string, number> = { eczaci: 0, nobetci: 1, teknisyen: 2, destek: 3, servis: 4 };
   const kisiler = $derived(aydaCalisanlar(y, m).filter(k => kimler(k)).sort((a, b) => SIRA[a.role] - SIRA[b.role] || a.name.localeCompare(b.name, "tr")));
   const TURLER: IzinTuru[] = ["R", "YI", "NI", "DI"];

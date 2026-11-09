@@ -76,7 +76,7 @@
 <svelte:window onkeydown={tus} />
 <a class="atla" href="#icerik">İçeriğe geç</a>
 <div class="kabuk">
-  <div class="ust-serit">
+  <div class="ust-serit" role="complementary" aria-label="Uygulama bilgisi">
     <div class="genislik">
       <span>Hastane Eczanesi · Nöbet ve Puantaj Sistemi</span>
       <span class="sag">Veriler bu bilgisayarda saklanır · <button class="serit-baglanti" onclick={yedekAl}>Yedek al</button></span>

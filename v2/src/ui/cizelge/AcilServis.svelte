@@ -9,7 +9,7 @@
   import { depo, veriAnlik, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, acilKaydet, acilElleMi, resmiTatilMi, tatilMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
   import { acilAdaylariHesapla, acilDenetle, acilHesapla, acilKadrosunda, acilSorunluGunler } from "../../motor";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
-  import { AYLAR as AYLAR_AD, GUN_KISA, GUN_UZUN, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
+  import { AYLAR as AYLAR_AD, GUN_KISA, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
   import AylikOzet from "../ortak/AylikOzet.svelte";

@@ -26,7 +26,7 @@ export function onayDongusu(n: number): Yer[] {
 export const yerAdi = (y: Yer) => (y.tur === "masa" ? "Masa " + y.no : "Joker " + y.no);
 
 /** onay masası tutan eczacı: eczacı (acilde tutan dahil); kemoterapi eczacısı yok */
-export const onayEczacisi = (s: { role: string }) => s.role === "eczaci";
+const onayEczacisi = (s: { role: string }) => s.role === "eczaci";
 
 /** "YYYY-AA-GG" ↔ gün */
 const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;

@@ -14,7 +14,9 @@ const baslik = tek(/<title>[\s\S]*?<\/title>/, "title")[0];
 const baglantilar = [...bas.matchAll(/<link\b[^>]*>/g)].map(m => m[0]).filter(l => /fonts\.(googleapis|gstatic)\.com/.test(l));
 const stiller = [...bas.matchAll(/<style\b(?:\s[^>]*)?>[\s\S]*?<\/style>/g)].map(m => m[0]);
 const govde = tek(/<body[^>]*>([\s\S]*?)<\/body>/, "body")[1].replace(BETIK, "").trim();
-if (betikler.length !== 1) throw new Error("tek betik bekleniyordu, bulunan: " + betikler.length);
+// bir çalıştırılan betik (uygulama) ve isteğe bağlı çalıştırılmayan veri blokları (ör. #cikti-paketi: PDF/Excel kodu)
+const calisan = betikler.filter(b => !/^<script\b[^>]*\btype="text\/plain"/.test(b));
+if (calisan.length !== 1) throw new Error("tek çalıştırılan betik bekleniyordu, bulunan: " + calisan.length);
 
 const parca = [
   baslik,

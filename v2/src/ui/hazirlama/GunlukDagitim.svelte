@@ -6,7 +6,7 @@
   import { untrack } from "svelte";
   import { depo, veriAnlik, tatilMi } from "../../veri/depo.svelte";
   import { servisGunu, servisAtamaAdaylari } from "../../motor";
-  import { servisAyiniGuncelle, servisAyiOnbellekte, servisIslemYap, type ServisIslemi } from "../../veri/servis.svelte";
+  import { servisAyiniArkadaGuncelle, servisAyiOnbellekte, servisIslemYap, type ServisIslemi } from "../../veri/servis.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR, GUN_UZUN, gunSayisi, haftaGunu } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
@@ -33,8 +33,8 @@
   $effect(() => { y; m; untrack(() => { secGun = varsayilan(); }); });
 
   // ay açıkken her veri değişikliğinde (puantaj, kişi, ayar) dağıtım güncellenir; geçmiş günler korunur
-  // Ayın dağıtımı telefonda yarım saniyeyi geçebilir: sekme önce açılır, hesap ekran çizildikten sonra yapılır
-  // (önbellekte varsa hemen gelir).
+  // Ayın dağıtımı telefonda yarım saniyeyi geçebilir: sekme önce açılır, hesap küçük parçalar hâlinde yapılır (ekran
+  // donmaz; önbellekte varsa hemen gelir).
   let ay = $state<{ cizelgeVar: boolean; kayitVar: boolean } | null>(null);
   $effect(() => {
     const yy = y, mm = m;
@@ -42,9 +42,9 @@
     const hazir = servisAyiOnbellekte(yy, mm);
     if (hazir) { ay = hazir; return; }
     ay = null;
-    let t: ReturnType<typeof setTimeout> | undefined;
-    const r = requestAnimationFrame(() => { t = setTimeout(() => { ay = servisAyiniGuncelle(yy, mm); }, 0); });
-    return () => { cancelAnimationFrame(r); clearTimeout(t); };
+    let iptal = false;
+    servisAyiniArkadaGuncelle(yy, mm).then(r => { if (!iptal) ay = r; });
+    return () => { iptal = true; };
   });
   const gun = $derived(ay?.cizelgeVar ? (servisGunu(veriAnlik(), y, m, secGun) as GunVerisi) : null);
 
@@ -135,9 +135,9 @@
     <div class="panel-ic gun-secici">
       <label class="alan"><span>Dağıtım günü</span>
         <span class="gun-satir">
-          <button class="dugme" onclick={() => (secGun = isGunleri[ix - 1])} disabled={ix <= 0} aria-label="Önceki iş günü"><Ikon ad="sol" />Önceki gün</button>
+          <button class="dugme" onclick={() => (secGun = isGunleri[ix - 1])} disabled={ix <= 0}><Ikon ad="sol" />Önceki gün</button>
           <select id="sv-gun" class="girdi" bind:value={secGun}>{#each isGunleri as d}<option value={d}>{d} {AYLAR[m]} {GUN_UZUN[haftaGunu(y, m, d)]}</option>{/each}</select>
-          <button class="dugme" onclick={() => (secGun = isGunleri[ix + 1])} disabled={ix < 0 || ix >= isGunleri.length - 1} aria-label="Sonraki iş günü">Sonraki gün<Ikon ad="sag" /></button>
+          <button class="dugme" onclick={() => (secGun = isGunleri[ix + 1])} disabled={ix < 0 || ix >= isGunleri.length - 1}>Sonraki gün<Ikon ad="sag" /></button>
         </span>
       </label>
       <label class="alan ngun"><span>Çok günlük servisler</span>
@@ -243,7 +243,7 @@
 
 <Pencere bind:acik={pdfAcik} baslik="Servis listesi PDF" altBaslik={gunAdi(secGun)}>
   <fieldset class="secenekler">
-    <legend class="gizli">Liste türü</legend>
+    <legend class="gizli-yazi">Liste türü</legend>
     <label><input type="radio" name="pdf-tur" value="tek" bind:group={pdfTur} /><span><b>Tüm teknikerler tek sayfada</b><small>Panoya asmak için; A4 yatay</small></span></label>
     <label><input type="radio" name="pdf-tur" value="kisi" bind:group={pdfTur} /><span><b>Her teknikere ayrı sayfa</b><small>Hazırlandı işaret kutusuyla; A4 dikey</small></span></label>
     <label><input type="radio" name="pdf-tur" value="toplu" bind:group={pdfTur} /><span><b>Servis → hazırlayan listesi</b><small>Servisler alfabetik; A4 dikey</small></span></label>
@@ -255,7 +255,6 @@
   .bos { padding: var(--b5); display: grid; gap: var(--b3); max-width: 760px; }
   .bos h2 { font-size: var(--f-lg); }
   .bos p { color: var(--yazi-2); }
-  .gizli { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .panel + .panel, .panel + .bant, .bant + .panel { margin-top: var(--b3); }
   .ozet-bilgi { font-size: var(--f-sm); font-weight: 700; color: var(--lacivert); }
   .gun-secici { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--b3) var(--b5); }

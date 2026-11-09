@@ -34,7 +34,7 @@ function grupFarkCeza(o: Float64Array, G: number[], w: number): number {
 }
 /** fark 1'i aşınca: en iyi 1 genişliğindeki aralığın dışında kalan toplam sapma. Yalnız en çok – en az farkına
  *  bakılsaydı uçtaki kişilerden birini düzelten adım ödüllenmez, arama takılırdı. */
-export function yilBant(v: number[]): number {
+function yilBant(v: number[]): number {
   const n = v.length; let enAz = 1e18;
   for (let q = 0; q < n; q++) for (let k = 0; k < 2; k++) {
     const L = v[q] - k; let t = 0;
@@ -47,7 +47,7 @@ export function yilBant(v: number[]): number {
 /** yilBant'ın tam sayı değerler için hızlı karşılığı (yıllık gün sayıları tam sayıdır; toplama sırası sonucu değiştirmez).
  *  Aday L için t(L) = Σ(L − x, x < L) + Σ(x − L − 1, x > L + 1): sıralı dizide önek toplamlarıyla her aday O(log n).
  *  v yerinde sıralanır; on: n+1 uzunlukta önek toplamı dizisi (yeniden kullanılır). */
-export function yilBantTam(v: Float64Array, on: Float64Array): number {
+function yilBantTam(v: Float64Array, on: Float64Array): number {
   const n = v.length;
   for (let i = 1; i < n; i++) { const x = v[i]; let j = i - 1; while (j >= 0 && v[j] > x) { v[j + 1] = v[j]; j--; } v[j + 1] = x; }
   on[0] = 0; for (let i = 0; i < n; i++) on[i + 1] = on[i] + v[i];

@@ -3,7 +3,7 @@
   // Raporlar > Acil ve öğlen: yılın acil eczane nöbeti ve öğlen nöbeti dağılımı (kişi başı ay ay, yıl toplamı;
   // acilde hafta sonu / tatil, öğlende Cuma ayrıca). Eşitliği yıl boyunca görmek için.
   import { acilOglenRaporuHesapla } from "../../motor";
-  import { depo, veriAnlik } from "../../veri/depo.svelte";
+  import { veriAnlik } from "../../veri/depo.svelte";
   import { ROL_AD, type Rol } from "../../veri/tipler";
   import { AYLAR } from "../../veri/tarih";
 

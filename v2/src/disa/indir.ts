@@ -5,7 +5,7 @@ type Indirme = { save(o: { filename: string; data: Blob | string }): Promise<voi
 declare global { interface Window { claude?: { use(ad: string): Promise<unknown> } } }
 
 /** Dosya kaydedilemedi; mesajı kullanıcıya gösterilir */
-export class IndirmeHatasi extends Error {}
+class IndirmeHatasi extends Error {}
 /** Hata kullanıcıya gösterilecek metne çevrilir; beklenmeyen hata konsola da yazılır (hata ayıklarken görünsün) */
 export function hataMetni(e: unknown, yedek: string): string {
   if (e instanceof IndirmeHatasi) return e.message;
