@@ -25,6 +25,7 @@ export function bosVeri(): Veri {
     degisimler: [],
     servisAyar: { svc: {}, ekstra: [] },
     servisKayit: {},
+    onayMasa: { yerlesim: {} },
   };
 }
 
@@ -153,6 +154,12 @@ export function veriyiDogrula(ham: unknown): Veri {
     if (!/^\d{4}-\d{1,2}$/.test(k) || !R || typeof R !== "object") continue;
     const r = R as Record<string, unknown>;
     v.servisKayit[k] = { gun: nesne(r.gun), elle: nesne(r.elle), gunElle: nesne(r.gunElle), sk: nesne(r.sk), ad: nesne(r.ad), ata: nesne(r.ata) } as any;
+  }
+  for (const [hafta, x] of Object.entries(nesne(nesne(o.onayMasa).yerlesim))) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(hafta)) continue;
+    const l: Record<string, number> = {};
+    for (const [id, yer] of Object.entries(nesne(x))) if (kisiIdleri.has(Number(id)) && Number.isInteger(yer) && (yer as number) >= 0 && (yer as number) < 30) l[id] = yer as number;
+    v.onayMasa.yerlesim[hafta] = l;
   }
   return v;
 }
@@ -300,6 +307,7 @@ function enBuyukKisiNo(): number {
   for (const a of Object.values(v.acil)) for (const l of Object.values(a)) l.forEach(al);
   for (const a of Object.values(v.oglen)) for (const g of Object.values(a)) [...g.e, ...g.t].forEach(al);
   for (const d of v.degisimler) { al(d.cik); al(d.yer); }
+  for (const a of Object.values(v.onayMasa.yerlesim)) Object.keys(a).forEach(al);
   for (const R of Object.values(v.servisKayit)) { Object.keys(R.ad ?? {}).forEach(al); for (const g of Object.values(R.gun ?? {})) (g.k ?? []).forEach(al); }
   return n;
 }
@@ -473,6 +481,14 @@ export function acilKaydet(y: number, m: number, gunler: { gun: number; ids: num
 // ---------- öğlen nöbeti ----------
 export const oglenAyi = (y: number, m: number) => depo.veri.oglen[ayAnahtari(y, m)];
 /** onarim: izin / rapor sonrası kendiliğinden onarım (onaylı ayda da yapılır) */
+// ---------- onay listesi masaları ----------
+/** haftanın yerleşimini kaydeder (pzt: Pazartesi "YYYY-AA-GG"; kişi id → sıradaki yer); boşsa o haftanın girişi silinir
+ *  (önceki girilen haftadan ilerlemeye döner) */
+export function onayYerlesimiAyarla(pzt: string, yer: Record<number, number> | null) {
+  if (!yer || !Object.keys(yer).length) { delete depo.veri.onayMasa.yerlesim[pzt]; return; }
+  depo.veri.onayMasa.yerlesim[pzt] = Object.fromEntries(Object.entries(yer).map(([id, s]) => [id, s]));
+}
+
 export function oglenKaydet(y: number, m: number, gunler: { gun: number; e: number[]; t: number[]; elle?: true; sabit?: OglenSabit }[], onarim = false) {
   if (!onarim && listeOnayi("oglen", y, m)) return;
   const a: Record<string, OglenGunu> = {};

@@ -12,6 +12,7 @@
   import IslemAlani from "../ortak/IslemAlani.svelte";
   import Ikon from "../ortak/Ikon.svelte";
   import Takvim from "../cizelge/Takvim.svelte";
+  import VurguSecici from "../ortak/VurguSecici.svelte";
   import AylikOzet from "../ortak/AylikOzet.svelte";
   import GunPenceresi from "../cizelge/GunPenceresi.svelte";
   import Hazirlama from "./Hazirlama.svelte";
@@ -20,6 +21,7 @@
   import Raporlar from "./Raporlar.svelte";
   import type { GunlukGorunum } from "./sayfaTipleri";
   import OglenNobeti from "../cizelge/OglenNobeti.svelte";
+  import OnayListesi from "../cizelge/OnayListesi.svelte";
   import CalismaListesi from "../cizelge/CalismaListesi.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
   import KarsilamaResmi from "../ortak/KarsilamaResmi.svelte";
@@ -72,6 +74,7 @@
     { ad: "nobet", baslik: "Nöbet Listesi", uzun: "Günlük Eczane Nöbet Listesi", aciklama: "Ayın nöbet ve hafta sonu hazırlama görevleri; nöbet kuralları ve eşitlik kendiliğinden uygulanır." },
     { ad: "liste", baslik: "Aylık Çalışma Listesi", uzun: "Aylık Çalışma Listesi", aciklama: "Puantaja göre her gün onayda, hazırlamada ve izinde olan personel." },
     { ad: "oglen", baslik: "Öğlen Nöbet Listesi", uzun: "Öğlen Nöbet Listesi", aciklama: "Hafta içi öğle arası nöbetçi eczacı ve teknikerler; yıl boyunca eşit dağıtılır." },
+    { ad: "onay", baslik: "Onay Listesi", uzun: "Onay Listesi", aciklama: "Haftalık onay masaları ve jokerler: her eczacı hafta boyunca aynı masada, her hafta sıradaki yerde." },
     { ad: "hazirlama", baslik: "Hazırlama Listesi", uzun: "Hazırlama Listesi", aciklama: "O gün çalışan teknikerlere servisler zorluk ve hasta sayısına göre dengeli dağıtılır." },
     { ad: "puantaj", baslik: "Puantaj", uzun: "Puantaj Cetveli", aciklama: "Gerçekleşen çalışma: nöbet, hazırlama, nöbet ertesi izin, yıllık izin ve rapor; fazla mesai hesabı." },
     { ad: "izinler", baslik: "İzinler", uzun: "İzinler ve Tercihler", aciklama: "İzinli günler, nöbet istekleri, eş durumu, resmi tatil ve arife işaretleri." },
@@ -220,6 +223,8 @@
     <Puantaj {git} gomulu kimler={k => !acilKadrosunda(k)} />
   {:else if gorunum === "izinler"}
     <Izinler {git} gomulu kimler={k => !acilKadrosunda(k)} />
+  {:else if gorunum === "onay"}
+    <OnayListesi />
   {:else if gorunum === "oglen"}
     <OglenNobeti git={ad => (ad === "nobet" ? (gorunum = "nobet") : git(ad))} />
   {:else if gorunum === "liste"}
@@ -273,18 +278,22 @@
     </div>
   {/if}
 
+  {#snippet adlar(l: { id: number; name: string }[])}
+    {#each l as p, i (p.id)}{i ? ", " : ""}{#if p.id === vurgu}<mark class="vurgu-ad">{p.name}</mark>{:else}{p.name}{/if}{:else}—{/each}
+  {/snippet}
   {#if c}
     <div class="nobet-duzen">
       <div class="ana-sutun">
         {#if nobetGorunum === "takvim"}
           <section class="panel" aria-label="Takvim">
             <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet takvimi{goster !== c ? " · güncel" : ""}</h2>
+              <VurguSecici kisiler={nobetci} bind:vurgu />
               <p class="lejant"><span><span class="gorev ecz">ECZ</span>Eczacı</span><span><span class="gorev tek">TEK</span>Tekniker</span><span><span class="gorev haz">H1</span>Hazırlama</span><span class="kirmizi"><Ikon ad="uyari" boyut={14} />Kural esnetildi</span><span><Ikon ad="kilit" boyut={13} />Elle</span></p></div>
             <Takvim c={goster!} {vurgu} secili={seciliGun} {gunAc} degisen={goster !== c ? guncel?.degisen : undefined} />
           </section>
         {:else}
           <section class="panel" aria-label="Liste">
-            <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet listesi{goster !== c ? " · güncel" : ""}</h2></div>
+            <div class="panel-bas"><h2>{ayAdi(depo.yil, depo.ay)} nöbet listesi{goster !== c ? " · güncel" : ""}</h2><VurguSecici kisiler={nobetci} bind:vurgu /></div>
             <div class="filtreler">
               <div class="cipler" role="group" aria-label="Günleri süz">
                 {#each FILTRELER as [f, ad]}<button class="cip" aria-pressed={filtre === f} onclick={() => (filtre = f)}>{ad} <span class="rakam">{filtreSayisi[f]}</span></button>{/each}
@@ -304,13 +313,13 @@
                       {@const ec = g.assigned.filter(p => eczaciRol(p.role))}
                       {@const tk = g.assigned.filter(p => !eczaciRol(p.role))}
                       {@const rt = resmiTatilMi(depo.yil, depo.ay, g.day)}
-                      <tr class:secili-satir={seciliGun === g.day} class:hs={g.tatil} onclick={() => gunAc(g.day)}>
+                      <tr class:secili-satir={seciliGun === g.day} class:hs={g.tatil} class:vurgulu={vurgu !== null && (g.assigned.some(p => p.id === vurgu) || (g.tatil && g.prep.some(p => p.id === vurgu)))} onclick={() => gunAc(g.day)}>
                         <td class="rakam"><b>{g.day} {AYLAR[depo.ay]}</b></td>
                         <td>{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</td>
-                        <td>{ec.map(p => p.name).join(", ") || "—"}</td>
-                        <td>{tk.map(p => p.name).join(", ") || "—"}</td>
-                        <td>{g.tatil ? g.prep[0]?.name ?? "—" : "—"}</td>
-                        <td>{g.tatil ? g.prep[1]?.name ?? "—" : "—"}</td>
+                        <td>{@render adlar(ec)}</td>
+                        <td>{@render adlar(tk)}</td>
+                        <td>{@render adlar(g.tatil && g.prep[0] ? [g.prep[0]] : [])}</td>
+                        <td>{@render adlar(g.tatil && g.prep[1] ? [g.prep[1]] : [])}</td>
                         <td class="durum">
                           {#if degistiMi(g)}<span class="etk degisti">değişti</span>{/if}
                           {#if g.conflict || g.assigned.length < 2}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />kural esnetildi</span>{/if}
@@ -412,6 +421,9 @@
   .kirmizi { color: var(--hata); }
   .liste tbody tr { cursor: pointer; }
   .liste tbody tr:hover > * { background: var(--vurgu-zemin); }
+  .liste tbody tr.vurgulu > * { background: color-mix(in srgb, var(--altin) 16%, var(--yuzey)); }
+  .liste tbody tr.vurgulu > :first-child { box-shadow: inset 3px 0 0 var(--altin); }
+  .vurgu-ad { background: color-mix(in srgb, var(--altin) 35%, transparent); color: inherit; font-weight: 700; padding: 0 3px; border-radius: 3px; }
   .liste tr.secili-satir > * { box-shadow: inset 0 2px 0 var(--altin), inset 0 -2px 0 var(--altin); }
   .liste td:nth-child(n+3):not(.durum) { min-width: 150px; }
   .liste tr.hs > * { background: color-mix(in srgb, var(--acik-mavi) 14%, var(--yuzey)); }

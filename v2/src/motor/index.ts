@@ -8,7 +8,9 @@
 //   istatistik.ts   ay sayımları                 devir.ts      önceki aylardan yıllık eşitlik devirleri
 //   nobet/          çizelge oluşturma (olustur.ts adımları sıralar)
 //   denetim.ts      elle gün düzenleme denetimi  puantaj.ts    aylık puantaj cetveli
-//   degisim.ts      nöbet değişimi, yerine geçme raporlar.ts   çalışma listesi, acil servis, yıllık rapor, uyarı sınıfı
+//   degisim.ts      nöbet değişimi, yerine geçme  acilDegisim.ts acil nöbetinde yerine tutma
+//   raporlar.ts     çalışma listesi, acil servis, yıllık rapor, uyarı sınıfı
+//   onayMasa.ts     onay listesi masaları ve jokerler
 //   servis/         servis hazırlama dağıtımı
 import type { Gorevli } from "../veri/tipler";
 import { Baglam, type MotorCizelgesi } from "./baglam";
@@ -16,7 +18,9 @@ import { degisimDenetle as degisimDenetimi, yerineAdaylar, type Degisiklik } fro
 import { gunuDenetle as gunDenetimi } from "./denetim";
 import { cizelgeUret, type CizelgeSonucu } from "./nobet/olustur";
 import { acilOlustur } from "./acil";
+import { acilDegisimDenetle as acilDegisimDenetimi, acilYerineAdaylar } from "./acilDegisim";
 import { oglenOlustur, oglenOnarimlari, oglenYillik } from "./oglen";
+import { onayHaftasi, pazartesi } from "./onayMasa";
 import { puantajIzgarasi } from "./puantaj";
 import { acilAdaylari, acilDenetle as acilDenetimi, acilOglenRaporu, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
 import { ServisMotoru, type HesapSecenegi } from "./servis/ay";
@@ -28,6 +32,7 @@ export { PUANTAJ_KODLARI } from "./puantaj";
 export { uyariSiniflandir } from "./raporlar";
 export { OGLEN_GEREK, oglenGrubu } from "./oglen";
 export { ACIL_GUNLUK, acilKadrosunda } from "./acil";
+export { onayDongusu, onayEczacisi, yerAdi, type Yer, type OnayHaftasi, type OnayGunu, type OnayHucre } from "./onayMasa";
 export { ZOR_ESIK as SERVIS_ZOR_ESIK } from "./servis/liste";
 export type { CizelgeSonucu } from "./nobet/olustur";
 
@@ -78,6 +83,14 @@ export function degisimDenetle(veri: unknown, d: Degisiklik) { return degisimDen
 export function yerineAdaylarHesapla(veri: unknown, y: number, m: number, gun: number, cik: number, gorev: "N" | "H", sirayla = false) {
   return yerineAdaylar(new Baglam(veri), y, m, gun, cik, gorev, sirayla);
 }
+
+/** Acil eczane nöbet değişimi (yerine tutma): cik'in d. gündeki acil nöbetini yer tutarsa → {engel, uyari, bilgi} */
+export function acilDegisimDenetle(veri: unknown, y: number, m: number, d: number, cik: number, yer: number) { return acilDegisimDenetimi(new Baglam(veri), y, m, d, cik, yer); }
+/** Acil nöbetini yerine tutabilecek acil kadrosu: kurallara uyanlar önce, sonra yıl içinde en az acil nöbeti tutan */
+export function acilYerineAdaylarHesapla(veri: unknown, y: number, m: number, d: number, cik: number) { return acilYerineAdaylar(new Baglam(veri), y, m, d, cik); }
+
+/** Onay listesi: günün haftasının (Pazartesi–Cuma) masa ve joker dağıtımı ve o haftanın yerleşimi */
+export function onayHaftasiHesapla(veri: unknown, y: number, m: number, d: number) { const B = new Baglam(veri); return onayHaftasi(B, ...pazartesi(y, m, d)); }
 
 /** Acil servis nöbeti denetimi: aynı kişi iki kez, izin/eş durumu, art arda iki gün, aynı gün eczane nöbeti */
 export function acilDenetle(veri: unknown, y: number, m: number, g: number, ids: number[]) { return acilDenetimi(new Baglam(veri), y, m, g, ids); }

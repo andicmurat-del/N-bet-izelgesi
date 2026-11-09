@@ -5,7 +5,8 @@
 // Hedefler (önem sırasıyla): herkese haftada bir (kişi yetmezse iki), yıl boyunca toplam sayı yazılabildiği günlere
 // göre eşit (izinli günler paydan düşer, izinden dönen fazladan yazılmaz), Cuma sayısı Cuma
 // yazılabilenler arasında ayrıca eşit, mümkünse o günün eczane / acil servis nöbetçisine yazılmaz (eşitlik bozulmuyorsa),
-// mümkünse aynı kişi art arda iki Cuma yazılmaz; haftada iki öğlen nöbeti sırayla verilir (grubundaki herkes bir kez
+// mümkünse aynı kişi art arda iki Cuma yazılmaz; haftada iki alanın ikisi mümkünse art arda günlere düşmez (nöbetçiye
+// yazmama kuralı bundan güçlüdür); haftada iki öğlen nöbeti sırayla verilir (grubundaki herkes bir kez
 // iki almadan aynı kişi yeniden iki almaz).
 // Hangi gün tutulduğu eşitlikte önemsizdir; yalnız Cuma ayrıca sayılır.
 import { aktifAydaMi, type Baglam } from "./baglam";
@@ -29,8 +30,8 @@ export const oglenGrubu = (rol: string): Grup | null => (rol === "eczaci" ? "e" 
 
 /** amaç ağırlıkları (küçük daha iyi): haftada üçüncü kez çok ağır; haftada ikinci kez her seferinde ceza (kişi
  *  yetiyorsa herkes bir kez); teknikerde Pazartesi–Perşembe muaf olmayana yazmak haftada üçüncü kezden hafif, öteki her
- *  şeyden ağır; o hafta yazılabilen biri hiç yazılmamışken başkasına iki yazmak çok ağır; haftada iki alma sırası yıllık eşitlikten önce; eşitlik nöbetçiden kaçınmaktan önce gelir; art arda iki Cuma haftada iki sırasıyla yarışabilsin diye ağır */
-const W = { hafta3: 1000, grupDisi: 500, bosKalan: 100, ikiSira: 30, hafta: 3, toplam: 2, cuma: 3, cumaArdArda: 50, nobetci: 0.5, ardArda: 0.2 };
+ *  şeyden ağır; o hafta yazılabilen biri hiç yazılmamışken başkasına iki yazmak çok ağır; haftada iki alma sırası yıllık eşitlikten önce; mümkünse o günün nöbetçisine yazılmaz; haftada iki alan kişinin iki öğlen nöbeti mümkünse art arda günlere düşmez (nöbetçiye yazmamaktan hafif); art arda iki Cuma haftada iki sırasıyla yarışabilsin diye ağır */
+const W = { hafta3: 1000, grupDisi: 500, bosKalan: 100, ikiSira: 30, hafta: 3, toplam: 2, cuma: 3, cumaArdArda: 50, nobetci: 3, ardArda: 2 };
 
 export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[]; elle?: true; sabit?: OglenSabit }
 export interface OglenSonucu { gunler: OglenGunSonucu[]; uyarilar: string[] }

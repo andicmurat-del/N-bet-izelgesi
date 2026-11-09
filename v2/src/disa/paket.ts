@@ -6,3 +6,4 @@ export * from "./puantajCikti";
 export * from "./acilCikti";
 export * from "./servisCikti";
 export * from "./raporCikti";
+export * from "./onayCikti";
