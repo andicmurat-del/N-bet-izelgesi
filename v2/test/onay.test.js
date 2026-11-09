@@ -26,11 +26,10 @@ describe("onay listesi masaları", () => {
     expect(H.kisiler.map(k => k.ad)).toEqual(["E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9"]);
   });
 
-  test("herkes çalışıyor: 6 masa sahibi, 3 jokerden ilki Masa 7, kalan iki joker yardım eder", () => {
+  test("herkes çalışıyor: 6 masa sahibi, 3 jokerden ilki Masa 7, kalan ikisi joker", () => {
     const g = H.gunler[0];   // 9 Kasım
     expect(g.masa.map(ad)).toEqual(["E1", "E3", "E2", "E4", "E6", "E8", "E5"]);
     expect(g.joker.map(ad)).toEqual(["E7", "E9"]);
-    expect(g.joker[0].not).toContain("Masa 1 ve 2");
   });
 
   test("masa sahibi izinli: ilk joker o masaya oturur, joker görevi sayılır; kalan 2 jokerden ilki Masa 7", () => {

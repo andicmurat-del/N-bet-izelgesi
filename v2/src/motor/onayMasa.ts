@@ -4,7 +4,7 @@
 // Bir hafta boyunca herkes aynı yerde oturur. Günlük dağıtım (hafta içi, arife dahil, resmi tatil hariç):
 //   1. Masa sahibi o gün çalışıyorsa (puantajda mesai ya da nöbet; nöbet ertesi, izin, rapor yok) masasında oturur.
 //   2. Boş kalan ilk 6 masaya o gün çalışan jokerler sırayla geçer (joker görevini yapmış sayılır, masanın değil).
-//   3. Geriye 2 ya da daha çok joker kalırsa ilki Masa 7'ye oturur; kalanlar joker (eksik yoksa Masa 1 ve 2'ye yardım).
+//   3. Geriye 2 ya da daha çok joker kalırsa ilki Masa 7'ye oturur; kalanlar joker.
 //   4. İlk 6 masadan hâlâ boş varsa o günün hazırlama teknikerlerinden biri oturur; yıl boyunca sırayla (en az oturan).
 // Yerleşim kullanıcıdan gelir: bir haftanın kimin hangi yerde olduğu girilir, sonraki haftalar oradan kendiliğinden ilerler;
 // kadro değişince yeni haftanın yerleşimi yeniden girilir (en son girilen önceki hafta esas alınır).
@@ -81,7 +81,7 @@ function gunHesapla(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: numb
   }
   if (gelen.length >= 2) { const j = gelen.shift()!; g.masa[6] = { id: j.id, ad: ad(j.id), not: "joker" }; }
   else g.masa[6] = { id: null, ad: "" };
-  g.joker = gelen.map(j => ({ id: j.id, ad: ad(j.id), not: bos.length ? undefined : "Masa 1 ve 2'ye yardım" }));
+  g.joker = gelen.map(j => ({ id: j.id, ad: ad(j.id) }));
   // jokerler yetmedi: o günün hazırlama teknikerlerinden biri, yıl boyunca sırayla
   if (bos.length) {
     const k = B.servisKayit?.[ayAnahtari(y, m)]?.gun?.[d]?.k as number[] | undefined;

@@ -65,12 +65,12 @@
       const g = H.gunler;
       const satirlar = [
         ...Array.from({ length: 7 }, (_, i) => ({ yer: `Masa ${i + 1}`, hucre: g.map(x => ({ ad: x.masa[i]?.ad ?? "", yerine: !!x.masa[i]?.not?.includes("yerine"), bos: !x.tatil && i < 6 && !x.masa[i]?.id })) })),
-        ...Array.from({ length: jokerSatir }, (_, i) => ({ yer: `Joker ${i + 1}`, hucre: g.map(x => ({ ad: x.joker[i]?.ad ?? "", not: x.joker[i]?.not })) })),
+        ...Array.from({ length: jokerSatir }, (_, i) => ({ yer: `Joker ${i + 1}`, hucre: g.map(x => ({ ad: x.joker[i]?.ad ?? "" })) })),
       ];
       const blob = onayPdf({
         kurum: depo.veri.kurum.ad, donem: `${haftaMetni(hafta)} ${hafta.gunler[4][0]}`,
         gunler: g.map(x => ({ baslik: `${GUN_UZUN[x.dw]} ${x.d} ${AYLAR[x.m]}${x.arife ? " (arife)" : ""}`, tatil: x.tatil })),
-        satirlar, notlar: ["Masaya oturan o masanın listelerini onaylar. Joker, eksik masaya oturduğunda joker görevini yapmış sayılır; eksik yoksa Masa 1 ve 2'ye yardım eder."],
+        satirlar, notlar: ["Masaya oturan o masanın listelerini onaylar. Joker, eksik masaya oturduğunda joker görevini yapmış sayılır."],
       });
       durum = (await dosyaKaydet(`onay-listesi-${H.pzt}.pdf`, blob, "application/pdf")) ? "PDF kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "PDF oluşturulamadı."); }
@@ -87,7 +87,7 @@
   {#each haftalar as h, i}<button class="hafta" aria-pressed={secili === i} onclick={() => (secili = i)}><b>{i + 1}. hafta</b><small>{haftaMetni(h)}</small></button>{/each}
 </div>
 
-<Bilgi baslik="Onay masaları nasıl dağıtılır?"><p>Her eczacı (acilde tutanlar dahil, kemoterapi eczacıları hariç) hafta boyunca aynı yerde oturur, her hafta sıradaki yere geçer: Masa 1 → Masa 3 → Masa 2 → Masa 4 → Joker → Masa 5 → Joker → Masa 6 (9. kişi sona joker olarak eklenir). O gün çalışmayanın (nöbet ertesi, izin, rapor) masasına sıradaki joker oturur; joker görevini yapmış sayılır. Jokerler eksik masaları doldurduktan sonra 2 ya da daha çok joker kalırsa ilki Masa 7'ye oturur; kalan joker, eksik yer yoksa Masa 1 ve 2'ye yardım eder. İlk 6 masa yine dolmazsa o günün hazırlama teknikerlerinden biri oturur (yıl boyunca sırayla). Hafta içi, arife dahil; resmi tatilde liste yok.</p></Bilgi>
+<Bilgi baslik="Onay masaları nasıl dağıtılır?"><p>Her eczacı (acilde tutanlar dahil, kemoterapi eczacıları hariç) hafta boyunca aynı yerde oturur, her hafta sıradaki yere geçer: Masa 1 → Masa 3 → Masa 2 → Masa 4 → Joker → Masa 5 → Joker → Masa 6 (9. kişi sona joker olarak eklenir). O gün çalışmayanın (nöbet ertesi, izin, rapor) masasına sıradaki joker oturur; joker görevini yapmış sayılır. Jokerler eksik masaları doldurduktan sonra 2 ya da daha çok joker kalırsa ilki Masa 7'ye oturur, kalanlar joker olarak kalır. İlk 6 masa yine dolmazsa o günün hazırlama teknikerlerinden biri oturur (yıl boyunca sırayla). Hafta içi, arife dahil; resmi tatilde liste yok.</p></Bilgi>
 
 {#if H}
   {#if duzenle}
@@ -139,7 +139,7 @@
                   {/each}
                   {#each Array.from({ length: jokerSatir }, (_, i) => i) as i}
                     {@const h = g.joker[i]}
-                    {#if !h}<td class="joker" class:ilk-joker={i === 0}>–</td>{:else}<td class="joker" class:ilk-joker={i === 0}><b>{h.ad}</b>{#if h.not}<small>{h.not}</small>{/if}</td>{/if}
+                    {#if !h}<td class="joker" class:ilk-joker={i === 0}>–</td>{:else}<td class="joker" class:ilk-joker={i === 0}><b>{h.ad}</b></td>{/if}
                   {/each}
                 {/if}
               </tr>
@@ -182,7 +182,6 @@
   .onay thead th:first-child { width: 110px; }
   .onay tbody th { text-align: left; color: var(--lacivert); background: var(--panel-bas); white-space: nowrap; width: 110px; position: sticky; left: 0; z-index: 1; }
   .onay td b { display: block; font-weight: 600; }
-  .onay td small { display: block; font-size: var(--f-xs); color: var(--yazi-2); }
   .onay td.yerine { background: var(--arife-zemin); }
   .onay td.bos { background: var(--hata-zemin, #fde2e2); color: var(--hata); font-weight: 700; }
   .onay .tatil { background: var(--yuzey-2); color: var(--soluk); }

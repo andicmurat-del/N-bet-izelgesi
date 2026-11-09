@@ -11,7 +11,7 @@ export interface OnayCiktiVerisi {
   /** sütun başlıkları (ör. "Pazartesi 9 Kasım"); tatil: o gün liste yok */
   gunler: { baslik: string; tatil: boolean }[];
   /** yerler (tabloda sütun): yer adı ve gün gün hücre (ad, açıklama) */
-  satirlar: { yer: string; hucre: { ad: string; not?: string; bos?: boolean; yerine?: boolean }[] }[];
+  satirlar: { yer: string; hucre: { ad: string; bos?: boolean; yerine?: boolean }[] }[];
   notlar: string[];
 }
 
@@ -24,7 +24,7 @@ export function onayPdf(v: OnayCiktiVerisi): Blob {
   autoTable(doc, {
     startY: 22, margin: { left: K, right: K, bottom: 24 },
     head: [["Gün", ...v.satirlar.map(r => r.yer)]],
-    body: v.gunler.map((g, gi) => [g.baslik, ...v.satirlar.map(r => { const h = r.hucre[gi]; return g.tatil ? "" : h.bos ? "BOŞ" : h.ad ? buyukAd(h.ad) + (h.not ? "\n" + h.not : "") : "–"; })]),
+    body: v.gunler.map((g, gi) => [g.baslik, ...v.satirlar.map(r => { const h = r.hucre[gi]; return g.tatil ? "" : h.bos ? "BOŞ" : h.ad ? buyukAd(h.ad) : "–"; })]),
     theme: "grid",
     styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 2, halign: "center", valign: "middle", textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.2 },
     headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [208, 230, 235] },
