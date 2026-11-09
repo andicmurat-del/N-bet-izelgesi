@@ -36,9 +36,29 @@
   const ad = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş kişi)";
   const kisa = (id: number) => kisaAd(ad(id), depo.veri.staff.map(k => k.name));
   const dolu = $derived(gunler.filter(g => acilGunu(y, m, g).length).length);
+  // güncel liste: puantajdaki acil nöbet değişimleri (yerine tutma) işlenmiş hâli; asıl (onaylanan) liste ayrı görünümde.
+  // Her gün acil nöbetçileri puantajdan okunur; değişmeyen kişi yerinde kalır, değişenin yerine yeni gelen yazılır.
+  const guncel = $derived.by(() => {
+    if (!dolu) return null;
+    const G = puantajIzgarasi(y, m) as { satirlar: { s: { id: number }; cells: { kod: string; acil?: boolean }[] }[] };
+    const liste: Record<number, number[]> = {}, degisen = new Set<number>();
+    for (const g of gunler) {
+      const eski = acilGunu(y, m, g), yeni = G.satirlar.filter(r => r.cells[g - 1]?.kod === "N" && r.cells[g - 1]?.acil).map(r => r.s.id);
+      if (eski.length === yeni.length && eski.every(id => yeni.includes(id))) { liste[g] = eski; continue; }
+      const kalan = yeni.filter(id => !eski.includes(id));
+      liste[g] = [...eski.map(id => (yeni.includes(id) ? id : kalan.shift())).filter((id): id is number => id !== undefined), ...kalan];
+      degisen.add(g);
+    }
+    return { liste, degisen };
+  });
+  let gorunum = $state<"guncel" | "asil">("guncel");
+  const degisimVar = $derived(!!guncel && guncel.degisen.size > 0);
+  const guncelMi = $derived(degisimVar && gorunum === "guncel");
+  // ekranda ve çıktıda (PDF / Excel) açık olan görünümün o günkü nöbetçileri
+  const goster = (g: number) => (guncelMi ? guncel!.liste[g] : acilGunu(y, m, g));
   const ozet = $derived.by(() => {
     const o = new Map<number, number[]>();
-    for (const g of gunler) for (const id of acilGunu(y, m, g)) o.set(id, [...(o.get(id) ?? []), g]);
+    for (const g of gunler) for (const id of goster(g)) o.set(id, [...(o.get(id) ?? []), g]);
     return [...o.entries()].map(([id, l]) => ({ id, ad: ad(id), gunler: l, tatil: l.filter(g => tatilMi(y, m, g)).length })).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
   });
   // kayıtlı nöbetçisi sonradan yazılamaz hâle gelen günler (izin / rapor girildi, eş durumu yok, dönem dışı)
@@ -81,7 +101,7 @@
     durum = "";
     try {
       const { acilKitabi, acilPdf } = await ciktiPaketi();
-      const veri = { y, m, kurum: depo.veri.kurum.ad, gunler: gunler.map(g => ({ gun: g, dw: haftaGunu(y, m, g), tatil: tatilMi(y, m, g), resmi: resmiTatilMi(y, m, g), adlar: acilGunu(y, m, g).map(ad) })), ozet };
+      const veri = { y, m, kurum: depo.veri.kurum.ad, gunler: gunler.map(g => ({ gun: g, dw: haftaGunu(y, m, g), tatil: tatilMi(y, m, g), resmi: resmiTatilMi(y, m, g), adlar: goster(g).map(ad) })), ozet };
       const blob = tur === "xlsx" ? acilKitabi(veri) : acilPdf(veri);
       const ok = await dosyaKaydet(dosyaAdi(tur), blob, tur === "pdf" ? "application/pdf" : blob.type);
       durum = ok ? (tur === "pdf" ? "PDF kaydedildi." : "Excel dosyası kaydedildi.") : "";
@@ -109,6 +129,7 @@
         {#if adaylar.length}<button class="dugme{dolu ? '' : ' ana'}" onclick={olustur}><Ikon ad={dolu ? "yenile" : "takvim"} />{dolu ? "Yeniden oluştur" : "Acil nöbet listesini oluştur"}</button>{/if}
         {#if dolu}<button class="dugme ana" onclick={() => listeyiOnayla("acil", y, m)}><Ikon ad="tamam" />Onayla</button>{/if}
       {/if}
+      {#if degisimVar}<div class="secim" role="group" aria-label="Liste"><button aria-pressed={gorunum === "guncel"} onclick={() => (gorunum = "guncel")} title="Nöbet değişimleri işlenmiş liste">Güncel</button><button aria-pressed={gorunum === "asil"} onclick={() => (gorunum = "asil")} title="Değişimlerden önceki liste">{onay ? "Onaylanan" : "Asıl liste"}</button></div>{/if}
       {#if dolu}
         <button class="dugme" onclick={() => cikti("pdf")}><Ikon ad="indir" />PDF</button>
         <button class="dugme" onclick={() => cikti("xlsx")}><Ikon ad="indir" />Excel</button>
@@ -120,17 +141,18 @@
   {#each sorunluGunler as g}<p class="satir kutu dikkat"><Ikon ad="uyari" boyut={15} /><span>{g.gun} {AYLAR_AD[m]}: {g.adlar.join(", ")} bu gün yazılamaz (izin, rapor ya da çalışma dönemi dışı). Güne dokunup yerine birini seçin.</span></p>{/each}
   {#each uyarilar as u}<p class="satir kutu dikkat"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
+  {#if degisimVar}<p class="bant bilgi"><Ikon ad="bilgi" boyut={16} />{guncelMi ? `Güncel liste gösteriliyor: puantajdaki nöbet değişimleri işlendi; değişen ${guncel!.degisen.size} gün işaretli. Değişimlerden önceki liste "${onay ? "Onaylanan" : "Asıl liste"}" görünümünde.` : `${onay ? "Onaylanan" : "Asıl"} liste gösteriliyor (değişimlerden önceki hâli). Değişimler "Güncel" görünümünde.`}</p>{/if}
 
   <section class="panel takvim-kutu" aria-label="{ayAdi(y, m)} acil eczane nöbetleri">
-    <div class="panel-bas"><h2>{ayAdi(y, m)} acil eczane nöbetleri</h2><VurguSecici kisiler={adaylar} bind:vurgu /></div>
+    <div class="panel-bas"><h2>{ayAdi(y, m)} acil eczane nöbetleri{guncelMi ? " · güncel" : ""}</h2><VurguSecici kisiler={adaylar} bind:vurgu /></div>
     <div class="takvim" class:vurgulu={vurgu !== null}>
       {#each GUN_KISA as g}<div class="bas" aria-hidden="true">{g}</div>{/each}
       {#each { length: haftaGunu(y, m, 1) } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
       {#each gunler as g (g)}
-        {@const l = acilGunu(y, m, g)}
+        {@const l = goster(g)}
         <button class="gun" class:tatil={tatilMi(y, m, g)} class:bugun={bugunMu(g)} class:dolu={l.length} class:sorunlu={sorunluMu(g)} class:vurgu={vurgu !== null && l.includes(vurgu)} class:soluk={vurgu !== null && !l.includes(vurgu)} onclick={() => gunAc(g)}
           aria-label="{gunMetni(y, m, g)}: acil eczane nöbetçisi {l.map(ad).join(' ve ') || 'yok'}">
-          <span class="ust serit"><b class="no rakam">{g}</b>{#if acilElleMi(y, m, g)}<span class="elle" title="Elle düzenlendi; yeniden oluşturmada korunur">elle</span>{/if}<span class="gunadi">{GUN_KISA[haftaGunu(y, m, g)]}</span>{#if resmiTatilMi(y, m, g)}<span class="etiket">Resmi tatil</span>{/if}</span>
+          <span class="ust serit"><b class="no rakam">{g}</b>{#if acilElleMi(y, m, g)}<span class="elle" title="Elle düzenlendi; yeniden oluşturmada korunur">elle</span>{/if}<span class="gunadi">{GUN_KISA[haftaGunu(y, m, g)]}</span>{#if guncelMi && guncel!.degisen.has(g)}<span class="degisti" title="Bu günde nöbet değişimi var">değişti</span>{/if}{#if resmiTatilMi(y, m, g)}<span class="etiket">Resmi tatil</span>{/if}</span>
           <span class="kisiler">
             {#each l as id}<span class="kisi" class:ben={id === vurgu}><span class="isaret servis"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span></span>{:else}<span class="yok"><span class="ad">Nöbetçi yok</span><span class="ad-kisa" aria-hidden="true">–</span></span>{/each}
           </span>
@@ -198,6 +220,7 @@
   .gun.bugun .serit b { text-decoration: underline; text-underline-offset: 3px; }
   .gun.sorunlu { background: var(--dikkat-zemin); }
   .gun.sorunlu .serit { box-shadow: inset 0 -2px 0 var(--dikkat); }
+  .degisti { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--dikkat); background: var(--dikkat-zemin); border-radius: 3px; padding: 0 4px; }
   .vurgulu .gun.soluk { opacity: .38; }
   .vurgulu .gun.vurgu { box-shadow: inset 0 0 0 2px var(--lacivert); }
   .kisi.ben { background: var(--vurgu-zemin); box-shadow: 0 0 0 2px var(--vurgu-zemin); border-radius: 3px; }
