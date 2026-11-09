@@ -1,4 +1,4 @@
-// Onay listesi masaları: haftalık PDF (A4 yatay; satırlarda masalar ve jokerler, sütunlarda haftanın günleri).
+// Onay listesi masaları: haftalık PDF (A4 yatay; satırlarda haftanın günleri, sütunlarda masalar ve jokerler).
 // Resmi çıktı: adlar büyük harf; jokerin / teknikerin kimin yerine oturduğu hücrede ikinci satırda.
 import { autoTable } from "jspdf-autotable";
 import { yeniPdf } from "./pdfOrtak";
@@ -10,7 +10,7 @@ export interface OnayCiktiVerisi {
   donem: string;
   /** sütun başlıkları (ör. "Pazartesi 9 Kasım"); tatil: o gün liste yok */
   gunler: { baslik: string; tatil: boolean }[];
-  /** satırlar: yer adı ve gün gün hücre (ad, açıklama) */
+  /** yerler (tabloda sütun): yer adı ve gün gün hücre (ad, açıklama) */
   satirlar: { yer: string; hucre: { ad: string; not?: string; bos?: boolean }[] }[];
   notlar: string[];
 }
@@ -23,17 +23,19 @@ export function onayPdf(v: OnayCiktiVerisi): Blob {
   doc.text(`${v.kurum ? buyukAd(v.kurum) + " · " : ""}${v.donem} onay listesi masaları`, K, 16);
   autoTable(doc, {
     startY: 22, margin: { left: K, right: K, bottom: 24 },
-    head: [["Yer", ...v.gunler.map(g => g.baslik)]],
-    body: v.satirlar.map(s => [s.yer, ...s.hucre.map((h, i) => (v.gunler[i].tatil ? "Resmi tatil" : h.bos ? "BOŞ" : h.ad ? buyukAd(h.ad) + (h.not ? "\n" + h.not : "") : "–"))]),
+    head: [["Gün", ...v.satirlar.map(r => r.yer)]],
+    body: v.gunler.map((g, gi) => [g.baslik, ...v.satirlar.map(r => { const h = r.hucre[gi]; return g.tatil ? "" : h.bos ? "BOŞ" : h.ad ? buyukAd(h.ad) + (h.not ? "\n" + h.not : "") : "–"; })]),
     theme: "grid",
-    styles: { font: "CizelgeSans", fontSize: 10, cellPadding: 2.4, halign: "center", valign: "middle", textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.2 },
+    styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 2, halign: "center", valign: "middle", textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.2 },
     headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [208, 230, 235] },
-    columnStyles: { 0: { cellWidth: 28, fontStyle: "bold", halign: "left" } },
+    columnStyles: { 0: { cellWidth: 30, fontStyle: "bold", halign: "left" } },
     didParseCell: h => {
-      if (h.section !== "body" || h.column.index === 0) return;
-      const s = v.satirlar[h.row.index], c = s.hucre[h.column.index - 1], g = v.gunler[h.column.index - 1];
-      if (g?.tatil) { h.cell.styles.fillColor = [238, 241, 243]; h.cell.styles.textColor = [110, 120, 130]; }
-      else if (c?.bos) { h.cell.styles.fillColor = [253, 226, 226]; h.cell.styles.textColor = [160, 30, 30]; h.cell.styles.fontStyle = "bold"; }
+      if (h.section !== "body") return;
+      const g = v.gunler[h.row.index];
+      if (g.tatil) { h.cell.styles.fillColor = [238, 241, 243]; h.cell.styles.textColor = [110, 120, 130]; if (h.column.index === 1) h.cell.text = ["Resmi tatil"]; return; }
+      if (h.column.index === 0) return;
+      const c = v.satirlar[h.column.index - 1].hucre[h.row.index];
+      if (c?.bos) { h.cell.styles.fillColor = [253, 226, 226]; h.cell.styles.textColor = [160, 30, 30]; h.cell.styles.fontStyle = "bold"; }
       else if (c?.not?.includes("yerine")) h.cell.styles.fillColor = [255, 246, 222];
     },
   });

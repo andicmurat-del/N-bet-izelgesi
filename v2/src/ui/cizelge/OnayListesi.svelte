@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Onay listesi masaları: haftalık tablo (satırlarda Masa 1–7 ve jokerler, sütunlarda Pazartesi–Cuma). Yerleşim bir hafta
+  // Onay listesi masaları: haftalık tablo (satırlarda Pazartesi–Cuma, sütunlarda Masa 1–7 ve jokerler). Yerleşim bir hafta
   // için girilir, sonraki haftalar sırayla kendiliğinden ilerler (Masa 1 → 3 → 2 → 4 → Joker → 5 → Joker → 6).
   // Kurallar motor/onayMasa.ts'de.
   import { depo, veriAnlik, onayYerlesimiAyarla } from "../../veri/depo.svelte";
@@ -126,24 +126,22 @@
         <p class="lejant"><span><i class="ornek o-joker"></i>Joker ya da tekniker yerine oturdu</span><span><i class="ornek o-bos"></i>Boş masa</span></p></div>
       <div class="tablo-kap">
         <table class="onay">
-          <thead><tr><th>Yer</th>{#each H.gunler as g}<th class:tatil={g.tatil}>{GUN_UZUN[g.dw]}<small>{g.d} {AYLAR[g.m]}{g.arife ? " · arife" : ""}</small></th>{/each}</tr></thead>
+          <thead><tr><th>Gün</th>{#each Array.from({ length: 7 }, (_, i) => i) as i}<th class:ek={i === 6}>Masa {i + 1}</th>{/each}{#each Array.from({ length: jokerSatir }, (_, i) => i) as i}<th class="joker-bas" class:ilk-joker={i === 0}>Joker {i + 1}</th>{/each}</tr></thead>
           <tbody>
-            {#each Array.from({ length: 7 }, (_, i) => i) as i}
-              <tr class:ek={i === 6}><th scope="row">Masa {i + 1}</th>
-                {#each H.gunler as g}
-                  {@const h = g.masa[i]}
-                  {#if g.tatil}<td class="tatil">{i === 0 ? "Resmi tatil" : ""}</td>
-                  {:else if !h?.id}<td class:bos={i < 6}>{i < 6 ? "Boş" : "–"}</td>
-                  {:else}<td class:yerine={!!h.not?.includes("yerine")}><b>{h.ad}</b>{#if h.not}<small>{h.not}</small>{/if}</td>{/if}
-                {/each}
-              </tr>
-            {/each}
-            {#each Array.from({ length: jokerSatir }, (_, i) => i) as i}
-              <tr class="joker-satir"><th scope="row">Joker {i + 1}</th>
-                {#each H.gunler as g}
-                  {@const h = g.joker[i]}
-                  {#if g.tatil}<td class="tatil"></td>{:else if !h}<td>–</td>{:else}<td><b>{h.ad}</b>{#if h.not}<small>{h.not}</small>{/if}</td>{/if}
-                {/each}
+            {#each H.gunler as g}
+              <tr class:tatil={g.tatil}><th scope="row">{GUN_UZUN[g.dw]}<small>{g.d} {AYLAR[g.m]}{g.arife ? " · arife" : ""}</small></th>
+                {#if g.tatil}<td class="tatil" colspan={7 + jokerSatir}>Resmi tatil: onay listesi yok</td>
+                {:else}
+                  {#each Array.from({ length: 7 }, (_, i) => i) as i}
+                    {@const h = g.masa[i]}
+                    {#if !h?.id}<td class:bos={i < 6} class:ek={i === 6}>{i < 6 ? "Boş" : "–"}</td>
+                    {:else}<td class:yerine={!!h.not?.includes("yerine")} class:ek={i === 6}><b>{h.ad}</b>{#if h.not}<small>{h.not}</small>{/if}</td>{/if}
+                  {/each}
+                  {#each Array.from({ length: jokerSatir }, (_, i) => i) as i}
+                    {@const h = g.joker[i]}
+                    {#if !h}<td class="joker" class:ilk-joker={i === 0}>–</td>{:else}<td class="joker" class:ilk-joker={i === 0}><b>{h.ad}</b>{#if h.not}<small>{h.not}</small>{/if}</td>{/if}
+                  {/each}
+                {/if}
               </tr>
             {/each}
           </tbody>
@@ -177,18 +175,19 @@
   .o-joker { background: var(--arife-zemin); }
   .o-bos { background: var(--hata-zemin, #fde2e2); border-color: var(--hata); }
   .tablo-kap { overflow-x: auto; }
-  .onay { width: 100%; min-width: 720px; border-collapse: collapse; font-size: var(--f-sm); }
+  .onay { width: 100%; min-width: 900px; table-layout: fixed; border-collapse: collapse; font-size: var(--f-sm); }
   .onay th, .onay td { border-bottom: 1px solid var(--cizgi-acik); border-right: 1px solid var(--cizgi-acik); padding: 8px 10px; text-align: center; vertical-align: middle; }
   .onay thead th { background: var(--tablo-bas); color: var(--lacivert); font-weight: 700; }
-  .onay thead th small { display: block; font-weight: 500; color: var(--yazi-2); font-size: var(--f-xs); }
-  .onay tbody th { text-align: left; color: var(--lacivert); background: var(--panel-bas); white-space: nowrap; width: 90px; }
+  .onay tbody th small { display: block; font-weight: 500; color: var(--yazi-2); font-size: var(--f-xs); }
+  .onay thead th:first-child { width: 110px; }
+  .onay tbody th { text-align: left; color: var(--lacivert); background: var(--panel-bas); white-space: nowrap; width: 110px; position: sticky; left: 0; z-index: 1; }
   .onay td b { display: block; font-weight: 600; }
   .onay td small { display: block; font-size: var(--f-xs); color: var(--yazi-2); }
   .onay td.yerine { background: var(--arife-zemin); }
   .onay td.bos { background: var(--hata-zemin, #fde2e2); color: var(--hata); font-weight: 700; }
   .onay .tatil { background: var(--yuzey-2); color: var(--soluk); }
-  .onay tr.ek th, .onay tr.ek td { border-bottom: 2px solid var(--cizgi); }
-  .onay tr.joker-satir th { background: color-mix(in srgb, var(--acik-mavi) 22%, var(--yuzey)); }
+  .onay .ilk-joker { border-left: 2px solid var(--cizgi); }
+  .onay thead th.joker-bas { background: color-mix(in srgb, var(--acik-mavi) 30%, var(--tablo-bas)); }
   .yerler { list-style: none; margin: 0; padding: var(--b3) var(--b4); display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 16px; }
   .yerler li { display: flex; justify-content: space-between; gap: 8px; font-size: var(--f-sm); padding: 4px 0; border-bottom: 1px dashed var(--cizgi-acik); }
   .yerler li b { color: var(--lacivert); }
