@@ -63,8 +63,8 @@ function izgaraOkuyucu(B: Baglam) {
 }
 
 /** yıl içi sayılar ve son yerler (gün gün ilerler) */
-interface Durum { say: Record<number, Partial<Record<OnayYeri, number>>>; dun: Record<number, OnayYeri>; hafta: Record<number, Set<OnayYeri>>; haftaNo: number; tek: Record<number, number> }
-const yeniDurum = (): Durum => ({ say: {}, dun: {}, hafta: {}, haftaNo: -1, tek: {} });
+interface Durum { cu: Record<number, Partial<Record<OnayYeri, number>>>; hi: Record<number, Partial<Record<OnayYeri, number>>>; say: Record<number, Partial<Record<OnayYeri, number>>>; dun: Record<number, OnayYeri>; hafta: Record<number, Set<OnayYeri>>; haftaNo: number; tek: Record<number, number> }
+const yeniDurum = (): Durum => ({ cu: {}, hi: {}, say: {}, dun: {}, hafta: {}, haftaNo: -1, tek: {} });
 
 function gunHesapla(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: number, m: number, d: number, D: Durum): OnayGunu {
   const dw = haftaGunu(y, m, d), tatil = B.resmiTatilMi(y, m, d), arife = !tatil && B.arifeMi(y, m, d);
@@ -80,13 +80,16 @@ function gunHesapla(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: numb
   const yerler: OnayYeri[] = ["1", "2", "3", "4", "5", "6"];
   if (fazla >= 2) yerler.push("7");
   for (let k = 0; k < fazla - (fazla >= 2 ? 1 : 0); k++) yerler.push("J");
-  const maliyet = kisi.map(id => yerler.map(yr => AGIR.sayi * (D.say[id]?.[yr] || 0) + (D.hafta[id]?.has(yr) ? AGIR.hafta : 0) + (D.dun[id] === yr ? AGIR.dun : 0)));
+  const MOD = (globalThis as any).process?.env?.MOD || "0", cuma = dw === 4;
+  const temel = (id: number, yr: OnayYeri) => MOD === "B" ? AGIR.sayi * ((cuma ? D.cu : D.hi)[id]?.[yr] || 0) + (D.say[id]?.[yr] || 0) : AGIR.sayi * (D.say[id]?.[yr] || 0);
+  const maliyet = kisi.map(id => yerler.map(yr => temel(id, yr) + (D.hafta[id]?.has(yr) ? AGIR.hafta : 0) + (D.dun[id] === yr ? AGIR.dun : 0)));
   const atama = enAzAtama(maliyet);
   for (let i = 0; i < 7; i++) g.masa[i] = { id: null, ad: "" };
   kisi.forEach((id, i) => {
     const yr = yerler[atama[i]];
     if (yr === "J") g.joker.push({ id, ad: ad(id) }); else g.masa[Number(yr) - 1] = { id, ad: ad(id) };
     (D.say[id] ??= {})[yr] = (D.say[id][yr] || 0) + 1;
+    const ayri = cuma ? D.cu : D.hi; (ayri[id] ??= {})[yr] = (ayri[id][yr] || 0) + 1;
     D.dun[id] = yr; (D.hafta[id] ??= new Set()).add(yr);
   });
   // ilk 6 masadan boş kalan: o günün hazırlama teknikerlerinden biri, yıl boyunca sırayla
