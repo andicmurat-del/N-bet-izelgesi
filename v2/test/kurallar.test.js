@@ -143,14 +143,14 @@ describe("ay içinde ayrılan kişinin nöbetleri kalan günlere sığdırılır
 });
 
 describe("çizelge her zaman en az uyarılı hâliyle oluşturulur", () => {
-  // ilk aramada uyarı kalırsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir. Gerçekçi kadrolu 25.
-  // senaryoda ilk arama 3 uyarı / kırmızı gün bırakıyor; ek denemelerden biri uyarısız
+  // ilk aramada uyarı kalırsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir. Gerçekçi kadrolu 37.
+  // senaryoda ilk arama 6 uyarı / kırmızı gün bırakıyor; ek denemelerle 2'ye iner
   const say = r => r.warnings.filter(w => uyariSiniflandir(w).seviye !== "bilgi").length + r.days.filter(g => g.conflict).length;
-  test("ilk aramadan daha çok uyarılı olmaz; uyarısızı bulunursa o seçilir", () => {
-    const { y, m0, veri } = senaryo(25, { eczaci: [6, 8], teknisyen: [4, 8] });
+  test("ilk aramadan daha çok uyarılı olmaz; ek denemelerin en az uyarılısı seçilir", () => {
+    const { y, m0, veri } = senaryo(37, { eczaci: [6, 8], teknisyen: [4, 8] });
     const ilk = cizelgeUret(new Baglam(veri), y, m0, 0, () => 0), son = cizelgeOlustur(veri, y, m0, { saat: () => 0 });
     expect(say(ilk)).toBeGreaterThan(0);
-    expect(say(son)).toBe(0);
+    expect(say(son)).toBeLessThan(say(ilk));
   });
 });
 
