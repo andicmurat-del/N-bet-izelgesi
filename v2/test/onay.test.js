@@ -1,7 +1,9 @@
-// Onay listesi masaları: haftalık sıra (Masa 1 → 3 → 2 → 4 → Joker → 5 → Joker → 6, 9. kişi sona joker), eksik masaya
-// joker, kalan 2+ jokerden ilki Masa 7, joker yetmezse hazırlama teknikeri (yıl boyunca sırayla), resmi tatilde liste yok.
+// Onay listesi masaları: sabit sıra yok, yerler her gün dağıtılır. Kimse önceki çalıştığı gün oturduğu yere oturmaz;
+// yıl boyunca herkes her masaya eşit oturur. 7. kişi joker, 8+ kişide fazlalardan ilki Masa 7; ilk 6 masa dolmazsa
+// hazırlama teknikeri (yıl boyunca sırayla); resmi tatilde liste yok.
 import { describe, test, expect } from "vitest";
-import { onayHaftasiHesapla, onayDongusu, yerAdi } from "../src/motor";
+import { onayHaftasiHesapla } from "../src/motor";
+import { enAzAtama } from "../src/motor/onayMasa";
 
 const staff = [];
 for (let i = 1; i <= 9; i++) staff.push({ id: i, name: "E" + i, role: "eczaci", ...(i === 9 ? { acilTutar: true } : {}) });
@@ -10,40 +12,40 @@ for (let i = 1; i <= 3; i++) staff.push({ id: 10 + i, name: "T" + i, role: "tekn
 const veri = {
   staff, prefs: {}, manualTatil: { "2026-10-12": true }, arife: { "2026-10-13": true }, settings: {}, schedules: {}, acil: {}, oglen: {},
   puantaj: { "2026-10": { 1: { 10: "YI", 11: "YI" }, 2: { 11: "R" }, 3: { 11: "R" }, 4: { 11: "NI" } } },
-  // 9 Kasım haftası: E1 sıranın 1. yerinde (Masa 1), E2 2. (Masa 3) … E9 9. (Joker 3)
-  onayMasa: { yerlesim: { "2026-11-09": Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => [i, i - 1])) } },
 };
-const ad = h => h.ad || null;
+const oturan = g => [...g.masa, ...g.joker].filter(h => h?.id).map(h => h.ad);
+const yerOf = (g, ad) => { const i = g.masa.findIndex(h => h?.ad === ad); return i >= 0 ? String(i + 1) : g.joker.some(h => h.ad === ad) ? "J" : null; };
 
 describe("onay listesi masaları", () => {
-  test("sıra: Masa 1, 3, 2, 4, Joker, 5, Joker, 6; 9. kişi sona joker", () => {
-    expect(onayDongusu(8).map(yerAdi)).toEqual(["Masa 1", "Masa 3", "Masa 2", "Masa 4", "Joker 1", "Masa 5", "Joker 2", "Masa 6"]);
-    expect(onayDongusu(9).map(yerAdi).at(-1)).toBe("Joker 3");
-  });
+  const H = onayHaftasiHesapla(veri, 2026, 10, 9);   // 9–13 Kasım
 
-  const H = onayHaftasiHesapla(veri, 2026, 10, 11);
   test("kemoterapi eczacısı yok; acilde tutan eczacı var", () => {
     expect(H.kisiler.map(k => k.ad)).toEqual(["E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9"]);
+    H.gunler.forEach(g => expect(oturan(g)).not.toContain("K1"));
   });
 
-  test("herkes çalışıyor: 6 masa sahibi, 3 jokerden ilki Masa 7, kalan ikisi joker", () => {
-    const g = H.gunler[0];   // 9 Kasım
-    expect(g.masa.map(ad)).toEqual(["E1", "E3", "E2", "E4", "E6", "E8", "E5"]);
-    expect(g.joker.map(ad)).toEqual(["E7", "E9"]);
+  test("9 kişi: 6 masa dolu, fazlalardan ilki Masa 7, kalan ikisi joker", () => {
+    const g = H.gunler[0];
+    expect(g.masa.every(h => h.id)).toBe(true);
+    expect(g.joker.length).toBe(2);
+    expect(new Set(oturan(g)).size).toBe(9);
   });
 
-  test("masa sahibi izinli: ilk joker o masaya oturur, joker görevi sayılır; kalan 2 jokerden ilki Masa 7", () => {
-    const g = H.gunler[1];   // 10 Kasım, E1 yıllık izinde
-    expect(g.masa[0]).toMatchObject({ ad: "E5" });
-    expect(g.masa[0].not).toContain("E1 yerine");
-    expect(g.masa[6]).toMatchObject({ ad: "E7" });
-    expect(g.joker.map(ad)).toEqual(["E9"]);
+  test("7 kişi: biri joker, Masa 7 boş; 6 kişi: joker yok", () => {
+    const v = JSON.parse(JSON.stringify(veri)); v.puantaj = { "2026-10": { 8: { 9: "YI", 10: "YI" }, 9: { 9: "YI", 10: "YI" } } };
+    const S = onayHaftasiHesapla(v, 2026, 10, 9);
+    expect(S.gunler[0].joker.length).toBe(1);
+    expect(S.gunler[0].masa[6].id).toBe(null);
+    v.puantaj["2026-10"][7] = { 9: "YI" };
+    const T = onayHaftasiHesapla(v, 2026, 10, 9);
+    expect(T.gunler[0].joker).toEqual([]);
+    expect(T.gunler[0].masa.slice(0, 6).every(h => h.id)).toBe(true);
   });
 
-  test("joker yetmezse o günün teknikeri oturur; Masa 7 boş", () => {
+  test("eczacı yetmezse o günün teknikeri oturur; Masa 7 ve joker boş", () => {
     const g = H.gunler[2];   // 11 Kasım: E1–E4 yok (izin, rapor, nöbet ertesi)
-    expect(g.masa.slice(0, 3).map(ad)).toEqual(["E5", "E7", "E9"]);
-    expect(g.masa[3]).toMatchObject({ ad: "T1", tekniker: true });
+    expect(g.masa.slice(0, 6).filter(h => h.tekniker).map(h => h.ad)).toEqual(["T1"]);
+    expect(g.masa.slice(0, 6).every(h => h.id)).toBe(true);
     expect(g.masa[6].id).toBe(null);
     expect(g.joker).toEqual([]);
     expect(g.uyari).toEqual([]);
@@ -56,55 +58,58 @@ describe("onay listesi masaları", () => {
     expect(H.gunler[4].masa.slice(0, 6).every(h => h.id)).toBe(true);
   });
 
-  test("sonraki hafta herkes sıradaki yere geçer", () => {
-    const S = onayHaftasiHesapla(veri, 2026, 10, 16);
-    expect(S.yerlesim.girildi).toBe(false);
-    expect(S.kisiler.find(k => k.ad === "E1").yer).toEqual({ tur: "masa", no: 3 });
-    expect(S.kisiler.find(k => k.ad === "E9").yer).toEqual({ tur: "masa", no: 1 });
-    expect(S.kisiler.find(k => k.ad === "E4").yer).toEqual({ tur: "joker", no: 1 });
-  });
-
-  test("tekniker sırası yıl boyunca: masaya oturan tekniker sonraki sefer arkaya geçer", () => {
-    const v = JSON.parse(JSON.stringify(veri));
-    v.puantaj["2026-10"] = { 1: { 17: "R", 18: "R" }, 2: { 17: "R", 18: "R" }, 3: { 17: "R", 18: "R" }, 4: { 17: "R", 18: "R" } };
-    const S = onayHaftasiHesapla(v, 2026, 10, 16);
-    const tek = S.gunler.flatMap(g => g.masa.filter(h => h?.tekniker).map(h => h.ad));
-    expect(tek).toEqual(["T1", "T2"]);
-  });
-
-  test("işten ayrılanın yeri sıradan düşer: en sondaki yerdeki kişi onun yerine geçer, kimsenin yeri değişmez", () => {
-    const v = JSON.parse(JSON.stringify(veri)); v.puantaj = {};
-    v.staff.find(s => s.id === 2).bitis = "2026-11-13";   // E2 13 Kasım'da ayrılıyor
-    const S = onayHaftasiHesapla(v, 2026, 10, 16);
-    expect(S.yerlesim.n).toBe(8);
-    expect(S.yerlesim.ayrilanlar).toEqual(["E2"]);
-    const yer = Object.fromEntries(S.kisiler.map(k => [k.ad, yerAdi(k.yer)]));
-    // ilerleyince E2 Masa 2'ye geçecekti; sıranın son yerine (Joker 3) geçecek olan E8 onun yerini alır
-    expect(yer.E1).toBe("Masa 3");
-    expect(yer.E8).toBe("Masa 2");
-    expect(yer.E9).toBe("Masa 1");
-    expect(S.kisiler.some(k => k.ad === "E2")).toBe(false);
-    expect(S.gunler[0].masa.slice(0, 6).every(h => h.id)).toBe(true);
-  });
-
-  test("yeri girilmemiş eczacı ekstra joker olur (teknikerden önce)", () => {
-    const v = JSON.parse(JSON.stringify(veri));
-    v.staff.push({ id: 50, name: "Yeni", role: "eczaci" });
-    const g = onayHaftasiHesapla(v, 2026, 10, 11).gunler[2];   // 11 Kasım: E1–E4 yok
-    expect(g.masa[3]).toMatchObject({ ad: "Yeni" });
-    expect(g.masa.some(h => h?.tekniker)).toBe(false);
-  });
-
   test("nöbet günü (eczane ya da acil) masada; nöbet ertesi değil", () => {
     const v = JSON.parse(JSON.stringify(veri)); v.puantaj = {};
-    v.acil = { "2026-10": { 9: [9] } };   // E9 (acilde tutan) 9 Kasım acil nöbetinde, 10 Kasım nöbet ertesi
+    v.acil = { "2026-10": { 9: [9] } };   // E9 9 Kasım acil nöbetinde, 10 Kasım nöbet ertesi
     const H2 = onayHaftasiHesapla(v, 2026, 10, 9);
-    const oturan = g => [...g.masa, ...g.joker].filter(h => h?.id).map(h => h.ad);
     expect(oturan(H2.gunler[0])).toContain("E9");
     expect(oturan(H2.gunler[1])).not.toContain("E9");
   });
 
-  test("yerleşim girilmeden önceki haftada liste yok", () => {
-    expect(onayHaftasiHesapla(veri, 2026, 10, 2).yerlesim).toBe(null);
+  test("tekniker sırası yıl boyunca: masaya oturan tekniker sonraki sefer arkaya geçer", () => {
+    const v = JSON.parse(JSON.stringify(veri));
+    v.puantaj["2026-10"] = Object.fromEntries([1, 2, 3, 4].map(id => [id, { 16: "R", 17: "R" }]));
+    const S = onayHaftasiHesapla(v, 2026, 10, 16);
+    const tek = S.gunler.slice(0, 2).flatMap(g => g.masa.filter(h => h?.tekniker).map(h => h.ad));
+    expect(tek).toEqual(["T1", "T2"]);
   });
+});
+
+describe("her gün yer değişir, yıl boyunca her masaya eşit oturulur", () => {
+  // 9 eczacı, izinsiz bir yıl: kimse önceki gün oturduğu yere oturmaz; yıl sonunda her kişinin Masa 1–6 sayıları
+  // arasındaki fark en fazla 1
+  const v = JSON.parse(JSON.stringify(veri)); v.puantaj = {}; v.manualTatil = {}; v.arife = {};
+  const haftalar = [];
+  for (let t = new Date(2027, 0, 4); t.getFullYear() === 2027; t.setDate(t.getDate() + 7)) haftalar.push(onayHaftasiHesapla(v, t.getFullYear(), t.getMonth(), t.getDate()));
+
+  test("kimse art arda iki gün aynı yerde oturmaz", () => {
+    const gunler = haftalar.flatMap(h => h.gunler).filter(g => !g.tatil && g.y === 2027);
+    let ayni = 0;
+    for (let i = 1; i < gunler.length; i++) for (const ad of oturan(gunler[i])) if (yerOf(gunler[i], ad) === yerOf(gunler[i - 1], ad)) ayni++;
+    expect(ayni).toBe(0);
+  });
+
+  test("yıl sonunda herkesin masa sayıları arasında fark en fazla 1", () => {
+    const son = haftalar.at(-1);
+    son.kisiler.forEach(k => {
+      const masa = ["1", "2", "3", "4", "5", "6"].map(y => k.say[y]);
+      expect(Math.max(...masa) - Math.min(...masa)).toBeLessThanOrEqual(1);
+    });
+    const joker = son.kisiler.map(k => k.say.J + k.say["7"]);
+    expect(Math.max(...joker) - Math.min(...joker)).toBeLessThanOrEqual(1);
+  });
+
+  test("izinli kişinin de kendi günleri masalara eşit dağılır", () => {
+    const w = JSON.parse(JSON.stringify(v));
+    w.puantaj = {}; for (let m = 2; m <= 3; m++) w.puantaj[`2027-${m}`] = { 1: Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 1, "YI"])) };
+    const S = onayHaftasiHesapla(w, 2027, 11, 27);
+    const e1 = S.kisiler.find(k => k.ad === "E1");
+    const masa = ["1", "2", "3", "4", "5", "6"].map(y => e1.say[y]);
+    expect(Math.max(...masa) - Math.min(...masa)).toBeLessThanOrEqual(1);
+  });
+});
+
+test("en az maliyetli atama", () => {
+  expect(enAzAtama([[4, 1, 3], [2, 0, 5], [3, 2, 2]])).toEqual([1, 0, 2]);
+  expect(enAzAtama([[1, 9, 9, 0]])).toEqual([3]);
 });

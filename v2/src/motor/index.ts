@@ -32,7 +32,7 @@ export { PUANTAJ_KODLARI } from "./puantaj";
 export { uyariSiniflandir } from "./raporlar";
 export { OGLEN_GEREK, oglenGrubu } from "./oglen";
 export { acilKadrosunda } from "./acil";
-export { onayDongusu, yerAdi, type Yer, type OnayHaftasi, type OnayGunu, type OnayHucre } from "./onayMasa";
+export { ONAY_YERLERI, type OnayYeri, type OnayHaftasi, type OnayGunu, type OnayHucre } from "./onayMasa";
 export { ZOR_ESIK as SERVIS_ZOR_ESIK } from "./servis/liste";
 export type { CizelgeSonucu } from "./nobet/olustur";
 
