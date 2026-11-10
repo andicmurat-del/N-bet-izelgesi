@@ -25,7 +25,7 @@ export function bosVeri(): Veri {
     degisimler: [],
     servisAyar: { svc: {}, ekstra: [] },
     servisKayit: {},
-    onayMasa: { yerlesim: {} },
+    onayMasa: { yerlesim: {}, elle: {} },
   };
 }
 
@@ -162,6 +162,12 @@ export function veriyiDogrula(ham: unknown): Veri {
     const l: Record<string, number> = {};
     for (const [id, yer] of Object.entries(nesne(x))) if (kisiIdleri.has(Number(id)) && Number.isInteger(yer) && (yer as number) >= 0 && (yer as number) < 30) l[id] = yer as number;
     v.onayMasa.yerlesim[hafta] = l;
+  }
+  for (const [gun, x] of Object.entries(nesne(nesne(o.onayMasa).elle))) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(gun)) continue;
+    const l: Record<string, string> = {};
+    for (const [id, yer] of Object.entries(nesne(x))) if (kisiIdleri.has(Number(id)) && typeof yer === "string" && /^([1-7]|J)$/.test(yer)) l[id] = yer;
+    if (Object.keys(l).length) v.onayMasa.elle[gun] = l;
   }
   return v;
 }
@@ -322,6 +328,7 @@ function enBuyukKisiNo(): number {
   for (const a of Object.values(v.oglen)) for (const g of Object.values(a)) [...g.e, ...g.t].forEach(al);
   for (const d of v.degisimler) { al(d.cik); al(d.yer); }
   for (const a of Object.values(v.onayMasa.yerlesim)) Object.keys(a).forEach(al);
+  for (const a of Object.values(v.onayMasa.elle)) Object.keys(a).forEach(al);
   for (const R of Object.values(v.servisKayit)) { Object.keys(R.ad ?? {}).forEach(al); for (const g of Object.values(R.gun ?? {})) (g.k ?? []).forEach(al); }
   return n;
 }
@@ -490,6 +497,13 @@ export function acilKaydet(y: number, m: number, gunler: { gun: number; ids: num
   const a: Record<string, number[]> = {};
   gunler.forEach(g => { if (g.ids.length) a[g.gun] = g.ids.slice(0, 2); });
   if (Object.keys(a).length) depo.veri.acil[ayAnahtari(y, m)] = a; else delete depo.veri.acil[ayAnahtari(y, m)];
+}
+
+// ---------- onay listesi masaları ----------
+/** günün yerlerini elle kaydeder (gun: "YYYY-AA-GG"; kişi id → yer "1"–"7" ya da "J"); null: gün otomatiğe döner */
+export function onayGunuAyarla(gun: string, yer: Record<number, string> | null) {
+  if (!yer || !Object.keys(yer).length) { delete depo.veri.onayMasa.elle[gun]; return; }
+  depo.veri.onayMasa.elle[gun] = Object.fromEntries(Object.entries(yer).map(([id, y]) => [id, y]));
 }
 
 // ---------- öğlen nöbeti ----------

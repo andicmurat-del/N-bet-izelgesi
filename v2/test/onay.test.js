@@ -125,3 +125,38 @@ test("en az maliyetli atama", () => {
   expect(enAzAtama([[4, 1, 3], [2, 0, 5], [3, 2, 2]])).toEqual([1, 0, 2]);
   expect(enAzAtama([[1, 9, 9, 0]])).toEqual([3]);
 });
+
+describe("elle yer değiştirme", () => {
+  const H = onayHaftasiHesapla(veri, 2026, 10, 9);
+  const g = H.gunler[0], a = g.masa[0], b = g.masa[1];
+  const v = JSON.parse(JSON.stringify(veri));
+  const l = {}; g.masa.forEach((h, i) => { if (h.id) l[h.id] = String(i + 1); }); g.joker.forEach(h => { l[h.id] = "J"; });
+  l[a.id] = "2"; l[b.id] = "1";   // Masa 1 ile Masa 2'deki kişiler yer değiştirir
+  v.onayMasa = { elle: { "2026-11-09": l } };
+  const E = onayHaftasiHesapla(v, 2026, 10, 9);
+
+  test("değiştirilen gün kaydedildiği gibi kalır ve elle işaretlenir", () => {
+    expect(E.gunler[0].elle).toBe(true);
+    expect(E.gunler[0].masa[0].id).toBe(b.id);
+    expect(E.gunler[0].masa[1].id).toBe(a.id);
+    expect(H.gunler[0].elle).toBeUndefined();
+  });
+
+  test("eşitlikte gerçekte oturulan yer sayılır; ertesi gün dün oturduğu yere oturulmaz", () => {
+    const ka = E.kisiler.find(k => k.id === a.id);
+    expect(ka.say["2"]).toBeGreaterThanOrEqual(1);
+    const ertesi = E.gunler[1];
+    const yer = id => { const i = ertesi.masa.findIndex(h => h.id === id); return i >= 0 ? String(i + 1) : "J"; };
+    if (oturan(ertesi).includes("E" + a.id)) expect(yer(a.id)).not.toBe("2");
+    if (oturan(ertesi).includes("E" + b.id)) expect(yer(b.id)).not.toBe("1");
+  });
+
+  test("o gün çalışmayan kişinin elle yeri yok sayılır; kalanlar dağıtılır", () => {
+    const w = JSON.parse(JSON.stringify(v));
+    w.puantaj = { "2026-10": { [a.id]: { 9: "R" } } };
+    const S = onayHaftasiHesapla(w, 2026, 10, 9).gunler[0];
+    expect(oturan(S)).not.toContain(a.ad);
+    expect(S.masa[0].id).toBe(b.id);
+    expect(S.masa.slice(0, 6).every(h => h.id)).toBe(true);
+  });
+});

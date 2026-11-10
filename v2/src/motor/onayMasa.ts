@@ -7,6 +7,8 @@
 //     oturduğu şekilde dağıtılır (en az toplam). Cuma (hafta sonu listeleri de onaylanır, 3 günlük iş) ayrı sayılır:
 //     Cumalar kendi arasında, Pazartesi–Perşembe kendi arasında eşitlenir. Yıl başında sayılar sıfırlanır.
 //   - İlk 6 masadan boş kalan olursa o günün hazırlama teknikerlerinden biri oturur; yıl boyunca sırayla (en az oturan).
+//   - Elle değiştirilen günde kaydedilen yerler korunur (o gün çalışan ve yeri o gün var olanlar); kalanlar dağıtılır.
+//     Eşitlikte gerçekte oturulan yer sayılır.
 import { aktifGunMu, type Baglam } from "./baglam";
 import { puantajIzgarasi, type PuantajIzgarasi } from "./puantaj";
 import { ayAnahtari, gunKaydir, haftaGunu } from "./takvim";
@@ -53,7 +55,8 @@ export function enAzAtama(c: number[][]): number[] {
 }
 
 export interface OnayHucre { id: number | null; ad: string; not?: string; tekniker?: true }
-export interface OnayGunu { y: number; m: number; d: number; dw: number; tatil: boolean; arife: boolean; masa: OnayHucre[]; joker: OnayHucre[]; uyari: string[] }
+/** elle: gün elle değiştirildi */
+export interface OnayGunu { y: number; m: number; d: number; dw: number; tatil: boolean; arife: boolean; masa: OnayHucre[]; joker: OnayHucre[]; uyari: string[]; elle?: true }
 /** kisiler: haftanın onay eczacıları ve yıl başından hafta sonuna kadar her yerde oturdukları gün sayısı (cuma: yalnız Cumalar) */
 export interface OnayHaftasi { pzt: string; gunler: OnayGunu[]; kisiler: { id: number; ad: string; say: Record<OnayYeri, number>; cuma: Record<OnayYeri, number> }[] }
 
@@ -84,11 +87,22 @@ function gunHesapla(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: numb
   if (fazla >= 2) yerler.push("7");
   for (let k = 0; k < fazla - (fazla >= 2 ? 1 : 0); k++) yerler.push("J");
   const tur = dw === 4 ? D.cuma : D.hafici;   // Cuma ayrı, Pazartesi–Perşembe ayrı eşitlenir
-  const maliyet = kisi.map(id => yerler.map(yr => AGIR.sayi * (tur[id]?.[yr] || 0) + AGIR.toplam * (D.say[id]?.[yr] || 0) + (D.hafta[id]?.has(yr) ? AGIR.hafta : 0) + (D.dun[id] === yr ? AGIR.dun : 0)));
+  // elle kaydedilen yerler: o gün çalışan ve yeri o gün var olanlar sabit; kalan kişiler kalan yerlere dağıtılır
+  const E = B.onayElle[iso(y, m, d)], sabit = new Map<number, OnayYeri>();
+  if (E) {
+    const kalanYer = [...yerler];
+    for (const id of kisi) { const yr = E[id] as OnayYeri | undefined, i = yr ? kalanYer.indexOf(yr) : -1; if (i >= 0) { sabit.set(id, yr!); kalanYer.splice(i, 1); } }
+    if (sabit.size) g.elle = true;
+    yerler.length = 0; yerler.push(...kalanYer);
+  }
+  const serbest = kisi.filter(id => !sabit.has(id));
+  const maliyet = serbest.map(id => yerler.map(yr => AGIR.sayi * (tur[id]?.[yr] || 0) + AGIR.toplam * (D.say[id]?.[yr] || 0) + (D.hafta[id]?.has(yr) ? AGIR.hafta : 0) + (D.dun[id] === yr ? AGIR.dun : 0)));
   const atama = enAzAtama(maliyet);
   for (let i = 0; i < 7; i++) g.masa[i] = { id: null, ad: "" };
-  kisi.forEach((id, i) => {
-    const yr = yerler[atama[i]];
+  const yerOf = new Map<number, OnayYeri>(sabit);
+  serbest.forEach((id, i) => yerOf.set(id, yerler[atama[i]]));
+  kisi.forEach(id => {
+    const yr = yerOf.get(id)!;
     if (yr === "J") g.joker.push({ id, ad: ad(id) }); else g.masa[Number(yr) - 1] = { id, ad: ad(id) };
     (D.say[id] ??= {})[yr] = (D.say[id][yr] || 0) + 1;
     (tur[id] ??= {})[yr] = (tur[id][yr] || 0) + 1;

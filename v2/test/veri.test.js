@@ -23,6 +23,12 @@ const kod = (id, gun) => puantajIzgarasi(Y, M).satirlar.find(r => r.s.id === id)
 beforeEach(() => { depo.veri = ornekVeri(); });
 
 describe("yedek doğrulama", () => {
+  test("onay listesinde elle değiştirilen günler: geçersiz gün, kişi ve yer atılır", () => {
+    const o = kopya(depo.veri);
+    o.onayMasa = { yerlesim: {}, elle: { "2026-11-09": { 1: "1", 2: "J", 3: "9", 99: "2" }, "x": { 1: "1" } } };
+    const v = veriyiDogrula(o);
+    expect(v.onayMasa.elle).toEqual({ "2026-11-09": { 1: "1", 2: "J" } });
+  });
   test("bozuk gün kaydı olan çizelge atılır; sağlam çizelgenin günleri alan alan kurulur", () => {
     const v = ornekVeri();
     v.schedules["2026-10"] = { year: 2026, month: 10, days: [null], uyarilar: [], olusturma: 0 };

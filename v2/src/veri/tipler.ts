@@ -95,7 +95,8 @@ export interface Veri {
   servisKayit: Record<string, ServisAyKaydi>;
   /** onay listesi masaları: yerlesim, girilen haftalar (Pazartesi "YYYY-AA-GG") → kişi id → sıradaki yer (0'dan:
    *  Masa 1, Masa 3, Masa 2, Masa 4, Joker, Masa 5, Joker, Masa 6, sonra jokerler); sonraki haftalar oradan ilerler */
-  onayMasa: { yerlesim: Record<string, Record<string, number>> };
+  /** yerlesim: eski haftalık sıra girişi (artık kullanılmaz, yedeklerde korunur); elle: elle değiştirilen gün → kişi id → yer ("1"–"7", "J") */
+  onayMasa: { yerlesim: Record<string, Record<string, number>>; elle: Record<string, Record<string, string>> };
 }
 
 /** Puantajda bir günün görevi bir kişiden ötekine geçti (yerine tutma ya da takasın bir yarısı) */
