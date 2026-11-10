@@ -217,6 +217,14 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     }
     let hsPen = 0, thuFazla = 0, devirPen = 0, kesinPen = 0;
     // KESİN: aylık fazla mesai farkı (destek hariç) eczacılar kendi arasında, teknikerler kendi arasında en fazla FM_MAX_FARK saat
+    // eczacı ve tekniker ortalamaları arasında fark mümkünse en fazla FM_MAX_FARK saat (grup içi kesin kuraldan sonra)
+    if (fmGruplari[0].length && fmGruplari[1].length) {
+      let tE = 0, tT = 0;
+      for (const ix of fmGruplari[0]) tE += hFm[ix];
+      for (const ix of fmGruplari[1]) tT += hFm[ix];
+      const d = Math.abs(tE / fmGruplari[0].length - tT / fmGruplari[1].length);
+      if (d > FM_MAX_FARK) hsPen += AGIRLIK.grupOrtFark * (d - FM_MAX_FARK);
+    }
     for (const G of fmGruplari) {
       const n = G.length; if (n < 2) continue;
       let mx = -1e9, mn = 1e9;

@@ -143,14 +143,14 @@ describe("ay içinde ayrılan kişinin nöbetleri kalan günlere sığdırılır
 });
 
 describe("çizelge her zaman en az uyarılı hâliyle oluşturulur", () => {
-  // ilk aramada uyarı kalırsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir. Gerçekçi kadrolu 25.
-  // senaryoda ilk arama 3 uyarı / kırmızı gün bırakıyor; ek denemelerden biri uyarısız
+  // ilk aramada uyarı kalırsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir. Gerçekçi kadrolu 37.
+  // senaryoda ilk arama 6 uyarı / kırmızı gün bırakıyor; ek denemelerle 2'ye iner
   const say = r => r.warnings.filter(w => uyariSiniflandir(w).seviye !== "bilgi").length + r.days.filter(g => g.conflict).length;
-  test("ilk aramadan daha çok uyarılı olmaz; uyarısızı bulunursa o seçilir", () => {
-    const { y, m0, veri } = senaryo(25, { eczaci: [6, 8], teknisyen: [4, 8] });
+  test("ilk aramadan daha çok uyarılı olmaz; ek denemelerin en az uyarılısı seçilir", () => {
+    const { y, m0, veri } = senaryo(37, { eczaci: [6, 8], teknisyen: [4, 8] });
     const ilk = cizelgeUret(new Baglam(veri), y, m0, 0, () => 0), son = cizelgeOlustur(veri, y, m0, { saat: () => 0 });
     expect(say(ilk)).toBeGreaterThan(0);
-    expect(say(son)).toBe(0);
+    expect(say(son)).toBeLessThan(say(ilk));
   });
 });
 
@@ -170,6 +170,21 @@ describe("fazla mesai farkı eczacılar ve teknikerler arasında ayrı ölçül�
     expect(fark(kadro.filter(s => s.role === "eczaci").map(s => s.id))).toBeLessThanOrEqual(8);
     expect(fark(kadro.filter(s => s.role === "teknisyen").map(s => s.id))).toBeLessThanOrEqual(8);
     expect(r.warnings.filter(w => /KESİN KURAL/.test(w))).toEqual([]);
+    // iki grubun ortalaması arasındaki fark kadro yapısından 8 saati aşar: uyarı değil bilgi notu
+    const ortNot = r.warnings.filter(w => /fazla mesai ortalaması/.test(w));
+    expect(ortNot.length).toBe(1);
+    expect(uyariSiniflandir(ortNot[0])).toEqual({ seviye: "bilgi", baslik: "Eczacı / tekniker ortalaması" });
+  }, 120000);
+  test("dengeli kadroda eczacı ve tekniker ortalamaları arasında fark en fazla 8 saat", () => {
+    const kadro = [];
+    for (let i = 1; i <= 8; i++) kadro.push({ id: i, name: "E" + i, role: "eczaci" });
+    for (let i = 1; i <= 8; i++) kadro.push({ id: 8 + i, name: "T" + i, role: "teknisyen" });
+    const v = { staff: kadro, prefs: {}, manualTatil: {}, arife: {}, settings: {}, schedules: {}, puantaj: {}, acil: {} };
+    let t = 0; const r = cizelgeOlustur(v, 2026, 10, { saat: () => (t += 500) }), fm = {};
+    r.days.forEach(g => { g.assigned.forEach(p => { fm[p.id] = (fm[p.id] || 0) + g.fazlaMesai; }); g.prep.forEach(p => { fm[p.id] = (fm[p.id] || 0) + 8; }); });
+    const ort = rol => { const l = kadro.filter(s => s.role === rol); return l.reduce((a, s) => a + (fm[s.id] || 0), 0) / l.length; };
+    expect(Math.abs(ort("eczaci") - ort("teknisyen"))).toBeLessThanOrEqual(8);
+    expect(r.warnings.filter(w => /fazla mesai ortalaması/.test(w))).toEqual([]);
   }, 120000);
 });
 

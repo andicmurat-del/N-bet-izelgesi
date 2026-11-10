@@ -8,6 +8,7 @@ export const AYAR_GIZLI = new Set<AyarAdi>(["niDusum", "nobetSuresi", "mesai", "
 
 // KESİN KURALLAR (çizelge oluşturma, elle düzenleme ve uyarılarda ortak)
 //  - Fazla mesai: destek personeli hariç; eczacılar kendi arasında, teknikerler kendi arasında aylık fazla mesai farkı en fazla FM_MAX_FARK saat
+//    (iki grubun ortalamaları arasında da mümkünse en fazla FM_MAX_FARK saat; kesin değil)
 //  - Hafta sonu: kişiye ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti (Cuma + Cumartesi + Pazar üçü birden güçlü tercihtir, kesin değil)
 export const FM_MAX_FARK = 8;
 
@@ -58,6 +59,7 @@ export const AGIRLIK = Object.freeze({
   prepUst: 400000,                         // eczacı / tekniker ayda en fazla 2 hazırlama
   grupHazFark: 300000,                     // eczacılar kendi arasında, teknikerler kendi arasında aylık hazırlama farkı 1'i aşınca
   hsEnAz1: 150000,                         // ayda en az 1 Cumartesi/Pazar nöbeti (uygun gün varsa)
+  grupOrtFark: 200000,                     // eczacı ve tekniker fazla mesai ortalamaları farkı 8 saati aşınca (her saat; grup içi kesin kuraldan sonra)
   nobetFark: 100000,                       // aylık nöbet sayısı farkı 1'i aşınca
   ayrilanSaat: 5000,                       // ay içinde ayrılan: eksik kalan her fazla mesai saati (kalan günlerine sığan en fazla saati alsın)
   hsUst: 80000,                            // ayda Cumartesi/Pazar nöbeti ayardaki üst sınırı aşınca
