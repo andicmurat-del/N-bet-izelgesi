@@ -4,7 +4,8 @@
 //   - Yerler: Masa 1–6; 7. kişi joker olur; 8 ve daha çok kişide ilk fazla kişi Masa 7'ye oturur, kalanlar joker.
 //   - Kimse bir önceki çalıştığı gün oturduğu yere oturmaz (mümkünse aynı hafta içinde de aynı yere ikinci kez oturmaz).
 //   - Yıl boyunca herkes her masaya (ve jokerliğe) eşit oturur: her gün yerler, kişilerin yıl içinde o yerde en az
-//     oturduğu şekilde dağıtılır (en az toplam). Yıl başında sayılar sıfırlanır.
+//     oturduğu şekilde dağıtılır (en az toplam). Cuma (hafta sonu listeleri de onaylanır, 3 günlük iş) ayrı sayılır:
+//     Cumalar kendi arasında, Pazartesi–Perşembe kendi arasında eşitlenir. Yıl başında sayılar sıfırlanır.
 //   - İlk 6 masadan boş kalan olursa o günün hazırlama teknikerlerinden biri oturur; yıl boyunca sırayla (en az oturan).
 import { aktifGunMu, type Baglam } from "./baglam";
 import { puantajIzgarasi, type PuantajIzgarasi } from "./puantaj";
@@ -22,8 +23,9 @@ export function pazartesi(y: number, m: number, d: number): [number, number, num
 /** yer anahtarları: "1"–"7" masa, "J" joker */
 export const ONAY_YERLERI = ["1", "2", "3", "4", "5", "6", "7", "J"] as const;
 export type OnayYeri = (typeof ONAY_YERLERI)[number];
-/** dağıtım ağırlıkları: yıl içinde o yerde oturulan her gün; aynı hafta içinde aynı yere ikinci kez; önceki gün aynı yer */
-const AGIR = { sayi: 10, hafta: 25, dun: 1e6 } as const;
+/** dağıtım ağırlıkları: yıl içinde o yerde aynı tür günde (Cuma ya da Pazartesi–Perşembe) oturulan her gün; tüm
+ *  günlerin toplamı (eşitlikte ayırıcı); aynı hafta içinde aynı yere ikinci kez; önceki gün aynı yer */
+const AGIR = { sayi: 10, toplam: 1, hafta: 25, dun: 1e6 } as const;
 
 /** en az maliyetli atama (Macar yöntemi): satır sayısı ≤ sütun sayısı; her satıra bir sütun */
 export function enAzAtama(c: number[][]): number[] {
@@ -52,8 +54,8 @@ export function enAzAtama(c: number[][]): number[] {
 
 export interface OnayHucre { id: number | null; ad: string; not?: string; tekniker?: true }
 export interface OnayGunu { y: number; m: number; d: number; dw: number; tatil: boolean; arife: boolean; masa: OnayHucre[]; joker: OnayHucre[]; uyari: string[] }
-/** kisiler: haftanın onay eczacıları ve yıl başından hafta sonuna kadar her yerde oturdukları gün sayısı */
-export interface OnayHaftasi { pzt: string; gunler: OnayGunu[]; kisiler: { id: number; ad: string; say: Record<OnayYeri, number> }[] }
+/** kisiler: haftanın onay eczacıları ve yıl başından hafta sonuna kadar her yerde oturdukları gün sayısı (cuma: yalnız Cumalar) */
+export interface OnayHaftasi { pzt: string; gunler: OnayGunu[]; kisiler: { id: number; ad: string; say: Record<OnayYeri, number>; cuma: Record<OnayYeri, number> }[] }
 
 const CALISIR = (k: string, saat: number) => k === "M" || k === "N" || (k.startsWith("S:") && saat > 0);
 
@@ -63,8 +65,9 @@ function izgaraOkuyucu(B: Baglam) {
 }
 
 /** yıl içi sayılar ve son yerler (gün gün ilerler) */
-interface Durum { say: Record<number, Partial<Record<OnayYeri, number>>>; dun: Record<number, OnayYeri>; hafta: Record<number, Set<OnayYeri>>; haftaNo: number; tek: Record<number, number> }
-const yeniDurum = (): Durum => ({ say: {}, dun: {}, hafta: {}, haftaNo: -1, tek: {} });
+type Sayac = Record<number, Partial<Record<OnayYeri, number>>>;
+interface Durum { say: Sayac; cuma: Sayac; hafici: Sayac; dun: Record<number, OnayYeri>; hafta: Record<number, Set<OnayYeri>>; haftaNo: number; tek: Record<number, number> }
+const yeniDurum = (): Durum => ({ say: {}, cuma: {}, hafici: {}, dun: {}, hafta: {}, haftaNo: -1, tek: {} });
 
 function gunHesapla(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: number, m: number, d: number, D: Durum): OnayGunu {
   const dw = haftaGunu(y, m, d), tatil = B.resmiTatilMi(y, m, d), arife = !tatil && B.arifeMi(y, m, d);
@@ -80,13 +83,15 @@ function gunHesapla(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: numb
   const yerler: OnayYeri[] = ["1", "2", "3", "4", "5", "6"];
   if (fazla >= 2) yerler.push("7");
   for (let k = 0; k < fazla - (fazla >= 2 ? 1 : 0); k++) yerler.push("J");
-  const maliyet = kisi.map(id => yerler.map(yr => AGIR.sayi * (D.say[id]?.[yr] || 0) + (D.hafta[id]?.has(yr) ? AGIR.hafta : 0) + (D.dun[id] === yr ? AGIR.dun : 0)));
+  const tur = dw === 4 ? D.cuma : D.hafici;   // Cuma ayrı, Pazartesi–Perşembe ayrı eşitlenir
+  const maliyet = kisi.map(id => yerler.map(yr => AGIR.sayi * (tur[id]?.[yr] || 0) + AGIR.toplam * (D.say[id]?.[yr] || 0) + (D.hafta[id]?.has(yr) ? AGIR.hafta : 0) + (D.dun[id] === yr ? AGIR.dun : 0)));
   const atama = enAzAtama(maliyet);
   for (let i = 0; i < 7; i++) g.masa[i] = { id: null, ad: "" };
   kisi.forEach((id, i) => {
     const yr = yerler[atama[i]];
     if (yr === "J") g.joker.push({ id, ad: ad(id) }); else g.masa[Number(yr) - 1] = { id, ad: ad(id) };
     (D.say[id] ??= {})[yr] = (D.say[id][yr] || 0) + 1;
+    (tur[id] ??= {})[yr] = (tur[id][yr] || 0) + 1;
     D.dun[id] = yr; (D.hafta[id] ??= new Set()).add(yr);
   });
   // ilk 6 masadan boş kalan: o günün hazırlama teknikerlerinden biri, yıl boyunca sırayla
@@ -129,6 +134,7 @@ export function onayHaftasi(B: Baglam, py: number, pm: number, pd: number): Onay
     gunler.push(gunHesapla(B, izgara, a, b, c, D));
   }
   const kisiler = B.staff.filter(s => onayEczacisi(s) && (aktifGunMu(s, py, pm, pd) || aktifGunMu(s, ty, tm, td))).sort((a, b) => a.name.localeCompare(b.name, "tr"))
-    .map(s => ({ id: s.id, ad: s.name, say: Object.fromEntries(ONAY_YERLERI.map(k => [k, D.say[s.id]?.[k] || 0])) as Record<OnayYeri, number> }));
+    .map(s => ({ id: s.id, ad: s.name, say: Object.fromEntries(ONAY_YERLERI.map(k => [k, D.say[s.id]?.[k] || 0])) as Record<OnayYeri, number>,
+      cuma: Object.fromEntries(ONAY_YERLERI.map(k => [k, D.cuma[s.id]?.[k] || 0])) as Record<OnayYeri, number> }));
   return { pzt, gunler, kisiler };
 }
