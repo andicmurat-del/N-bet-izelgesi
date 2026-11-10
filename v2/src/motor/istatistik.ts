@@ -1,7 +1,6 @@
 // Bir ayın çizelgesinden sayımlar: kişi başı fazla mesai, gün türleri, hafta sonu kuralı, yıllık gün türü sayıları.
-import { eczaneNobetcisi, eczaneYillikEsit, aktifAydaMi, aktifGunMu, eczaciMi, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
+import { eczaneNobetcisi, eczaneYillikEsit, aktifAydaMi, aktifGunMu, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
 import type { YilGunTipi } from "./sabitler";
-import type { Kisi } from "../veri/tipler";
 import { ayGunSayisi, CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
 
 /** fazla mesai kuralına giren kişiler: ayın tamamında çalışan eczacı, tekniker ve dışarıdan gelen eczacı */
@@ -33,22 +32,12 @@ function ayFmTablosu(B: Baglam, days: MotorGunu[]): Record<number, number> {
   return t;
 }
 
-/** fazla mesai kuralının grupları: eczacılar (kemoterapi eczacıları dahil) ve teknikerler ayrı ölçülür (her gün en az
- *  bir eczacı şartı yüzünden eczacı ortalaması yapısal olarak yüksektir; gruplar arası fark kural dışı sayılmaz) */
-export const FM_GRUPLARI = [["e", "eczacılar"], ["t", "teknikerler"]] as const;
-export const fmGrubu = (rol: string): "e" | "t" => (eczaciMi(rol) ? "e" : "t");
-/** fazla mesai farkı: her grubun kendi içinde; en büyük farkı olan grup döner */
 export function fmFarkBilgisi(B: Baglam, y: number, m: number, days: MotorGunu[]) {
   const t = ayFmTablosu(B, days), k = fmKuralKisileri(B, y, m);
-  let en: { fark: number; enAz?: Kisi; enCok?: Kisi; grup?: string } = { fark: 0 };
-  for (const [g, ad] of FM_GRUPLARI) {
-    const l = k.filter(s => fmGrubu(s.role) === g); if (l.length < 2) continue;
-    let enAz = l[0], enCok = l[0];
-    l.forEach(s => { if ((t[s.id] || 0) < (t[enAz.id] || 0)) enAz = s; if ((t[s.id] || 0) > (t[enCok.id] || 0)) enCok = s; });
-    const fark = (t[enCok.id] || 0) - (t[enAz.id] || 0);
-    if (fark > en.fark || !en.grup) en = { fark, enAz, enCok, grup: ad };
-  }
-  return { ...en, t, kisiler: k };
+  if (k.length < 2) return { fark: 0, kisiler: k, t };
+  let enAz = k[0], enCok = k[0];
+  k.forEach(s => { if ((t[s.id] || 0) < (t[enAz.id] || 0)) enAz = s; if ((t[s.id] || 0) > (t[enCok.id] || 0)) enCok = s; });
+  return { fark: (t[enCok.id] || 0) - (t[enAz.id] || 0), enAz, enCok, t, kisiler: k };
 }
 
 /** kişinin ay içindeki Cuma / Cumartesi / Pazar nöbet sayıları */
