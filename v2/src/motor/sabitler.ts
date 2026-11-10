@@ -59,7 +59,6 @@ export const AGIRLIK = Object.freeze({
   grupHazFark: 300000,                     // eczacılar kendi arasında, teknikerler kendi arasında aylık hazırlama farkı 1'i aşınca
   hsEnAz1: 150000,                         // ayda en az 1 Cumartesi/Pazar nöbeti (uygun gün varsa)
   nobetFark: 100000,                       // aylık nöbet sayısı farkı 1'i aşınca
-  ayrilanSaat: 5000,                       // ay içinde ayrılan: eksik kalan her fazla mesai saati (kalan günlerine sığan en fazla saati alsın)
   hsUst: 80000,                            // ayda Cumartesi/Pazar nöbeti ayardaki üst sınırı aşınca
   thuHs: 20000,                            // Perşembe nöbeti tutana aynı hafta sonu nöbet (etkin: ×3 = 60000)
   // 4. yıllık eşitlik ve aylık düzen
