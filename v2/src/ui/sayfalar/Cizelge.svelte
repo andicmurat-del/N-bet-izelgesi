@@ -75,7 +75,7 @@
     { ad: "nobet", baslik: "Nöbet Listesi", uzun: "Günlük Eczane Nöbet Listesi", aciklama: "Ayın nöbet ve hafta sonu hazırlama görevleri; nöbet kuralları ve eşitlik kendiliğinden uygulanır." },
     { ad: "liste", baslik: "Aylık Çalışma Listesi", uzun: "Aylık Çalışma Listesi", aciklama: "Puantaja göre her gün onayda, hazırlamada ve izinde olan personel." },
     { ad: "oglen", baslik: "Öğlen Nöbet Listesi", uzun: "Öğlen Nöbet Listesi", aciklama: "Hafta içi öğle arası nöbetçi eczacı ve teknikerler; yıl boyunca eşit dağıtılır." },
-    { ad: "onay", baslik: "Onay Listesi", uzun: "Onay Listesi", aciklama: "Haftalık onay masaları ve jokerler: her eczacı hafta boyunca aynı masada, her hafta sıradaki yerde." },
+    { ad: "onay", baslik: "Onay Listesi", uzun: "Onay Listesi", aciklama: "Haftalık onay masaları ve jokerler: yerler her gün değişir, yıl boyunca herkes her masaya eşit oturur." },
     { ad: "hazirlama", baslik: "Hazırlama Listesi", uzun: "Hazırlama Listesi", aciklama: "O gün çalışan teknikerlere servisler zorluk ve hasta sayısına göre dengeli dağıtılır." },
     { ad: "puantaj", baslik: "Puantaj", uzun: "Puantaj Cetveli", aciklama: "Gerçekleşen çalışma: nöbet, hazırlama, nöbet ertesi izin, yıllık izin ve rapor; fazla mesai hesabı." },
     { ad: "izinler", baslik: "İzinler", uzun: "İzinler ve Tercihler", aciklama: "İzinli günler, nöbet istekleri, eş durumu, resmi tatil ve arife işaretleri." },

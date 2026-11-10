@@ -1,72 +1,59 @@
-// Onay listesi masaları: günlük eczanede 7 onay masası (ilk 6'sı her gün dolu olmalı) ve jokerler. Eczacılar (acilde
-// tutanlar dahil, kemoterapi eczacıları hariç) her hafta sıradaki yere geçer:
-//   Masa 1 → Masa 3 → Masa 2 → Masa 4 → Joker → Masa 5 → Joker → Masa 6 (9. kişi ve sonrası sona Joker olarak eklenir).
-// Bir hafta boyunca herkes aynı yerde oturur. Günlük dağıtım (hafta içi, arife dahil, resmi tatil hariç):
-//   1. Masa sahibi o gün çalışıyorsa (puantajda mesai ya da nöbet; nöbet ertesi, izin, rapor yok) masasında oturur.
-//   2. Boş kalan ilk 6 masaya o gün çalışan jokerler sırayla geçer (joker görevini yapmış sayılır, masanın değil).
-//   3. Sırada olmayan (yeri girilmemiş) ama o gün çalışan eczacılar ekstra joker olur. Geriye 2 ya da daha çok joker
-//      kalırsa ilki Masa 7'ye oturur; kalanlar joker.
-//   4. İlk 6 masadan hâlâ boş varsa o günün hazırlama teknikerlerinden biri oturur; yıl boyunca sırayla (en az oturan).
-// Yerleşim kullanıcıdan gelir: bir haftanın kimin hangi yerde olduğu girilir, sonraki haftalar oradan kendiliğinden ilerler;
-// kadro değişince yeni haftanın yerleşimi yeniden girilir (en son girilen önceki hafta esas alınır); işten ayrılan
-// kişinin yeri kendiliğinden sıradan düşer.
+// Onay listesi masaları: günlük eczanede 7 onay masası (ilk 6'sı her gün dolu olmalı) ve jokerler. Sabit sıra yoktur:
+// yerler her gün yeniden dağıtılır. Dağıtıma o gün çalışan eczacılar girer (acilde tutanlar dahil, kemoterapi
+// eczacıları hariç; puantajda mesai ya da nöbet; nöbet ertesi, izin, rapor yok). Hafta içi, arife dahil, resmi tatil hariç.
+//   - Yerler: Masa 1–6; 7. kişi joker olur; 8 ve daha çok kişide ilk fazla kişi Masa 7'ye oturur, kalanlar joker.
+//   - Kimse bir önceki çalıştığı gün oturduğu yere oturmaz (mümkünse aynı hafta içinde de aynı yere ikinci kez oturmaz).
+//   - Yıl boyunca herkes her masaya (ve jokerliğe) eşit oturur: her gün yerler, kişilerin yıl içinde o yerde en az
+//     oturduğu şekilde dağıtılır (en az toplam). Yıl başında sayılar sıfırlanır.
+//   - İlk 6 masadan boş kalan olursa o günün hazırlama teknikerlerinden biri oturur; yıl boyunca sırayla (en az oturan).
 import { aktifGunMu, type Baglam } from "./baglam";
 import { puantajIzgarasi, type PuantajIzgarasi } from "./puantaj";
 import { ayAnahtari, gunKaydir, haftaGunu } from "./takvim";
 
-export type Yer = { tur: "masa"; no: number } | { tur: "joker"; no: number };
-const TEMEL: ("J" | number)[] = [1, 3, 2, 4, "J", 5, "J", 6];
-
-/** n kişilik sıra: temel 8 yer, 9. kişiden sonrası sona joker */
-export function onayDongusu(n: number): Yer[] {
-  const l = [...TEMEL]; while (l.length < n) l.push("J");
-  let j = 0;
-  return l.map(x => (x === "J" ? { tur: "joker", no: ++j } : { tur: "masa", no: x }));
-}
-export const yerAdi = (y: Yer) => (y.tur === "masa" ? "Masa " + y.no : "Joker " + y.no);
-
 /** onay masası tutan eczacı: eczacı (acilde tutan dahil); kemoterapi eczacısı yok */
 const onayEczacisi = (s: { role: string }) => s.role === "eczaci";
 
-/** "YYYY-AA-GG" ↔ gün */
+/** "YYYY-AA-GG" */
 const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-const coz = (t: string): [number, number, number] => { const [a, b, c] = t.split("-").map(Number); return [a, b - 1, c]; };
 const gunNo = (y: number, m: number, d: number) => Math.round(Date.UTC(y, m, d) / 864e5);
 /** günün haftasının Pazartesi'si */
 export function pazartesi(y: number, m: number, d: number): [number, number, number] { return gunKaydir(y, m, d, -haftaGunu(y, m, d)); }
 
-export type OnayYerlesimi = Record<string, Record<string, number>>;
+/** yer anahtarları: "1"–"7" masa, "J" joker */
+export const ONAY_YERLERI = ["1", "2", "3", "4", "5", "6", "7", "J"] as const;
+export type OnayYeri = (typeof ONAY_YERLERI)[number];
+/** dağıtım ağırlıkları: yıl içinde o yerde oturulan her gün; aynı hafta içinde aynı yere ikinci kez; önceki gün aynı yer */
+const AGIR = { sayi: 10, hafta: 25, dun: 1e6 } as const;
 
-/** o haftanın yerleşimi: kişi id → sıradaki yer; esas alınan (girilen) hafta; sıra uzunluğu. Girilen haftadan hafta
- *  hafta ilerlenir; işten ayrılan (o hafta hiç çalışma günü kalmayan) kişi sıradan çıkar: sıra 8'den uzunsa en sondaki
- *  yer düşer, o yerdeki kişi ayrılanın yerine geçer (kimsenin yeri değişmez); 8 ya da daha kısaysa yeri boş döner. */
-export function haftaYerlesimi(B: Baglam, py: number, pm: number, pd: number) {
-  const Y = B.onayYerlesim, bu = iso(py, pm, pd);
-  const capa = Object.keys(Y).filter(k => k <= bu && Object.keys(Y[k] ?? {}).length).sort().pop();
-  if (!capa) return null;
-  const yer: Record<number, number> = {};
-  for (const [id, s] of Object.entries(Y[capa])) yer[Number(id)] = s;
-  let n = Math.max(TEMEL.length, Object.keys(yer).length);
-  const hafta = Math.round((gunNo(py, pm, pd) - gunNo(...coz(capa))) / 7);
-  let [a, b, c] = coz(capa);
-  const ayrilanlar: string[] = [];
-  for (let h = 0; h <= hafta; h++) {
-    if (h > 0) { for (const id of Object.keys(yer)) yer[Number(id)] = (yer[Number(id)] + 1) % n; [a, b, c] = gunKaydir(a, b, c, 7); }
-    for (const id of Object.keys(yer).map(Number)) {
-      const s = B.kisi(id);
-      const calisir = !!s && [0, 1, 2, 3, 4].some(i => aktifGunMu(s, ...gunKaydir(a, b, c, i)));
-      // yalnız ayrılan (bitiş tarihi geçmiş) çıkar; henüz başlamamış olan sırada kalır
-      if (calisir || !s?.bitis || s.bitis >= iso(a, b, c)) continue;
-      const f = yer[id]; delete yer[id]; ayrilanlar.push(s.name);
-      if (n > TEMEL.length) { const sonId = Object.keys(yer).map(Number).find(k => yer[k] === n - 1); if (sonId !== undefined) yer[sonId] = f; n--; }
-    }
+/** en az maliyetli atama (Macar yöntemi): satır sayısı ≤ sütun sayısı; her satıra bir sütun */
+export function enAzAtama(c: number[][]): number[] {
+  const n = c.length, m = n ? c[0].length : 0;
+  if (!n) return [];
+  const u = new Array(n + 1).fill(0), v = new Array(m + 1).fill(0), p = new Array(m + 1).fill(0), way = new Array(m + 1).fill(0);
+  for (let i = 1; i <= n; i++) {
+    p[0] = i; let j0 = 0;
+    const minv = new Array(m + 1).fill(Infinity), used = new Array(m + 1).fill(false);
+    do {
+      used[j0] = true; const i0 = p[j0]; let delta = Infinity, j1 = 0;
+      for (let j = 1; j <= m; j++) if (!used[j]) {
+        const cur = c[i0 - 1][j - 1] - u[i0] - v[j];
+        if (cur < minv[j]) { minv[j] = cur; way[j] = j0; }
+        if (minv[j] < delta) { delta = minv[j]; j1 = j; }
+      }
+      for (let j = 0; j <= m; j++) if (used[j]) { u[p[j]] += delta; v[j] -= delta; } else minv[j] -= delta;
+      j0 = j1;
+    } while (p[j0] !== 0);
+    do { const j1 = way[j0]; p[j0] = p[j1]; j0 = j1; } while (j0);
   }
-  return { capa, girildi: capa === bu, yer, n, dongu: onayDongusu(n), ayrilanlar };
+  const out = new Array(n).fill(-1);
+  for (let j = 1; j <= m; j++) if (p[j]) out[p[j] - 1] = j - 1;
+  return out;
 }
 
 export interface OnayHucre { id: number | null; ad: string; not?: string; tekniker?: true }
 export interface OnayGunu { y: number; m: number; d: number; dw: number; tatil: boolean; arife: boolean; masa: OnayHucre[]; joker: OnayHucre[]; uyari: string[] }
-export interface OnayHaftasi { pzt: string; yerlesim: ReturnType<typeof haftaYerlesimi>; gunler: OnayGunu[]; kisiler: { id: number; ad: string; yer: Yer | null }[]; sirasiz: string[] }
+/** kisiler: haftanın onay eczacıları ve yıl başından hafta sonuna kadar her yerde oturdukları gün sayısı */
+export interface OnayHaftasi { pzt: string; gunler: OnayGunu[]; kisiler: { id: number; ad: string; say: Record<OnayYeri, number> }[] }
 
 const CALISIR = (k: string, saat: number) => k === "M" || k === "N" || (k.startsWith("S:") && saat > 0);
 
@@ -75,43 +62,43 @@ function izgaraOkuyucu(B: Baglam) {
   return (y: number, m: number) => { const k = ayAnahtari(y, m); let G = c.get(k); if (!G) { G = puantajIzgarasi(B, y, m); c.set(k, G); } return G; };
 }
 
-function gunHesapla(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: number, m: number, d: number, Yh: NonNullable<ReturnType<typeof haftaYerlesimi>>, sayac: Record<number, number>): OnayGunu {
+/** yıl içi sayılar ve son yerler (gün gün ilerler) */
+interface Durum { say: Record<number, Partial<Record<OnayYeri, number>>>; dun: Record<number, OnayYeri>; hafta: Record<number, Set<OnayYeri>>; haftaNo: number; tek: Record<number, number> }
+const yeniDurum = (): Durum => ({ say: {}, dun: {}, hafta: {}, haftaNo: -1, tek: {} });
+
+function gunHesapla(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: number, m: number, d: number, D: Durum): OnayGunu {
   const dw = haftaGunu(y, m, d), tatil = B.resmiTatilMi(y, m, d), arife = !tatil && B.arifeMi(y, m, d);
   const g: OnayGunu = { y, m, d, dw, tatil, arife, masa: [], joker: [], uyari: [] };
   if (tatil) return g;
+  const hn = Math.floor((gunNo(y, m, d) + 3) / 7);   // Pazartesi'den başlayan hafta numarası
+  if (hn !== D.haftaNo) { D.haftaNo = hn; D.hafta = {}; }
   const G = izgara(y, m), ad = (id: number) => B.kisi(id)?.name ?? "(silinmiş kişi)";
   const calisiyor = (id: number) => { const s = B.kisi(id); if (!s || !aktifGunMu(s, y, m, d)) return false; const c = G.satirlar.find(r => r.s.id === id)?.cells[d - 1]; return !!c && CALISIR(c.kod, c.saat); };
-  const masaSahibi: Record<number, number> = {}, jokerler: { id: number; no: number }[] = [];
-  for (const [id, s] of Object.entries(Yh.yer)) { const yer = Yh.dongu[s]; if (yer.tur === "masa") masaSahibi[yer.no] = Number(id); else jokerler.push({ id: Number(id), no: yer.no }); }
-  jokerler.sort((a, b) => a.no - b.no);
-  const bos: number[] = [];
-  for (let no = 1; no <= 6; no++) {
-    const id = masaSahibi[no];
-    if (id !== undefined && calisiyor(id)) g.masa[no - 1] = { id, ad: ad(id) };
-    else { g.masa[no - 1] = { id: null, ad: "" }; bos.push(no); }
-  }
-  // sırada olmayan (yeri girilmemiş) ama o gün çalışan eczacılar jokerlerden sonra ekstra joker olur
-  const sirasiz = B.staff.filter(k => onayEczacisi(k) && Yh.yer[k.id] === undefined && calisiyor(k.id)).sort((x, y) => x.name.localeCompare(y.name, "tr")).map(k => ({ id: k.id, no: 99 }));
-  const gelen = [...jokerler.filter(j => calisiyor(j.id)), ...sirasiz];
-  for (const no of [...bos]) {
-    const j = gelen.shift(); if (!j) break;
-    const sahip = masaSahibi[no];
-    g.masa[no - 1] = { id: j.id, ad: ad(j.id), not: sahip !== undefined ? `joker · ${ad(sahip)} yerine` : "joker" };
-    bos.splice(bos.indexOf(no), 1);
-  }
-  if (gelen.length >= 2) { const j = gelen.shift()!; g.masa[6] = { id: j.id, ad: ad(j.id), not: "joker" }; }
-  else g.masa[6] = { id: null, ad: "" };
-  g.joker = gelen.map(j => ({ id: j.id, ad: ad(j.id) }));
-  // jokerler yetmedi: o günün hazırlama teknikerlerinden biri, yıl boyunca sırayla
+  const kisi = B.staff.filter(k => onayEczacisi(k) && calisiyor(k.id)).map(k => k.id).sort((a, b) => a - b);
+  // o günün yerleri: Masa 1–6, fazla kişiden ilki (2 ya da daha çok fazla varsa) Masa 7, kalanlar joker
+  const fazla = Math.max(0, kisi.length - 6);
+  const yerler: OnayYeri[] = ["1", "2", "3", "4", "5", "6"];
+  if (fazla >= 2) yerler.push("7");
+  for (let k = 0; k < fazla - (fazla >= 2 ? 1 : 0); k++) yerler.push("J");
+  const maliyet = kisi.map(id => yerler.map(yr => AGIR.sayi * (D.say[id]?.[yr] || 0) + (D.hafta[id]?.has(yr) ? AGIR.hafta : 0) + (D.dun[id] === yr ? AGIR.dun : 0)));
+  const atama = enAzAtama(maliyet);
+  for (let i = 0; i < 7; i++) g.masa[i] = { id: null, ad: "" };
+  kisi.forEach((id, i) => {
+    const yr = yerler[atama[i]];
+    if (yr === "J") g.joker.push({ id, ad: ad(id) }); else g.masa[Number(yr) - 1] = { id, ad: ad(id) };
+    (D.say[id] ??= {})[yr] = (D.say[id][yr] || 0) + 1;
+    D.dun[id] = yr; (D.hafta[id] ??= new Set()).add(yr);
+  });
+  // ilk 6 masadan boş kalan: o günün hazırlama teknikerlerinden biri, yıl boyunca sırayla
+  const bos = [1, 2, 3, 4, 5, 6].filter(no => !g.masa[no - 1].id);
   if (bos.length) {
     const k = B.servisKayit?.[ayAnahtari(y, m)]?.gun?.[d]?.k as number[] | undefined;
     const tek = (k?.length ? k : B.staff.filter(s => s.role === "teknisyen").map(s => s.id)).filter(id => B.kisi(id)?.role === "teknisyen" && calisiyor(id));
-    const sec = tek.slice().sort((a, b) => (sayac[a] || 0) - (sayac[b] || 0) || ad(a).localeCompare(ad(b), "tr") || a - b);
+    const sec = tek.slice().sort((a, b) => (D.tek[a] || 0) - (D.tek[b] || 0) || ad(a).localeCompare(ad(b), "tr") || a - b);
     for (const no of [...bos]) {
       const id = sec.shift(); if (id === undefined) break;
-      sayac[id] = (sayac[id] || 0) + 1;
-      const sahip = masaSahibi[no];
-      g.masa[no - 1] = { id, ad: ad(id), tekniker: true, not: sahip !== undefined ? `tekniker · ${ad(sahip)} yerine` : "tekniker" };
+      D.tek[id] = (D.tek[id] || 0) + 1;
+      g.masa[no - 1] = { id, ad: ad(id), tekniker: true, not: "tekniker" };
       bos.splice(bos.indexOf(no), 1);
     }
     if (bos.length) g.uyari.push(`Masa ${bos.join(", ")} boş kaldı: o gün yeterli eczacı ve hazırlama teknikeri yok.`);
@@ -119,40 +106,29 @@ function gunHesapla(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: numb
   return g;
 }
 
-/** yılın başından verilen güne kadar masaya oturan teknikerlerin sayısı (sırayla oturma için) */
-function teknikerSayaci(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: number, m: number, d: number): Record<number, number> {
-  const sayac: Record<number, number> = {}, son = gunNo(y, m, d);
-  // yerleşimi hiç girilmemiş haftalar atlanır: ilk girilen haftadan önce sayılacak gün yok
-  const ilk = Object.keys(B.onayYerlesim).sort()[0];
-  if (!ilk) return sayac;
-  let [a, b, c]: [number, number, number] = ilk > iso(y, 0, 1) ? coz(ilk) : [y, 0, 1];
-  let Yh: ReturnType<typeof haftaYerlesimi> = null, hafta = "";
+/** yıl başından verilen günden önceki son güne kadar dağıtımı yürütür */
+function yilDurumu(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: number, m: number, d: number): Durum {
+  const D = yeniDurum(), son = gunNo(y, m, d);
+  let [a, b, c]: [number, number, number] = [y, 0, 1];
   while (gunNo(a, b, c) < son) {
-    if (haftaGunu(a, b, c) <= 4) {
-      const p = pazartesi(a, b, c), k = iso(...p);
-      if (k !== hafta) { hafta = k; Yh = haftaYerlesimi(B, ...p); }
-      if (Yh) gunHesapla(B, izgara, a, b, c, Yh, sayac);
-    }
+    if (haftaGunu(a, b, c) <= 4) gunHesapla(B, izgara, a, b, c, D);
     [a, b, c] = gunKaydir(a, b, c, 1);
   }
-  return sayac;
+  return D;
 }
 
 /** Pazartesi'si verilen haftanın onay listesi */
 export function onayHaftasi(B: Baglam, py: number, pm: number, pd: number): OnayHaftasi {
-  const Yh = haftaYerlesimi(B, py, pm, pd), izgara = izgaraOkuyucu(B), pzt = iso(py, pm, pd);
+  const izgara = izgaraOkuyucu(B), pzt = iso(py, pm, pd);
   const [ty, tm, td] = gunKaydir(py, pm, pd, 4);
-  const kadro = B.staff.filter(s => onayEczacisi(s) && (aktifGunMu(s, py, pm, pd) || aktifGunMu(s, ty, tm, td))).sort((a, b) => a.name.localeCompare(b.name, "tr"));
-  const kisiler = kadro.map(s => ({ id: s.id, ad: s.name, yer: Yh && Yh.yer[s.id] !== undefined ? Yh.dongu[Yh.yer[s.id]] : null }));
-  const out: OnayHaftasi = { pzt, yerlesim: Yh, gunler: [], kisiler, sirasiz: Yh ? kisiler.filter(k => !k.yer).map(k => k.ad) : [] };
-  if (!Yh) return out;
-  // teknikerin yıl içi sırası: bu haftadan önceki günler sayılır, hafta içinde de sayılarak ilerler
-  const sayac = teknikerSayaci(B, izgara, py, pm, pd);
-  let yil = py;
+  let D = yilDurumu(B, izgara, py, pm, pd), yil = py;
+  const gunler: OnayGunu[] = [];
   for (let i = 0; i < 5; i++) {
     const [a, b, c] = gunKaydir(py, pm, pd, i);
-    if (a !== yil) { yil = a; Object.keys(sayac).forEach(k => delete sayac[Number(k)]); }   // yeni yıl: sıra baştan
-    out.gunler.push(gunHesapla(B, izgara, a, b, c, Yh, sayac));
+    if (a !== yil) { yil = a; const dun = D.dun; D = yeniDurum(); D.dun = dun; }   // yeni yıl: sayılar baştan
+    gunler.push(gunHesapla(B, izgara, a, b, c, D));
   }
-  return out;
+  const kisiler = B.staff.filter(s => onayEczacisi(s) && (aktifGunMu(s, py, pm, pd) || aktifGunMu(s, ty, tm, td))).sort((a, b) => a.name.localeCompare(b.name, "tr"))
+    .map(s => ({ id: s.id, ad: s.name, say: Object.fromEntries(ONAY_YERLERI.map(k => [k, D.say[s.id]?.[k] || 0])) as Record<OnayYeri, number> }));
+  return { pzt, gunler, kisiler };
 }

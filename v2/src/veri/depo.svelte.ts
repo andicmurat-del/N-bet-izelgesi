@@ -495,14 +495,6 @@ export function acilKaydet(y: number, m: number, gunler: { gun: number; ids: num
 // ---------- öğlen nöbeti ----------
 export const oglenAyi = (y: number, m: number) => depo.veri.oglen[ayAnahtari(y, m)];
 /** onarim: izin / rapor sonrası kendiliğinden onarım (onaylı ayda da yapılır) */
-// ---------- onay listesi masaları ----------
-/** haftanın yerleşimini kaydeder (pzt: Pazartesi "YYYY-AA-GG"; kişi id → sıradaki yer); boşsa o haftanın girişi silinir
- *  (önceki girilen haftadan ilerlemeye döner) */
-export function onayYerlesimiAyarla(pzt: string, yer: Record<number, number> | null) {
-  if (!yer || !Object.keys(yer).length) { delete depo.veri.onayMasa.yerlesim[pzt]; return; }
-  depo.veri.onayMasa.yerlesim[pzt] = Object.fromEntries(Object.entries(yer).map(([id, s]) => [id, s]));
-}
-
 export function oglenKaydet(y: number, m: number, gunler: { gun: number; e: number[]; t: number[]; elle?: true; sabit?: OglenSabit }[], onarim = false) {
   if (!onarim && listeOnayi("oglen", y, m)) return;
   const a: Record<string, OglenGunu> = {};
