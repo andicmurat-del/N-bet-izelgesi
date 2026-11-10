@@ -1,5 +1,5 @@
 // Onay listesi masaları: sabit sıra yok, yerler her gün dağıtılır. Kimse önceki çalıştığı gün oturduğu yere oturmaz;
-// yıl boyunca herkes her masaya eşit oturur. 7. kişi joker, 8+ kişide fazlalardan ilki Masa 7; ilk 6 masa dolmazsa
+// yıl boyunca herkes her masaya eşit oturur (Cumalar ayrı, Pazartesi–Perşembe ayrı). 7. kişi joker, 8+ kişide fazlalardan ilki Masa 7; ilk 6 masa dolmazsa
 // hazırlama teknikeri (yıl boyunca sırayla); resmi tatilde liste yok.
 import { describe, test, expect } from "vitest";
 import { onayHaftasiHesapla } from "../src/motor";
@@ -89,14 +89,26 @@ describe("her gün yer değişir, yıl boyunca her masaya eşit oturulur", () =>
     expect(ayni).toBe(0);
   });
 
-  test("yıl sonunda herkesin masa sayıları arasında fark en fazla 1", () => {
+  test("yıl sonunda herkesin masa sayıları arasında fark en fazla 2 (Cuma ve hafta içi ayrı eşitlendiğinden)", () => {
     const son = haftalar.at(-1);
     son.kisiler.forEach(k => {
       const masa = ["1", "2", "3", "4", "5", "6"].map(y => k.say[y]);
-      expect(Math.max(...masa) - Math.min(...masa)).toBeLessThanOrEqual(1);
+      expect(Math.max(...masa) - Math.min(...masa)).toBeLessThanOrEqual(2);
     });
+    // Masa 7 ve joker de Cuma / hafta içi ayrı eşitlenir: kişiler arası toplam farkı en fazla 2
     const joker = son.kisiler.map(k => k.say.J + k.say["7"]);
-    expect(Math.max(...joker) - Math.min(...joker)).toBeLessThanOrEqual(1);
+    expect(Math.max(...joker) - Math.min(...joker)).toBeLessThanOrEqual(2);
+  });
+
+  test("Cumalar ayrı eşitlenir: herkes her masaya yaklaşık aynı sayıda Cuma oturur", () => {
+    // Cuma hafta sonu listeleriyle 3 günlük iştir; eskiden günler eşitken Cumalar bir masada 10 fazla olabiliyordu
+    const son = haftalar.at(-1);
+    son.kisiler.forEach(k => {
+      const cuma = ["1", "2", "3", "4", "5", "6"].map(y => k.cuma[y]);
+      const haftaici = ["1", "2", "3", "4", "5", "6"].map(y => k.say[y] - k.cuma[y]);
+      expect(Math.max(...cuma) - Math.min(...cuma)).toBeLessThanOrEqual(2);
+      expect(Math.max(...haftaici) - Math.min(...haftaici)).toBeLessThanOrEqual(1);
+    });
   });
 
   test("izinli kişinin de kendi günleri masalara eşit dağılır", () => {

@@ -67,7 +67,7 @@
   {#each haftalar as h, i}<button class="hafta" aria-pressed={secili === i} onclick={() => (secili = i)}><b>{i + 1}. hafta</b><small>{haftaMetni(h)}</small></button>{/each}
 </div>
 
-<Bilgi baslik="Onay masaları nasıl dağıtılır?"><p>Yerler her gün yeniden dağıtılır; sabit sıra yoktur. O gün çalışan eczacılar (acilde tutanlar dahil, kemoterapi eczacıları hariç; nöbet ertesi, izin, rapor olan yok) Masa 1–6'ya oturur. 7. kişi joker olur; 8 ve daha çok kişide fazlalardan ilki Masa 7'ye oturur, kalanlar joker. Kimse önceki çalıştığı gün oturduğu yere oturmaz, mümkünse aynı hafta içinde de aynı yere ikinci kez oturmaz. Yıl boyunca herkes her masaya (ve jokerliğe) eşit oturur: her gün kişi, yıl içinde en az oturduğu yere yerleştirilir. İlk 6 masa dolmazsa o günün hazırlama teknikerlerinden biri oturur (yıl boyunca sırayla). Hafta içi, arife dahil; resmi tatilde liste yok.</p></Bilgi>
+<Bilgi baslik="Onay masaları nasıl dağıtılır?"><p>Yerler her gün yeniden dağıtılır; sabit sıra yoktur. O gün çalışan eczacılar (acilde tutanlar dahil, kemoterapi eczacıları hariç; nöbet ertesi, izin, rapor olan yok) Masa 1–6'ya oturur. 7. kişi joker olur; 8 ve daha çok kişide fazlalardan ilki Masa 7'ye oturur, kalanlar joker. Kimse önceki çalıştığı gün oturduğu yere oturmaz, mümkünse aynı hafta içinde de aynı yere ikinci kez oturmaz. Yıl boyunca herkes her masaya (ve jokerliğe) eşit oturur: her gün kişi, yıl içinde en az oturduğu yere yerleştirilir. Cuma hafta sonu listeleriyle birlikte 3 günlük iş olduğundan ayrı sayılır: Cumalar kendi arasında, Pazartesi–Perşembe kendi arasında eşitlenir. İlk 6 masa dolmazsa o günün hazırlama teknikerlerinden biri oturur (yıl boyunca sırayla). Hafta içi, arife dahil; resmi tatilde liste yok.</p></Bilgi>
 
 {#if H}
     {#each H.gunler.filter(g => g.uyari.length) as g}<p class="bant hata">{g.d} {AYLAR[g.m]}: {g.uyari.join(" ")}</p>{/each}
@@ -99,11 +99,11 @@
       </div>
     </section>
     <section class="panel" aria-label="Yıl içinde masa sayıları">
-      <div class="panel-bas"><h2>{hafta.gunler[4][0]} yılında oturulan gün (bu hafta dahil)</h2></div>
+      <div class="panel-bas"><h2>{hafta.gunler[4][0]} yılında oturulan gün (bu hafta dahil; altında Cuma sayısı)</h2></div>
       <div class="tablo-kap">
         <table class="onay sayilar">
           <thead><tr><th>Eczacı</th>{#each ONAY_YERLERI as k}<th>{yerBaslik(k)}</th>{/each}<th>Masa 1–6 farkı</th></tr></thead>
-          <tbody>{#each H.kisiler as k (k.id)}<tr><th scope="row">{k.ad}</th>{#each ONAY_YERLERI as y2}<td>{k.say[y2]}</td>{/each}<td><b>{kisiFark(k.say)}</b></td></tr>{/each}</tbody>
+          <tbody>{#each H.kisiler as k (k.id)}<tr><th scope="row">{k.ad}</th>{#each ONAY_YERLERI as y2}<td>{k.say[y2]}<small class="cuma">Cuma {k.cuma[y2]}</small></td>{/each}<td><b>{kisiFark(k.say)}</b><small class="cuma">Cuma {kisiFark(k.cuma)}</small></td></tr>{/each}</tbody>
         </table>
       </div>
     </section>
@@ -131,6 +131,7 @@
   .onay tbody th small { display: block; font-weight: 500; color: var(--yazi-2); font-size: var(--f-xs); }
   .onay thead th:first-child { width: 110px; }
   .onay.sayilar { min-width: 640px; }
+  .onay .cuma { display: block; font-size: var(--f-xs); color: var(--yazi-2); }
   .onay tbody th { text-align: left; color: var(--lacivert); background: var(--panel-bas); white-space: nowrap; width: 110px; position: sticky; left: 0; z-index: 1; }
   .onay td b { display: block; font-weight: 600; }
   .onay td.yerine { background: var(--arife-zemin); }
