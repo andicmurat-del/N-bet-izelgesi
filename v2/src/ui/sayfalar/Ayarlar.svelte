@@ -74,7 +74,7 @@
   <section class="kart panel-blok bolum">
     <h2>Günlük eczane nöbet kuralları</h2>
     <p class="aciklama">Günlük Eczane Nöbet Listesi ve hazırlama için.</p>
-    <Bilgi baslik="Sabit kurallar"><p>Nöbet ertesi gün izin, art arda iki gün nöbet yok, ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti, fazla mesai farkı eczacılar kendi arasında ve teknikerler kendi arasında en çok 8 saat, hazırlama farkı en çok 1; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı eşit.</p></Bilgi>
+    <Bilgi baslik="Sabit kurallar"><p>Nöbet ertesi gün izin, art arda iki gün nöbet yok, ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti, kişiler arası fazla mesai farkı en çok 8 saat, hazırlama farkı en çok 1; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı eşit.</p></Bilgi>
     <label class="alan"><span>İki nöbet arasında önerilen en az gün</span>
       <select class="girdi" bind:value={depo.veri.settings.minAra}>{#each [2, 3, 4] as n}<option value={n}>{n} gün{n === AYAR_VARSAYILAN.minAra ? " (önerilen)" : ""}</option>{/each}</select>
       <small>Ardışık günler her zaman yasaktır; bu sınır yalnız tercih edilir.</small></label>

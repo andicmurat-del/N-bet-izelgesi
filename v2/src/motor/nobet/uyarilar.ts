@@ -1,7 +1,7 @@
 // 4. adım: bitmiş çizelgenin denetimi. Kural esnetilen günler işaretlenir (conflict) ve kullanıcıya gösterilecek
 // uyarılar yazılır. Uyarı metinleri raporlar.ts'deki kalıplarla (uyariSiniflandir) sınıflandırılır; metni değiştirirken orayı da güncelleyin.
 import { aktifGunMu, eczaciMi } from "../baglam";
-import { fmFarkBilgisi, fmGrubu, fmKuralKisileri, hsKuralIhlali, hsSayilari, yilGunSayilari } from "../istatistik";
+import { fmFarkBilgisi, fmKuralKisileri, hsKuralIhlali, hsSayilari, yilGunSayilari } from "../istatistik";
 import { FM_MAX_FARK, HAZ_SAYISI, YIL_GUN_TIP } from "../sabitler";
 import { AYLAR, CUMA, CUMARTESI, haftaGunu, PAZAR } from "../takvim";
 import { kadroYetersizlikNedenleri } from "./kapasite";
@@ -122,13 +122,7 @@ export function uyarilariYaz(K: AramaKurulumu, kural: Kurallar): string[] {
   }
   {
     const fb = fmFarkBilgisi(B, y, m, days);
-    if (fb.fark > FM_MAX_FARK && fb.enCok && fb.enAz) warnings.push("KESİN KURAL sağlanamadı: " + fb.grup + " arasında fazla mesai farkı " + fb.fark + " saat (en fazla " + FM_MAX_FARK + "). En çok: " + fb.enCok.name + " (" + (fb.t[fb.enCok.id] || 0) + " sa), en az: " + fb.enAz.name + " (" + (fb.t[fb.enAz.id] || 0) + " sa). Hazırlama eşitliği fazla mesaiden önce gelir: hazırlama farkını en fazla 1 tutmak için ya da uzun izin, az eczacı, kilitli günler nedeniyle olur.");
-  }
-  // eczacı ve tekniker ortalamaları (kesin değil: az eczacıda her gün bir eczacı gerektiğinden kaçınılmaz olabilir)
-  {
-    const fb = fmFarkBilgisi(B, y, m, days), ort = (r: string) => { const l = fb.kisiler.filter(s => fmGrubu(s.role) === r); return l.length ? l.reduce((a, s) => a + (fb.t[s.id] || 0), 0) / l.length : null; };
-    const oE = ort("e"), oT = ort("t");
-    if (oE !== null && oT !== null && Math.abs(oE - oT) > FM_MAX_FARK) warnings.push("Eczacıların fazla mesai ortalaması " + Math.round(oE) + " saat, teknikerlerin " + Math.round(oT) + " saat (fark " + Math.round(Math.abs(oE - oT)) + " saat; mümkünse en fazla " + FM_MAX_FARK + "). Kadro yapısı (eczacı / tekniker sayısı, her gün bir eczacı nöbetçi) bu ay daha yakın bir dağılıma izin vermedi; normaldir.");
+    if (fb.fark > FM_MAX_FARK && fb.enCok && fb.enAz) warnings.push("KESİN KURAL sağlanamadı: fazla mesai farkı " + fb.fark + " saat (en fazla " + FM_MAX_FARK + "). En çok: " + fb.enCok.name + " (" + (fb.t[fb.enCok.id] || 0) + " sa), en az: " + fb.enAz.name + " (" + (fb.t[fb.enAz.id] || 0) + " sa). Hazırlama eşitliği fazla mesaiden önce gelir: hazırlama farkını en fazla 1 tutmak için ya da uzun izin, az eczacı, kilitli günler nedeniyle olur.");
   }
   // Cumartesi/Pazar nöbeti ayardaki üst sınırı aşanlar
   {

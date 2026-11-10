@@ -3,7 +3,7 @@
 import type { Gorevli } from "../veri/tipler";
 import { eczaneHazirlamacisi, eczaneNobetcisi, aktifGunMu, eczaciMi, ikiDisaridanSerbestMi, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
 import { acilNobetiYakin } from "./acil";
-import { cumaHaftaSonuUclu, fmKuralKisileri, FM_GRUPLARI, fmGrubu, hsKuralIhlali, hsSayilari } from "./istatistik";
+import { cumaHaftaSonuUclu, fmKuralKisileri, hsKuralIhlali, hsSayilari } from "./istatistik";
 import { DURUM_AD, FM_MAX_FARK } from "./sabitler";
 import { AYLAR, ayGunSayisi, CUMA, CUMARTESI, haftaGunu, isoNo, oncekiAy, PAZAR, PERSEMBE, sonrakiAy, tarihNo } from "./takvim";
 
@@ -138,13 +138,12 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
   const duty = B.staff.filter(s => eczaneNobetcisi(s));
   const ort = duty.length ? duty.reduce((a, s) => a + top[s.id], 0) / duty.length : 0;
   {
-    const tum = fmKuralKisileri(B, y, m);
-    for (const [g, ad] of FM_GRUPLARI) {
-      const kk = tum.filter(s => fmGrubu(s.role) === g); if (kk.length < 2) continue;
+    const kk = fmKuralKisileri(B, y, m);
+    if (kk.length > 1) {
       let mx = kk[0], mn = kk[0];
       kk.forEach(s => { if (top[s.id] > top[mx.id]) mx = s; if (top[s.id] < top[mn.id]) mn = s; });
       const fk = top[mx.id] - top[mn.id];
-      if (fk > FM_MAX_FARK) ekle("hata", "Kesin kural: bu değişiklikle " + ad + " arasında fazla mesai farkı " + fk + " saat olur (en fazla " + FM_MAX_FARK + "). En çok " + mx.name + " (" + top[mx.id] + " sa), en az " + mn.name + " (" + top[mn.id] + " sa).");
+      if (fk > FM_MAX_FARK) ekle("hata", "Kesin kural: bu değişiklikle fazla mesai farkı " + fk + " saat olur (en fazla " + FM_MAX_FARK + "). En çok " + mx.name + " (" + top[mx.id] + " sa), en az " + mn.name + " (" + top[mn.id] + " sa).");
     }
   }
   const hedef = B.sayi("fmHedef");

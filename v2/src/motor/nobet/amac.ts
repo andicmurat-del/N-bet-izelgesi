@@ -77,7 +77,6 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
   const { gundeVar, tatilGunu, yasak, ihlalSayisi } = kural;
   // hazırlama eşitliği: bu ay en az bir hazırlama gününde yazılabilen eczacı / tekniker
   const ixPrepAdil = prepAday.filter(s => days.some((_, i) => tatilGunu(i) && !yasak(s.id, i))).map(s => hIx[s.id]);
-  const fmGruplari = [ixFmKural.filter(ix => eczIx[ix]), ixFmKural.filter(ix => !eczIx[ix])];
   // ay içinde ayrılan (en az 15 gün çalışan): fazla mesai kuralına girmez; kalan günlerine sığan en fazla saati alır
   const ixAyrilan = ixNobetKural.filter(ix => !ixFmKural.includes(ix));
   const adilIx = new Set(ixPrepAdil), ucluGruplar = [ixEczPrep, ixTekPrep].map(G => G.filter(ix => adilIx.has(ix)));
@@ -216,26 +215,17 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
       if (destekTamUyari && v !== DESTEK_AYLIK) uy++;
     }
     let hsPen = 0, thuFazla = 0, devirPen = 0, kesinPen = 0;
-    // KESİN: aylık fazla mesai farkı (destek hariç) eczacılar kendi arasında, teknikerler kendi arasında en fazla FM_MAX_FARK saat
-    // eczacı ve tekniker ortalamaları arasında fark mümkünse en fazla FM_MAX_FARK saat (grup içi kesin kuraldan sonra)
-    if (fmGruplari[0].length && fmGruplari[1].length) {
-      let tE = 0, tT = 0;
-      for (const ix of fmGruplari[0]) tE += hFm[ix];
-      for (const ix of fmGruplari[1]) tT += hFm[ix];
-      const d = Math.abs(tE / fmGruplari[0].length - tT / fmGruplari[1].length);
-      if (d > FM_MAX_FARK) hsPen += AGIRLIK.grupOrtFark * (d - FM_MAX_FARK);
-    }
-    for (const G of fmGruplari) {
-      const n = G.length; if (n < 2) continue;
-      let mx = -1e9, mn = 1e9;
-      for (let q = 0; q < n; q++) { const v = hFm[G[q]]; if (v > mx) mx = v; if (v < mn) mn = v; }
+    // KESİN: aylık fazla mesai farkı (destek hariç) en fazla FM_MAX_FARK saat
+    if (ixFmKural.length > 1) {
+      let mx = -1e9, mn = 1e9; const n = ixFmKural.length;
+      for (let q = 0; q < n; q++) { const v = hFm[ixFmKural[q]]; if (v > mx) mx = v; if (v < mn) mn = v; }
       if (mx - mn > FM_MAX_FARK) {
-        // grubu FM_MAX_FARK genişliğinde tek bir aralığa sokmak için gereken toplam saat (en iyi aralığa göre);
+        // herkesi FM_MAX_FARK genişliğinde tek bir aralığa sokmak için gereken toplam saat (en iyi aralığa göre);
         // tek kişinin bile aralığa yaklaşması ceza azaltır, böylece arama düzlükte takılmaz
         let enAz = 1e18;
         for (let q = 0; q < 2 * n; q++) {
-          const L = q < n ? hFm[G[q]] : hFm[G[q - n]] - FM_MAX_FARK, U = L + FM_MAX_FARK;
-          let t = 0; for (let r = 0; r < n; r++) { const v = hFm[G[r]]; if (v < L) t += L - v; else if (v > U) t += v - U; }
+          const L = q < n ? hFm[ixFmKural[q]] : hFm[ixFmKural[q - n]] - FM_MAX_FARK, U = L + FM_MAX_FARK;
+          let t = 0; for (let r = 0; r < n; r++) { const v = hFm[ixFmKural[r]]; if (v < L) t += L - v; else if (v > U) t += v - U; }
           if (t < enAz) enAz = t;
         }
         kesinPen += KESIN * (mx - mn - FM_MAX_FARK) + AGIRLIK.fmBant * enAz; uy++;
