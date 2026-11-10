@@ -29,3 +29,9 @@ export function kisaAd(ad: string, tumAdlar: string[]): string {
   return ayni && p.length > 1 ? `${ilk} ${p[p.length - 1].charAt(0)}.` : ilk;
 }
 export const buyukAd = (ad: string) => String(ad || "").trim().replace(/\s+/g, " ").toLocaleUpperCase("tr-TR");
+/** aynı ad denetimi için: boşluklar sadeleşir, Türkçe büyük/küçük harf farkı yok sayılır */
+export const adAnahtari = (ad: string) => String(ad || "").trim().replace(/\s+/g, " ").toLocaleLowerCase("tr-TR");
+/** arama için: Türkçe harfler sadeleşir ("sahin" "Şahin"i, "isik" "Işık"ı bulur) */
+export const aramaAnahtari = (t: string) => adAnahtari(t).replace(/[şğıöüçâîû]/g, h => ({ ş: "s", ğ: "g", ı: "i", ö: "o", ü: "u", ç: "c", â: "a", î: "i", û: "u" })[h] ?? h).normalize("NFD").replace(/[̀-ͯ]/g, "");
+/** ad, aranan metni içeriyor mu (Türkçe harfler sadeleşmiş) */
+export const adIcerir = (ad: string, aranan: string) => aramaAnahtari(ad).includes(aramaAnahtari(aranan));

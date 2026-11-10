@@ -124,10 +124,12 @@ export interface YerineSecim { gun: number; gorev: Gorev; yer: number }
  * puantaja işlenir (yer 0: boş bırakılır). Mesai dışı günler (tatil; nöbetçi/destek için her gün) yalnız görev varsa yazılır.
  */
 export function izinUygula(y: number, m: number, kisi: number, tur: IzinTuru, bas: number, bit: number, secim: YerineSecim[]) {
-  const G = puantajIzgarasi(y, m), r = G.satirlar.find(x => x.s.id === kisi);
-  if (!r) return;
-  const sadece = r.s.role === "nobetci" || r.s.role === "destek";
+  const G0 = puantajIzgarasi(y, m), r0 = G0.satirlar.find(x => x.s.id === kisi);
+  if (!r0) return;
+  const sadece = r0.s.role === "nobetci" || r0.s.role === "destek";
   for (const s of secim) if (s.yer) zorunluDegisim(y, m, s.gun, kisi, s.yer, s.gorev, tur);
+  // devredilen görevlerden sonraki hâl: devredilen nöbetin ertesi günü artık nöbet izni (NI) değildir
+  const G = puantajIzgarasi(y, m), r = G.satirlar.find(x => x.s.id === kisi)!;
   for (let g = bas; g <= bit; g++) {
     const c = r.cells[g - 1], gg = G.gunler[g - 1], gorevli = c.kod === "N" || c.kod === "H";
     // yıllık izin, İzin ve tercihler takviminde de "İzinli" görünsün (eş durumu işaretleri korunur)

@@ -3,6 +3,7 @@
 import { describe, test, expect, beforeEach, vi } from "vitest";
 import { depo, bosVeri, veriyiDogrula, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenAyiniSil, oglenKaydet } from "../src/veri/depo.svelte.ts";
 import { degisimUygula, degisimGeriAl, izinUygula, puantajIzgarasi } from "../src/veri/degisim.svelte.ts";
+import { adAnahtari, adIcerir } from "../src/veri/tarih.ts";
 
 const Y = 2026, M = 9, AY = `${Y}-${M}`;
 const kopya = o => JSON.parse(JSON.stringify(o));
@@ -95,6 +96,13 @@ describe("nöbet değişimi ve izin", () => {
     expect(depo.veri.schedules[AY].days[0].assigned.map(p => p.id)).toEqual([3, 5]);
     expect([kod(1, 1), kod(3, 1)]).toEqual(["R", "N"]);
     expect(depo.veri.degisimler[0]).toMatchObject({ zorunlu: true, cik: 1, yer: 3, sebep: "R" });
+  });
+  test("2 günlük rapor: devredilen nöbetin ertesi günü (nöbet izni değil artık) de rapor olur", () => {
+    // 1 Ekim K1 nöbetçi, 2 Ekim nöbet ertesi izin (NI). 1–2 Ekim rapor, 1 Ekim nöbeti K3'e devredildi: 2 Ekim de R olmalı
+    expect([kod(1, 1), kod(1, 2)]).toEqual(["N", "NI"]);
+    izinUygula(Y, M, 1, "R", 1, 2, [{ gun: 1, gorev: "N", yer: 3 }]);
+    expect([kod(1, 1), kod(1, 2)]).toEqual(["R", "R"]);
+    expect(kod(3, 1)).toBe("N");
   });
   test("rapor: görev bir nöbet değişiminden geldiyse de yerine geçen puantaja yazılır", () => {
     // 2. gün çizelgede K2 nöbetçi; K1 değişimle onun yerine geçti, sonra K1 rapor aldı ve yerine K4 seçildi
@@ -202,5 +210,21 @@ describe("acil ve öğlen listesi onayı", () => {
     expect(geriAl()).toBe(true);
     expect(depo.veri.listeOnay.acil[AY]).toBeTruthy();
     expect(depo.veri.acil[AY][6]).toEqual([11, 9]);
+  });
+});
+
+describe("ad karşılaştırma ve arama", () => {
+  // eskiden "Ayşe  Kaya" (iki boşluk) ile "ayşe kaya" ayrı kişi sayılıyor, "sahin" araması "Şahin"i bulmuyordu
+  test("aynı ad: boşluklar ve Türkçe büyük/küçük harf farkı yok sayılır", () => {
+    expect(adAnahtari("  Ayşe   KAYA ")).toBe(adAnahtari("ayşe kaya"));
+    expect(adAnahtari("IŞIK İNCE")).toBe(adAnahtari("ışık ince"));
+    expect(adAnahtari("Ali")).not.toBe(adAnahtari("Âli Veli"));
+  });
+  test("arama Türkçe harflere duyarsız", () => {
+    expect(adIcerir("Mehmet Şahin", "sahin")).toBe(true);
+    expect(adIcerir("Işık Öztürk", "isik oz")).toBe(true);
+    expect(adIcerir("Çağla Güneş", "CAGLA")).toBe(true);
+    expect(adIcerir("Ayşe", "")).toBe(true);
+    expect(adIcerir("Ayşe", "x")).toBe(false);
   });
 });

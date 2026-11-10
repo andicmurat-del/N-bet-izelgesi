@@ -54,3 +54,18 @@ export function yillikKitap(R: Rapor, kurum: string): Blob {
   }
   return xlsxKitap(sayfalar);
 }
+
+/** Raporlar > Acil / Öğlen nöbeti tablosu: kişi başı ay ay, yıl toplamı ve ek sütunlar (Cuma vb.) */
+export function dagilimKitap(baslik: string, yil: number, kurum: string, ayKisa: string[], aylar: boolean[],
+  satirlar: { ad: string; rol: string; aylar: number[]; top: number; ek: number[] }[], ekler: string[]): Blob {
+  const ust = `${kurum ? buyukAd(kurum) + " · " : ""}${yil} ${baslik.toLocaleLowerCase("tr-TR")} dağılımı`;
+  const sat: Hucre[][] = [
+    [{ v: ust, s: "kalin" }],
+    [],
+    [bas("Ad soyad"), bas("Görev"), ...ayKisa.map(bas), bas("Yıl"), ...ekler.map(bas)],
+    ...satirlar.map(s => [buyukAd(s.ad), ROL_AD[s.rol as Rol] ?? "", ...s.aylar.map((n, i) => (aylar[i] ? n : null)), { v: s.top, s: "kalin" as const }, ...s.ek]),
+    [],
+    [{ v: "Boş sütunlar: listesi olmayan aylar.", s: "not" }],
+  ];
+  return xlsxKitap([{ ad: baslik.slice(0, 31), satirlar: sat, genislik: [28, 14, ...ayKisa.map(() => 6), 7, ...ekler.map(() => 10)], dondur: { satir: 3, sutun: 2 } }]);
+}

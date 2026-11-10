@@ -122,7 +122,7 @@ export function uyarilariYaz(K: AramaKurulumu, kural: Kurallar): string[] {
   }
   {
     const fb = fmFarkBilgisi(B, y, m, days);
-    if (fb.fark > FM_MAX_FARK && fb.enCok && fb.enAz) warnings.push("KESİN KURAL sağlanamadı: fazla mesai farkı " + fb.fark + " saat (en fazla " + FM_MAX_FARK + "). En çok: " + fb.enCok.name + " (" + (fb.t[fb.enCok.id] || 0) + " sa), en az: " + fb.enAz.name + " (" + (fb.t[fb.enAz.id] || 0) + " sa). Hazırlama eşitliği fazla mesaiden önce gelir: hazırlama farkını en fazla 1 tutmak için ya da uzun izin, az eczacı, kilitli günler nedeniyle olur.");
+    if (fb.fark > FM_MAX_FARK && fb.enCok && fb.enAz) warnings.push("KESİN KURAL sağlanamadı: " + fb.grup + " arasında fazla mesai farkı " + fb.fark + " saat (en fazla " + FM_MAX_FARK + "). En çok: " + fb.enCok.name + " (" + (fb.t[fb.enCok.id] || 0) + " sa), en az: " + fb.enAz.name + " (" + (fb.t[fb.enAz.id] || 0) + " sa). Hazırlama eşitliği fazla mesaiden önce gelir: hazırlama farkını en fazla 1 tutmak için ya da uzun izin, az eczacı, kilitli günler nedeniyle olur.");
   }
   // Cumartesi/Pazar nöbeti ayardaki üst sınırı aşanlar
   {

@@ -9,6 +9,7 @@
   import { AYLAR, GUN_UZUN, ayAdi, gunMetni, gunSayisi, haftaGunu, kisaAd } from "../../veri/tarih";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Pencere from "../ortak/Pencere.svelte";
+  import OnaySorusu from "../ortak/OnaySorusu.svelte";
   import type { Rol } from "../../veri/tipler";
   import Ikon from "../ortak/Ikon.svelte";
 
@@ -155,6 +156,7 @@
       durum = ok ? "PDF kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "PDF oluşturulamadı."); }
   }
+  let onaySor = $state(false);
 </script>
 
 {#if !c}
@@ -169,7 +171,7 @@
         <button class="dugme" onclick={() => listeOnayiniKaldir("oglen", y, m)}>Onayı kaldır</button>
       {:else}
         <button class="dugme{kayit ? '' : ' ana'}" onclick={olustur}><Ikon ad={kayit ? "yenile" : "saat"} />{kayit ? "Yeniden oluştur" : "Öğlen nöbetini oluştur"}</button>
-        {#if kayit}<button class="dugme ana" onclick={() => listeyiOnayla("oglen", y, m)}><Ikon ad="tamam" />Onayla</button>{/if}
+        {#if kayit}<button class="dugme ana" onclick={() => (onaySor = true)}><Ikon ad="tamam" />Onayla</button>{/if}
       {/if}
       {#if kayit && pdfHaftalari.length}
         <span class="pdf-hafta">
@@ -297,6 +299,8 @@
   {/snippet}
 </Pencere>
 
+
+<OnaySorusu bind:acik={onaySor} ne="Öğlen nöbet listesi" sorunlar={sorunlar} onaylayan={depo.veri.kurum.onaylayan} onayla={() => listeyiOnayla("oglen", y, m)} />
 <style>
   .bos { padding: var(--b5); display: grid; gap: var(--b3); max-width: 760px; }
   .bos p { color: var(--yazi-2); }

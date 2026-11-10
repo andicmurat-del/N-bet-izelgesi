@@ -1,6 +1,6 @@
 // Tek tek kural testleri: kullanıcının netleştirdiği kurallar (elle düzenleme denetimi üzerinden).
 import { describe, test, expect } from "vitest";
-import { cizelgeOlustur, gunuDenetle, uyariSiniflandir } from "../src/motor";
+import { canliDenetimHesapla, cizelgeOlustur, gunuDenetle, uyariSiniflandir } from "../src/motor";
 import { cizelgeUret } from "../src/motor/nobet/olustur";
 import { Baglam } from "../src/motor/baglam";
 import { senaryo } from "./tarama/ortak";
@@ -70,14 +70,15 @@ describe("Cuma + Cumartesi + Pazar nöbeti olan hazırlamayı grubunda en son al
 
 describe("kadro yetmezse önce hazırlama ertesi gün nöbet esner", () => {
   // 4 eczacı + 3 tekniker: hafta sonu için 8 farklı kişi gerekir, 7 kişi var. Hazırlamacı ertesi gün nöbet tutabilince
-  // (Cumartesi hazırlama, Pazar nöbet) yerler dolar. Ters yön (nöbet ertesi gün hazırlama) hiç olmaz: nöbet ertesi dinlenilir.
-  // Bu kural eklenmeden önce Ocak 2027'de 7 tatil gününde hazırlama eksik kalıyordu.
+  // (Cumartesi hazırlama, Pazar nöbet) yerler dolar. Ters yön (nöbet ertesi gün hazırlama) bu ayda olmaz: nöbet ertesi
+  // dinlenilir (kadronun yetmediği bazı aylarda zorunlu kalabilir; ör. Ocak 2027). Bu kural eklenmeden önce Ocak 2027'de
+  // 7 tatil gününde hazırlama eksik kalıyordu; Mart 2027'de 4.
   const kadro = [];
   for (let i = 1; i <= 4; i++) kadro.push({ id: i, name: "E" + i, role: "eczaci" });
   for (let i = 1; i <= 3; i++) kadro.push({ id: 4 + i, name: "T" + i, role: "teknisyen" });
   const v = { staff: kadro, prefs: {}, manualTatil: {}, arife: {}, settings: {}, schedules: {}, puantaj: {}, acil: {} };
   test("eksik hazırlama azalır, nöbet ertesi hazırlama olmaz", () => {
-    const r = cizelgeOlustur(v, 2027, 0, { saat: () => 0 });
+    const r = cizelgeOlustur(v, 2027, 2, { saat: () => 0 });
     const eksik = r.days.filter(g => g.tatil && g.prep.length < 2).length;
     let duz = 0, ters = 0;
     r.days.forEach((g, i) => g.prep.forEach(p => {
@@ -125,10 +126,12 @@ describe("eş durumu isteyenler birlikte yazılamıyorsa biri yazılır", () => 
 describe("ay içinde ayrılan kişinin nöbetleri kalan günlere sığdırılır", () => {
   // ayrılacağı baştan belliyse (en az 15 gün çalışıyorsa) o ayın nöbetlerini ayrılmadan önce herkes kadar tutar;
   // eskiden ayrılan aylık eşitliğe girmiyordu ve Kasım 2026'da 4 nöbet alıyordu (diğerleri 6–7)
+  // fazla mesai farkı grup içinde ölçüldüğünden (eczacılar / teknikerler) ayrılan kişi kalan günlerine sığan en fazla
+  // saati alır (amaçta eksik saat başına ceza); 5 eczacı + 5 teknikerde herkesin en azı kadar
   test("15'inde ayrılan, ayın tamamında çalışanların en azından az nöbet almaz", () => {
     const kadro = [];
-    for (let i = 1; i <= 6; i++) kadro.push({ id: i, name: "E" + i, role: "eczaci" });
-    for (let i = 1; i <= 4; i++) kadro.push({ id: 6 + i, name: "T" + i, role: "teknisyen" });
+    for (let i = 1; i <= 5; i++) kadro.push({ id: i, name: "E" + i, role: "eczaci" });
+    for (let i = 1; i <= 5; i++) kadro.push({ id: 5 + i, name: "T" + i, role: "teknisyen" });
     kadro[0].bitis = "2026-11-15";
     const v = { staff: kadro, prefs: {}, manualTatil: {}, arife: {}, settings: {}, schedules: {}, puantaj: {}, acil: {} };
     const r = cizelgeOlustur(v, 2026, 10, { saat: () => 0 }), n = {};
@@ -140,13 +143,55 @@ describe("ay içinde ayrılan kişinin nöbetleri kalan günlere sığdırılır
 });
 
 describe("çizelge her zaman en az uyarılı hâliyle oluşturulur", () => {
-  // ilk aramada uyarı kalırsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir. Gerçekçi kadrolu 10.
-  // senaryoda ilk arama 1 hata ve 3 kırmızı gün bırakıyordu; ek denemelerden biri uyarısız
+  // ilk aramada uyarı kalırsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir. Gerçekçi kadrolu 25.
+  // senaryoda ilk arama 3 uyarı / kırmızı gün bırakıyor; ek denemelerden biri uyarısız
   const say = r => r.warnings.filter(w => uyariSiniflandir(w).seviye !== "bilgi").length + r.days.filter(g => g.conflict).length;
   test("ilk aramadan daha çok uyarılı olmaz; uyarısızı bulunursa o seçilir", () => {
-    const { y, m0, veri } = senaryo(10, { eczaci: [6, 8], teknisyen: [4, 8] });
+    const { y, m0, veri } = senaryo(25, { eczaci: [6, 8], teknisyen: [4, 8] });
     const ilk = cizelgeUret(new Baglam(veri), y, m0, 0, () => 0), son = cizelgeOlustur(veri, y, m0, { saat: () => 0 });
     expect(say(ilk)).toBeGreaterThan(0);
     expect(say(son)).toBe(0);
+  });
+});
+
+describe("fazla mesai farkı eczacılar ve teknikerler arasında ayrı ölçülür", () => {
+  // 7 eczacı + 13 tekniker: her gün bir eczacı nöbetçi olduğundan eczacılar teknikerlerden çok fazla mesai yapar (kadro
+  // yapısı). Kural iki grubun kendi içinde uygulanır; eskiden herkes birlikte ölçülüyor, Ocak 2027'de 40 saat fark ve
+  // KESİN KURAL uyarısı çıkıyordu
+  test("Ocak 2027: grup içinde fark en fazla 8 saat, KESİN KURAL uyarısı yok", () => {
+    const kadro = [];
+    for (let i = 1; i <= 7; i++) kadro.push({ id: i, name: "E" + i, role: "eczaci" });
+    for (let i = 1; i <= 13; i++) kadro.push({ id: 7 + i, name: "T" + i, role: "teknisyen" });
+    const v = { staff: kadro, prefs: {}, manualTatil: {}, arife: {}, settings: {}, schedules: {}, puantaj: {}, acil: {} };
+    let t = 0; const r = cizelgeOlustur(v, 2027, 0, { saat: () => (t += 500) }), fm = {};
+    const hz = 8;
+    r.days.forEach(g => { g.assigned.forEach(p => { fm[p.id] = (fm[p.id] || 0) + g.fazlaMesai; }); g.prep.forEach(p => { fm[p.id] = (fm[p.id] || 0) + hz; }); });
+    const fark = ids => Math.max(...ids.map(id => fm[id] || 0)) - Math.min(...ids.map(id => fm[id] || 0));
+    expect(fark(kadro.filter(s => s.role === "eczaci").map(s => s.id))).toBeLessThanOrEqual(8);
+    expect(fark(kadro.filter(s => s.role === "teknisyen").map(s => s.id))).toBeLessThanOrEqual(8);
+    expect(r.warnings.filter(w => /KESİN KURAL/.test(w))).toEqual([]);
+  }, 120000);
+});
+
+describe("çizelgenin o anki hâlinin denetimi (Kural denetimi paneli, onay)", () => {
+  // elle düzenleme ya da "Otomatiğe bırak" sonrası oluşturma uyarıları yenilenmiyordu: eczacısız gün listede görünmüyordu
+  const kopya = () => JSON.parse(JSON.stringify(sch));
+  test("eczacısız ve eksik gün hata olarak listelenir", () => {
+    const c = kopya();
+    expect(canliDenetimHesapla(veri, c)).toEqual([]);
+    c.days[4].assigned = [9, 10].map(id => ({ id, name: "T" + (id - 8), role: "teknisyen" }));   // 5. gün: iki tekniker
+    c.days[6].assigned = c.days[6].assigned.slice(0, 1);                                          // 7. gün: tek kişi
+    const l = canliDenetimHesapla(veri, c);
+    expect(l.some(t => /^Nöbette eczacı yok: 5\. gün/.test(t))).toBe(true);
+    expect(l.some(t => /eksik kişi: 7\. gün \(1\/2\)/.test(t))).toBe(true);
+    l.forEach(t => expect(uyariSiniflandir(t).seviye).toBe("hata"));
+    expect(uyariSiniflandir(l[0]).baslik).toBe("Eczacısız gün");
+  });
+  test("karşılanmayan nöbet isteği uyarı olarak listelenir", () => {
+    const c = kopya(), d = c.days.findIndex(g => !g.assigned.some(p => p.id === 3)) + 1;
+    const v = { ...veri, prefs: { [`3-${Y}-${M}-${d}`]: "want" } };
+    const l = canliDenetimHesapla(v, c);
+    expect(l).toEqual([`Nöbet istediği güne yazılmayanlar: E3 (${d}. gün).`]);
+    expect(uyariSiniflandir(l[0]).seviye).toBe("uyari");
   });
 });

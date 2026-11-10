@@ -3,7 +3,7 @@
 import type { Gorevli } from "../veri/tipler";
 import { eczaneHazirlamacisi, eczaneNobetcisi, aktifGunMu, eczaciMi, ikiDisaridanSerbestMi, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
 import { acilNobetiYakin } from "./acil";
-import { cumaHaftaSonuUclu, fmKuralKisileri, hsKuralIhlali, hsSayilari } from "./istatistik";
+import { cumaHaftaSonuUclu, fmKuralKisileri, FM_GRUPLARI, fmGrubu, hsKuralIhlali, hsSayilari } from "./istatistik";
 import { DURUM_AD, FM_MAX_FARK } from "./sabitler";
 import { AYLAR, ayGunSayisi, CUMA, CUMARTESI, haftaGunu, isoNo, oncekiAy, PAZAR, PERSEMBE, sonrakiAy, tarihNo } from "./takvim";
 
@@ -138,12 +138,13 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
   const duty = B.staff.filter(s => eczaneNobetcisi(s));
   const ort = duty.length ? duty.reduce((a, s) => a + top[s.id], 0) / duty.length : 0;
   {
-    const kk = fmKuralKisileri(B, y, m);
-    if (kk.length > 1) {
+    const tum = fmKuralKisileri(B, y, m);
+    for (const [g, ad] of FM_GRUPLARI) {
+      const kk = tum.filter(s => fmGrubu(s.role) === g); if (kk.length < 2) continue;
       let mx = kk[0], mn = kk[0];
       kk.forEach(s => { if (top[s.id] > top[mx.id]) mx = s; if (top[s.id] < top[mn.id]) mn = s; });
       const fk = top[mx.id] - top[mn.id];
-      if (fk > FM_MAX_FARK) ekle("hata", "Kesin kural: bu değişiklikle fazla mesai farkı " + fk + " saat olur (en fazla " + FM_MAX_FARK + "). En çok " + mx.name + " (" + top[mx.id] + " sa), en az " + mn.name + " (" + top[mn.id] + " sa).");
+      if (fk > FM_MAX_FARK) ekle("hata", "Kesin kural: bu değişiklikle " + ad + " arasında fazla mesai farkı " + fk + " saat olur (en fazla " + FM_MAX_FARK + "). En çok " + mx.name + " (" + top[mx.id] + " sa), en az " + mn.name + " (" + top[mn.id] + " sa).");
     }
   }
   const hedef = B.sayi("fmHedef");
@@ -152,5 +153,23 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
     const metin = p.name + ": toplam " + top[p.id] + " saat, ortalama " + Math.round(ort) + " (" + (fark >= 0 ? "+" : "") + fark + ").";
     ekle(Math.abs(fark) > hedef ? "uyari" : "bilgi", metin);
   });
+  return out;
+}
+
+/** Kayıtlı çizelgenin o anki hâlinin denetimi (Kural denetimi paneli ve onay): elle düzenleme ya da "Otomatiğe bırak"
+ *  sonrası oluşturma uyarılarında görünmeyen sorunlar. Metinler uyariSiniflandir ile sınıflanır. */
+export function cizelgeCanliDenetim(B: Baglam, y: number, m: number, days: MotorGunu[]): string[] {
+  const out: string[] = [];
+  const eczsiz = days.filter(g => g.assigned.length > 0 && !g.assigned.some(p => eczaciMi(p.role))).map(g => g.day);
+  if (eczsiz.length) out.push("Nöbette eczacı yok: " + eczsiz.map(d => d + ". gün").join(", ") + " (her gün en az bir eczacı nöbetçi olmalı).");
+  const eksik = days.filter(g => g.assigned.length < 2).map(g => g.day + ". gün (" + g.assigned.length + "/2)");
+  if (eksik.length) out.push("Nöbetçi sayısında eksik kişi: " + eksik.join(", ") + ".");
+  // "nöbet istiyor" işaretli olup o güne yazılmayanlar (izin, acil nöbeti vb. nedeniyle yazılamayan da görünür)
+  const istek: string[] = [];
+  days.forEach(g => B.staff.forEach(s => {
+    if (!eczaneNobetcisi(s) || !aktifGunMu(s, y, m, g.day) || B.tercih(s.id, y, m, g.day) !== "want") return;
+    if (!g.assigned.some(p => p.id === s.id)) istek.push(s.name + " (" + g.day + ". gün)");
+  }));
+  if (istek.length) out.push("Nöbet istediği güne yazılmayanlar: " + istek.join(", ") + ".");
   return out;
 }

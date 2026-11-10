@@ -126,6 +126,19 @@ describe("sonradan değişen kadro ve az kadro", () => {
     r.gunler.forEach(g => expect(g.ids.length).toBe(2));
     expect(r.uyarilar.filter(w => /art arda/.test(w)).length).toBe(1);
     expect(r.uyarilar[0]).toMatch(/acil kadrosu yetmiyor/);
+    // art arda gün ve 5 günde 3 nöbet olmadan günde 2 kişiye en az 5 kişi gerekir (eskiden 4 yazıyordu)
+    expect(r.uyarilar[0]).toMatch(/en az 5 kişi gerekir/);
+  });
+
+  test("4 kişilik acil kadrosunda art arda nöbet günleri sorunlu gün sayılır", async () => {
+    const { acilSorunluGunler } = await import("../src/motor");
+    const v = JSON.parse(JSON.stringify({ ...veri, staff: veri.staff.filter(s => s.role !== "servis" || s.id <= 14) }));
+    kaydet(v, M, acilHesapla(v, Y, M));
+    const ay = v.acil[`${Y}-${M}`], beklenen = [];
+    for (let d = 2; d <= dim; d++) { const l = ay[d].filter(i => ay[d - 1].includes(i)); if (l.length) beklenen.push([d, l]); }
+    expect(beklenen.length).toBeGreaterThan(0);
+    const s = acilSorunluGunler(v, Y, M);
+    expect(s.filter(x => x.artArda).map(x => [x.gun, x.artArda])).toEqual(beklenen);
   });
 
   test("acil servis personeli günlük eczane çalışma listesinde görünmez", () => {

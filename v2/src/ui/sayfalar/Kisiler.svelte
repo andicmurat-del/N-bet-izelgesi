@@ -2,7 +2,7 @@
   import SayfaBasligi from "../ortak/SayfaBasligi.svelte";
   import { depo, kisiEkle, kisiGuncelle, kisiSil, onayliGoreviVar } from "../../veri/depo.svelte";
   import { ROL_ACIKLAMA, ROL_AD, type Kisi, type Rol } from "../../veri/tipler";
-  import { AYLAR, gorunenAd } from "../../veri/tarih";
+  import { AYLAR, adAnahtari, gorunenAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
 
@@ -17,7 +17,7 @@
     e.preventDefault();
     const ad = yeniAd.trim();
     if (!ad) { ekleHata = "Ad soyad yazın."; return; }
-    if (depo.veri.staff.some(k => k.name.toLocaleLowerCase("tr") === ad.toLocaleLowerCase("tr"))) { ekleHata = "Bu adda bir kişi zaten var."; return; }
+    if (depo.veri.staff.some(k => adAnahtari(k.name) === adAnahtari(ad))) { ekleHata = "Bu adda bir kişi zaten var."; return; }
     kisiEkle(gorunenAd(ad), yeniRol);
     yeniAd = ""; ekleHata = "";
   }
@@ -36,6 +36,7 @@
     if (!duzenlenen) return;
     const ad = dAd.trim();
     if (!ad) { dHata = "Ad soyad boş olamaz."; return; }
+    if (depo.veri.staff.some(k => k.id !== duzenlenen!.id && adAnahtari(k.name) === adAnahtari(ad))) { dHata = "Bu adda başka bir kişi var."; return; }
     if (dBas && dBit && dBit < dBas) { dHata = "Ayrılış tarihi işe başlama tarihinden önce olamaz."; return; }
     kisiGuncelle(duzenlenen.id, { name: gorunenAd(ad), role: dRol, baslangic: dBas || undefined, bitis: dBit || undefined, cumaMuaf: dCuma && (dRol === "eczaci" || dRol === "teknisyen") ? true : undefined, acilTutar: dAcil && (dRol === "eczaci" || dRol === "nobetci") ? true : undefined });
     duzenleAcik = false;

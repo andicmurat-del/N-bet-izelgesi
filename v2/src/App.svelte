@@ -109,7 +109,7 @@
   </nav>
 
   <main id="icerik" tabindex="-1">
-    {#if depo.kayitSorunu}<div class="kayit-sorunu kutu hata" role="alert"><Ikon ad="uyari" />{depo.kayitSorunu}</div>{/if}
+    {#if depo.kayitSorunu}<div class="kayit-sorunu kutu hata" role="alert"><Ikon ad="uyari" />{depo.kayitSorunu}{#if depo.baskaPencere}<button class="dugme" onclick={() => location.reload()}><Ikon ad="yenile" />Yenile</button>{/if}</div>{/if}
     {#if sayfa === "gunluk"}<Cizelge {git} bind:gorunum={gunlukAlt} />
     {:else if sayfa === "acil"}<AcilEczane {git} bind:gorunum={acilAlt} />
     {:else}<Ayarlar bind:gorunum={ayarAlt} />{/if}

@@ -13,7 +13,8 @@
   import Ikon from "../ortak/Ikon.svelte";
 
   // kimler: kayıt girilebilen ve listelenen kişiler (Günlük Eczane / Acil Eczane kadrosu)
-  let { kimler = () => true }: { kimler?: (k: Kisi) => boolean } = $props();
+  // on: açılışta seçili gelecek kişi, gün ve tür (Cetvel'de görev gününe izin / rapor girilmek istenince)
+  let { kimler = () => true, on = null }: { kimler?: (k: Kisi) => boolean; on?: { kisi: number; gun: number; tur: IzinTuru } | null } = $props();
   type Kontrol = { engel: string[]; uyari: string[]; bilgi: string[] };
   type Aday = { id: number; ad: string; rol: string; engel: number; uyari: number; yil: number; fm: number; yerine: number; k: Kontrol };
 
@@ -31,7 +32,11 @@
   let onayAdimi = $state<string[] | null>(null);
   let durum = $state<{ tur: "tamam" | "hata"; metin: string } | null>(null);
   // ay değişince form sıfırlanır (yalnız ay/yıl izlenir)
-  $effect(() => { y; m; untrack(() => { kisi = ""; bas = ilkGun(); bit = bas; durum = null; }); });
+  let onKullanildi = false;
+  $effect(() => { y; m; untrack(() => {
+    const o = !onKullanildi ? on : null; onKullanildi = true;
+    kisi = o ? String(o.kisi) : ""; bas = o ? o.gun : ilkGun(); bit = bas; if (o) tur = o.tur; durum = null;
+  }); });
   $effect(() => { if (bit < bas) bit = bas; });
 
   const G = $derived(puantajIzgarasi(y, m));

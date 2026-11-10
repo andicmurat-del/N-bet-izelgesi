@@ -3,10 +3,10 @@
   import { ciktiPaketi } from "../../disa/yukle";
   import { depo, veriAnlik, duzKopya, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import { arkaPlandaOlustur } from "../../motor/istemci";
-  import { acilKadrosunda, uyariSiniflandir } from "../../motor";
+  import { acilKadrosunda, canliDenetimHesapla, uyariSiniflandir } from "../../motor";
   import { cizelgeKitabi } from "../../disa/cizelgeXlsx";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
-  import { AYLAR, GUN_UZUN, ayAdi, gunMetni, haftaGunu } from "../../veri/tarih";
+  import { AYLAR, GUN_UZUN, adIcerir, ayAdi, gunMetni, haftaGunu } from "../../veri/tarih";
   import type { Gorevli } from "../../veri/tipler";
   import SayfaBasligi from "../ortak/SayfaBasligi.svelte";
   import IslemAlani from "../ortak/IslemAlani.svelte";
@@ -15,6 +15,7 @@
   import VurguSecici from "../ortak/VurguSecici.svelte";
   import AylikOzet from "../ortak/AylikOzet.svelte";
   import GunPenceresi from "../cizelge/GunPenceresi.svelte";
+  import OnaySorusu from "../ortak/OnaySorusu.svelte";
   import Hazirlama from "./Hazirlama.svelte";
   import Puantaj from "./Puantaj.svelte";
   import Izinler from "./Izinler.svelte";
@@ -106,12 +107,13 @@
     if (!c) return null;
     const dolu = c.days.filter(g => g.assigned.length >= 2).length;
     const s = { hata: 0, uyari: 0, bilgi: 0 };
-    for (const t of c.uyarilar) s[(uyariSiniflandir(t) as { seviye: keyof typeof s }).seviye]++;
+    for (const u of siniflar) s[u.seviye]++;
     const elle = c.days.filter(g => g.locked).length;
     return { dolu, gun: c.days.length, ...s, elle };
   });
 
   let gunAcik = $state(false);
+  let onaySor = $state(false);
   let acikGun = $state(1);
   // takvimde güne dokunmak günü seçer (sağdaki "Seçili gün" paneli); dar ekranda düzenleme penceresi doğrudan açılır
   const bugunTarih = new Date();
@@ -129,15 +131,13 @@
   type Gun = NonNullable<typeof c>["days"][number];
   const degistiMi = (g: Gun) => goster !== c && !!guncel?.degisen.has(g.day);
   const filtreUy: Record<Filtre, (g: Gun) => boolean> = {
-    tumu: () => true, hi: g => !g.tatil, hs: g => g.tatil, degisen: degistiMi, esnek: g => !!g.conflict || g.assigned.length < 2, elle: g => !!g.locked,
+    tumu: () => true, hi: g => !g.tatil, hs: g => g.tatil, degisen: degistiMi, esnek: g => !!g.conflict || g.assigned.length < 2 || !g.assigned.some(p => eczaciRol(p.role)), elle: g => !!g.locked,
   };
   const FILTRELER: [Filtre, string][] = [["tumu", "Tümü"], ["hi", "Hafta içi"], ["hs", "Hafta sonu"], ["degisen", "Değişen"], ["esnek", "Kural esnetilen"], ["elle", "Elle"]];
-  const kucuk = (t: string) => t.toLocaleLowerCase("tr-TR");
   const kisiUyar = (g: Gun) => {
     const l = [...g.assigned, ...(g.tatil ? g.prep : [])];
     if (kisiF !== null && !l.some(p => p.id === kisiF)) return false;
-    const a = kucuk(ara.trim());
-    return !a || l.some(p => kucuk(p.name).includes(a));
+    return !ara.trim() || l.some(p => adIcerir(p.name, ara));
   };
   const filtreSayisi = $derived(Object.fromEntries(FILTRELER.map(([f]) => [f, (goster?.days ?? []).filter(g => filtreUy[f](g) && kisiUyar(g)).length])) as Record<Filtre, number>);
   // haftalar (Pazartesi başlar): [hafta no, yarım mı, günler]
@@ -163,7 +163,11 @@
   });
   const aralik = (a: { mn: number; mx: number } | null, b = "") => (a ? (a.mn === a.mx ? `${a.mn}` : `${a.mn}–${a.mx}`) + b : "—");
   const fark = (a: { mn: number; mx: number } | null) => (a ? a.mx - a.mn : 0);
-  const siniflar = $derived((c?.uyarilar ?? []).map(t => ({ t, ...(uyariSiniflandir(t) as { seviye: "hata" | "uyari" | "bilgi"; baslik: string }) })));
+  // oluşturma uyarıları + çizelgenin o anki hâlinin denetimi (elle düzenleme, "Otomatiğe bırak" sonrası eczacısız / eksik
+  // gün, karşılanmayan nöbet isteği); elle günün eczacısız uyarısı canlı denetimde zaten var
+  const canli = $derived(c ? (canliDenetimHesapla(veriAnlik(), duzKopya(c) as never) as string[]) : []);
+  const siniflar = $derived([...canli, ...(c?.uyarilar ?? []).filter(t => !/elle atadığınız nöbette eczacı yok/.test(t))]
+    .map(t => ({ t, ...(uyariSiniflandir(t) as { seviye: "hata" | "uyari" | "bilgi"; baslik: string }) })));
 
   const ekAd = () => (goster !== c ? "-guncel" : "");
   async function excel() {
@@ -245,7 +249,7 @@
       {:else if !c.onay}
         <button class="dugme" onclick={() => olustur()} disabled={calisiyor} title="Elle düzenlenen günler korunur"><Ikon ad="yenile" />Yeniden oluştur</button>
         <button class="dugme" onclick={() => olustur(1 + Math.floor(Math.random() * 9999))} disabled={calisiyor} title="Aynı kurallarla farklı bir dağılım"><Ikon ad="karisik" />Farklı dağılım</button>
-        <button class="dugme ana" onclick={() => onayla(depo.yil, depo.ay)} disabled={calisiyor}><Ikon ad="tamam" />Onayla</button>
+        <button class="dugme ana" onclick={() => (onaySor = true)} disabled={calisiyor}><Ikon ad="tamam" />Onayla</button>
       {:else}
         <button class="dugme" onclick={() => onayiKaldir(depo.yil, depo.ay)}>Onayı kaldır</button>
       {/if}
@@ -323,7 +327,7 @@
                         <td>{@render adlar(g.tatil && g.prep[1] ? [g.prep[1]] : [])}</td>
                         <td class="durum">
                           {#if degistiMi(g)}<span class="etk degisti">değişti</span>{/if}
-                          {#if g.conflict || g.assigned.length < 2}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />kural esnetildi</span>{/if}
+                          {#if g.assigned.length && !g.assigned.some(p => eczaciRol(p.role))}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />eczacı yok</span>{:else if g.conflict || g.assigned.length < 2}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />kural esnetildi</span>{/if}
                           {#if g.locked}<span class="etk elle"><Ikon ad="kilit" boyut={12} />elle</span>{/if}
                           {#if rt}<span class="etk hsr">resmi tatil</span>{:else if g.tatil}<span class="etk hsr">hafta sonu</span>{/if}
                         </td>
@@ -351,6 +355,7 @@
                 <dd>{#if sg.tatil}{#each sg.prep as p, i}<span class="kisi"><span class="gorev haz">H{i + 1}</span>{p.name}</span>{:else}<span class="yok">Hazırlamacı yok</span>{/each}{:else}<span class="yok">Hafta içi: hazırlama yok</span>{/if}</dd>
               </dl>
               {#if sg.locked}<p class="not"><Ikon ad="kilit" boyut={13} /> Elle düzenlendi; yeniden oluşturmada korunur.</p>{/if}
+              {#if sg.assigned.length && !sg.assigned.some(p => eczaciRol(p.role))}<p class="not kirmizi"><Ikon ad="uyari" boyut={13} /> Bu günde nöbette eczacı yok.</p>{/if}
               {#if sg.conflict}<p class="not kirmizi"><Ikon ad="uyari" boyut={13} /> Bu günde kural esnetildi.</p>{/if}
               <button class="dugme" onclick={gunuDuzenle}><Ikon ad="karisik" />{c.onay ? "Günü görüntüle" : "Nöbet değişikliği yap"}</button>
             </div>
@@ -380,6 +385,7 @@
     </div>
     <div class="ozet-kap"><AylikOzet satirlar={ozetSatirlari} bind:vurgu /></div>
     <GunPenceresi bind:acik={gunAcik} {c} gun={acikGun} />
+    <OnaySorusu bind:acik={onaySor} ne="Nöbet çizelgesi" sorunlar={siniflar.filter(u => u.seviye === "hata").map(u => u.t)} onaylayan={depo.veri.kurum.onaylayan} onayla={() => onayla(depo.yil, depo.ay)} />
   {:else if !calisiyor}
     <section class="kart bos-ay">
       <h2>{ayAdi(depo.yil, depo.ay)} çizelgesi henüz yok</h2>

@@ -187,6 +187,8 @@ export const depo = $state({
   ay: bugun.getMonth(),
   /** tarayıcı kaydı yazamazsa gösterilecek uyarı */
   kayitSorunu: acilisSorunu,
+  /** veriler başka bir pencerede (sekmede) değişti: bu pencere kaydetmez, yenilenmesi gerekir */
+  baskaPencere: false,
 });
 
 /** Düz (proxy'siz) derin kopya. Svelte'in anlık görüntü işlevi her yaprak değerde structuredClone çağırdığından büyük
@@ -215,11 +217,13 @@ let kayitZamanlayici: ReturnType<typeof setTimeout> | undefined;
 function kaydet() {
   clearTimeout(kayitZamanlayici);
   kayitZamanlayici = setTimeout(() => {
+    // başka pencere yeni veriyi yazdıysa bu penceredeki eski veriyle üzerine yazılmaz
+    if (depo.baskaPencere) return;
     oglenOnar();
     gecmiseIsle();
     try {
       localStorage.setItem(ANAHTAR, JSON.stringify(veriAnlik()));
-      if (depo.kayitSorunu !== acilisSorunu) depo.kayitSorunu = "";
+      if (depo.kayitSorunu !== acilisSorunu && !depo.baskaPencere) depo.kayitSorunu = "";
     } catch {
       depo.kayitSorunu = "Veriler bu tarayıcıya kaydedilemedi (gizli pencere ya da depolama dolu olabilir). Sayfayı kapatmadan önce Ayarlar'dan yedek alın.";
     }
@@ -230,6 +234,14 @@ $effect.root(() => {
     veriAnlik();
     kaydet();
   });
+});
+// aynı tarayıcıda başka bir pencere (sekme) veriyi değiştirince: bu pencere kaydetmeyi durdurur ve uyarır
+export const BASKA_PENCERE_UYARISI = "Veriler başka bir pencerede değiştirildi. Bu penceredeki değişiklikler artık kaydedilmiyor; güncel verilerle devam etmek için sayfayı yenileyin.";
+if (typeof window !== "undefined") window.addEventListener("storage", e => {
+  if (e.key !== ANAHTAR && e.key !== null) return;
+  clearTimeout(kayitZamanlayici);
+  depo.baskaPencere = true;
+  depo.kayitSorunu = BASKA_PENCERE_UYARISI;
 });
 
 // ---------- geri al / yinele (eski uygulamadaki gibi) ----------
