@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   senaryo-testleri:
-    runs-on: ubuntu-latest
+    # Playwright 1.56 ubuntu-latest'in yeni sürümünü (26.04) desteklemiyor: tarayıcı kurulamıyor
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
