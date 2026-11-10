@@ -1,7 +1,8 @@
 // Öğlen nöbeti: hafta içi, mesaide çalışanlardan; Pzt–Prş 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker; Cuma'dan
 // muaf olan Cuma yazılmaz; haftada en fazla 2; yıl boyunca toplam ve Cuma sayısı eşit; nöbetçiye mümkünse yazılmaz.
 import { describe, test, expect } from "vitest";
-import { cizelgeOlustur, oglenHesapla, oglenOnarimlariHesapla, oglenYillikHesapla, puantajHesapla } from "../src/motor";
+import SABIT from "./altin/oglen-cizelge.json";
+import { oglenHesapla, oglenOnarimlariHesapla, oglenYillikHesapla, puantajHesapla } from "../src/motor";
 
 const staff = [];
 for (let i = 1; i <= 7; i++) staff.push({ id: i, name: "E" + i, role: "eczaci", ...(i === 7 ? { cumaMuaf: true } : {}) });
@@ -15,8 +16,14 @@ const Y = 2026;
 const hg = (m, d) => (new Date(Y, m, d).getDay() + 6) % 7;
 const fark = v => Math.max(...v) - Math.min(...v);
 
+// nöbet çizelgesi sabit kayıttan (test/altin/oglen-cizelge.json): öğlen kuralları nöbet motorundaki değişikliklerden
+// bağımsız denetlenir. Kayıt bu verinin cizelgeOlustur çıktısıdır (yalnız kişi numaraları).
+const kisi = id => { const s = staff.find(x => x.id === id); return { id, name: s.name, role: s.role }; };
+function sabitCizelge(m) {
+  return SABIT[m].map((g, i) => ({ day: i + 1, assigned: g.a.map(kisi), prep: g.p.map(kisi), conflict: g.c, locked: false, tatil: g.t }));
+}
 function ay(m) {
-  veri.schedules[`${Y}-${m}`] = { year: Y, month: m, days: cizelgeOlustur(veri, Y, m, { saat: () => 0 }).days };
+  veri.schedules[`${Y}-${m}`] = { year: Y, month: m, days: sabitCizelge(m) };
   const r = oglenHesapla(veri, Y, m);
   veri.oglen[`${Y}-${m}`] = Object.fromEntries(r.gunler.map(g => [g.gun, { e: g.e, t: g.t }]));
   return r;

@@ -237,7 +237,7 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
     if (var_(id, i + 2)) artArda.push(ad(id) + ": " + (i + 1) + " ve " + (i + 2) + " " + AYLAR[m] + " art arda acil nöbeti (personel yetmiyor).");
   }
   // çok sayıda art arda nöbet kadronun yetmediğini gösterir: tek tek yerine tek satır
-  if (artArda.length > 5) uyarilar.push(AYLAR[m] + ": acil kadrosu yetmiyor; " + artArda.length + " kez art arda acil nöbeti yazıldı (günde " + ACIL_GUNLUK + " kişi için art arda gün olmadan en az " + 2 * ACIL_GUNLUK + " kişi gerekir).");
+  if (artArda.length > 5) uyarilar.push(AYLAR[m] + ": acil kadrosu yetmiyor; " + artArda.length + " kez art arda acil nöbeti yazıldı (günde " + ACIL_GUNLUK + " kişi için art arda gün ve 5 günde 3 nöbet olmadan en az " + Math.ceil(5 * ACIL_GUNLUK / 2) + " kişi gerekir).");
   else uyarilar.push(...artArda);
   return { gunler: sec.map((ids, i) => ({ gun: i + 1, ids: sabit[i] ? ids : ids.slice().sort((a, b) => a - b), ...(sabit[i] ? { elle: true as const } : {}) })), uyarilar };
 }

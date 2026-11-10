@@ -5,10 +5,11 @@
   import { servisler, servisAyariYaz, servisEkle, servisSil, servisAyarlariniSifirla, type ServisBilgisi } from "../../veri/servis.svelte";
   import { SERVIS_ZOR_ESIK } from "../../motor";
   import Ikon from "../ortak/Ikon.svelte";
+  import { adIcerir } from "../../veri/tarih";
 
   const L = $derived(servisler());
   let ara = $state("");
-  const gorunen = $derived([...L].sort((a, b) => a.name.localeCompare(b.name, "tr")).filter(s => !ara.trim() || s.name.toLocaleUpperCase("tr").includes(ara.trim().toLocaleUpperCase("tr"))));
+  const gorunen = $derived([...L].sort((a, b) => a.name.localeCompare(b.name, "tr")).filter(s => adIcerir(s.name, ara)));
   const ozet = $derived({ acik: L.filter(s => s.on).length, yb: L.filter(s => s.on && s.yb).length, cok: L.filter(s => s.on && s.multi).length });
 
   const sinirla = (v: number, a: number, b: number) => Math.max(a, Math.min(b, Math.round(v) || a));
@@ -16,7 +17,10 @@
     const y = { name: s.name, z: s.z, h: s.h, multi: s.multi, on: s.on, [alan]: deger };
     y.z = sinirla(y.z, 1, 10); y.h = sinirla(y.h, 0, 999);
     servisAyariYaz(y);
+    return alan === "z" ? y.z : y.h;
   }
+  // sayı alanı sınırlanan değeri gösterir (kayıtlı değer aynı kalınca alan kendiliğinden yenilenmez: ör. 10 iken 15 yazılırsa)
+  const sayiYaz = (s: ServisBilgisi, alan: "z" | "h", t: HTMLInputElement) => { t.value = String(degistir(s, alan, Number(t.value))); };
 
   let yeniAd = $state(""), yeniZ = $state(5), yeniH = $state(10), yeniCok = $state(false), hata = $state(""), durum = $state("");
   function ekle(e: SubmitEvent) {
@@ -54,8 +58,8 @@
             {#if s.ekstra}<small class="etk">eklendi</small>{:else if s.z !== s.z0 || s.h !== s.h0 || s.multi !== s.multi0}<small class="etk">değişti</small>{/if}
             {#if s.zor}<small class="etk zor">zor</small>{/if}{#if s.grup}<small class="etk" title="Aynı gruptaki servisler aynı kişiye birlikte verilmez">grup</small>{/if}
           </th>
-          <td><input class="girdi sayi" type="number" min="1" max="10" value={s.z} onchange={e => degistir(s, "z", Number(e.currentTarget.value))} aria-label="{s.name} zorluk" /></td>
-          <td><input class="girdi sayi" type="number" min="0" max="999" value={s.h} onchange={e => degistir(s, "h", Number(e.currentTarget.value))} aria-label="{s.name} hasta sayısı" /></td>
+          <td><input class="girdi sayi" type="number" min="1" max="10" value={s.z} onchange={e => sayiYaz(s, "z", e.currentTarget)} aria-label="{s.name} zorluk" /></td>
+          <td><input class="girdi sayi" type="number" min="0" max="999" value={s.h} onchange={e => sayiYaz(s, "h", e.currentTarget)} aria-label="{s.name} hasta sayısı" /></td>
           <td><input type="checkbox" checked={s.multi} onchange={e => degistir(s, "multi", e.currentTarget.checked)} aria-label="{s.name} çok günlük" /></td>
           <td class="rakam">{s.h * s.z}</td>
           <td>{#if s.ekstra}<button class="dugme kucuk sade tehlike" onclick={() => sil(s)}>{silinecek === s.name ? "Evet, sil" : "Sil"}</button>{/if}</td>

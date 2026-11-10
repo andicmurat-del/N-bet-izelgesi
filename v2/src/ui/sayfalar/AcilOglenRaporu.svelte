@@ -6,6 +6,10 @@
   import { veriAnlik } from "../../veri/depo.svelte";
   import { ROL_AD, type Rol } from "../../veri/tipler";
   import { AYLAR } from "../../veri/tarih";
+  import { ciktiPaketi } from "../../disa/yukle";
+  import { dosyaKaydet, hataMetni } from "../../disa/indir";
+  import { depo } from "../../veri/depo.svelte";
+  import Ikon from "../ortak/Ikon.svelte";
 
   let { yil, goster }: { yil: number; goster: "acil" | "oglen" } = $props();
   type Satir = { id: number; ad: string; rol: string; aylar: number[]; top: number; tatil?: number; cuma?: number; pe?: number; cu?: number; cmt?: number; paz?: number; resmi?: number };
@@ -19,6 +23,14 @@
     { baslik: "Öğlen nöbeti", l: R.oglen, aylar: R.oglenAylar, ekler: [["cuma", "Cuma"]] as [Ek, string][],
       bos: "Bu yıl öğlen nöbet listesi yok.", not: "Eczacılar ve teknikerler. Cuma ayrıca sayılır; Cuma'dan muaf olanlarda Cuma sayısı 0'dır." },
   ]);
+  let durum = $state("");
+  async function excel(b: (typeof bolumler)[number]) {
+    try {
+      const { dagilimKitap } = await ciktiPaketi();
+      const blob = dagilimKitap(b.baslik, yil, depo.veri.kurum.ad, ay3, b.aylar, b.l.map(s => ({ ad: s.ad, rol: s.rol, aylar: s.aylar, top: s.top, ek: b.ekler.map(([k]) => s[k] ?? 0) })), b.ekler.map(([, a]) => a));
+      durum = (await dosyaKaydet(`${goster === "acil" ? "acil" : "oglen"}-nobeti-${yil}.xlsx`, blob, blob.type)) ? "Excel dosyası kaydedildi." : "";
+    } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }
+  }
 </script>
 
 {#each bolumler.filter((_, i) => (goster === "acil" ? i === 0 : i === 1)) as b (b.baslik)}
@@ -27,7 +39,8 @@
     {#if !b.aylar.some(Boolean)}
       <div class="kart bos"><p>{b.bos}</p></div>
     {:else}
-      <Bilgi baslik="Açıklama"><p>{b.not}</p></Bilgi>
+      <div class="ust"><Bilgi baslik="Açıklama"><p>{b.not}</p></Bilgi><button class="dugme" onclick={() => excel(b)}><Ikon ad="indir" />Excel</button></div>
+      {#if durum}<p class="bant" role="status">{durum}</p>{/if}
       <p class="aciklama">En çok − en az: toplamda <b class="rakam">{fark(b.l, "top")}</b>{#each b.ekler as [k, a]}, {a} <b class="rakam">{fark(b.l, k)}</b>{/each}. Soluk sütunlar: listesi olmayan aylar.</p>
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
       <div class="kart tablo-kap" tabindex="0" role="region" aria-label="{yil} {b.baslik.toLocaleLowerCase('tr')} dağılımı">
@@ -51,6 +64,8 @@
 <style>
   :where(tbody tr:nth-child(even)) > :where(td, th) { background: var(--yuzey-2); }
   .blok { margin-bottom: var(--b4); }
+  .bant { padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 500; background: var(--vurgu-zemin); color: var(--vurgu); }
+  .ust { display: flex; gap: var(--b3); align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
   .aciklama { font-size: var(--f-sm); color: var(--soluk); max-width: 100ch; }
   .bos { padding: var(--b4); color: var(--yazi-2); }
   .tablo-kap { overflow-x: auto; }

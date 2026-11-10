@@ -57,7 +57,8 @@ export function aramaKur(A: AyBilgisi, days: MotorGunu[]) {
   const ixStaff = staffList.map(s => hIx[s.id]), ixPrep = prepAday.map(s => hIx[s.id]), ixDestek = destekler.map(s => hIx[s.id]);
   const ixEczPrep = eczacilar.filter(s => hazirlamaRol(s.role)).map(s => hIx[s.id]), ixTekPrep = teknisyenler.filter(s => hazirlamaRol(s.role)).map(s => hIx[s.id]);
   const eczIx = new Uint8Array(NH); tumHavuz.forEach((s, ix) => { if (eczaciMi(s.role)) eczIx[ix] = 1; });
-  // kesin kural grubu: fazla mesai farkı en fazla FM_MAX_FARK saat (ayın tamamında çalışan nöbetçi personel; destek hariç)
+  // kesin kural grubu: fazla mesai farkı en fazla FM_MAX_FARK saat (ayın tamamında çalışan nöbetçi personel; destek hariç;
+  // eczacılar ve teknikerler ayrı ayrı ölçülür)
   const ixFmKural = fmKuralKisileri(B, y, m).map(s => hIx[s.id]).filter(ix => ix !== undefined);
   const ixNobetKural = nobetKuralKisileri(B, y, m).map(s => hIx[s.id]).filter(ix => ix !== undefined);
 

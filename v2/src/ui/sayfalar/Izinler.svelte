@@ -2,7 +2,7 @@
   import type { Kisi } from "../../veri/tipler";
   import { depo, tercihAl, tercihAyarla, resmiTatilMi, arifeMi, resmiTatilAyarla, arifeAyarla, aydaCalisanlar, ayCizelgesi } from "../../veri/depo.svelte";
   import { TERCIH_ACIKLAMA, TERCIH_AD, ROL_AD, type Tercih } from "../../veri/tipler";
-  import { GUN_KISA, gunMetni, gunSayisi, haftaGunu, haftaSonuMu, isoTarih } from "../../veri/tarih";
+  import { GUN_KISA, adIcerir, gunMetni, gunSayisi, haftaGunu, haftaSonuMu, isoTarih } from "../../veri/tarih";
   import { veriAnlik } from "../../veri/depo.svelte";
   import { Baglam } from "../../motor/baglam";
   import IslemAlani from "../ortak/IslemAlani.svelte";
@@ -72,7 +72,7 @@
   const ARAC_AD: Record<Tercih | "temizle", string> = { izinli: "İzinli", want: "Nöbet istiyor", avoid: "Nöbet istemiyor", esVar: "Eş durumu: nöbetçi olsun", esYok: "Eş durumu: nöbetçi olmasın", temizle: "İşareti kaldır" };
   // personel arama ve işaretli gün sayısı
   let ara = $state("");
-  const listelenen = $derived(kisiler.filter(k => k.name.toLocaleLowerCase("tr").includes(ara.trim().toLocaleLowerCase("tr"))));
+  const listelenen = $derived(kisiler.filter(k => adIcerir(k.name, ara)));
   const tabloKisiler = $derived(listelenen.slice().sort((a, b) => (GRUP_SIRA[a.role] ?? 9) - (GRUP_SIRA[b.role] ?? 9) || a.name.localeCompare(b.name, "tr")));
   const isaretliGun = (id: number) => Object.values(kisiAyIsaretleri(id)).reduce((t, n) => t + (n ?? 0), 0);
   // izin arasındaki hafta sonu (izin sayılır; çizgili gösterilir) — motorun kendi kuralıyla, yalnız okunur
@@ -243,6 +243,8 @@
   .herkes td.arasi { background: repeating-linear-gradient(135deg, var(--izin-zemin) 0 4px, var(--yuzey) 4px 8px); }
   .herkes td.pasif { background: var(--yuzey-2); }
   .herkes td button { width: 100%; min-width: 24px; height: 30px; border: 0; background: transparent; cursor: pointer; padding: 0; display: grid; place-items: center; }
+  /* telefonda dokunma hedefi en az 28 px */
+  @media (max-width: 720px) { .herkes td button, .herkes thead th:not(.ad) { min-width: 28px; } }
   .herkes td button:hover:not(:disabled) { outline: 2px solid var(--altin); outline-offset: -2px; }
   .herkes td button:focus-visible { outline: 2px solid var(--odak); outline-offset: -2px; }
   .herkes td button:disabled { cursor: default; }

@@ -27,7 +27,7 @@
     {@const dw = haftaGunu(c.year, c.month, g.day)}
     {@const rt = resmiTatilMi(c.year, c.month, g.day)}
     {@const ar = arifeMi(c.year, c.month, g.day)}
-    {@const eksik = g.assigned.length < 2}
+    {@const eksik = g.assigned.length < 2 || !g.assigned.some(p => p.role === "eczaci" || p.role === "nobetci")}
     <button class="gun" class:hs={g.tatil} class:rt class:sorun={g.conflict || eksik} class:secili={secili === g.day} class:bugun={bugunMu(g.day)}
       class:vurgu={vurgu !== null && kisiVar(g, vurgu)} class:soluk={vurgu !== null && !kisiVar(g, vurgu)}
       onclick={() => gunAc(g.day)} aria-pressed={secili === g.day}
@@ -37,7 +37,7 @@
         <b class="rakam">{g.day}</b><span class="gunadi">{GUN_KISA[dw]}</span>
         {#if rt}<span class="etiket">Resmi tatil</span>{:else if ar}<span class="etiket">Arife</span>{/if}
         <span class="simgeler">
-          {#if g.conflict || eksik}<span class="sorun-simge" title="Bu günde kural esnetildi ya da kişi eksik"><Ikon ad="uyari" boyut={14} /></span>{/if}
+          {#if g.conflict || eksik}<span class="sorun-simge" title="Bu günde kural esnetildi, kişi eksik ya da eczacı yok"><Ikon ad="uyari" boyut={14} /></span>{/if}
           {#if degisen?.has(g.day)}<span class="degisti" title="Bu günde nöbet değişimi var">değişti</span>{/if}
           {#if g.locked}<span class="kilit" title="Elle düzenlendi; yeniden oluşturmada korunur"><Ikon ad="kilit" boyut={13} /></span>{/if}
         </span>

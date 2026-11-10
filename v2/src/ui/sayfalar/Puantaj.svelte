@@ -78,6 +78,16 @@
     acik = false;
   }
   const SECENEKLER: PuantajKodu[] = ["M", "N", "H", "NI", "YI", "R", "DI", "B"];
+  // görev (nöbet / hazırlama) gününe izin ya da rapor: yalnız puantaja yazmak görevi boş bırakır; İzin ve rapor akışında
+  // yerine geçen seçilir
+  const IZIN_KOD = ["YI", "R", "DI"];
+  const goreveIzin = $derived(!!secili && (secili.simdiki === "N" || secili.simdiki === "H") && IZIN_KOD.includes(yeniKod));
+  let izinOn = $state<{ kisi: number; gun: number; tur: "YI" | "R" | "DI" } | null>(null);
+  function izneGit() {
+    if (!secili) return;
+    izinOn = { kisi: secili.id, gun: secili.gun, tur: yeniKod as "YI" | "R" | "DI" };
+    acik = false; gorunum = "izin";
+  }
 
   let durum = $state("");
   async function disaAktar(tur: "xlsx" | "pdf") {
@@ -97,13 +107,13 @@
 {:else}
   <IslemAlani>
     <div class="secim" role="tablist" aria-label="Puantaj görünümü">
-      {#each GORUNUMLER as g}<button role="tab" aria-selected={gorunum === g.ad} onclick={() => (gorunum = g.ad)}>{g.baslik}</button>{/each}
+      {#each GORUNUMLER as g}<button role="tab" aria-selected={gorunum === g.ad} onclick={() => { izinOn = null; gorunum = g.ad; }}>{g.baslik}</button>{/each}
     </div>
     <button class="dugme" onclick={() => disaAktar("pdf")}><Ikon ad="indir" />PDF</button>
     <button class="dugme" onclick={() => disaAktar("xlsx")}><Ikon ad="indir" />Excel</button>
   </IslemAlani>
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
-  {#if gorunum === "izin"}<IzinRapor {kimler} />
+  {#if gorunum === "izin"}<IzinRapor {kimler} on={izinOn} />
   {:else if gorunum === "degisim"}<NobetDegisimi {acil} />
   {:else}
   <div class="ozet-serit">
@@ -194,10 +204,17 @@
         <label class="secenek"><input type="radio" name="kod" value={k} bind:group={yeniKod} /><span><b>{KOD_AD[k]}</b></span></label>
       {/each}
     </fieldset>
-    <p class="not">Puantaj gerçekleşeni gösterir; çizelge değişmez. Yıllık izin, rapor ve diğer izin girilen günlere, çizelge yeniden oluşturulursa görev yazılmaz.</p>
+    {#if goreveIzin}
+      <p class="kutu dikkat" role="alert">Bu gün {secili.simdiki === "N" ? "nöbet" : "hazırlama"} günü. Yalnız puantaja yazılırsa görev boş kalır; yerine geçecek kişiyi seçmek için İzin ve rapor ekranından girin.</p>
+    {:else}
+      <p class="not">Puantaj gerçekleşeni gösterir; çizelge değişmez. Yıllık izin, rapor ve diğer izin girilen günlere, çizelge yeniden oluşturulursa görev yazılmaz.</p>
+    {/if}
     {#snippet altlik()}
       <button class="dugme" onclick={() => (acik = false)}>Vazgeç</button>
-      <button class="dugme ana" onclick={kaydet}>Kaydet</button>
+      {#if goreveIzin}
+        <button class="dugme" onclick={kaydet}>Yalnız puantaja yaz</button>
+        <button class="dugme ana" onclick={izneGit}>İzin ve rapor ile gir</button>
+      {:else}<button class="dugme ana" onclick={kaydet}>Kaydet</button>{/if}
     {/snippet}
   </Pencere>
 {/if}
@@ -253,6 +270,8 @@
   .cetvel td.tatil { background: var(--hs-zemin); }
   .cetvel td { position: relative; }
   .cetvel td button { width: 100%; min-width: 22px; height: 30px; border: 0; background: transparent; cursor: pointer; font-variant-numeric: tabular-nums; color: inherit; font-weight: inherit; }
+  /* telefonda dokunma hedefi en az 28 px */
+  @media (max-width: 720px) { .cetvel td button, .cetvel thead th:not(.ad) { min-width: 28px; } }
   .cetvel td button:hover { outline: 2px solid var(--altin); outline-offset: -2px; }
   .cetvel td.ov::after { content: ""; position: absolute; top: 0; right: 0; border-top: 7px solid var(--altin); border-left: 7px solid transparent; pointer-events: none; }
   .k-N { background: var(--nobet-hucre) !important; color: #FFFFFF; font-weight: 700; }

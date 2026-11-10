@@ -15,7 +15,7 @@
 import type { Gorevli } from "../veri/tipler";
 import { Baglam, type MotorCizelgesi } from "./baglam";
 import { degisimDenetle as degisimDenetimi, yerineAdaylar, type Degisiklik } from "./degisim";
-import { gunuDenetle as gunDenetimi } from "./denetim";
+import { cizelgeCanliDenetim, gunuDenetle as gunDenetimi } from "./denetim";
 import { cizelgeUret, type CizelgeSonucu } from "./nobet/olustur";
 import { acilOlustur } from "./acil";
 import { acilDegisimDenetle as acilDegisimDenetimi, acilYerineAdaylar } from "./acilDegisim";
@@ -69,6 +69,10 @@ function puanKucuk(a: number[], b: number[]): boolean {
 }
 
 /** Elle düzenlenen bir günün kurallarını denetler. sch: ayın çizelgesi (düzenlenen gün eski hâliyle); gun 1'den */
+/** kayıtlı çizelgenin o anki hâlinde eczacısız gün, eksik nöbetçi ve karşılanmayan nöbet isteği (uyarı metinleri) */
+export function canliDenetimHesapla(veri: unknown, sch: MotorCizelgesi) {
+  return cizelgeCanliDenetim(new Baglam(veri), sch.year, sch.month, sch.days);
+}
 export function gunuDenetle(veri: unknown, sch: MotorCizelgesi, gun: number, nobetciler: Gorevli[], hazirlama: Gorevli[]) {
   return gunDenetimi(new Baglam(veri), sch, gun, nobetciler, hazirlama);
 }
@@ -96,10 +100,15 @@ export function onayHaftasiHesapla(veri: unknown, y: number, m: number, d: numbe
 export function acilDenetle(veri: unknown, y: number, m: number, g: number, ids: number[]) { return acilDenetimi(new Baglam(veri), y, m, g, ids); }
 /** Acil nöbeti gününe yerine yazılabilecekler, uygunluk ve yıllık eşitliğe göre sıralı */
 export function acilAdaylariHesapla(veri: unknown, y: number, m: number, g: number, ids: number[], cik: number | null) { return acilAdaylari(new Baglam(veri), y, m, g, ids, cik); }
-/** Acil listesinde kayıtlı nöbetçisi o gün yazılamaz hâle gelen günler (sonradan izin / rapor vb.): gün → kişi id'leri */
+/** Acil listesinin sorunlu günleri: kayıtlı nöbetçisi o gün yazılamaz hâle gelen (sonradan izin / rapor vb.; ids) ve
+ *  önceki gün de acil nöbeti olan (art arda; artArda) kişiler */
 export function acilSorunluGunler(veri: unknown, y: number, m: number) {
-  const B = new Baglam(veri), out: { gun: number; ids: number[] }[] = [];
-  for (const [g, l] of Object.entries(B.acil[y + "-" + m] || {})) { const ids = l.filter(i => B.kesinYasak(i, y, m, Number(g))); if (ids.length) out.push({ gun: Number(g), ids }); }
+  const B = new Baglam(veri), ay = B.acil[y + "-" + m] || {}, out: { gun: number; ids: number[]; artArda?: number[] }[] = [];
+  for (const [g, l] of Object.entries(ay)) {
+    const d = Number(g), ids = l.filter(i => B.kesinYasak(i, y, m, d)), once = ay[d - 1] || [];
+    const artArda = l.filter(i => once.includes(i));
+    if (ids.length || artArda.length) out.push({ gun: d, ids, ...(artArda.length ? { artArda } : {}) });
+  }
   return out.sort((a, b) => a.gun - b.gun);
 }
 /** Yılın acil eczane ve öğlen nöbeti dağılımı (Raporlar) */

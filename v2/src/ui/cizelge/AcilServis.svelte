@@ -12,6 +12,7 @@
   import { AYLAR as AYLAR_AD, GUN_KISA, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
+  import OnaySorusu from "../ortak/OnaySorusu.svelte";
   import AylikOzet from "../ortak/AylikOzet.svelte";
   import VurguSecici from "../ortak/VurguSecici.svelte";
 
@@ -62,7 +63,7 @@
     return [...o.entries()].map(([id, l]) => ({ id, ad: ad(id), gunler: l, tatil: l.filter(g => tatilMi(y, m, g)).length })).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
   });
   // kayıtlı nöbetçisi sonradan yazılamaz hâle gelen günler (izin / rapor girildi, eş durumu yok, dönem dışı)
-  const sorunluGunler = $derived(dolu ? acilSorunluGunler(veriAnlik(), y, m).map(x => ({ gun: x.gun, adlar: x.ids.map(ad) })) : []);
+  const sorunluGunler = $derived(dolu ? acilSorunluGunler(veriAnlik(), y, m).map(x => ({ gun: x.gun, adlar: x.ids.map(ad), artArda: (x.artArda ?? []).map(ad) })) : []);
   const sorunluMu = (g: number) => sorunluGunler.some(x => x.gun === g);
   // kişi başı aylık özet (puantajdaki gibi; acil kadrosu, hazırlama yok)
   const ozetSatirlari = $derived(dolu ? (puantajIzgarasi(y, m) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => acilKadrosunda(r.s)) as never : []);
@@ -107,6 +108,7 @@
       durum = ok ? (tur === "pdf" ? "PDF kaydedildi." : "Excel dosyası kaydedildi.") : "";
     } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }
   }
+  let onaySor = $state(false);
 </script>
 
 {#if !adaylar.length && !dolu}
@@ -119,7 +121,7 @@
   <div class="ozet-serit">
     <div><small>Doluluk</small><b>{dolu}/{gunler.length} gün</b><span>Her gün 2 nöbetçi</span></div>
     <div><small>Acil kadrosu</small><b>{adaylar.length} kişi</b><span>Acil servis personeli ve acilde tutan eczacılar</span></div>
-    <div><small>Sorunlu gün</small><b>{sorunluGunler.length}</b><span>{sorunluGunler.length ? "Sonradan izin / rapor girildi" : "Yazılamayan nöbetçi yok"}</span></div>
+    <div><small>Sorunlu gün</small><b>{sorunluGunler.length}</b><span>{sorunluGunler.length ? "İzin / rapor ya da art arda nöbet" : "Yazılamayan nöbetçi yok"}</span></div>
     <div><small>Onay durumu</small><b>{#if onay}<span class="rozet tamam">Onaylı</span>{:else}<span class="rozet notr">Taslak</span>{/if}</b><span>{onay ? onayMetni : "Onaylanınca liste kilitlenir"}</span></div>
   </div>
   <IslemAlani>
@@ -127,7 +129,7 @@
         <button class="dugme" onclick={() => listeOnayiniKaldir("acil", y, m)}>Onayı kaldır</button>
       {:else}
         {#if adaylar.length}<button class="dugme{dolu ? '' : ' ana'}" onclick={olustur}><Ikon ad={dolu ? "yenile" : "takvim"} />{dolu ? "Yeniden oluştur" : "Acil nöbet listesini oluştur"}</button>{/if}
-        {#if dolu}<button class="dugme ana" onclick={() => listeyiOnayla("acil", y, m)}><Ikon ad="tamam" />Onayla</button>{/if}
+        {#if dolu}<button class="dugme ana" onclick={() => (onaySor = true)}><Ikon ad="tamam" />Onayla</button>{/if}
       {/if}
       {#if degisimVar}<div class="secim" role="group" aria-label="Liste"><button aria-pressed={gorunum === "guncel"} onclick={() => (gorunum = "guncel")} title="Nöbet değişimleri işlenmiş liste">Güncel</button><button aria-pressed={gorunum === "asil"} onclick={() => (gorunum = "asil")} title="Değişimlerden önceki liste">{onay ? "Onaylanan" : "Asıl liste"}</button></div>{/if}
       {#if dolu}
@@ -138,7 +140,10 @@
   </IslemAlani>
   <Bilgi baslik="Acil nöbeti kuralları"><p>Her gün 2 kişi; acil servis personeli ile nöbet yeri "Acil eczane" olan eczacılar ve kemoterapi eczacıları arasından eşit dağıtılır (eczane nöbetinden ayrı; her ay fazla mesai saati, yıl boyunca toplam ile Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı; herkesin payı yazılabildiği gün sayısına göre: izinli / raporlu günler düşülür, telafi istenmez). Aynı ya da komşu günde eczane nöbeti olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.</p></Bilgi>
   {#if onay}<p class="bant bilgi">Onaylandı: {onayMetni}. Onaylı liste kilitlidir; yeniden oluşturulmaz ve elle değiştirilmez. Sonradan izin ya da rapor alan kişinin günü işaretli görünür: güne dokunup yerine yazılacak kişiyi seçin.</p>{/if}
-  {#each sorunluGunler as g}<p class="satir kutu dikkat"><Ikon ad="uyari" boyut={15} /><span>{g.gun} {AYLAR_AD[m]}: {g.adlar.join(", ")} bu gün yazılamaz (izin, rapor ya da çalışma dönemi dışı). Güne dokunup yerine birini seçin.</span></p>{/each}
+  {#each sorunluGunler as g}
+    {#if g.adlar.length}<p class="satir kutu dikkat"><Ikon ad="uyari" boyut={15} /><span>{g.gun} {AYLAR_AD[m]}: {g.adlar.join(", ")} bu gün yazılamaz (izin, rapor ya da çalışma dönemi dışı). Güne dokunup yerine birini seçin.</span></p>{/if}
+    {#if g.artArda.length}<p class="satir kutu dikkat"><Ikon ad="uyari" boyut={15} /><span>{g.gun - 1} ve {g.gun} {AYLAR_AD[m]}: {g.artArda.join(", ")} art arda acil nöbeti tutuyor. Güne dokunup yerine birini seçin.</span></p>{/if}
+  {/each}
   {#each uyarilar as u}<p class="satir kutu dikkat"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
   {#if degisimVar}<p class="bant bilgi"><Ikon ad="bilgi" boyut={16} />{guncelMi ? `Güncel liste gösteriliyor: puantajdaki nöbet değişimleri işlendi; değişen ${guncel!.degisen.size} gün işaretli. Değişimlerden önceki liste "${onay ? "Onaylanan" : "Asıl liste"}" görünümünde.` : `${onay ? "Onaylanan" : "Asıl"} liste gösteriliyor (değişimlerden önceki hâli). Değişimler "Güncel" görünümünde.`}</p>{/if}
@@ -201,6 +206,8 @@
   {/snippet}
 </Pencere>
 
+
+<OnaySorusu bind:acik={onaySor} ne="Acil eczane nöbet listesi" sorunlar={sorunluGunler.map(x => `${x.gun}. gün: ${[...x.adlar.map(a => a + " yazılamaz"), ...x.artArda.map(a => a + " art arda")].join(", ")}`)} onaylayan={depo.veri.kurum.onaylayan} onayla={() => listeyiOnayla("acil", y, m)} />
 <style>
   .bos { padding: var(--b5); display: grid; gap: var(--b3); max-width: 760px; }
   .bos p { color: var(--yazi-2); }
