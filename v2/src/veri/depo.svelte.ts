@@ -641,11 +641,19 @@ export function yedektenYukle(metin: string): { tamam: true; atlanan: number } |
   const v = veriyiDogrula(o.veri);
   // okunamayıp atlanan kişi ve çizelge sayısı (kullanıcıya söylenir)
   const atlanan = (o.veri.staff.length - v.staff.length) + (Object.keys(o.veri.schedules).length - Object.keys(v.schedules).length);
-  // yüklemeden önceki veri bir kez saklanır: yanlış dosya seçilirse geri alınabilir
+  tumVeriyiDegistir(v);
+  return { tamam: true, atlanan };
+}
+/** Verinin tamamını dışarıdan gelenle (yedek dosyası, sunucu) değiştirir. Önceki veri bir kez saklanır: yanlış dosya
+ *  seçildiyse ya da sunucudan beklenmeyen veri geldiyse geri alınabilir (yuklemeOncesineDon). */
+export function tumVeriyiDegistir(v: Veri) {
   try { localStorage.setItem(ANAHTAR + "-yukleme-oncesi", JSON.stringify(veriAnlik())); } catch { /* yer yoksa geçilir */ }
   depo.veri = v;
   gecmisiSifirla();   // yüklemenin kendi geri dönüşü var (yuklemeOncesineDon)
-  return { tamam: true, atlanan };
+}
+/** yüklemeden / sunucudan almadan önceki veri saklı mı */
+export function yuklemeOncesiVar(): boolean {
+  try { return !!localStorage.getItem(ANAHTAR + "-yukleme-oncesi"); } catch { return false; }
 }
 /** Yedekten yüklemeden önceki veriye döner (yanlış dosya seçildiyse) */
 export function yuklemeOncesineDon(): boolean {

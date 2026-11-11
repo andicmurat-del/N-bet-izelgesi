@@ -41,21 +41,37 @@ export type { CizelgeSonucu } from "./nobet/olustur";
  * secenek.varyasyon: "farklı dağılım"; secenek.saat: aramanın süre sınırı için saat (testlerde sabit verilir).
  */
 export function cizelgeOlustur(veri: unknown, yil: number, ay: number, secenek: { varyasyon?: number; saat?: () => number } = {}) {
-  const v = secenek.varyasyon || 0, saat = secenek.saat || Date.now, bas = saat();
+  const saat = secenek.saat || Date.now, bas = saat();
   // uyarısız çizelge bulunamazsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir (önce hata, sonra uyarı,
   // sonra kırmızı gün sayısı; eşitse ilk bulunan). Her deneme verinin kendi kopyasıyla çalışır. Kadro kurallara
   // matematiksel olarak yetmiyorsa ek deneme yapılmaz: uyarı sayısı azalsa da farklar büyüyebiliyor (ör. 3 eczacı +
   // 4 teknikerde bir uyarı eksilirken fazla mesai farkı 32 saatten 64 saate çıkıyordu)
-  let en = cizelgeUret(new Baglam(veri), yil, ay, v, saat), enP = uyariPuani(en);
-  const kapasiteYok = en.warnings.some(w => /matematiksel olarak mümkün değil/.test(w));
-  for (let k = 1; k <= EK_DENEME && !kapasiteYok && enP.some(x => x > 0) && saat() - bas < EK_DENEME_SURE; k++) {
-    const r = cizelgeUret(new Baglam(veri), yil, ay, EK_TOHUM + v * (EK_DENEME + 1) + k, saat), p = uyariPuani(r);
-    if (puanKucuk(p, enP)) { en = r; enP = p; }
-  }
+  const denemeler = [cizelgeDenemesi(veri, yil, ay, 0, secenek)];
+  if (!ekDenemeGerekli(denemeler[0])) return denemeler[0];
+  for (let k = 1; k <= EK_DENEME && !uyarisiz(enIyiDeneme(denemeler)) && saat() - bas < EK_DENEME_SURE; k++) denemeler.push(cizelgeDenemesi(veri, yil, ay, k, secenek));
+  return enIyiDeneme(denemeler);
+}
+/** Tek bir arama denemesi: 0 asıl arama, 1..EK_DENEME farklı başlangıçlı ek aramalar. Denemeler birbirinden bağımsızdır;
+ *  arayüz bunları ayrı işçilerde aynı anda çalıştırır (istemci.ts), cizelgeOlustur sırayla. */
+export function cizelgeDenemesi(veri: unknown, yil: number, ay: number, deneme: number, secenek: { varyasyon?: number; saat?: () => number } = {}): CizelgeSonucu {
+  const v = secenek.varyasyon || 0;
+  return cizelgeUret(new Baglam(veri), yil, ay, deneme ? EK_TOHUM + v * (EK_DENEME + 1) + deneme : v, secenek.saat || Date.now);
+}
+/** ilk denemenin sonucuna göre ek deneme yapılır mı: uyarı kaldıysa ve neden kadro yetersizliği değilse */
+export function ekDenemeGerekli(ilk: CizelgeSonucu): boolean {
+  return !ilk.warnings.some(w => /matematiksel olarak mümkün değil/.test(w)) && !uyarisiz(ilk);
+}
+/** deneme sırasıyla verilen sonuçlardan en az uyarılı olan (eşitse önceki) */
+export function enIyiDeneme(denemeler: CizelgeSonucu[]): CizelgeSonucu {
+  let en = denemeler[0], enP = uyariPuani(en);
+  for (const r of denemeler.slice(1)) { const p = uyariPuani(r); if (puanKucuk(p, enP)) { en = r; enP = p; } }
   return en;
 }
+/** hata, uyarı ve kırmızı gün kalmadı mı */
+export const uyarisiz = (r: CizelgeSonucu) => !uyariPuani(r).some(x => x > 0);
 /** uyarısız çizelge bulunamazsa en fazla bu kadar ek deneme, toplam bu kadar milisaniye içinde */
-const EK_DENEME = 3, EK_DENEME_SURE = 20000;
+export const EK_DENEME = 3;
+const EK_DENEME_SURE = 20000;
 /** ek denemelerin "farklı dağılım" numaralarıyla çakışmaması için */
 const EK_TOHUM = 1000000;
 function uyariPuani(r: CizelgeSonucu): number[] {

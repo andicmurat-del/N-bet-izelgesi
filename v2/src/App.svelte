@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { depo, gecmis, geriAl, yinele, yedekVerisi } from "./veri/depo.svelte";
+  import { bulut, bulutuBaslat, bulutYenidenDene, cakismayiCoz } from "./veri/bulut.svelte";
   import { dosyaKaydet, hataMetni } from "./disa/indir";
   import { ayAdi } from "./veri/tarih";
   import AySecici from "./ui/ortak/AySecici.svelte";
@@ -36,7 +37,13 @@
     return (SAYFALAR.find(s => s.ad === h)?.ad ?? "gunluk") as SayfaAdi;
   };
   let sayfa = $state<SayfaAdi>(hashOku());
+  // verilerin durduğu yer: sunucuya eşitleniyorsa söylenir, yoksa yalnız bu bilgisayar
+  const SAKLAMA: Record<typeof bulut.durum, string> = {
+    bekliyor: "Veriler bu bilgisayarda saklanır", kapali: "Veriler bu bilgisayarda saklanır", esit: "Veriler sunucuya kaydedildi",
+    gonderiliyor: "Sunucuya kaydediliyor…", hata: "Sunucuya kaydedilemedi (veriler bu bilgisayarda)", cakisma: "Sunucuyla eşitleme bekliyor",
+  };
   onMount(() => {
+    void bulutuBaslat();
     const dinle = () => (sayfa = hashOku());
     addEventListener("hashchange", dinle);
     return () => removeEventListener("hashchange", dinle);
@@ -79,7 +86,7 @@
   <div class="ust-serit" role="complementary" aria-label="Uygulama bilgisi">
     <div class="genislik">
       <span>Hastane Eczanesi · Nöbet ve Puantaj Sistemi</span>
-      <span class="sag">Veriler bu bilgisayarda saklanır · <button class="serit-baglanti" onclick={yedekAl}>Yedek al</button></span>
+      <span class="sag"><span role="status">{SAKLAMA[bulut.durum]}</span> · <button class="serit-baglanti" onclick={yedekAl}>Yedek al</button></span>
     </div>
   </div>
   <header class="baslik-bandi">
@@ -110,6 +117,22 @@
 
   <main id="icerik" tabindex="-1">
     {#if depo.kayitSorunu}<div class="kayit-sorunu kutu hata" role="alert"><Ikon ad="uyari" />{depo.kayitSorunu}{#if depo.baskaPencere}<button class="dugme" onclick={() => location.reload()}><Ikon ad="yenile" />Yenile</button>{/if}</div>{/if}
+    {#if bulut.durum === "cakisma"}
+      <div class="kayit-sorunu esitleme kutu hata" role="alert">
+        <Ikon ad="uyari" />
+        <div>
+          <b>Bu cihazdaki veriler ile sunucudaki veriler farklı.</b>
+          <p>İkisinde de ayrı değişiklik yapılmış (ör. başka bir bilgisayarda ya da telefonda çalışıldı). Hangisiyle devam edilsin? Seçilmeyen taraf silinir; emin değilseniz önce "Yedek al" ile bu cihazdakini dosyaya kaydedin.</p>
+          <div class="dugmeler">
+            <button class="dugme" onclick={() => cakismayiCoz("sunucu")}>Sunucudakini al</button>
+            <button class="dugme" onclick={() => cakismayiCoz("cihaz")}>Bu cihazdakini sunucuya yaz</button>
+            <button class="dugme sade" onclick={yedekAl}><Ikon ad="indir" />Yedek al</button>
+          </div>
+        </div>
+      </div>
+    {:else if bulut.durum === "hata"}
+      <div class="kayit-sorunu kutu hata" role="alert"><Ikon ad="uyari" />{bulut.mesaj}<button class="dugme" onclick={bulutYenidenDene}><Ikon ad="yenile" />Yeniden dene</button></div>
+    {/if}
     {#if sayfa === "gunluk"}<Cizelge {git} bind:gorunum={gunlukAlt} />
     {:else if sayfa === "acil"}<AcilEczane {git} bind:gorunum={acilAlt} />
     {:else}<Ayarlar bind:gorunum={ayarAlt} />{/if}
@@ -157,6 +180,9 @@
   .geri-al button:disabled { opacity: .35; cursor: not-allowed; }
   main { flex: 1; width: 100%; max-width: 1360px; margin: 0 auto; min-width: 0; padding-block: var(--b5) var(--b6); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); outline: none; }
   .kayit-sorunu { display: flex; gap: var(--b2); align-items: center; margin-bottom: var(--b4); font-weight: 600; }
+  .esitleme { align-items: flex-start; }
+  .esitleme p { font-weight: 400; margin: var(--b1) 0 var(--b3); }
+  .esitleme .dugmeler { display: flex; flex-wrap: wrap; gap: var(--b2); }
   /* alt bilgi */
   .alt-bilgi { background: transparent; border-top: 1px solid var(--cizgi); font-size: var(--f-xs); color: var(--yazi-2); }
   .alt-bilgi .genislik { display: flex; align-items: center; justify-content: space-between; gap: var(--b3); flex-wrap: wrap; min-height: 44px; padding-block: 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
