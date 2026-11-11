@@ -2,10 +2,10 @@
 // Artifact içinde tarayıcının yazdırma penceresi açılmadığı için PDF sayfada üretilir. Türkçe karakterler için
 // yazı tipi gömülür (yazitipi/OKUBENI.md).
 import { autoTable } from "jspdf-autotable";
-import { yeniPdf } from "./pdfOrtak";
+import { yeniPdf, haftalikTakvimCiz, PDF_TABLO_BAS, type PdfSatir } from "./pdfOrtak";
 import type { AyCizelgesi, Gorevli, Kisi } from "../veri/tipler";
 import { ROL_AD } from "../veri/tipler";
-import { AYLAR, GUN_KISA, GUN_UZUN, buyukAd, haftaGunu } from "../veri/tarih";
+import { AYLAR, GUN_UZUN, buyukAd, haftaGunu } from "../veri/tarih";
 import { ayOzeti } from "../veri/ozet";
 
 const RENK = { yazi: [21, 38, 43], soluk: [70, 89, 95], cizgi: [202, 214, 218], tatil: [251, 244, 234], baslik: [222, 238, 241], ecz: [14, 74, 88], tek: [12, 127, 141], haz: [143, 82, 12] } as const;
@@ -48,43 +48,20 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
   }
 
   // ---------- 1. sayfa: ay takvimi ----------
-  ust("Her gün 2 nöbetçi · tatil günlerinde 2 hazırlama (H1, H2)");
-  const bos = haftaGunu(y0, m, 1), satir = Math.ceil((bos + c.days.length) / 7);
-  const ty = 25, th = 7, alan = H - ty - th - 22, ch = alan / satir, cw = (W - 2 * K) / 7;
-  doc.setFont("CizelgeSans", "bold"); doc.setFontSize(9);
-  GUN_KISA.forEach((_, i) => {
-    dolgu(RENK.baslik); ciz(RENK.cizgi); doc.setLineWidth(0.2);
-    doc.rect(K + i * cw, ty, cw, th, "FD");
-    renk(RENK.yazi); doc.text(GUN_UZUN[i], K + i * cw + cw / 2, ty + 4.8, { align: "center" });
+  ust("Her gün 2 nöbetçi · tatil günlerinde 2 hazırlama");
+  const tur = (p: Gorevli): PdfSatir["tur"] => (p.role === "eczaci" || p.role === "nobetci" ? "ecz" : p.role === "destek" ? "des" : "tek");
+  const ET: Record<string, string> = { ecz: "ECZ", tek: "TEK", des: "DES" };
+  haftalikTakvimCiz(doc, {
+    x: K, y: 23, w: W - 2 * K, h: H - 23 - 19, yil: y0, ay: m,
+    gunler: c.days.map(g => ({
+      gun: g.day, dw: haftaGunu(y0, m, g.day), tatil: !!g.tatil, etiket: b.resmiTatil(g.day) ? "Resmi tatil" : b.arife(g.day) ? "Arife" : "",
+      satirlar: [...eczaciOnce(g.assigned).map(p => ({ et: ET[tur(p)], ad: buyukAd(p.name), tur: tur(p) })), ...g.prep.map(p => ({ et: "HAZ", ad: buyukAd(p.name), tur: "haz" as const }))],
+    })),
   });
-  for (let i = 0; i < satir * 7; i++) {
-    const x = K + (i % 7) * cw, y = ty + th + Math.floor(i / 7) * ch, d = i - bos + 1;
-    const g = d >= 1 && d <= c.days.length ? c.days[d - 1] : null;
-    if (g?.tatil) { dolgu(RENK.tatil); doc.rect(x, y, cw, ch, "F"); }
-    ciz(RENK.cizgi); doc.setLineWidth(0.2); doc.rect(x, y, cw, ch, "S");
-    if (!g) continue;
-    doc.setFont("CizelgeSans", "bold"); doc.setFontSize(10); renk(RENK.yazi);
-    doc.text(String(d), x + 2, y + 4.6);
-    const etiket = b.resmiTatil(d) ? "Resmi tatil" : b.arife(d) ? "Arife" : "";
-    if (etiket) { doc.setFont("CizelgeSans", "normal"); doc.setFontSize(7); renk(RENK.haz); doc.text(etiket, x + cw - 2, y + 4.4, { align: "right" }); }
-    let yy = y + 9.2;
-    const satirYaz = (t: string, onEk: string, r: Rgb, kalinMi: boolean) => {
-      const gen = cw - 4 - (onEk ? 6 : 0);
-      doc.setFont("CizelgeSans", kalinMi ? "bold" : "normal");
-      const f = sigdir(t, gen, 8.2);
-      for (const s of f.satirlar) {
-        if (onEk) { doc.setFont("CizelgeSans", "bold"); doc.setFontSize(7); renk(RENK.haz); doc.text(onEk, x + 2, yy); doc.setFont("CizelgeSans", kalinMi ? "bold" : "normal"); }
-        doc.setFontSize(f.boyut); renk(r); doc.text(s, x + 2 + (onEk ? 6 : 0), yy);
-        yy += 3.6;
-      }
-    };
-    for (const p of eczaciOnce(g.assigned)) satirYaz(buyukAd(p.name), "", p.role === "teknisyen" ? RENK.tek : RENK.ecz, p.role !== "teknisyen");
-    g.prep.forEach((p, k) => satirYaz(buyukAd(p.name), "H" + (k + 1), RENK.yazi, false));
-  }
   // lejant ve imza
   const ly = H - 15;
   doc.setFont("CizelgeSans", "normal"); doc.setFontSize(8); renk(RENK.soluk);
-  doc.text("Petrol: eczacı · Mavi: tekniker · H1/H2: hazırlama (8 saat) · Gölgeli: hafta sonu ve resmi tatil. Nöbetçi ertesi gün izinlidir.", K, ly);
+  doc.text("ECZ: eczacı · TEK: tekniker · HAZ: hazırlama (8 saat) · Turkuaz başlık: hafta sonu ve resmi tatil. Nöbetçi ertesi gün izinlidir.", K, ly);
   renk(RENK.yazi); doc.text("Onaylayan: ______________________________   İmza: ______________", W - K, ly, { align: "right" });
 
   // ---------- 2. sayfa: gün gün liste ----------
@@ -101,9 +78,14 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
     }),
     // 31 gün tek sayfaya sığsın
     styles: { font: "CizelgeSans", fontSize: 8, cellPadding: { top: 0.75, bottom: 0.75, left: 1.2, right: 1.2 }, textColor: [21, 38, 43], lineColor: [202, 214, 218], lineWidth: 0.15 },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [222, 238, 241], textColor: [21, 38, 43] },
+    headStyles: PDF_TABLO_BAS,
     columnStyles: { 7: { halign: "right" } },
-    didParseCell: h => { if (h.section === "body" && c.days[h.row.index]?.tatil) h.cell.styles.fillColor = [251, 244, 234]; },
+    didParseCell: h => {
+      if (h.section !== "body") return;
+      const tatil = !!c.days[h.row.index]?.tatil;
+      if (tatil) h.cell.styles.fillColor = [240, 247, 248];
+      if (h.column.index === 0) { h.cell.styles.fontStyle = "bold"; h.cell.styles.textColor = [14, 74, 88]; h.cell.styles.fillColor = tatil ? [193, 230, 235] : [239, 245, 246]; }
+    },
   });
 
   // ---------- 3. sayfa: kişi özeti ----------
@@ -116,7 +98,7 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
     head: [["Ad soyad", "Görev", "Nöbet", "Perşembe", "Cuma", "Cumartesi", "Pazar", "Hazırlama", "Fazla mesai"]],
     body: kisiler.filter(k => o[k.id]).map(k => [buyukAd(k.name), ROL_AD[k.role], o[k.id].nobet, say(k.id, 3), say(k.id, 4), say(k.id, 5), say(k.id, 6), o[k.id].hazirlama, o[k.id].fazlaMesai + " sa"]),
     styles: { font: "CizelgeSans", fontSize: 9, cellPadding: 1.6, textColor: [21, 38, 43], lineColor: [202, 214, 218], lineWidth: 0.15 },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [222, 238, 241], textColor: [21, 38, 43] },
+    headStyles: PDF_TABLO_BAS,
     columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" }, 7: { halign: "right" }, 8: { halign: "right" } },
   });
   const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 120;
