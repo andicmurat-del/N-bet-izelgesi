@@ -95,7 +95,7 @@
     try {
       const r = await arkaPlandaOlustur(veriAnlik() as any, y, m, varyasyon);
       if (!r.days) { hata = r.warnings[0] ?? "Çizelge oluşturulamadı."; return; }
-      cizelgeKaydet(y, m, r.days, r.warnings);
+      if (!cizelgeKaydet(y, m, r.days, r.warnings)) hata = "Bu ay onaylandığı için yeni çizelge kaydedilmedi.";
     } catch (e) {
       hata = "Çizelge oluşturulurken bir sorun çıktı: " + (e as Error).message;
     } finally {

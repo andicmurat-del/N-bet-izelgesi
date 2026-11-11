@@ -1,7 +1,7 @@
 // Veri katmanı: yedek doğrulama, kişi numarası, silme koruması, izin/rapor ve nöbet değişimi (geri alma dahil).
 // .svelte.ts dosyaları vitest'te sunucu kipinde derlenir: $state düz nesnedir, $effect çalışmaz (kayıt yapılmaz).
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import { depo, bosVeri, veriyiDogrula, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenHaftasiniSil, oglenHaftaKaydet, oglenKaydet, haftayiOnayla, haftaOnayiniKaldir, haftaOnayi, onayGunuAyarla } from "../src/veri/depo.svelte.ts";
+import { depo, bosVeri, veriyiDogrula, cizelgeKaydet, yedekAlindi, yedekErtele, yedekHatirlatma, yedekIzi, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenHaftasiniSil, oglenHaftaKaydet, oglenKaydet, haftayiOnayla, haftaOnayiniKaldir, haftaOnayi, onayGunuAyarla } from "../src/veri/depo.svelte.ts";
 import { degisimUygula, degisimGeriAl, izinUygula, puantajIzgarasi } from "../src/veri/degisim.svelte.ts";
 import { adAnahtari, adIcerir } from "../src/veri/tarih.ts";
 
@@ -48,12 +48,50 @@ describe("yedek doğrulama", () => {
     expect(yedektenYukle(metin)).toEqual({ tamam: true, atlanan: 0 });
     expect(kopya(depo.veri)).toEqual(once);
   });
+  test("yedekteki \"__proto__\" alanları ortak nesne atasını (Object.prototype) kirletmez", () => {
+    const veri = '{"staff":[{"id":1,"name":"A","role":"eczaci"}],"schedules":{},"puantaj":{"2026-0":{"__proto__":{"kirli":"M","toString":"M"},"1":{"3":"R","x":"M","45":"M"}}},"servisAyar":{"svc":{"__proto__":{"z":5}}},"servisKayit":{"2026-0":{"gun":{"__proto__":{"kirli":1}}}}}';
+    try {
+      // doğrulama tek başına da (ayrıştırılmış nesneyle) güvenli olmalı
+      const v = veriyiDogrula(JSON.parse(veri));
+      expect({}.kirli).toBeUndefined();
+      expect(typeof {}.toString).toBe("function");
+      // kişi no ve gün yalnız sayı: geçerli kayıt kalır, diğerleri atılır
+      expect(v.puantaj).toEqual({ "2026-0": { 1: { 3: "R" } } });
+      expect(yedektenYukle(`{"uygulama":"nobet-cizelgesi-v2","veri":${veri}}`).tamam).toBe(true);
+      expect({}.kirli).toBeUndefined();
+      expect(Object.getPrototypeOf(depo.veri.servisKayit["2026-0"].gun)).toBe(Object.prototype);
+      expect(Object.keys(depo.veri.servisAyar.svc)).toEqual([]);
+    } finally { delete Object.prototype.kirli; if (typeof Object.prototype.toString !== "function") delete Object.prototype.toString; }
+  });
+  test("ay ya da günü olmayacak değerde olan değişim kaydı atılır", () => {
+    const d = { id: 1, zaman: 1, y: Y, m: M, gun: 3, cik: 1, yer: 2, cikAd: "a", yerAd: "b", cikOnce: null, yerOnce: null, cikYeni: "M", yerYeni: "N", gorev: "N" };
+    const v = veriyiDogrula({ ...kopya(depo.veri), degisimler: [d, { ...d, id: 2, m: 99 }, { ...d, id: 3, gun: -4 }, { ...d, id: 4, gun: 32 }] });
+    expect(v.degisimler.map(x => x.id)).toEqual([1]);
+  });
   test("içi boş ya da bozuk yedek reddedilir, mevcut veri değişmez", () => {
     const once = kopya(depo.veri);
     for (const veri of [{}, "x", { staff: "a", schedules: {} }]) {
       expect(yedektenYukle(JSON.stringify({ uygulama: "nobet-cizelgesi-v2", veri })).tamam).toBe(false);
     }
     expect(kopya(depo.veri)).toEqual(once);
+  });
+});
+
+describe("yedek hatırlatması", () => {
+  const GUN = 86400000, T = 1e12;
+  test("veri yoksa hatırlatılmaz; hiç yedek alınmadıysa ve 7 gün geçtiyse hatırlatılır; erteleme bir gün susturur", () => {
+    depo.veri = bosVeri(); yedekIzi.son = 0; yedekIzi.ertele = 0;
+    expect(yedekHatirlatma(T)).toBe(null);
+    depo.veri = ornekVeri();
+    expect(yedekHatirlatma(T)).toBe(-1);
+    yedekAlindi(T);
+    expect(yedekHatirlatma(T + 6 * GUN)).toBe(null);
+    expect(yedekHatirlatma(T + 9 * GUN)).toBe(9);
+    yedekErtele(T + 9 * GUN);
+    expect(yedekHatirlatma(T + 9 * GUN + 1000)).toBe(null);
+    expect(yedekHatirlatma(T + 10 * GUN + 1000)).toBe(10);
+    yedekAlindi(T + 10 * GUN);
+    expect(yedekHatirlatma(T + 10 * GUN + 1000)).toBe(null);
   });
 });
 
@@ -162,6 +200,15 @@ describe("geri al / yinele", () => {
     adim(() => { depo.veri.kurum.ad = "D"; });
     geriAl();
     expect(depo.veri.kurum.ad).toBe("C");
+    expect(depo.veri.schedules[AY].onay).toBeTruthy();
+  });
+  test("onaylı ayın çizelgesi yeniden oluşturma sonucuyla ezilmez", () => {
+    const gunler = kopya(depo.veri.schedules[AY].days);
+    expect(cizelgeKaydet(Y, M, gunler, ["x"])).toBe(true);
+    expect(depo.veri.schedules[AY].uyarilar).toEqual(["x"]);
+    onayla(Y, M);
+    expect(cizelgeKaydet(Y, M, gunler, ["y"])).toBe(false);
+    expect(depo.veri.schedules[AY].uyarilar).toEqual(["x"]);
     expect(depo.veri.schedules[AY].onay).toBeTruthy();
   });
   test("servis dağıtım kaydı geri alınmaz", () => {

@@ -1,4 +1,4 @@
-// Eski uygulamanın (../index.html) senaryo testleri yeni motorla: sonuç eski uygulamanın kaydından (../tests/beklenen.json)
+// Eski uygulamanın (depodan kaldırıldı; git geçmişinde index.html) senaryo testleri yeni motorla: sonuç eski uygulamanın kaydından (eski/beklenen.json)
 // kötü olmamalı. Kurallar sonradan bilerek değiştirildiği için (Cuma–Pazar tercihi, kesin kural ihlallerinin giderilmesi,
 // destek sınırı…) çizelgeler artık eski uygulamayla birebir aynı değil; birebir davranış güvencesi altın kayıt testidir
 // (test/altin.test.js). Burada her ay için: "hata" düzeyinde uyarı sayısı, aylık nöbet / hazırlama / fazla mesai farkı
@@ -12,8 +12,8 @@ import { fmFarkBilgisi, fmKuralKisileri } from "../src/motor/istatistik";
 import { FM_MAX_FARK } from "../src/motor/sabitler";
 
 const require = createRequire(import.meta.url);
-const senaryolar = require("../../tests/senaryolar.js");
-const beklenen = require("../../tests/beklenen.json");
+const senaryolar = require("./eski/senaryolar.cjs");
+const beklenen = require("./eski/beklenen.json");
 
 const fark = v => (v.length > 1 ? Math.max(...v) - Math.min(...v) : 0);
 

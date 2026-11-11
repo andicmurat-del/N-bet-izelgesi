@@ -1,7 +1,8 @@
 <script lang="ts">
   import SayfaBasligi from "../ortak/SayfaBasligi.svelte";
   import Bilgi from "../ortak/Bilgi.svelte";
-  import { depo, tumVeriyiSil, yedekVerisi, yedektenYukle, yuklemeOncesineDon, AYAR_VARSAYILAN } from "../../veri/depo.svelte";
+  import { depo, tumVeriyiSil, yedekVerisi, yedektenYukle, yuklemeOncesineDon, yuklemeOncesiVar, yedekAlindi, yedekIzi, AYAR_VARSAYILAN } from "../../veri/depo.svelte";
+  import { bulut } from "../../veri/bulut.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Ikon from "../ortak/Ikon.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
@@ -26,12 +27,15 @@
     const ad = `nobet-cizelgesi-yedek-${t.getFullYear()}-${iki(t.getMonth() + 1)}-${iki(t.getDate())}.json`;
     try {
       const ok = await dosyaKaydet(ad, yedekVerisi(), "application/json");
+      if (ok) yedekAlindi();
       durum = ok ? { tur: "tamam", metin: `Yedek kaydedildi: ${ad}` } : null;
     } catch (e) {
       durum = { tur: "hata", metin: hataMetni(e, "Yedek kaydedilemedi.") };
     }
   }
-  let geriAlinabilir = $state(false);
+  // yedekten yükleme ya da sunucudan alma öncesindeki veri saklıysa geri dönülebilir
+  let geriAlinabilir = $state(yuklemeOncesiVar());
+  const sunucuda = $derived(bulut.durum === "esit" || bulut.durum === "gonderiliyor");
   async function dosyaSecildi(e: Event) {
     const f = (e.target as HTMLInputElement).files?.[0];
     if (!f) return;
@@ -104,19 +108,24 @@
 
   <section class="kart panel-blok bolum">
     <h2>Yedek</h2>
-    <p class="aciklama">Veriler yalnız bu tarayıcıda durur. Tarayıcı verisi silinirse kaybolur; düzenli yedek alın. Yedek dosyasıyla başka bir bilgisayara da taşıyabilirsiniz.</p>
+    {#if sunucuda}
+      <p class="aciklama">Veriler bu tarayıcıda ve claude.ai hesabınıza bağlı sunucuda durur: aynı hesapla başka bir bilgisayardan ya da telefondan açınca aynı veriler gelir. Yine de ara sıra yedek alın; yedek dosyası elinizdeki bağımsız kopyadır.</p>
+    {:else}
+      <p class="aciklama">Veriler yalnız bu tarayıcıda durur. Tarayıcı verisi silinirse kaybolur; düzenli yedek alın. Yedek dosyasıyla başka bir bilgisayara da taşıyabilirsiniz.</p>
+    {/if}
     <div class="dugmeler">
       <button class="dugme ana" onclick={yedekAl}><Ikon ad="indir" />Yedek al</button>
       <button class="dugme" onclick={() => dosyaGirdi?.click()}><Ikon ad="yukle" />Yedekten yükle</button>
       <input bind:this={dosyaGirdi} type="file" accept=".json,application/json" onchange={dosyaSecildi} hidden />
     </div>
+    <p class="aciklama">{yedekIzi.son ? `Son yedek: ${new Date(yedekIzi.son).toLocaleDateString("tr-TR")}.` : "Bu tarayıcıdan henüz yedek alınmadı."} Bir haftadır yedek alınmadıysa sayfanın üstünde hatırlatılır.</p>
     <p class="aciklama">Yedekten yükleme, bu tarayıcıdaki verilerin yerine geçer. Yanlış dosya seçerseniz hemen ardından önceki verilere dönebilirsiniz.</p>
-    {#if geriAlinabilir}<div><button class="dugme" onclick={geriDon}><Ikon ad="yenile" />Yüklemeden önceki verilere dön</button></div>{/if}
+    {#if geriAlinabilir}<div><button class="dugme" onclick={geriDon}><Ikon ad="yenile" />Önceki verilere dön (yükleme ya da sunucudan alma öncesi)</button></div>{/if}
   </section>
 
   <section class="kart panel-blok bolum tehlikeli">
     <h2>Tüm verileri sil</h2>
-    <p class="aciklama">Personel, izinler, çizelgeler ve ayarlar bu tarayıcıdan silinir. Sayfa açıkken Geri al ile dönülebilir; sayfa kapanınca ya da yenilenince geri alınamaz, önce yedek alın.</p>
+    <p class="aciklama">Personel, izinler, çizelgeler ve ayarlar bu tarayıcıdan{sunucuda ? " ve sunucudan" : ""} silinir. Sayfa açıkken Geri al ile dönülebilir; sayfa kapanınca ya da yenilenince geri alınamaz, önce yedek alın.</p>
     <div class="dugmeler">
       <button class="dugme tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, hepsini sil" : "Tüm verileri sil"}</button>
       {#if silOnayi}<button class="dugme" onclick={() => (silOnayi = false)}>Vazgeç</button>{/if}
