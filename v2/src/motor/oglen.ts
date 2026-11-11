@@ -107,6 +107,16 @@ function haftadaOglenVar(B: Baglam, y: number, m: number, d: number): boolean {
   return false;
 }
 
+/** Cuma: onay listesinde Masa 1, Masa 2, Masa 7 ve jokerlerdeki eczacılar; bu gruptan en fazla (grup − 2) kişi öğlene
+ *  yazılır. Cuma değilse ya da liste yoksa null. */
+function cumaMasaGrubu(B: Baglam, y: number, m: number, d: number): { kisi: Set<number>; sinir: number } | null {
+  if (haftaGunu(y, m, d) !== CUMA) return null;
+  const og = onayHaftasi(B, ...pazartesi(y, m, d)).gunler.find(z => z.y === y && z.m === m && z.d === d);
+  if (!og || og.tatil) return null;
+  const l = [og.masa[0], og.masa[1], og.masa[6], ...og.joker].filter(h => h?.id && !h.tekniker).map(h => h!.id as number);
+  return { kisi: new Set(l), sinir: Math.max(0, l.length - 2) };
+}
+
 /** o gün öğlen nöbetine yazılabilenler (grup başına) ve o günün nöbetçileri */
 function gunAdaylari(G: ReturnType<typeof puantajIzgarasi>, y: number, m: number, d: number) {
   const cu = haftaGunu(y, m, d) === CUMA, nobetci: number[] = [], ca: Record<Grup, number[]> = { e: [], t: [] }, mevcut: Record<Grup, number[]> = { e: [], t: [] };
@@ -188,7 +198,12 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
       if (g === "t") disiG.push(new Set(grupDisi));
       // elle yazılan kişiler yerinde kalır; onarımda öteki geçerli kişiler de kalır, yalnız eksikler doldurulur
       const elleKisi = sb ? (sb[g] || []).slice() : [];
-      const kalan = tam ? (k![g] || []).slice() : [...elleKisi, ...(onarim && k ? (k[g] || []).filter(id => ca[g].includes(id) && !elleKisi.includes(id)) : [])];
+      let kalan = tam ? (k![g] || []).slice() : [...elleKisi, ...(onarim && k ? (k[g] || []).filter(id => ca[g].includes(id) && !elleKisi.includes(id)) : [])];
+      // onarımda Cuma masa kuralı bozulduysa (izin sonrası onay listesi değişti) gruptaki elle yazılmamış kişiler yeniden seçilir
+      if (onarim && !tam && g === "e" && cu) {
+        const mg = cumaMasaGrubu(B, y, m, d);
+        if (mg && kalan.filter(id => mg.kisi.has(id)).length > mg.sinir) kalan = kalan.filter(id => !mg.kisi.has(id) || elleKisi.includes(id));
+      }
       sabit[g].push(kalan);
       // elle boş bırakılan yer doldurulmaz
       hedef[g] = Math.max(0, ger[g] - bosSayisi(sb, g));
@@ -207,13 +222,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
   // bir önceki Cuma: bu aydaysa gün sırası, ay öncesindeyse -2, öğlen nöbeti yoksa -1
   const oncekiCumaNo = gunler.map(x => x.dw !== CUMA ? -1 : x.gun > 7 ? gunler.findIndex(z => z.gun === x.gun - 7) : -2);
   // Cuma: onay listesinde Masa 1, Masa 2, Masa 7 ve jokerler; bu gruptan en fazla (grup − 2) eczacı öğlene yazılır
-  const masaGrubu = gunler.map(x => {
-    if (x.dw !== CUMA) return null;
-    const og = onayHaftasi(B, ...pazartesi(y, m, x.gun)).gunler.find(z => z.y === y && z.m === m && z.d === x.gun);
-    if (!og || og.tatil) return null;
-    const l = [og.masa[0], og.masa[1], og.masa[6], ...og.joker].filter(h => h?.id && !h.tekniker).map(h => h!.id as number);
-    return { kisi: new Set(l), sinir: Math.max(0, l.length - 2) };
-  });
+  const masaGrubu = gunler.map(x => cumaMasaGrubu(B, y, m, x.gun));
   for (const g of GRUPLAR) {
     const havuz = B.staff.filter(s => oglenGrubu(s.role) === g && aktifAydaMi(s, y, m));
     const cumaHavuz = havuz.filter(s => !s.cumaMuaf);
@@ -353,6 +362,13 @@ export function oglenOnarimlari(B: Baglam, bugun: number): { y: number; m: numbe
         const l = k ? k[g] || [] : [], elleKisi = k?.sabit?.[g] || [];
         const hedef = Math.max(0, ger[g] - bosSayisi(k?.sabit, g)), yazilabilen = new Set([...ca[g], ...elleKisi]).size;
         if (l.some(id => !ca[g].includes(id) && !elleKisi.includes(id)) || l.length < Math.min(hedef, yazilabilen)) bozuk = true;
+      }
+      // Cuma masa kuralı: gruptan sınırdan fazla kişi var, elle yazılmamış biri çıkarılabilir ve yerine gruptan olmayan biri var
+      const mg = !bozuk && k ? cumaMasaGrubu(B, y, m, d) : null;
+      if (mg && k) {
+        const l = k.e || [], elle = k.sabit?.e || [];
+        if (l.filter(id => mg.kisi.has(id)).length > mg.sinir && l.some(id => mg.kisi.has(id) && !elle.includes(id))
+          && ca.e.some(id => !mg.kisi.has(id) && !l.includes(id))) bozuk = true;
       }
     }
     if (bozuk) out.push({ y, m, gunler: oglenOlustur(B, y, m, kayit, { bugun }).gunler });
