@@ -1,7 +1,7 @@
 // Veri katmanı: yedek doğrulama, kişi numarası, silme koruması, izin/rapor ve nöbet değişimi (geri alma dahil).
 // .svelte.ts dosyaları vitest'te sunucu kipinde derlenir: $state düz nesnedir, $effect çalışmaz (kayıt yapılmaz).
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import { depo, bosVeri, veriyiDogrula, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenAyiniSil, oglenKaydet } from "../src/veri/depo.svelte.ts";
+import { depo, bosVeri, veriyiDogrula, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenHaftasiniSil, oglenHaftaKaydet, oglenKaydet, haftayiOnayla, haftaOnayiniKaldir, haftaOnayi, onayGunuAyarla } from "../src/veri/depo.svelte.ts";
 import { degisimUygula, degisimGeriAl, izinUygula, puantajIzgarasi } from "../src/veri/degisim.svelte.ts";
 import { adAnahtari, adIcerir } from "../src/veri/tarih.ts";
 
@@ -192,12 +192,52 @@ describe("acil ve öğlen listesi onayı", () => {
     acilGunuAyarla(Y, M, 5, [11]);
     expect(depo.veri.acil[AY][5]).toEqual([11]);
   });
-  test("onaylı öğlen ayı elle değiştirilemez ama izin / rapor onarımı yazılır", () => {
-    listeyiOnayla("oglen", Y, M);
-    oglenGunuAyarla(Y, M, 5, [3], [6], { e: [3], t: [] }); oglenAyiniSil(Y, M); oglenKaydet(Y, M, [{ gun: 5, e: [4], t: [7] }]);
+  // 5 Ekim 2026 Pazartesi: haftası 5–9 Ekim; 30 Kasım haftası Aralık'a uzanır
+  test("onaylı öğlen haftası elle değiştirilemez ama izin / rapor onarımı yazılır", () => {
+    haftayiOnayla("onay", Y, M, 5); haftayiOnayla("oglen", Y, M, 7);
+    expect(haftaOnayi("oglen", Y, M, 9)).toBeTruthy();
+    oglenGunuAyarla(Y, M, 5, [3], [6], { e: [3], t: [] }); oglenHaftasiniSil(Y, M, 5); oglenKaydet(Y, M, [{ gun: 5, e: [4], t: [7] }]);
+    oglenHaftaKaydet([{ y: Y, m: M, bas: 5, bit: 9, gunler: [{ gun: 5, e: [4], t: [7] }] }]);
     expect(depo.veri.oglen[AY][5]).toEqual({ e: [1, 2], t: [5] });
     oglenKaydet(Y, M, [{ gun: 5, e: [1, 3], t: [5] }], true);
     expect(depo.veri.oglen[AY][5]).toEqual({ e: [1, 3], t: [5] });
+  });
+  test("öğlen nöbeti haftanın onay listesi onaylanmadan yazılmaz ve onaylanmaz", () => {
+    oglenHaftaKaydet([{ y: Y, m: M, bas: 12, bit: 16, gunler: [{ gun: 12, e: [1, 2], t: [5] }] }]);
+    expect(depo.veri.oglen[AY][12]).toBeUndefined();
+    haftayiOnayla("oglen", Y, M, 12);
+    expect(haftaOnayi("oglen", Y, M, 12)).toBeUndefined();
+    haftayiOnayla("onay", Y, M, 14);
+    oglenHaftaKaydet([{ y: Y, m: M, bas: 12, bit: 16, gunler: [{ gun: 12, e: [1, 2], t: [5] }, { gun: 13, e: [3, 4], t: [6] }] }]);
+    expect(depo.veri.oglen[AY][12]).toEqual({ e: [1, 2], t: [5] });
+    // öteki haftaların günleri değişmez
+    expect(depo.veri.oglen[AY][5]).toEqual({ e: [1, 2], t: [5] });
+  });
+  test("ay sınırını aşan hafta tek parça yazılır ve onaylanır", () => {
+    haftayiOnayla("onay", 2026, 11, 2);   // 2 Aralık Çarşamba: 30 Kasım – 4 Aralık
+    expect(haftaOnayi("onay", 2026, 10, 30)).toBeTruthy();
+    oglenHaftaKaydet([{ y: 2026, m: 10, bas: 30, bit: 30, gunler: [{ gun: 30, e: [1, 2], t: [5] }] }, { y: 2026, m: 11, bas: 1, bit: 4, gunler: [{ gun: 4, e: [1, 2, 3], t: [5, 6] }] }]);
+    expect(depo.veri.oglen["2026-10"][30]).toEqual({ e: [1, 2], t: [5] });
+    expect(depo.veri.oglen["2026-11"][4]).toEqual({ e: [1, 2, 3], t: [5, 6] });
+  });
+  test("onay listesinin onayı kalkınca haftanın öğlen nöbeti ve onayı silinir; onaylı onay listesi elle değiştirilmez", () => {
+    haftayiOnayla("onay", Y, M, 5); haftayiOnayla("oglen", Y, M, 5);
+    onayGunuAyarla("2026-10-06", { 1: "2", 2: "1" });
+    expect(depo.veri.onayMasa.elle["2026-10-06"]).toBeUndefined();
+    haftaOnayiniKaldir("onay", Y, M, 8);
+    expect(haftaOnayi("oglen", Y, M, 5)).toBeUndefined();
+    expect(depo.veri.oglen[AY]).toBeUndefined();
+    onayGunuAyarla("2026-10-06", { 1: "2", 2: "1" });
+    expect(depo.veri.onayMasa.elle["2026-10-06"]).toEqual({ 1: "2", 2: "1" });
+  });
+  test("eski kayıt: aylık öğlen onayı haftalara, yazılmış öğlen haftaları onay listesi onayına çevrilir", () => {
+    const v = veriyiDogrula({ ...bosVeri(), staff: [{ id: 1, name: "A", role: "eczaci" }], oglen: { "2026-10": { 30: { e: [1], t: [] } } },
+      listeOnay: { acil: {}, oglen: { "2026-10": { zaman: 5, kim: "X" } } } });
+    expect(Object.keys(v.listeOnay.oglen).sort()).toEqual(["2026-11-02", "2026-11-09", "2026-11-16", "2026-11-23", "2026-11-30"]);
+    expect(Object.keys(v.listeOnay.onay)).toEqual(["2026-11-30"]);
+    // yeni kayıtta onay listesi onayı olduğu gibi okunur (öğlen nöbeti olan hafta kendiliğinden onaylanmaz)
+    const w = veriyiDogrula({ ...bosVeri(), staff: [{ id: 1, name: "A", role: "eczaci" }], oglen: { "2026-10": { 30: { e: [1], t: [] } } }, listeOnay: { acil: {}, oglen: {}, onay: { "2026-11-30": { zaman: 5, kim: "" }, "2026-12-01": { zaman: 5, kim: "" } } } });
+    expect(Object.keys(w.listeOnay.onay)).toEqual(["2026-11-30"]);
   });
   test("öğlen gününün elle yerleri yedekte korunur; listede olmayan kişi elle yer sayılmaz", () => {
     const v = veriyiDogrula({ ...bosVeri(), staff: [{ id: 1, name: "A", role: "eczaci" }, { id: 2, name: "B", role: "teknisyen" }],

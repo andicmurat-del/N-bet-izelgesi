@@ -2,7 +2,7 @@
 // muaf olan Cuma yazılmaz; haftada en fazla 2; yıl boyunca toplam ve Cuma sayısı eşit; nöbetçiye mümkünse yazılmaz.
 import { describe, test, expect } from "vitest";
 import SABIT from "./altin/oglen-cizelge.json";
-import { oglenHesapla, oglenOnarimlariHesapla, oglenYillikHesapla, onayHaftasiHesapla, puantajHesapla } from "../src/motor";
+import { oglenHesapla, oglenHaftaHesapla, oglenOnarimlariHesapla, oglenYillikHesapla, onayHaftasiHesapla, puantajHesapla } from "../src/motor";
 
 const staff = [];
 for (let i = 1; i <= 7; i++) staff.push({ id: i, name: "E" + i, role: "eczaci", ...(i === 7 ? { cumaMuaf: true } : {}) });
@@ -239,5 +239,52 @@ describe("öğlen nöbeti: elle düzenleme ve sonradan izin / rapor", () => {
     expect(g.e).toContain(a);
     expect(g.e).not.toContain(b);
     expect(g.e.length).toBe(2);
+  });
+});
+
+describe("öğlen nöbeti haftalık oluşturulur", () => {
+  // Kasım ve Aralık çizelgeleri kayıtlı; öğlen nöbeti hafta hafta yazılır
+  const kopya = x => JSON.parse(JSON.stringify(x));
+  const bos = () => { const v = kopya(veri); v.schedules[`${Y}-10`] = { year: Y, month: 10, days: sabitCizelge(10) }; v.schedules[`${Y}-11`] = { year: Y, month: 11, days: sabitCizelge(11) }; v.oglen = {}; return v; };
+  const yaz = (v, p) => p.forEach(x => { const a = (v.oglen[`${x.y}-${x.m}`] ??= {}); x.gunler.forEach(g => { a[g.gun] = { e: g.e, t: g.t }; }); });
+
+  test("yalnız seçilen haftanın günleri yazılır; öteki haftalar kayıtsız kalır", () => {
+    const v = bos(), r = oglenHaftaHesapla(v, Y, 10, 9);
+    expect(r.parcalar.map(p => [p.m, p.bas, p.bit])).toEqual([[10, 9, 13]]);
+    expect(r.parcalar[0].gunler.map(g => g.gun)).toEqual([9, 10, 11, 12, 13]);
+    r.parcalar[0].gunler.forEach(g => expect(g.e.length).toBe(g.dw === 4 ? 3 : 2));
+  });
+
+  test("ay sınırını aşan hafta iki parça: ikinci parça birincinin haftalık sayısını görür", () => {
+    const v = bos(), r = oglenHaftaHesapla(v, Y, 10, 30);   // 30 Kasım – 4 Aralık
+    expect(r.parcalar.map(p => [p.m, p.bas, p.bit])).toEqual([[10, 30, 30], [11, 1, 4]]);
+    const hf = {};
+    r.parcalar.flatMap(p => p.gunler).forEach(g => [...g.e, ...g.t].forEach(id => { hf[id] = (hf[id] || 0) + 1; }));
+    expect(Math.max(...Object.values(hf))).toBeLessThanOrEqual(2);
+  });
+
+  test("önceki haftalar değişmez ve eşitliğe sayılır; hafta hafta yazınca yıl eşitliği korunur", () => {
+    const v = bos();
+    for (const d of [2, 9, 16, 23]) yaz(v, oglenHaftaHesapla(v, Y, 10, d).parcalar);
+    const once = kopya(v.oglen[`${Y}-10`]);
+    yaz(v, oglenHaftaHesapla(v, Y, 10, 30).parcalar);
+    for (const d of Object.keys(once)) expect(v.oglen[`${Y}-10`][d]).toEqual(once[d]);
+    for (const d of [7, 14, 21, 28]) yaz(v, oglenHaftaHesapla(v, Y, 11, d).parcalar);
+    // Kasım–Aralık sonunda (E2 bir hafta izinli, E7 Cuma'dan muaf; aylık oluşturmadaki kadar eşit)
+    const Yl = oglenYillikHesapla(v, Y, 11), say = ids => ids.map(id => (Yl[id] || { top: 0 }).top);
+    expect(fark(say([1, 3, 4, 5, 6, 7]))).toBeLessThanOrEqual(1);
+    expect(fark(say([9, 10, 11, 12]))).toBeLessThanOrEqual(1);
+  });
+
+  test("onarım hiç oluşturulmamış haftayı doldurmaz", () => {
+    const v = bos();
+    yaz(v, oglenHaftaHesapla(v, Y, 10, 9).parcalar);
+    const o = oglenOnarimlariHesapla(v, 20261101);
+    expect(o).toEqual([]);
+    const kim = v.oglen[`${Y}-10`][10].e[0];
+    v.prefs[`${kim}-${Y}-10-10`] = "izinli";
+    const o2 = oglenOnarimlariHesapla(v, 20261101);
+    expect(o2[0].gunler.map(g => g.gun)).toEqual([9, 10, 11, 12, 13]);
+    expect(o2[0].gunler.find(g => g.gun === 10).e).not.toContain(kim);
   });
 });

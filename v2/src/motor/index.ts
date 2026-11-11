@@ -19,7 +19,7 @@ import { cizelgeCanliDenetim, gunuDenetle as gunDenetimi } from "./denetim";
 import { cizelgeUret, type CizelgeSonucu } from "./nobet/olustur";
 import { acilOlustur } from "./acil";
 import { acilDegisimDenetle as acilDegisimDenetimi, acilYerineAdaylar } from "./acilDegisim";
-import { oglenOlustur, oglenOnarimlari, oglenYillik } from "./oglen";
+import { oglenOlustur, oglenOnarimlari, oglenYillik, type OglenGunSonucu } from "./oglen";
 import { onayHaftasi, pazartesi } from "./onayMasa";
 import { puantajIzgarasi } from "./puantaj";
 import { acilAdaylari, acilDenetle as acilDenetimi, acilOglenRaporu, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
@@ -241,6 +241,28 @@ export function* servisYillikAdim(veri: unknown, yil: number, bugun?: number) {
 
 /** Ayın öğlen nöbeti çizelgesi: hafta içi mesaide çalışanlardan, yıl boyu eşit (Cuma ayrıca); elle düzenlenen günler korunur */
 export function oglenHesapla(veri: unknown, y: number, m: number) { const B = new Baglam(veri); return oglenOlustur(B, y, m, B.oglen[y + "-" + m] || {}); }
+/** Bir haftanın öğlen nöbeti (Pazartesi py-pm-pd'den Cuma'ya; ay sınırını aşan hafta iki parça, sırayla: ikinci parça
+ *  birincinin sonucunu görür). Öteki haftaların kayıtları değişmez; elle düzenlenen günler korunur. */
+export function oglenHaftaHesapla(veri: unknown, py: number, pm: number, pd: number) {
+  const parcalar: { y: number; m: number; bas: number; bit: number; gunler: OglenGunSonucu[] }[] = [];
+  for (let i = 0; i < 5; i++) {
+    const t = new Date(py, pm, pd + i), y = t.getFullYear(), m = t.getMonth(), d = t.getDate(), son = parcalar[parcalar.length - 1];
+    if (son && son.y === y && son.m === m) son.bit = d; else parcalar.push({ y, m, bas: d, bit: d, gunler: [] });
+  }
+  let v = (veri && typeof veri === "object" ? veri : {}) as { oglen?: Record<string, Record<string, unknown>> };
+  const uyarilar: string[] = [];
+  for (const p of parcalar) {
+    const B = new Baglam(v), k = p.y + "-" + p.m;
+    const r = oglenOlustur(B, p.y, p.m, B.oglen[k] || {}, undefined, { bas: p.bas, bit: p.bit });
+    p.gunler = r.gunler.filter(g => g.gun >= p.bas && g.gun <= p.bit);
+    uyarilar.push(...r.uyarilar);
+    const ay: Record<string, unknown> = { ...(v.oglen?.[k] || {}) };
+    for (let d = p.bas; d <= p.bit; d++) delete ay[d];
+    p.gunler.forEach(g => { if (g.e.length || g.t.length || g.elle || g.sabit) ay[g.gun] = { e: g.e, t: g.t, ...(g.elle ? { elle: true } : {}), ...(g.sabit ? { sabit: g.sabit } : {}) }; });
+    v = { ...v, oglen: { ...(v.oglen || {}), [k]: ay } };
+  }
+  return { parcalar, uyarilar: [...new Set(uyarilar)] };
+}
 /** sonradan bozulan öğlen nöbeti aylarının onarılmış hâli (bugun: YYYYAAGG) */
 export function oglenOnarimlariHesapla(veri: unknown, bugun: number) { return oglenOnarimlari(new Baglam(veri), bugun); }
 /** yıl başından bu aya kişi başı öğlen nöbeti sayıları (toplam, Cuma; bu ay) */

@@ -12,6 +12,13 @@ export const tercihAnahtari = (id: number, y: number, m: number, d: number) => `
 export const ayEkle = (y: number, m: number, k: number) => { const t = new Date(y, m + k, 1); return { y: t.getFullYear(), m: t.getMonth() }; };
 export const ayAdi = (y: number, m: number) => `${AYLAR[m]} ${y}`;
 export const isoTarih = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+/** günün haftasının Pazartesi'den Cuma'ya günleri (ay / yıl sınırını aşabilir) */
+export const haftaIciGunleri = (y: number, m: number, d: number): [number, number, number][] => {
+  const p = d - haftaGunu(y, m, d);
+  return [0, 1, 2, 3, 4].map(i => { const t = new Date(y, m, p + i); return [t.getFullYear(), t.getMonth(), t.getDate()]; });
+};
+/** haftalık listelerin anahtarı: haftanın Pazartesi'si "YYYY-AA-GG" */
+export const haftaAnahtari = (y: number, m: number, d: number) => isoTarih(...haftaIciGunleri(y, m, d)[0]);
 
 /** "12 Kasım Perşembe" */
 export const gunMetni = (y: number, m: number, d: number) => `${d} ${AYLAR[m]} ${GUN_UZUN[haftaGunu(y, m, d)]}`;

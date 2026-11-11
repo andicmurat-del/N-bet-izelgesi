@@ -99,6 +99,14 @@ function oglenDevir(B: Baglam, y: number, m: number) {
   return { top, cuma, iki };
 }
 
+/** günün haftasında (Pazartesi–Cuma, ay sınırını aşsa da) kayıtlı öğlen nöbeti var mı: öğlen nöbeti haftalık oluşturulur;
+ *  hiç oluşturulmamış hafta kendiliğinden doldurulmaz */
+function haftadaOglenVar(B: Baglam, y: number, m: number, d: number): boolean {
+  const [py, pm, pd] = pazartesi(y, m, d);
+  for (let i = 0; i < 5; i++) { const [a, b, c] = gunKaydir(py, pm, pd, i); if (B.oglen[ayAnahtari(a, b)]?.[c]) return true; }
+  return false;
+}
+
 /** o gün öğlen nöbetine yazılabilenler (grup başına) ve o günün nöbetçileri */
 function gunAdaylari(G: ReturnType<typeof puantajIzgarasi>, y: number, m: number, d: number) {
   const cu = haftaGunu(y, m, d) === CUMA, nobetci: number[] = [], ca: Record<Grup, number[]> = { e: [], t: [] }, mevcut: Record<Grup, number[]> = { e: [], t: [] };
@@ -130,9 +138,11 @@ function gunAdaylari(G: ReturnType<typeof puantajIzgarasi>, y: number, m: number
  * Ayın öğlen nöbeti çizelgesini oluşturur (aynı veriyle her zaman aynı sonuç).
  * onceki: ayın kayıtlı öğlen nöbeti. Elle düzenlenen günler olduğu gibi kalır. onarim verilirse yalnız eksikler
  * doldurulur: o günden önceki günler hiç değişmez, sonraki günlerde hâlâ yazılabilen kişiler yerinde kalır (sonradan
- * girilen izin / rapor gibi durumlarda listenin geri kalanı karışmasın).
+ * girilen izin / rapor gibi durumlarda listenin geri kalanı karışmasın); hiç oluşturulmamış haftalara dokunulmaz.
+ * sadece verilirse yalnız o günler (ayın bir haftası) yazılır: ayın öteki kayıtlı günleri olduğu gibi kalır ve eşitlik
+ * hesabına girer, kaydı olmayan öteki günler atlanır.
  */
-export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<string, OglenGunu> = {}, onarim?: { bugun: number }): OglenSonucu {
+export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<string, OglenGunu> = {}, onarim?: { bugun: number }, sadece?: { bas: number; bit: number }): OglenSonucu {
   const G = puantajIzgarasi(B, y, m), dim = ayGunSayisi(y, m), uyarilar: string[] = [];
   const ilkDw = haftaGunu(y, m, 1), hafta = (d: number) => Math.floor((d - 1 + ilkDw) / 7);
   const devir = oglenDevir(B, y, m);
@@ -158,11 +168,12 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
   // sabit: değişmeyecek kişiler (gün başına, grup başına); tamSabit: gün hiç değişmez (elle ya da onarımda geçmiş gün)
   const sabit: Record<Grup, number[][]> = { e: [], t: [] }, tamSabit: boolean[] = [];
   for (let d = 1; d <= dim; d++) {
-    const k = onceki[d], gecmis = !!onarim && tarihNo(y, m, d) < onarim.bugun;
-    if (!oglenGunuMu(B, y, m, d) && !(k && (k.elle || k.sabit || gecmis))) continue;
+    const k = onceki[d], gecmis = !!onarim && tarihNo(y, m, d) < onarim.bugun, disari = !!sadece && (d < sadece.bas || d > sadece.bit);
+    if ((disari || onarim) && !k && (disari || !haftadaOglenVar(B, y, m, d))) continue;
+    if (!oglenGunuMu(B, y, m, d) && !(k && (k.elle || k.sabit || gecmis || disari))) continue;
     const dw = haftaGunu(y, m, d), cu = dw === CUMA, ger = cu ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
     const { ca, nobetci, mevcut, grupDisi } = gunAdaylari(G, y, m, d);
-    const tam = !!k && (!!k.elle || gecmis), sb = k?.sabit;
+    const tam = !!k && (!!k.elle || gecmis || disari), sb = k?.sabit;
     gunler.push({ gun: d, dw, e: [], t: [], nobetci, ...(k?.elle ? { elle: true as const } : {}), ...(sb ? { sabit: sb } : {}) });
     tamSabit.push(tam);
     const hedef = { e: 0, t: 0 };
@@ -328,7 +339,7 @@ export function oglenOnarimlari(B: Baglam, bugun: number): { y: number; m: numbe
     for (let d = 1; d <= dim && !bozuk; d++) {
       if (tarihNo(y, m, d) < bugun) continue;
       const k = kayit[d];
-      if (k?.elle) continue;
+      if (k?.elle || (!k && !haftadaOglenVar(B, y, m, d))) continue;
       if (!oglenGunuMu(B, y, m, d)) { bozuk = !!k && !k.sabit; continue; }
       const { ca } = gunAdaylari(G, y, m, d), ger = haftaGunu(y, m, d) === CUMA ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
       for (const g of GRUPLAR) {
