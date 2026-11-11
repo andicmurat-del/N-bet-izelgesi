@@ -9,20 +9,6 @@ permissions:
   contents: read
 
 jobs:
-  senaryo-testleri:
-    # Playwright 1.56 ubuntu-latest'in yeni sürümünü (26.04) desteklemiyor: tarayıcı kurulamıyor
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm test
-
   v2:
     runs-on: ubuntu-latest
     timeout-minutes: 20

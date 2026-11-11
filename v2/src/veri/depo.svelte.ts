@@ -666,6 +666,31 @@ export function yuklemeOncesineDon(): boolean {
     return true;
   } catch { return false; }
 }
+// ---------- yedek hatırlatması ----------
+// Son yedeğin zamanı yalnız bu tarayıcıda tutulur (verinin parçası değildir: geri almaya ve sunucuya girmez).
+const YEDEK_ANAHTAR = ANAHTAR + "-yedek", GUN_MS = 86400000;
+/** bu kadar gündür yedek alınmadıysa hatırlatılır */
+export const YEDEK_GUN = 7;
+function yedekIziOku(): { son: number; ertele: number } {
+  try { const o = JSON.parse(localStorage.getItem(YEDEK_ANAHTAR) || "null"); return { son: Number(o?.son) || 0, ertele: Number(o?.ertele) || 0 }; }
+  catch { return { son: 0, ertele: 0 }; }
+}
+export const yedekIzi = $state(yedekIziOku());
+function yedekIziYaz() { try { localStorage.setItem(YEDEK_ANAHTAR, JSON.stringify({ son: yedekIzi.son, ertele: yedekIzi.ertele })); } catch { /* yazılamazsa hatırlatma yeniden çıkar */ } }
+/** yedek dosyası kaydedildi */
+export function yedekAlindi(simdi = Date.now()) { yedekIzi.son = simdi; yedekIzi.ertele = 0; yedekIziYaz(); }
+/** hatırlatma bir gün ertelenir */
+export function yedekErtele(simdi = Date.now()) { yedekIzi.ertele = simdi + GUN_MS; yedekIziYaz(); }
+/** Yedek hatırlatması: veri varsa ve YEDEK_GUN gündür yedek alınmadıysa (ya da hiç alınmadıysa) geçen gün sayısı
+ *  (hiç alınmadıysa -1); hatırlatma gerekmiyorsa null */
+export function yedekHatirlatma(simdi = Date.now()): number | null {
+  if (!depo.veri.staff.length && !Object.keys(depo.veri.schedules).length) return null;
+  if (simdi < yedekIzi.ertele) return null;
+  if (!yedekIzi.son) return -1;
+  const gun = Math.floor((simdi - yedekIzi.son) / GUN_MS);
+  return gun >= YEDEK_GUN ? gun : null;
+}
+
 export function tumVeriyiSil() {
   depo.veri = bosVeri();
 }

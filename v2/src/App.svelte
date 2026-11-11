@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { depo, gecmis, geriAl, yinele, yedekVerisi } from "./veri/depo.svelte";
+  import { depo, gecmis, geriAl, yinele, yedekVerisi, yedekAlindi, yedekErtele, yedekHatirlatma } from "./veri/depo.svelte";
   import { bulut, bulutuBaslat, bulutYenidenDene, cakismayiCoz } from "./veri/bulut.svelte";
   import { dosyaKaydet, hataMetni } from "./disa/indir";
   import { ayAdi } from "./veri/tarih";
@@ -66,9 +66,11 @@
   async function yedekAl() {
     const t = new Date(), iki = (n: number) => String(n).padStart(2, "0");
     const ad = `nobet-cizelgesi-yedek-${t.getFullYear()}-${iki(t.getMonth() + 1)}-${iki(t.getDate())}.json`;
-    try { if (await dosyaKaydet(ad, yedekVerisi(), "application/json")) bildir("Yedek kaydedildi: " + ad); }
+    try { if (await dosyaKaydet(ad, yedekVerisi(), "application/json")) { yedekAlindi(); bildir("Yedek kaydedildi: " + ad); } }
     catch (e) { bildir(hataMetni(e, "Yedek kaydedilemedi.")); }
   }
+  // yedek hatırlatması: 7 gündür (ya da hiç) yedek alınmadıysa
+  const yedekGun = $derived(yedekHatirlatma());
   function git(hedef: Hedef) {
     const ad: SayfaAdi = ESKI[hedef] ? "gunluk" : hedef === "kisiler" ? "ayarlar" : (hedef as SayfaAdi);
     if (ESKI[hedef]) gunlukAlt = ESKI[hedef];
@@ -133,6 +135,14 @@
     {:else if bulut.durum === "hata"}
       <div class="kayit-sorunu kutu hata" role="alert"><Ikon ad="uyari" />{bulut.mesaj}<button class="dugme" onclick={bulutYenidenDene}><Ikon ad="yenile" />Yeniden dene</button></div>
     {/if}
+    {#if yedekGun !== null && bulut.durum !== "cakisma"}
+      <div class="kayit-sorunu yedek-hatirlatma kutu bilgi" role="status">
+        <Ikon ad="indir" />
+        <span>{yedekGun < 0 ? "Henüz yedek alınmadı." : `Son yedek ${yedekGun} gün önce alındı.`} Yedek dosyası, verilerinizin elinizdeki bağımsız kopyasıdır.</span>
+        <button class="dugme" onclick={yedekAl}>Yedek al</button>
+        <button class="dugme sade" onclick={() => yedekErtele()}>Yarın hatırlat</button>
+      </div>
+    {/if}
     {#if sayfa === "gunluk"}<Cizelge {git} bind:gorunum={gunlukAlt} />
     {:else if sayfa === "acil"}<AcilEczane {git} bind:gorunum={acilAlt} />
     {:else}<Ayarlar bind:gorunum={ayarAlt} />{/if}
@@ -180,6 +190,8 @@
   .geri-al button:disabled { opacity: .35; cursor: not-allowed; }
   main { flex: 1; width: 100%; max-width: 1360px; margin: 0 auto; min-width: 0; padding-block: var(--b5) var(--b6); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); outline: none; }
   .kayit-sorunu { display: flex; gap: var(--b2); align-items: center; margin-bottom: var(--b4); font-weight: 600; }
+  .yedek-hatirlatma { font-weight: 400; flex-wrap: wrap; }
+  .yedek-hatirlatma span { flex: 1 1 260px; }
   .esitleme { align-items: flex-start; }
   .esitleme p { font-weight: 400; margin: var(--b1) 0 var(--b3); }
   .esitleme .dugmeler { display: flex; flex-wrap: wrap; gap: var(--b2); }

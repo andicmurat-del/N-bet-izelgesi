@@ -1,6 +1,6 @@
 # Nöbet Çizelgesi (yeni sürüm)
 
-Eczane nöbet çizelgesinin baştan yazılan sürümü. Eski uygulama (`../index.html`) ve onun artifact'i değişmeden kalır.
+Eczane nöbet çizelgesinin baştan yazılan sürümü. Eski tek dosyalık uygulama (kökteki `index.html`) depodan kaldırıldı; git geçmişinde durur. Onun kayıtlı senaryo sonuçları `test/eski/` altında, yeni motorun karşılaştırma testinde kullanılır.
 
 - **Arayüz:** Svelte 5 + TypeScript, tasarım sistemi `src/stil.css`.
 - **Çizelge motoru:** `src/motor/` (TypeScript). Eski uygulamanın kural ve arama kodu, bölümlere ayrılıp yeniden yazıldı. Davranış aynıdır; tek fark, eski uygulamanın sessizce bıraktığı kesin kural ihlallerini (ör. 5 günde 3 nöbet) yeni motorun gidermeye çalışması ve kalanları gün üzerinde kırmızı işaretlemesidir. İlk aramada uyarı kalırsa farklı başlangıçlarla en fazla 3 kez daha aranır, en az uyarılı çizelge seçilir (`index.ts`). Kadro bir ay kesin kurallara matematiksel olarak yetmiyorsa (ör. Cumartesi–Pazar için 8 farklı kişi gerekir) çizelge uyarısında nedeniyle söylenir (`nobet/kapasite.ts`). Giriş `index.ts`; her çağrı verinin kendi kopyasıyla (`baglam.ts`) çalışır. Çizelge oluşturma `nobet/` altında adım adım: ilk yerleştirme, hazırlama, yerel arama (amaç fonksiyonu `nobet/amac.ts`, kesin kurallar `nobet/kurallar.ts`), uyarılar. Kural ağırlıkları tek tabloda: `sabitler.ts`. Ekran donmasın diye arka planda (Web Worker) çalışır; asıl arama ile ek aramalar ayrı işçilerde aynı anda yürür (`istemci.ts`; çekirdek sayısı kadar, en çok 4), tarayıcı işçiyi engellerse sayfada sırayla çalışır.

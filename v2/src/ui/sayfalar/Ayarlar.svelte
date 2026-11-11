@@ -1,7 +1,7 @@
 <script lang="ts">
   import SayfaBasligi from "../ortak/SayfaBasligi.svelte";
   import Bilgi from "../ortak/Bilgi.svelte";
-  import { depo, tumVeriyiSil, yedekVerisi, yedektenYukle, yuklemeOncesineDon, yuklemeOncesiVar, AYAR_VARSAYILAN } from "../../veri/depo.svelte";
+  import { depo, tumVeriyiSil, yedekVerisi, yedektenYukle, yuklemeOncesineDon, yuklemeOncesiVar, yedekAlindi, yedekIzi, AYAR_VARSAYILAN } from "../../veri/depo.svelte";
   import { bulut } from "../../veri/bulut.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Ikon from "../ortak/Ikon.svelte";
@@ -27,6 +27,7 @@
     const ad = `nobet-cizelgesi-yedek-${t.getFullYear()}-${iki(t.getMonth() + 1)}-${iki(t.getDate())}.json`;
     try {
       const ok = await dosyaKaydet(ad, yedekVerisi(), "application/json");
+      if (ok) yedekAlindi();
       durum = ok ? { tur: "tamam", metin: `Yedek kaydedildi: ${ad}` } : null;
     } catch (e) {
       durum = { tur: "hata", metin: hataMetni(e, "Yedek kaydedilemedi.") };
@@ -117,6 +118,7 @@
       <button class="dugme" onclick={() => dosyaGirdi?.click()}><Ikon ad="yukle" />Yedekten yükle</button>
       <input bind:this={dosyaGirdi} type="file" accept=".json,application/json" onchange={dosyaSecildi} hidden />
     </div>
+    <p class="aciklama">{yedekIzi.son ? `Son yedek: ${new Date(yedekIzi.son).toLocaleDateString("tr-TR")}.` : "Bu tarayıcıdan henüz yedek alınmadı."} Bir haftadır yedek alınmadıysa sayfanın üstünde hatırlatılır.</p>
     <p class="aciklama">Yedekten yükleme, bu tarayıcıdaki verilerin yerine geçer. Yanlış dosya seçerseniz hemen ardından önceki verilere dönebilirsiniz.</p>
     {#if geriAlinabilir}<div><button class="dugme" onclick={geriDon}><Ikon ad="yenile" />Önceki verilere dön (yükleme ya da sunucudan alma öncesi)</button></div>{/if}
   </section>

@@ -1,7 +1,7 @@
 // Veri katmanı: yedek doğrulama, kişi numarası, silme koruması, izin/rapor ve nöbet değişimi (geri alma dahil).
 // .svelte.ts dosyaları vitest'te sunucu kipinde derlenir: $state düz nesnedir, $effect çalışmaz (kayıt yapılmaz).
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import { depo, bosVeri, veriyiDogrula, cizelgeKaydet, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenHaftasiniSil, oglenHaftaKaydet, oglenKaydet, haftayiOnayla, haftaOnayiniKaldir, haftaOnayi, onayGunuAyarla } from "../src/veri/depo.svelte.ts";
+import { depo, bosVeri, veriyiDogrula, cizelgeKaydet, yedekAlindi, yedekErtele, yedekHatirlatma, yedekIzi, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenHaftasiniSil, oglenHaftaKaydet, oglenKaydet, haftayiOnayla, haftaOnayiniKaldir, haftaOnayi, onayGunuAyarla } from "../src/veri/depo.svelte.ts";
 import { degisimUygula, degisimGeriAl, izinUygula, puantajIzgarasi } from "../src/veri/degisim.svelte.ts";
 import { adAnahtari, adIcerir } from "../src/veri/tarih.ts";
 
@@ -74,6 +74,24 @@ describe("yedek doğrulama", () => {
       expect(yedektenYukle(JSON.stringify({ uygulama: "nobet-cizelgesi-v2", veri })).tamam).toBe(false);
     }
     expect(kopya(depo.veri)).toEqual(once);
+  });
+});
+
+describe("yedek hatırlatması", () => {
+  const GUN = 86400000, T = 1e12;
+  test("veri yoksa hatırlatılmaz; hiç yedek alınmadıysa ve 7 gün geçtiyse hatırlatılır; erteleme bir gün susturur", () => {
+    depo.veri = bosVeri(); yedekIzi.son = 0; yedekIzi.ertele = 0;
+    expect(yedekHatirlatma(T)).toBe(null);
+    depo.veri = ornekVeri();
+    expect(yedekHatirlatma(T)).toBe(-1);
+    yedekAlindi(T);
+    expect(yedekHatirlatma(T + 6 * GUN)).toBe(null);
+    expect(yedekHatirlatma(T + 9 * GUN)).toBe(9);
+    yedekErtele(T + 9 * GUN);
+    expect(yedekHatirlatma(T + 9 * GUN + 1000)).toBe(null);
+    expect(yedekHatirlatma(T + 10 * GUN + 1000)).toBe(10);
+    yedekAlindi(T + 10 * GUN);
+    expect(yedekHatirlatma(T + 10 * GUN + 1000)).toBe(null);
   });
 });
 
