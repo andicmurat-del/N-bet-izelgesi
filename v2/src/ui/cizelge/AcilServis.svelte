@@ -202,16 +202,17 @@
       </div>
     </div>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin) -->
-    <div class="tablo-kap" tabindex="0" role="region" aria-label="Acil eczane nöbet listesi tablosu">
-      <table class="tablo liste">
-        <thead><tr><th>Tarih</th><th>Gün</th><th>1. nöbetçi</th><th>2. nöbetçi</th><th>Durum</th></tr></thead>
+    <div class="tablo-kap ht-liste-kap" tabindex="0" role="region" aria-label="Acil eczane nöbet listesi tablosu">
+      <table class="tablo liste ht-liste">
+        <thead><tr><th><span class="gizli-yazi">Hafta</span></th><th>Tarih</th><th>Gün</th><th class="genis">1. nöbetçi</th><th class="genis">2. nöbetçi</th><th>Durum</th></tr></thead>
         <tbody>
           {#each haftalar as h (h.no)}
-            <tr class="grup"><td colspan="5">{h.no}. hafta{h.yarim ? " (yarım)" : ""}</td></tr>
-            {#each h.gunler as g (g)}
+            <tr class="bosluk-satir" aria-hidden="true"><td colspan="6"></td></tr>
+            {#each h.gunler as g, gi (g)}
               {@const l = goster(g)}
-              <tr class:hs={tatilMi(y, m, g)} class:sorunlu-satir={sorunluMu(g)} class:vurgulu={vurgu !== null && l.includes(vurgu)} onclick={() => gunAc(g)}>
-                <td class="rakam"><b>{g} {AYLAR_AD[m]}</b></td>
+              <tr class:ilk={gi === 0} class:son={gi === h.gunler.length - 1} class:bugun={bugunMu(g)} class:hs={tatilMi(y, m, g)} class:sorunlu-satir={sorunluMu(g)} class:vurgulu={vurgu !== null && l.includes(vurgu)} onclick={e => { if (!(e.target as HTMLElement).closest(".hno")) gunAc(g); }}>
+                {#if gi === 0}<td class="hno" rowspan={h.gunler.length} title="{h.no}. hafta{h.yarim ? ' (yarım)' : ''}"><b class="rakam">{h.no}</b><small>HAFTA</small></td>{/if}
+                <td class="rakam tarih">{String(g).padStart(2, "0")}.{String(m + 1).padStart(2, "0")}.{y}</td>
                 <td>{GUN_UZUN[haftaGunu(y, m, g)]}</td>
                 <td>{@render adSnip(l[0])}</td>
                 <td>{@render adSnip(l[1])}</td>
@@ -224,7 +225,7 @@
               </tr>
             {/each}
           {:else}
-            <tr><td colspan="5" class="bos-sonuc">Bu süzgece uyan gün yok.</td></tr>
+            <tr><td colspan="6" class="bos-sonuc">Bu süzgece uyan gün yok.</td></tr>
           {/each}
         </tbody>
       </table>
@@ -338,15 +339,11 @@
 
   /* liste görünümü (Günlük Eczane listesiyle aynı) */
   .liste tbody tr { cursor: pointer; }
-  .liste tbody tr:hover > * { background: var(--vurgu-zemin); }
-  .liste tr.hs > * { background: color-mix(in srgb, var(--acik-mavi) 14%, var(--yuzey)); }
-  .liste tr.sorunlu-satir > * { background: var(--dikkat-zemin); }
-  .liste tbody tr.vurgulu > * { background: color-mix(in srgb, var(--altin) 16%, var(--yuzey)); }
-  .liste tbody tr.vurgulu > :first-child { box-shadow: inset 3px 0 0 var(--altin); }
-  .liste tr.grup > td { background: var(--panel-bas); font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--lacivert); padding-top: 5px; padding-bottom: 5px; cursor: default; }
-  .liste tbody tr.grup:hover > * { background: var(--panel-bas); }
-  .liste td:nth-child(3), .liste td:nth-child(4) { min-width: 150px; }
-  .durum, .liste td:first-child { white-space: nowrap; }
+  .liste tbody tr:hover > td:not(.hno):not(.tarih) { background: var(--vurgu-zemin); }
+  .liste tr.sorunlu-satir > td:not(.hno):not(.tarih) { background: var(--dikkat-zemin); }
+  .liste tbody tr.vurgulu > td:not(.hno):not(.tarih) { background: color-mix(in srgb, var(--vurgu) 12%, var(--yuzey)); }
+  .liste tbody tr.vurgulu > .tarih { box-shadow: inset 3px 0 0 var(--lacivert); }
+  .durum { white-space: nowrap; }
   .vurgu-ad { background: color-mix(in srgb, var(--altin) 35%, transparent); color: inherit; font-weight: 700; padding: 0 3px; border-radius: 3px; }
   .etk { display: inline-flex; align-items: center; gap: 3px; font-size: var(--f-xs); font-weight: 600; padding: 1px 6px; border-radius: 2px; margin-right: 4px; }
   .etk.degisti { background: color-mix(in srgb, var(--izin) 14%, var(--yuzey)); color: var(--izin); }
