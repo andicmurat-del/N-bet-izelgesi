@@ -19,15 +19,15 @@ export function onayPdf(v: OnayCiktiVerisi): Blob {
   const doc = yeniPdf("landscape");
   const W = 297, K = 12;
   doc.setProperties({ title: `${v.donem} onay listesi masaları`, creator: "Nöbet Çizelgesi" });
-  doc.setFont("CizelgeSans", "bold"); doc.setFontSize(14); doc.setTextColor(19, 33, 44);
+  doc.setFont("CizelgeSans", "bold"); doc.setFontSize(14); doc.setTextColor(14, 74, 88);
   doc.text(`${v.kurum ? buyukAd(v.kurum) + " · " : ""}${v.donem} onay listesi masaları`, K, 16);
   autoTable(doc, {
     startY: 22, margin: { left: K, right: K, bottom: 24 },
     head: [["Gün", ...v.satirlar.map(r => r.yer)]],
     body: v.gunler.map((g, gi) => [g.baslik, ...v.satirlar.map(r => { const h = r.hucre[gi]; return g.tatil ? "" : h.bos ? "BOŞ" : h.ad ? buyukAd(h.ad) : "–"; })]),
     theme: "grid",
-    styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 2, halign: "center", valign: "middle", textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.2 },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [208, 230, 235] },
+    styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 2, halign: "center", valign: "middle", textColor: [21, 38, 43], lineColor: [170, 190, 196], lineWidth: 0.2 },
+    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [8, 51, 63], textColor: [255, 255, 255] },
     columnStyles: { 0: { cellWidth: 30, fontStyle: "bold", halign: "left" } },
     didParseCell: h => {
       if (h.section !== "body") return;
@@ -36,7 +36,7 @@ export function onayPdf(v: OnayCiktiVerisi): Blob {
       if (h.column.index === 0) return;
       const c = v.satirlar[h.column.index - 1].hucre[h.row.index];
       if (c?.bos) { h.cell.styles.fillColor = [253, 226, 226]; h.cell.styles.textColor = [160, 30, 30]; h.cell.styles.fontStyle = "bold"; }
-      else if (c?.yerine) h.cell.styles.fillColor = [255, 246, 222];
+      else if (c?.yerine) h.cell.styles.fillColor = [214, 239, 243];
     },
   });
   const H = doc.internal.pageSize.getHeight();
