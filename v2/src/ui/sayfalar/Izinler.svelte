@@ -2,7 +2,7 @@
   import type { Kisi } from "../../veri/tipler";
   import { depo, tercihAl, tercihAyarla, resmiTatilMi, arifeMi, resmiTatilAyarla, arifeAyarla, aydaCalisanlar, ayCizelgesi } from "../../veri/depo.svelte";
   import { TERCIH_ACIKLAMA, TERCIH_AD, ROL_AD, type Tercih } from "../../veri/tipler";
-  import { GUN_KISA, adIcerir, gunMetni, gunSayisi, haftaGunu, haftaSonuMu, isoTarih } from "../../veri/tarih";
+  import { GUN_KISA, kisaAd, adIcerir, gunMetni, gunSayisi, haftaGunu, haftaSonuMu, isoTarih } from "../../veri/tarih";
   import { veriAnlik } from "../../veri/depo.svelte";
   import { Baglam } from "../../motor/baglam";
   import IslemAlani from "../ortak/IslemAlani.svelte";
@@ -75,6 +75,19 @@
   const listelenen = $derived(kisiler.filter(k => adIcerir(k.name, ara)));
   const tabloKisiler = $derived(listelenen.slice().sort((a, b) => (GRUP_SIRA[a.role] ?? 9) - (GRUP_SIRA[b.role] ?? 9) || a.name.localeCompare(b.name, "tr")));
   const isaretliGun = (id: number) => Object.values(kisiAyIsaretleri(id)).reduce((t, n) => t + (n ?? 0), 0);
+  // kişi izinleri görünümü: takvim (varsayılan; seçilen kişinin işaretleri günlere konur, her günde o günün tüm
+  // işaretleri görünür) ya da tablo (herkes × günler)
+  let gorunum = $state<"takvim" | "tablo">("takvim");
+  let seciliId = $state<number | null>(null);
+  $effect(() => { if (!kisiler.some(k => k.id === seciliId)) seciliId = kisiler[0]?.id ?? null; });
+  const secili = $derived(kisiler.find(k => k.id === seciliId) ?? null);
+  const tumAdlar = $derived(depo.veri.staff.map(k => k.name));
+  // o günün işaretleri (seçili kişi önce, sonra ad sırası)
+  const gunIsaretleri = (d: number) => kisiler.map(k => ({ k, t: tercihAl(k.id, depo.yil, depo.ay, d) })).filter((x): x is { k: Kisi; t: Tercih } => !!x.t)
+    .sort((a, b) => Number(b.k.id === seciliId) - Number(a.k.id === seciliId) || a.k.name.localeCompare(b.k.name, "tr"));
+  function baslaT(d: number, e: PointerEvent) { if (seciliId !== null) baslaK(seciliId, d, e); }
+  function tiklaT(d: number) { if (seciliId !== null) tiklaK(seciliId, d); }
+  function gezT(d: number) { if (seciliId !== null) gezK(seciliId, d); }
   // izin arasındaki hafta sonu (izin sayılır; çizgili gösterilir) — motorun kendi kuralıyla, yalnız okunur
   const B = $derived(new Baglam(veriAnlik()));
 </script>
@@ -95,7 +108,7 @@
     </div>
   </IslemAlani>
 
-  <p class="kutu bilgi kullanim"><Ikon ad="bilgi" boyut={16} /><span>Bir işaret türü seçip {mod === "kisi" ? "tablodaki hücrelere" : "takvimdeki günlere"} dokunun; bilgisayarda fareyle basılı tutup gezdirerek birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır. Tercihler çizelge oluşturulurken dikkate alınır; çizelge zaten varsa yeniden oluşturun.</span></p>
+  <p class="kutu bilgi kullanim"><Ikon ad="bilgi" boyut={16} /><span>{mod === "kisi" && gorunum === "takvim" ? "Kişiyi ve işaret türünü seçip takvimdeki günlere" : "Bir işaret türü seçip " + (mod === "kisi" ? "tablodaki hücrelere" : "takvimdeki günlere")} dokunun; bilgisayarda fareyle basılı tutup gezdirerek birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır. Tercihler çizelge oluşturulurken dikkate alınır; çizelge zaten varsa yeniden oluşturun.</span></p>
   {#if onayli}<p class="kutu dikkat onay-not" role="status">Bu ayın çizelgesi onaylı; işaretler değiştirilemez. Değiştirmek için önce Günlük Eczane Nöbet Listesi'nde onayı kaldırın.</p>{/if}
 
   {#if mod === "kisi"}
@@ -103,9 +116,52 @@
       {#each ARACLAR as a}
         <button class="arac-d t-{a}" role="radio" aria-checked={arac === a} onclick={() => (arac = a)} title={a === "temizle" ? "Dokunduğunuz günün işareti kalkar" : TERCIH_ACIKLAMA[a]}>{#if a !== "temizle"}<i class="kod k-{a}">{KOD[a]}</i>{:else}<Ikon ad="sil" boyut={15} />{/if}{ARAC_AD[a]}</button>
       {/each}
-      <input class="girdi ara-k" type="search" placeholder="Ad ara" aria-label="Personel ara" bind:value={ara} />
+      <span class="sag-arac">
+        <div class="secim" role="group" aria-label="Görünüm"><button aria-pressed={gorunum === "takvim"} onclick={() => (gorunum = "takvim")}>Takvim</button><button aria-pressed={gorunum === "tablo"} onclick={() => (gorunum = "tablo")}>Tablo</button></div>
+        {#if gorunum === "tablo"}<input class="girdi ara-k" type="search" placeholder="Ad ara" aria-label="Personel ara" bind:value={ara} />{/if}
+      </span>
     </div>
     {#if arac !== "temizle"}<p class="arac-not2">{TERCIH_ACIKLAMA[arac]}</p>{/if}
+    {#if gorunum === "takvim"}
+    <section class="panel" aria-label="İzin ve tercih takvimi">
+      <div class="panel-bas kisi-bas">
+        <label class="kisi-sec"><span>Kişi</span>
+          <select class="girdi" bind:value={seciliId}>
+            {#each tabloKisiler as k, i (k.id)}
+              {#if i === 0 || tabloKisiler[i - 1].role !== k.role}<option disabled>── {GRUP_AD[k.role] ?? ROL_AD[k.role]} ──</option>{/if}
+              <option value={k.id}>{k.name}</option>
+            {/each}
+          </select>
+        </label>
+        {#if secili}<p class="kisi-sayi">Bu ay: <b class="rakam">{izinGun(secili.id)}</b> gün izin · <b class="rakam">{isaretliGun(secili.id) - izinGun(secili.id)}</b> tercih</p>{/if}
+      </div>
+      <div class="izgara tercih-izgara" class:kilitli={onayli}>
+        {#each GUN_KISA as g, i}<div class="bas" class:hs={i >= 5} aria-hidden="true">{g}</div>{/each}
+        {#each { length: gunler.bos } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
+        {#each gunler.liste as d}
+          {@const y = depo.yil}{@const m = depo.ay}
+          {@const rt = resmiTatilMi(y, m, d)}{@const ar = arifeMi(y, m, d)}{@const hs = haftaSonuMu(y, m, d)}
+          {@const t = secili ? tercihAl(secili.id, y, m, d) : null}
+          {@const pasif = !!secili && pasifMi(secili, d)}
+          {@const arasi = !!secili && !t && B.izinArasiMi(secili.id, y, m, d)}
+          {@const l = gunIsaretleri(d)}
+          {@const nIzin = izinliSayisi(d)}
+          <button class="gun" class:hs class:rt class:ar class:arasi class:pasif class:isaretli={!!t} disabled={onayli || pasif || !secili}
+            aria-label="{gunMetni(y, m, d)}{secili ? ', ' + secili.name + ': ' + (t ? TERCIH_AD[t] : arasi ? 'izin arası' : pasif ? 'dönem dışı' : 'işaret yok') : ''}{l.length ? '. O gün: ' + l.map(x => x.k.name + ' ' + TERCIH_AD[x.t]).join(', ') : ''}"
+            onpointerdown={e => baslaT(d, e)} onclick={() => tiklaT(d)} onpointerenter={() => gezT(d)}
+            onkeydown={e => { if ((e.key === "Enter" || e.key === " ") && secili) { e.preventDefault(); uygulaKisi(secili.id, d); } }}>
+            <span class="serit"><b class="rakam">{d}</b><span class="gunadi">{GUN_KISA[haftaGunu(y, m, d)]}</span>{#if rt}<span class="etiket">Resmi tatil</span>{:else if ar}<span class="etiket">Arife</span>{/if}
+              {#if nIzin}<span class="izin-say" class:cok={nIzin >= 2} title="O gün izinli kişi sayısı">{nIzin} izinli</span>{/if}</span>
+            <span class="isaretler">
+              {#if t}<span class="benim"><i class="kod k-{t}">{KOD[t]}</i><span class="ad-uzun">{TERCIH_AD[t]}</span></span>{:else if arasi}<span class="benim soluk-y">izin arası</span>{:else if pasif}<span class="benim soluk-y">dönem dışı</span>{/if}
+              {#each l.filter(x => x.k.id !== seciliId).slice(0, 4) as x (x.k.id)}<span class="baskasi"><i class="kod k-{x.t}">{KOD[x.t]}</i><span class="kisa-ad">{kisaAd(x.k.name, tumAdlar)}</span></span>{/each}
+              {#if l.filter(x => x.k.id !== seciliId).length > 4}<span class="baskasi fazla">+{l.filter(x => x.k.id !== seciliId).length - 4}</span>{/if}
+            </span>
+          </button>
+        {/each}
+      </div>
+    </section>
+    {:else}
     <section class="panel" aria-label="Herkesin izin ve tercihleri">
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin) -->
       <div class="tablo-kap" tabindex="0" role="region" aria-label="İzin ve tercih tablosu">
@@ -136,6 +192,7 @@
         </table>
       </div>
     </section>
+    {/if}
     <p class="lejant alt-lejant"><span><i class="kod k-izinli">İ</i>İzinli</span><span><i class="ornek o-arasi"></i>İzin arası (hafta sonu da izin sayılır)</span><span><i class="kod k-want">+</i>Nöbet istiyor</span><span><i class="kod k-avoid">−</i>Nöbet istemiyor</span><span><i class="kod k-esVar">E+</i>Eş nöbetçi olsun</span><span><i class="kod k-esYok">E−</i>Eş nöbetçi olmasın</span><span><i class="ornek o-pasif"></i>Dönem dışı</span></p>
   {:else}
   <div class="duzen">
@@ -253,8 +310,39 @@
   .herkes tr.alt .ad, .herkes tr.alt td { background: var(--panel-bas); font-weight: 700; color: var(--lacivert); height: 28px; }
   .herkes tr.alt td.cok { background: var(--haz-zemin); color: var(--haz); }
   .alt-lejant { margin-top: var(--b2); }
+  /* takvim görünümü */
+  .sag-arac { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .sag-arac .ara-k { margin-left: 0; }
+  .kisi-bas { display: flex; flex-wrap: wrap; align-items: center; gap: var(--b2) var(--b4); }
+  .kisi-sec { display: inline-flex; align-items: center; gap: var(--b2); font-size: var(--f-sm); font-weight: 700; color: var(--lacivert); }
+  .kisi-sec select { min-width: 220px; min-height: 36px; }
+  .kisi-sayi { font-size: var(--f-sm); color: var(--yazi-2); }
+  .kisi-sayi b { color: var(--lacivert); }
+  .tercih-izgara .gun { min-height: 96px; }
+  .tercih-izgara .gun:disabled { cursor: default; }
+  .tercih-izgara .gun.isaretli { box-shadow: inset 3px 0 0 var(--lacivert); }
+  .tercih-izgara .gun.arasi { background: repeating-linear-gradient(135deg, var(--izin-zemin) 0 4px, var(--yuzey) 4px 8px); }
+  .tercih-izgara .gun.pasif { background: var(--yuzey-2); }
+  .izin-say { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--yazi-2); white-space: nowrap; }
+  .izin-say.cok { color: var(--haz); }
+  .isaretler { display: grid; gap: 2px; align-content: start; padding: 5px 8px 6px; min-width: 0; }
+  .benim { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; color: var(--lacivert); margin-bottom: 2px; }
+  .soluk-y { font-size: var(--f-xs); font-weight: 600; color: var(--soluk); }
+  .baskasi { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--yazi-2); min-width: 0; }
+  .baskasi .kod { min-width: 18px; height: 15px; font-size: 9.5px; }
+  .kisa-ad { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fazla { font-weight: 700; color: var(--soluk); }
   .alt-lejant .kod { min-width: 18px; height: 16px; font-size: 10px; }
-  @media (max-width: 720px) { .ara-k { margin-left: 0; width: 100%; } }
+  @media (max-width: 720px) {
+    .ara-k { margin-left: 0; width: 100%; }
+    .sag-arac { margin-left: 0; width: 100%; }
+    .kisi-sec { width: 100%; } .kisi-sec select { flex: 1; min-width: 0; }
+    .tercih-izgara .gun { min-height: 64px; }
+    .isaretler { padding: 2px 3px 3px; gap: 1px; }
+    .benim .ad-uzun, .izin-say { display: none; }
+    .baskasi { font-size: 10px; gap: 2px; }
+    .baskasi .kod { min-width: 14px; height: 13px; font-size: 8.5px; padding: 0 1px; }
+  }
   @media (max-width: 960px) {
     .duzen { grid-template-columns: 1fr; }
   }
