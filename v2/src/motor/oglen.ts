@@ -9,7 +9,10 @@
 // yazmama kuralı bundan güçlüdür); haftada iki öğlen nöbeti sırayla verilir (grubundaki herkes bir kez
 // iki almadan aynı kişi yeniden iki almaz).
 // Hangi gün tutulduğu eşitlikte önemsizdir; yalnız Cuma ayrıca sayılır.
+// Cuma günü onay listesinde Masa 1, Masa 2, Masa 7 ve jokerlerden oluşan gruptan en az 2 eczacı masada kalır: bu gruptan
+// öğlen nöbetine en fazla (grup − 2) kişi yazılır (yazılacak kişiyi yıllık eşitlik seçer, en az tutan öne geçer).
 import { aktifAydaMi, type Baglam } from "./baglam";
+import { onayHaftasi, pazartesi } from "./onayMasa";
 import { puantajIzgarasi } from "./puantaj";
 import { ayAnahtari, ayGunSayisi, AYLAR, CUMA, gunKaydir, haftaGunu, oncekiAy, tarihNo } from "./takvim";
 
@@ -31,7 +34,7 @@ export const oglenGrubu = (rol: string): Grup | null => (rol === "eczaci" ? "e" 
 /** amaç ağırlıkları (küçük daha iyi): haftada üçüncü kez çok ağır; haftada ikinci kez her seferinde ceza (kişi
  *  yetiyorsa herkes bir kez); teknikerde Pazartesi–Perşembe muaf olmayana yazmak haftada üçüncü kezden hafif, öteki her
  *  şeyden ağır; o hafta yazılabilen biri hiç yazılmamışken başkasına iki yazmak çok ağır; haftada iki alma sırası yıllık eşitlikten önce; mümkünse o günün nöbetçisine yazılmaz; haftada iki alan kişinin iki öğlen nöbeti mümkünse art arda günlere düşmez (nöbetçiye yazmamaktan hafif); art arda iki Cuma haftada iki sırasıyla yarışabilsin diye ağır */
-const W = { hafta3: 1000, grupDisi: 500, bosKalan: 100, ikiSira: 30, hafta: 3, toplam: 2, cuma: 3, cumaArdArda: 50, nobetci: 3, ardArda: 2 };
+const W = { masaGrubu: 5000, hafta3: 1000, grupDisi: 500, bosKalan: 100, ikiSira: 30, hafta: 3, toplam: 2, cuma: 3, cumaArdArda: 50, nobetci: 3, ardArda: 2 };
 
 export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[]; elle?: true; sabit?: OglenSabit }
 export interface OglenSonucu { gunler: OglenGunSonucu[]; uyarilar: string[] }
@@ -186,6 +189,14 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
   const haftaNo = gunler.map(x => hafta(x.gun)), sonHafta = Math.max(0, ...haftaNo), cumaMi = gunler.map(x => x.dw === CUMA);
   // bir önceki Cuma: bu aydaysa gün sırası, ay öncesindeyse -2, öğlen nöbeti yoksa -1
   const oncekiCumaNo = gunler.map(x => x.dw !== CUMA ? -1 : x.gun > 7 ? gunler.findIndex(z => z.gun === x.gun - 7) : -2);
+  // Cuma: onay listesinde Masa 1, Masa 2, Masa 7 ve jokerler; bu gruptan en fazla (grup − 2) eczacı öğlene yazılır
+  const masaGrubu = gunler.map(x => {
+    if (x.dw !== CUMA) return null;
+    const og = onayHaftasi(B, ...pazartesi(y, m, x.gun)).gunler.find(z => z.y === y && z.m === m && z.d === x.gun);
+    if (!og || og.tatil) return null;
+    const l = [og.masa[0], og.masa[1], og.masa[6], ...og.joker].filter(h => h?.id && !h.tekniker).map(h => h!.id as number);
+    return { kisi: new Set(l), sinir: Math.max(0, l.length - 2) };
+  });
   for (const g of GRUPLAR) {
     const havuz = B.staff.filter(s => oglenGrubu(s.role) === g && aktifAydaMi(s, y, m));
     const cumaHavuz = havuz.filter(s => !s.cumaMuaf);
@@ -222,6 +233,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
         const oc = oncekiCumaNo[i];
         if (oc >= 0 ? sec[oc].includes(id) : oc === -2 && oncekiCuma.has(id)) j += W.cumaArdArda;
       }
+      if (g === "e") for (let i = 0; i < N; i++) { const mg = masaGrubu[i]; if (!mg) continue; const n = sec[i].filter(id => mg.kisi.has(id)).length; if (n > mg.sinir) j += W.masaGrubu * (n - mg.sinir); }
       havuz.forEach(s => { const v = (top[s.id] || 0) - pay.top[s.id] + (devir.top[s.id] || 0); j += W.toplam * v * v; });
       cumaHavuz.forEach(s => { const v = (cu[s.id] || 0) - pay.cuma[s.id] + (devir.cuma[s.id] || 0); j += W.cuma * v * v; });
       const ikiHafta: number[][] = [];

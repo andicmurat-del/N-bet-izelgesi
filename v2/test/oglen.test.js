@@ -2,7 +2,7 @@
 // muaf olan Cuma yazılmaz; haftada en fazla 2; yıl boyunca toplam ve Cuma sayısı eşit; nöbetçiye mümkünse yazılmaz.
 import { describe, test, expect } from "vitest";
 import SABIT from "./altin/oglen-cizelge.json";
-import { oglenHesapla, oglenOnarimlariHesapla, oglenYillikHesapla, puantajHesapla } from "../src/motor";
+import { oglenHesapla, oglenOnarimlariHesapla, oglenYillikHesapla, onayHaftasiHesapla, puantajHesapla } from "../src/motor";
 
 const staff = [];
 for (let i = 1; i <= 7; i++) staff.push({ id: i, name: "E" + i, role: "eczaci", ...(i === 7 ? { cumaMuaf: true } : {}) });
@@ -91,7 +91,10 @@ describe("öğlen nöbeti", () => {
       .map(([d, k]) => ({ t: new Date(Y, m, +d).getTime(), ids: [...k.e, ...k.t] })));
     let tekrar = 0;
     for (let i = 1; i < cumalar.length; i++) if (cumalar[i].t - cumalar[i - 1].t === 7 * 864e5) tekrar += cumalar[i].ids.filter(id => cumalar[i - 1].ids.includes(id)).length;
-    expect(tekrar).toBeLessThanOrEqual(5);   // kuraldan önce 7 (haftada iki sırası ve pay kuralıyla birlikte)
+    // kuraldan önce 7, kuralla 5. Cuma onay listesinde M1, M2 ve jokerlerden en az 2'si masada kaldığından bu küçük kadroda
+    // (6 eczacı Cuma yazılabilir) Cuma öğlene yazılabilecek kişi 3–4'e iner; aynı kişiler daha sık denk gelir (9 eczacılı
+    // gerçekçi kadroda 6 ayda 4 → 5)
+    expect(tekrar).toBeLessThanOrEqual(7);
   });
 
   test("haftada iki alan eczacının iki öğlen nöbeti mümkünse art arda günlere düşmez", () => {
@@ -102,8 +105,9 @@ describe("öğlen nöbeti", () => {
       iki += gunler.length;
     }
     expect(iki).toBeGreaterThan(0);
-    // Kasım 12–13: E1'in o hafta nöbet dışı yalnız iki boş günü var (zorunlu); 25–26: Cuma eşitliği için kalır
-    expect(ard).toBeLessThanOrEqual(2);
+    // Kasım 12–13: E1'in o hafta nöbet dışı yalnız iki boş günü var (zorunlu); 25–26: Cuma eşitliği için kalır. Cuma
+    // masa kuralı (M1, M2, jokerlerden en az 2'si masada) bu küçük kadroda Cuma'yı daralttığından 2 → 4
+    expect(ard).toBeLessThanOrEqual(4);
   });
 
   test("haftada iki öğlen nöbeti sırayla: herkes bir kez iki almadan kimse yeniden iki almaz", () => {
@@ -150,6 +154,19 @@ describe("öğlen nöbeti", () => {
 
   test("aynı veriyle aynı sonuç", () => {
     expect(JSON.stringify(oglenHesapla(veri, Y, 11))).toBe(JSON.stringify(oglenHesapla(veri, Y, 11)));
+  });
+
+  test("Cuma: onay listesinde Masa 1, Masa 2, Masa 7 ve jokerlerden en az 2 eczacı masada kalır", () => {
+    let cumaSay = 0;
+    for (const m of [10, 11]) for (const [d, k] of Object.entries(veri.oglen[`${Y}-${m}`])) {
+      if (hg(m, +d) !== 4) continue;
+      const og = onayHaftasiHesapla(veri, Y, m, +d - 4).gunler[4];
+      const grup = [og.masa[0], og.masa[1], og.masa[6], ...og.joker].filter(h => h?.id && !h.tekniker).map(h => h.id);
+      const ogle = k.e.filter(id => grup.includes(id)).length;
+      expect(ogle, `${+d}.${m + 1}: grup ${grup.join(",")}, öğlen ${k.e.join(",")}`).toBeLessThanOrEqual(Math.max(0, grup.length - 2));
+      cumaSay++;
+    }
+    expect(cumaSay).toBeGreaterThan(5);
   });
 });
 
