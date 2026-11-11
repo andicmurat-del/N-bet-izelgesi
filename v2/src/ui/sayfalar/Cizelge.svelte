@@ -230,7 +230,7 @@
   {:else if gorunum === "onay"}
     <OnayListesi />
   {:else if gorunum === "oglen"}
-    <OglenNobeti git={ad => (ad === "nobet" ? (gorunum = "nobet") : git(ad))} />
+    <OglenNobeti git={ad => (ad === "nobet" || ad === "onay" ? (gorunum = ad) : git(ad))} />
   {:else if gorunum === "liste"}
     {#if c}<CalismaListesi />
     {:else}

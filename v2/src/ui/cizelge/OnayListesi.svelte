@@ -2,7 +2,7 @@
   // Onay listesi masaları: haftalık tablo (satırlarda Pazartesi–Cuma, sütunlarda Masa 1–7 ve jokerler). Yerler her gün
   // program tarafından dağıtılır (kimse önceki gün oturduğu yere oturmaz; yıl boyunca herkes her masaya eşit oturur).
   // Kurallar motor/onayMasa.ts'de.
-  import { depo, veriAnlik, onayGunuAyarla } from "../../veri/depo.svelte";
+  import { depo, veriAnlik, onayGunuAyarla, haftaOnayi, haftayiOnayla, haftaOnayiniKaldir } from "../../veri/depo.svelte";
   import { onayHaftasiHesapla, ONAY_YERLERI, type OnayHaftasi, type OnayGunu } from "../../motor";
   import { AYLAR, GUN_UZUN } from "../../veri/tarih";
   import { ciktiPaketi } from "../../disa/yukle";
@@ -11,6 +11,7 @@
   import Bilgi from "../ortak/Bilgi.svelte";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
+  import OnaySorusu from "../ortak/OnaySorusu.svelte";
 
   type Gun = [number, number, number];
   const kaydir = (y: number, m: number, d: number, k: number): Gun => { const t = new Date(y, m, d + k); return [t.getFullYear(), t.getMonth(), t.getDate()]; };
@@ -33,6 +34,13 @@
   const H = $derived(hafta ? (onayHaftasiHesapla(veriAnlik(), ...hafta.pzt) as OnayHaftasi) : null);
   const tarih = ([a, b, c]: Gun) => `${c} ${AYLAR[b]}${a !== y ? " " + a : ""}`;
   const haftaMetni = (h: { gunler: Gun[] }) => { const a = h.gunler[0], b = h.gunler[4]; return a[1] === b[1] ? `${a[2]}–${b[2]} ${AYLAR[b[1]]}` : `${tarih(a)} – ${tarih(b)}`; };
+  // haftalık onay: onaylanan hafta elle değiştirilemez (sonradan girilen izin / rapor yine yerleri değiştirir); öğlen
+  // nöbeti, haftanın onay listesi onaylanmadan oluşturulmaz; onay kalkarsa haftanın öğlen nöbeti de silinir
+  const onay = $derived(hafta ? haftaOnayi("onay", ...hafta.pzt) : undefined);
+  const onayMetni = $derived(onay ? (onay.zaman > 1 ? new Date(onay.zaman).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" }) : "önceki sürümde") + (onay.kim ? " · " + onay.kim : "") : "");
+  const oglenVar = $derived(!!hafta && hafta.gunler.some(([a, b, c]) => depo.veri.oglen[`${a}-${b}`]?.[c]));
+  let onaySor = $state(false), kaldirSor = $state(false);
+  function onayiKaldir() { if (oglenVar) { kaldirSor = true; return; } if (hafta) haftaOnayiniKaldir("onay", ...hafta.pzt); }
   const jokerSatir = $derived(Math.max(2, ...(H?.gunler ?? []).map(g => g.joker.length)));
 
   const yerBaslik = (k: string) => (k === "J" ? "Joker" : "Masa " + k);
@@ -51,7 +59,7 @@
     return l;
   };
   const digerleri = $derived(degis ? Object.entries(gunYerleri(degis.g)).filter(([id]) => Number(id) !== degis!.id).map(([id, yer]) => ({ id: Number(id), yer, ad: [...degis!.g.masa, ...degis!.g.joker].find(h => h.id === Number(id))?.ad ?? "" })) : []);
-  function degisAc(g: OnayGunu, id: number, ad: string, yer: string) { degis = { g, id, ad, yer }; degisAcik = true; }
+  function degisAc(g: OnayGunu, id: number, ad: string, yer: string) { if (onay) return; degis = { g, id, ad, yer }; degisAcik = true; }
   function degistir(baska: { id: number; yer: string }) {
     if (!degis) return;
     const l = gunYerleri(degis.g);
@@ -82,15 +90,21 @@
 </script>
 
 <IslemAlani>
+  {#if H}
+    {#if onay}<button class="dugme" onclick={onayiKaldir}>Onayı kaldır</button>
+    {:else}<button class="dugme ana" onclick={() => (onaySor = true)}><Ikon ad="tamam" />Haftayı onayla</button>{/if}
+  {/if}
   {#if H}<button class="dugme" onclick={pdf}><Ikon ad="indir" />Haftalık PDF</button>{/if}
 </IslemAlani>
 {#if durum}<p class="bant" role="status">{durum}</p>{/if}
+{#if onay}<p class="bant bilgi">Bu hafta onaylandı: {onayMetni}. Onaylı hafta elle değiştirilemez; sonradan girilen izin ve raporlar yerleri yine değiştirir. Öğlen nöbeti bu haftanın onayından sonra yazılabilir.</p>
+{:else if H}<p class="bant">Bu hafta onaylanmadı. Öğlen nöbeti, haftanın onay listesi onaylandıktan sonra yazılabilir.</p>{/if}
 
 <div class="haftalar" role="group" aria-label="Hafta">
-  {#each haftalar as h, i}<button class="hafta" aria-pressed={secili === i} onclick={() => (secili = i)}><b>{i + 1}. hafta</b><small>{haftaMetni(h)}</small></button>{/each}
+  {#each haftalar as h, i}<button class="hafta" aria-pressed={secili === i} onclick={() => (secili = i)}><b>{i + 1}. hafta{#if haftaOnayi("onay", ...h.pzt)}{" "}<Ikon ad="tamam" boyut={13} />{/if}</b><small>{haftaMetni(h)}{haftaOnayi("onay", ...h.pzt) ? " · onaylı" : ""}</small></button>{/each}
 </div>
 
-<Bilgi baslik="Onay masaları nasıl dağıtılır?"><p>Yerler her gün yeniden dağıtılır; sabit sıra yoktur. O gün çalışan eczacılar (acilde tutanlar dahil, kemoterapi eczacıları hariç; nöbet ertesi, izin, rapor olan yok) Masa 1–6'ya oturur. 7. kişi joker olur; 8 ve daha çok kişide fazlalardan ilki Masa 7'ye oturur, kalanlar joker. Kimse önceki çalıştığı gün oturduğu yere oturmaz, mümkünse aynı hafta içinde de aynı yere ikinci kez oturmaz. Yıl boyunca herkes her masaya (ve jokerliğe) eşit oturur: her gün kişi, yıl içinde en az oturduğu yere yerleştirilir. Cuma hafta sonu listeleriyle birlikte 3 günlük iş olduğundan ayrı sayılır: Cumalar kendi arasında, Pazartesi–Perşembe kendi arasında eşitlenir. İlk 6 masa dolmazsa o günün hazırlama teknikerlerinden biri oturur (yıl boyunca sırayla). Tablodaki bir kişiye dokunarak o gün başka biriyle yerini değiştirebilirsiniz; gün elle kaydedilir. Hafta içi, arife dahil; resmi tatilde liste yok.</p></Bilgi>
+<Bilgi baslik="Onay masaları nasıl dağıtılır?"><p>Yerler her gün yeniden dağıtılır; sabit sıra yoktur. O gün çalışan eczacılar (acilde tutanlar dahil, kemoterapi eczacıları hariç; nöbet ertesi, izin, rapor olan yok) Masa 1–6'ya oturur. 7. kişi joker olur; 8 ve daha çok kişide fazlalardan ilki Masa 7'ye oturur, kalanlar joker. Kimse önceki çalıştığı gün oturduğu yere oturmaz, mümkünse aynı hafta içinde de aynı yere ikinci kez oturmaz. Yıl boyunca herkes her masaya (ve jokerliğe) eşit oturur: her gün kişi, yıl içinde en az oturduğu yere yerleştirilir. Cuma hafta sonu listeleriyle birlikte 3 günlük iş olduğundan ayrı sayılır: Cumalar kendi arasında, Pazartesi–Perşembe kendi arasında eşitlenir. İlk 6 masa dolmazsa o günün hazırlama teknikerlerinden biri oturur (yıl boyunca sırayla). Tablodaki bir kişiye dokunarak o gün başka biriyle yerini değiştirebilirsiniz; gün elle kaydedilir. Liste haftalık onaylanır; öğlen nöbeti, haftanın onay listesi onaylandıktan sonra yazılır. Hafta içi, arife dahil; resmi tatilde liste yok.</p></Bilgi>
 
 {#if H}
     {#each H.gunler.filter(g => g.uyari.length) as g}<p class="bant hata">{g.d} {AYLAR[g.m]}: {g.uyari.join(" ")}</p>{/each}
@@ -108,11 +122,11 @@
                   {#each Array.from({ length: 7 }, (_, i) => i) as i}
                     {@const h = g.masa[i]}
                     {#if !h?.id}<td class:bos={i < 6} class:ek={i === 6}>{i < 6 ? "Boş" : "–"}</td>
-                    {:else}<td class:yerine={!!h.tekniker} class:ek={i === 6} title={h.not}>{#if h.tekniker}<b>{h.ad}</b>{:else}<button class="kisi-d" onclick={() => degisAc(g, h.id!, h.ad, String(i + 1))} aria-label="{h.ad}, Masa {i + 1}: yer değiştir"><b>{h.ad}</b></button>{/if}</td>{/if}
+                    {:else}<td class:yerine={!!h.tekniker} class:ek={i === 6} title={h.not}>{#if h.tekniker}<b>{h.ad}</b>{:else if onay}<b>{h.ad}</b>{:else}<button class="kisi-d" onclick={() => degisAc(g, h.id!, h.ad, String(i + 1))} aria-label="{h.ad}, Masa {i + 1}: yer değiştir"><b>{h.ad}</b></button>{/if}</td>{/if}
                   {/each}
                   {#each Array.from({ length: jokerSatir }, (_, i) => i) as i}
                     {@const h = g.joker[i]}
-                    {#if !h}<td class="joker" class:ilk-joker={i === 0}>–</td>{:else}<td class="joker" class:ilk-joker={i === 0}><button class="kisi-d" onclick={() => degisAc(g, h.id!, h.ad, "J")} aria-label="{h.ad}, joker: yer değiştir"><b>{h.ad}</b></button></td>{/if}
+                    {#if !h}<td class="joker" class:ilk-joker={i === 0}>–</td>{:else if onay}<td class="joker" class:ilk-joker={i === 0}><b>{h.ad}</b></td>{:else}<td class="joker" class:ilk-joker={i === 0}><button class="kisi-d" onclick={() => degisAc(g, h.id!, h.ad, "J")} aria-label="{h.ad}, joker: yer değiştir"><b>{h.ad}</b></button></td>{/if}
                   {/each}
                 {/if}
               </tr>
@@ -146,7 +160,19 @@
     {/snippet}
   </Pencere>
 {/if}
+{#if hafta}
+  <OnaySorusu bind:acik={onaySor} ne="{haftaMetni(hafta)} onay listesi" sorunlar={(H?.gunler ?? []).flatMap(g => g.uyari.map(u => `${g.d} ${AYLAR[g.m]}: ${u}`))} onaylayan={depo.veri.kurum.onaylayan} onayla={() => haftayiOnayla("onay", ...hafta.pzt)} />
+  <Pencere bind:acik={kaldirSor} baslik="Onay kaldırılsın mı?" altBaslik="{haftaMetni(hafta)} onay listesi">
+    <p>Bu haftanın öğlen nöbeti yazılmış. Onay listesinin onayı kalkınca haftanın öğlen nöbeti de (onaylıysa onayıyla birlikte) silinir; onay listesini yeniden onaylayıp öğlen nöbetini yeniden oluşturmanız gerekir.</p>
+    {#snippet altlik()}
+      <span style="flex:1"></span>
+      <button class="dugme" onclick={() => (kaldirSor = false)}>Vazgeç</button>
+      <button class="dugme tehlike" onclick={() => { kaldirSor = false; haftaOnayiniKaldir("onay", ...hafta.pzt); }}>Onayı kaldır, öğlen nöbetini sil</button>
+    {/snippet}
+  </Pencere>
+{/if}
 <style>
+  .bant.bilgi { background: var(--bilgi-zemin); color: var(--bilgi); }
   .haftalar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--b3); }
   .hafta { display: grid; text-align: left; gap: 1px; padding: 6px 14px; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); color: var(--lacivert); cursor: pointer; font: inherit; }
   .hafta b { font-size: var(--f-sm); }
