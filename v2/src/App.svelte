@@ -12,7 +12,7 @@
   import Ayarlar from "./ui/sayfalar/Ayarlar.svelte";
 
   // ana bölümler: Günlük Eczane (nöbet, çalışma, öğlen, hazırlama listeleri, puantaj, izinler, raporlar), Acil Eczane
-  // (nöbet listesi, puantaj, izinler, raporlar), Ayarlar (genel, personel)
+  // (nöbet listesi, puantaj, izinler, raporlar), Ayarlar (genel, personel, kurallar)
   const SAYFALAR = [
     { ad: "gunluk", baslik: "Günlük Eczane", kisa: "Günlük", ikon: "takvim" },
     { ad: "acil", baslik: "Acil Eczane", kisa: "Acil", ikon: "acil" },
@@ -32,7 +32,7 @@
     if (h === "kisiler") { ayarAlt = "personel"; return "ayarlar"; }
     if (h === "gunluk" && GUNLUK_ALT.includes(alt as GunlukGorunum)) gunlukAlt = alt as GunlukGorunum;
     if (h === "acil" && (alt === "acil" || alt === "puantaj" || alt === "izinler" || alt === "raporlar")) acilAlt = alt;
-    if (h === "ayarlar" && (alt === "genel" || alt === "personel")) ayarAlt = alt;
+    if (h === "ayarlar" && (alt === "genel" || alt === "personel" || alt === "kurallar")) ayarAlt = alt;
     return (SAYFALAR.find(s => s.ad === h)?.ad ?? "gunluk") as SayfaAdi;
   };
   let sayfa = $state<SayfaAdi>(hashOku());
