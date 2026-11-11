@@ -16,7 +16,7 @@ export const acilKadrosunda = (s: { role: string; acilTutar?: true }) => s.role 
 const ACIL_GUNLUK = 2;
 
 /** amaç ağırlıkları (küçük daha iyi) */
-const W = { ardArda: 1000, ucBes: 500, eksik: 5000, hsFazla: 60, araIki: 3, toplam: 6, tur: 3, fm: 8, istemiyor: 20, istiyor: 1, esVar: 300, izinOnce: 200 };
+export const W = { ardArda: 1000, ucBes: 500, eksik: 5000, hsFazla: 60, araIki: 3, toplam: 6, tur: 3, fm: 8, istemiyor: 20, istiyor: 1, esVar: 300, izinOnce: 200 };
 
 export interface AcilSonucu { gunler: { gun: number; ids: number[]; elle?: true }[]; uyarilar: string[] }
 

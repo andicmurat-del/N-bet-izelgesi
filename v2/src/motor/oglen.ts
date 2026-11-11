@@ -34,7 +34,7 @@ export const oglenGrubu = (rol: string): Grup | null => (rol === "eczaci" ? "e" 
 /** amaç ağırlıkları (küçük daha iyi): haftada üçüncü kez çok ağır; haftada ikinci kez her seferinde ceza (kişi
  *  yetiyorsa herkes bir kez); teknikerde Pazartesi–Perşembe muaf olmayana yazmak haftada üçüncü kezden hafif, öteki her
  *  şeyden ağır; o hafta yazılabilen biri hiç yazılmamışken başkasına iki yazmak çok ağır; haftada iki alma sırası yıllık eşitlikten önce; mümkünse o günün nöbetçisine yazılmaz; haftada iki alan kişinin iki öğlen nöbeti mümkünse art arda günlere düşmez (nöbetçiye yazmamaktan hafif); art arda iki Cuma haftada iki sırasıyla yarışabilsin diye ağır */
-const W = { masaGrubu: 5000, hafta3: 1000, grupDisi: 500, bosKalan: 100, ikiSira: 30, hafta: 3, toplam: 2, cuma: 3, cumaArdArda: 50, nobetci: 3, ardArda: 2 };
+export const W = { masaGrubu: 5000, hafta3: 1000, grupDisi: 500, bosKalan: 100, ikiSira: 30, hafta: 3, toplam: 2, cuma: 3, cumaArdArda: 50, nobetci: 3, ardArda: 2 };
 
 export interface OglenGunSonucu { gun: number; dw: number; e: number[]; t: number[]; nobetci: number[]; elle?: true; sabit?: OglenSabit }
 export interface OglenSonucu { gunler: OglenGunSonucu[]; uyarilar: string[] }

@@ -27,7 +27,7 @@ export const ONAY_YERLERI = ["1", "2", "3", "4", "5", "6", "7", "J"] as const;
 export type OnayYeri = (typeof ONAY_YERLERI)[number];
 /** dağıtım ağırlıkları: yıl içinde o yerde aynı tür günde (Cuma ya da Pazartesi–Perşembe) oturulan her gün; tüm
  *  günlerin toplamı (eşitlikte ayırıcı); aynı hafta içinde aynı yere ikinci kez; önceki gün aynı yer */
-const AGIR = { sayi: 10, toplam: 1, hafta: 25, dun: 1e6 } as const;
+export const AGIR = { sayi: 10, toplam: 1, hafta: 25, dun: 1e6 } as const;
 
 /** en az maliyetli atama (Macar yöntemi): satır sayısı ≤ sütun sayısı; her satıra bir sütun */
 export function enAzAtama(c: number[][]): number[] {

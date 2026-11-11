@@ -6,12 +6,14 @@
   import Ikon from "../ortak/Ikon.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
   import Kisiler from "./Kisiler.svelte";
+  import Kurallar from "./Kurallar.svelte";
   import type { AyarGorunum } from "./sayfaTipleri";
 
   let { gorunum = $bindable("genel") }: { gorunum?: AyarGorunum } = $props();
   const GORUNUMLER = [
     { ad: "genel", baslik: "Genel", uzun: "Ayarlar", aciklama: "Kurum bilgileri, günlük ve acil eczane nöbet kuralları, puantaj ve yedek." },
     { ad: "personel", baslik: "Personel", uzun: "Personel", aciklama: "Nöbet ve hazırlama tutan herkes. İşe yeni başlayan ya da ayrılan kişinin tarihlerini girin; o tarihlerin dışında görev yazılmaz." },
+    { ad: "kurallar", baslik: "Kurallar", uzun: "Kurallar", aciklama: "Programın nöbet, liste ve puantaj kuralları; başka bir yapay zekâya ya da yeni çalışana vermek için kopyalanabilir." },
   ] as const;
   const aktif = $derived(GORUNUMLER.find(g => g.ad === gorunum) ?? GORUNUMLER[0]);
 
@@ -62,6 +64,8 @@
 
 {#if gorunum === "personel"}
   <Kisiler gomulu />
+{:else if gorunum === "kurallar"}
+  <Kurallar />
 {:else}
 
 <div class="bolumler">
