@@ -261,6 +261,9 @@ describe("öğlen nöbeti haftalık oluşturulur", () => {
     const hf = {};
     r.parcalar.flatMap(p => p.gunler).forEach(g => [...g.e, ...g.t].forEach(id => { hf[id] = (hf[id] || 0) + 1; }));
     expect(Math.max(...Object.values(hf))).toBeLessThanOrEqual(2);
+    // ay geçişinde de aynı kişi art arda iki güne (30 Kasım, 1 Aralık) yazılmaz
+    const [p1, p2] = r.parcalar, g30 = p1.gunler[0], g1 = p2.gunler.find(g => g.gun === 1);
+    expect([...g30.e, ...g30.t].filter(id => [...g1.e, ...g1.t].includes(id))).toEqual([]);
   });
 
   test("önceki haftalar değişmez ve eşitliğe sayılır; hafta hafta yazınca yıl eşitliği korunur", () => {

@@ -164,6 +164,12 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
       if (r) [...(r.e || []), ...(r.t || [])].forEach(id => oncekiCuma.add(id));
     }
   }
+  // ay hafta ortasında başlıyorsa (1'i Salı–Cuma) önceki ayın son günündeki öğlen nöbetçileri: ayın 1'inde art arda gün
+  const oncekiGun = new Set<number>();
+  if (ilkDw > 0 && ilkDw <= CUMA) {
+    const o = oncekiAy(y, m), r = (B.oglen[ayAnahtari(o.y, o.m)] || {})[ayGunSayisi(o.y, o.m)];
+    if (r) [...(r.e || []), ...(r.t || [])].forEach(id => oncekiGun.add(id));
+  }
   const gunler: OglenGunSonucu[] = [], disiG: Set<number>[] = [], mevcutG: Record<Grup, number[][]> = { e: [], t: [] }, aday: Record<Grup, number[][]> = { e: [], t: [] }, gerek: Record<Grup, number[]> = { e: [], t: [] };
   // sabit: değişmeyecek kişiler (gün başına, grup başına); tamSabit: gün hiç değişmez (elle ya da onarımda geçmiş gün)
   const sabit: Record<Grup, number[][]> = { e: [], t: [] }, tamSabit: boolean[] = [];
@@ -240,7 +246,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
         const k = haftaNo[i] + ":" + id; hf[k] = (hf[k] || 0) + 1;
         if (nobetciMi[i].has(id)) j += W.nobetci;
         if (g === "t" && disiG[i].has(id)) j += W.grupDisi;
-        if (ardisik[i] && sec[i - 1].includes(id)) j += W.ardArda;
+        if (ardisik[i] ? sec[i - 1].includes(id) : gunler[i].gun === 1 && oncekiGun.has(id)) j += W.ardArda;
         const oc = oncekiCumaNo[i];
         if (oc >= 0 ? sec[oc].includes(id) : oc === -2 && oncekiCuma.has(id)) j += W.cumaArdArda;
       }
