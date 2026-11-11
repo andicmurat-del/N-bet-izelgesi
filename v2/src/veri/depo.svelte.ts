@@ -29,6 +29,10 @@ export function bosVeri(): Veri {
   };
 }
 
+/** Dışarıdan gelen metni (yedek dosyası, tarayıcı kaydı) okur. "__proto__" adlı alanlar atılır: böyle bir alan
+ *  doğrulama ve kopyalama sırasında nesnelerin ortak atasına (Object.prototype) yazılmasına yol açabiliyordu. */
+export const guvenliJson = (metin: string): unknown => JSON.parse(metin, (k, x) => (k === "__proto__" ? undefined : x));
+
 /** öğlen gününün elle yerleri: yalnız o günün listesinde olan kişiler; boş yer sayısı 0–3; hiçbiri yoksa undefined */
 function oglenSabitDogrula(x: unknown, e: number[], t: number[]): OglenSabit | undefined {
   if (!x || typeof x !== "object") return undefined;
@@ -77,9 +81,12 @@ export function veriyiDogrula(ham: unknown): Veri {
   const kodlar: PuantajKodu[] = ["M", "N", "H", "NI", "YI", "R", "DI", "B"];
   for (const [ayK, kisiler] of Object.entries(nesne(o.puantaj))) {
     if (!/^\d{4}-\d{1,2}$/.test(ayK)) continue;
-    for (const [id, gunler] of Object.entries(nesne(kisiler)))
+    // kişi no ve gün yalnız sayı olabilir (başka anahtar, ör. "__proto__", yazılmaz)
+    for (const [id, gunler] of Object.entries(nesne(kisiler))) {
+      if (!/^\d{1,9}$/.test(id)) continue;
       for (const [gun, kod] of Object.entries(nesne(gunler)))
-        if (kodlar.includes(kod as PuantajKodu)) ((v.puantaj[ayK] ??= {})[id] ??= {})[gun] = kod as PuantajKodu;
+        if (/^\d{1,2}$/.test(gun) && Number(gun) >= 1 && Number(gun) <= 31 && kodlar.includes(kod as PuantajKodu)) ((v.puantaj[ayK] ??= {})[id] ??= {})[gun] = kod as PuantajKodu;
+    }
   }
   const kisiIdleri = new Set(v.staff.map(k => k.id));
   for (const [ayK, gunler] of Object.entries(nesne(o.acil))) {
@@ -141,7 +148,7 @@ export function veriyiDogrula(ham: unknown): Veri {
   const tamsayi = (x: unknown) => Number.isInteger(x);
   const kodMu = (x: unknown) => kodlar.includes(x as PuantajKodu);
   v.degisimler = (Array.isArray(o.degisimler) ? o.degisimler : [])
-    .filter((d: any) => d && [d.id, d.y, d.m, d.gun, d.cik, d.yer].every(tamsayi) && (d.gorev === "N" || d.gorev === "H") && kodMu(d.cikYeni) && (d.yerYeni === "N" || d.yerYeni === "H"))
+    .filter((d: any) => d && [d.id, d.y, d.m, d.gun, d.cik, d.yer].every(tamsayi) && d.m >= 0 && d.m <= 11 && d.gun >= 1 && d.gun <= 31 && (d.gorev === "N" || d.gorev === "H") && kodMu(d.cikYeni) && (d.yerYeni === "N" || d.yerYeni === "H"))
     .slice(-300)
     .map((d: any) => ({
       id: d.id, zaman: Number(d.zaman) || 0, y: d.y, m: d.m, gun: d.gun, cik: d.cik, yer: d.yer,
@@ -157,6 +164,7 @@ export function veriyiDogrula(ham: unknown): Veri {
   const sa = nesne(o.servisAyar);
   for (const [ad, k] of Object.entries(nesne(sa.svc))) {
     const x = nesne(k);
+    if (ad === "__proto__") continue;
     v.servisAyar.svc[ad] = { z: sayi(x.z, 1, 10, 1), h: sayi(x.h, 0, 999, 0), multi: x.multi === true, on: x.on !== false };
   }
   v.servisAyar.ekstra = (Array.isArray(sa.ekstra) ? sa.ekstra : [])
@@ -187,7 +195,7 @@ function yukle(): Veri {
   let s: string | null = null;
   try { s = localStorage.getItem(ANAHTAR); } catch { return bosVeri(); }
   if (!s) return bosVeri();
-  try { return veriyiDogrula(JSON.parse(s)); }
+  try { return veriyiDogrula(guvenliJson(s)); }
   catch {
     // kayıt okunamadı: boş veri kaydedilmeden önce ham hali ayrı anahtara alınır, kullanıcıya söylenir
     try { localStorage.setItem(ANAHTAR + "-okunamayan", s); } catch { /* yer yoksa yapılacak bir şey yok */ }
@@ -230,21 +238,27 @@ function oglenOnar() {
   } catch { /* onarım yapılamazsa kayıt yine yazılır; ekranda bozuk günler işaretli kalır */ }
 }
 let kayitZamanlayici: ReturnType<typeof setTimeout> | undefined;
+function simdiKaydet() {
+  clearTimeout(kayitZamanlayici);
+  kayitZamanlayici = undefined;
+  // başka pencere yeni veriyi yazdıysa bu penceredeki eski veriyle üzerine yazılmaz
+  if (depo.baskaPencere) return;
+  oglenOnar();
+  gecmiseIsle();
+  try {
+    localStorage.setItem(ANAHTAR, JSON.stringify(veriAnlik()));
+    if (depo.kayitSorunu !== acilisSorunu && !depo.baskaPencere) depo.kayitSorunu = "";
+  } catch {
+    depo.kayitSorunu = "Veriler bu tarayıcıya kaydedilemedi (gizli pencere ya da depolama dolu olabilir). Sayfayı kapatmadan önce Ayarlar'dan yedek alın.";
+  }
+}
 function kaydet() {
   clearTimeout(kayitZamanlayici);
-  kayitZamanlayici = setTimeout(() => {
-    // başka pencere yeni veriyi yazdıysa bu penceredeki eski veriyle üzerine yazılmaz
-    if (depo.baskaPencere) return;
-    oglenOnar();
-    gecmiseIsle();
-    try {
-      localStorage.setItem(ANAHTAR, JSON.stringify(veriAnlik()));
-      if (depo.kayitSorunu !== acilisSorunu && !depo.baskaPencere) depo.kayitSorunu = "";
-    } catch {
-      depo.kayitSorunu = "Veriler bu tarayıcıya kaydedilemedi (gizli pencere ya da depolama dolu olabilir). Sayfayı kapatmadan önce Ayarlar'dan yedek alın.";
-    }
-  }, 150);
+  kayitZamanlayici = setTimeout(simdiKaydet, 150);
 }
+/** Bekleyen kayıt varsa hemen yazar: değişiklikten hemen sonra sayfa kapanır ya da arka plana alınırsa (telefonda sekme
+ *  kapatma, uygulama değiştirme) son değişiklik kaybolmasın */
+export function bekleyenKaydiYaz() { if (kayitZamanlayici !== undefined) simdiKaydet(); }
 $effect.root(() => {
   $effect(() => {
     veriAnlik();
@@ -253,9 +267,14 @@ $effect.root(() => {
 });
 // aynı tarayıcıda başka bir pencere (sekme) veriyi değiştirince: bu pencere kaydetmeyi durdurur ve uyarır
 export const BASKA_PENCERE_UYARISI = "Veriler başka bir pencerede değiştirildi. Bu penceredeki değişiklikler artık kaydedilmiyor; güncel verilerle devam etmek için sayfayı yenileyin.";
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", bekleyenKaydiYaz);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") bekleyenKaydiYaz(); });
+}
 if (typeof window !== "undefined") window.addEventListener("storage", e => {
   if (e.key !== ANAHTAR && e.key !== null) return;
   clearTimeout(kayitZamanlayici);
+  kayitZamanlayici = undefined;
   depo.baskaPencere = true;
   depo.kayitSorunu = BASKA_PENCERE_UYARISI;
 });
@@ -445,8 +464,12 @@ export function eskimeNedenleri(y: number, m: number): string[] {
   return n;
 }
 
-export function cizelgeKaydet(y: number, m: number, days: AyCizelgesi["days"], uyarilar: string[]) {
+/** Oluşturulan çizelgeyi kaydeder. Ay bu arada onaylandıysa (oluşturma sürerken başka sayfaya geçilip onaylanabilir)
+ *  yazılmaz: false döner */
+export function cizelgeKaydet(y: number, m: number, days: AyCizelgesi["days"], uyarilar: string[]): boolean {
+  if (ayCizelgesi(y, m)?.onay) return false;
   depo.veri.schedules[ayAnahtari(y, m)] = { year: y, month: m, days, uyarilar, olusturma: Date.now() };
+  return true;
 }
 
 export function gunuGuncelle(y: number, m: number, gun: number, nobetciler: Gorevli[], hazirlama: Gorevli[]) {
@@ -612,7 +635,7 @@ export function yedekVerisi(): string {
 }
 export function yedektenYukle(metin: string): { tamam: true; atlanan: number } | { tamam: false; hata: string } {
   let o: any;
-  try { o = JSON.parse(metin); } catch { return { tamam: false, hata: "Dosya okunamadı: geçerli bir yedek dosyası değil." }; }
+  try { o = guvenliJson(metin); } catch { return { tamam: false, hata: "Dosya okunamadı: geçerli bir yedek dosyası değil." }; }
   if (!o || o.uygulama !== "nobet-cizelgesi-v2" || !o.veri || typeof o.veri !== "object") return { tamam: false, hata: "Bu dosya bu uygulamanın yedeği değil." };
   if (!Array.isArray(o.veri.staff) || typeof o.veri.schedules !== "object" || !o.veri.schedules) return { tamam: false, hata: "Yedek dosyası eksik ya da bozuk; mevcut veriler değiştirilmedi." };
   const v = veriyiDogrula(o.veri);
@@ -629,7 +652,7 @@ export function yuklemeOncesineDon(): boolean {
   try {
     const s = localStorage.getItem(ANAHTAR + "-yukleme-oncesi");
     if (!s) return false;
-    depo.veri = veriyiDogrula(JSON.parse(s));
+    depo.veri = veriyiDogrula(guvenliJson(s));
     gecmisiSifirla();
     localStorage.removeItem(ANAHTAR + "-yukleme-oncesi");
     return true;
