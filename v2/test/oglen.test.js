@@ -185,24 +185,26 @@ describe("öğlen nöbeti: elle düzenleme ve sonradan izin / rapor", () => {
     const v = kopya(veri), kayit = v.oglen[ayK];
     const gun = Number(Object.keys(kayit).find(d => Number(d) >= 16 && kayit[d].e.length)), kim = kayit[gun].e[0];
     v.prefs[`${kim}-${Y}-10-${gun}`] = "izinli";
-    const o = oglenOnarimlariHesapla(v, 20261101);
-    expect(o.map(x => x.m)).toEqual([10]);
+    // izin onay listesinin yıl sırasını da değiştirir: sonraki Cumalarda masa kuralı bozulduysa onlar da onarılır
+    const o = oglenOnarimlariHesapla(v, 20261101).filter(x => x.m === 10);
+    expect(o.length).toBe(1);
     const yeni = Object.fromEntries(o[0].gunler.map(g => [g.gun, { e: g.e, t: g.t }]));
     expect(yeni[gun].e).not.toContain(kim);
     expect(yeni[gun].e.length).toBe(kayit[gun].e.length);
-    for (const d of Object.keys(kayit)) if (Number(d) !== gun) expect(yeni[d]).toEqual({ e: kayit[d].e, t: kayit[d].t });
+    for (const d of Object.keys(kayit)) if (Number(d) !== gun && hg(10, +d) !== 4) expect(yeni[d]).toEqual({ e: kayit[d].e, t: kayit[d].t });
     // onarılmış hâl yeniden onarım gerektirmez
     v.oglen[ayK] = yeni;
-    expect(oglenOnarimlariHesapla(v, 20261101)).toEqual([]);
+    expect(oglenOnarimlariHesapla(v, 20261101).filter(x => x.m === 10)).toEqual([]);
   });
 
   test("geçmiş günler ve elle düzenlenen günler onarılmaz", () => {
     const v = kopya(veri), kayit = v.oglen[ayK];
     const kim = kayit[3].e[0];
     v.prefs[`${kim}-${Y}-10-3`] = "izinli";
-    expect(oglenOnarimlariHesapla(v, 20261110)).toEqual([]);   // 3 Kasım geçmişte
+    const gun3 = (o) => o.filter(x => x.m === 10).map(x => x.gunler.find(z => z.gun === 3));
+    gun3(oglenOnarimlariHesapla(v, 20261110)).forEach(g => expect(g.e).toEqual(kayit[3].e));   // 3 Kasım geçmişte
     kayit[3].elle = true;
-    expect(oglenOnarimlariHesapla(v, 20261101)).toEqual([]);   // elle düzenlenmiş
+    gun3(oglenOnarimlariHesapla(v, 20261101)).forEach(g => expect(g.e).toEqual(kayit[3].e));   // elle düzenlenmiş
   });
 
   // 3 Kasım 2026 Salı: 2 eczacı + 1 tekniker
@@ -228,6 +230,20 @@ describe("öğlen nöbeti: elle düzenleme ve sonradan izin / rapor", () => {
     expect(g.e.length).toBe(2);
     // onarım da boş yeri doldurmaz, elle yazılan kişiye dokunmaz
     expect(oglenOnarimlariHesapla(v, 20261101).every(o => o.gunler.find(x => x.gun === 3).t.length === 0)).toBe(true);
+  });
+
+  test("Cuma masa kuralı sonradan bozulursa (izinle onay listesi değişti) onarım düzeltir; elle yazılan gün değişmez", () => {
+    const v = kopya(veri), og = onayHaftasiHesapla(v, Y, 10, 23).gunler[4];   // 27 Kasım Cuma
+    const grup = [og.masa[0], og.masa[1], og.masa[6], ...og.joker].filter(h => h?.id && !h.tekniker).map(h => h.id);
+    const sinir = Math.max(0, grup.length - 2), k = v.oglen[ayK][27];
+    // kayıtta gruptan sınırdan fazla kişi var (onay listesi sonradan değişmiş gibi)
+    v.oglen[ayK][27] = { e: [...grup.slice(0, sinir + 1), ...k.e.filter(id => !grup.includes(id))].slice(0, 3), t: k.t };
+    const o = oglenOnarimlariHesapla(v, 20261101), g = o[0].gunler.find(x => x.gun === 27);
+    expect(g.e.filter(id => grup.includes(id)).length).toBeLessThanOrEqual(sinir);
+    expect(g.e.length).toBe(3);
+    // elle yazılmışsa dokunulmaz
+    v.oglen[ayK][27].sabit = { e: v.oglen[ayK][27].e.slice(), t: [] };
+    expect(oglenOnarimlariHesapla(v, 20261101).every(x => x.m !== 10 || x.gunler.find(z => z.gun === 27).e.join() === v.oglen[ayK][27].e.join())).toBe(true);
   });
 
   test("onarım elle yazılan kişiyi değiştirmez, öteki yerleri onarır", () => {

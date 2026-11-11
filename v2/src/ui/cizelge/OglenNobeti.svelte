@@ -6,7 +6,7 @@
   // O günün çalışma listesinden (puantaj) yazılır; yıl boyunca toplam ve Cuma sayısı eşit tutulur. Haftalık oluşturulur
   // ve onaylanır (ay sınırını aşan hafta tek parça); haftanın onay listesi onaylanmadan oluşturulmaz.
   import { depo, veriAnlik, aydaCalisanlar, ayCizelgesi, oglenHaftaKaydet, oglenHaftasiniSil, oglenGunuAyarla, resmiTatilMi, arifeMi, haftaOnayi, haftayiOnayla, haftaOnayiniKaldir } from "../../veri/depo.svelte";
-  import { OGLEN_GEREK, oglenGrubu, oglenHaftaHesapla, oglenYillikHesapla } from "../../motor";
+  import { OGLEN_GEREK, oglenGrubu, oglenHaftaHesapla, oglenYillikHesapla, onayHaftasiHesapla, type OnayHaftasi } from "../../motor";
   import { AYLAR, GUN_UZUN, ayAdi, gunMetni, gunSayisi, haftaGunu, haftaIciGunleri, kisaAd } from "../../veri/tarih";
   import type { OglenGunu } from "../../veri/tipler";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
@@ -79,7 +79,17 @@
   // gün elle düzenlendi mi (günün tamamı ya da bazı yerleri) ve hangi kişiler elle yazıldı
   const elleMi = (k: { elle?: true; sabit?: unknown } | undefined) => !!k && (!!k.elle || !!k.sabit);
   const elleKisi = (g: Gun, id: number) => { const k = kayitAl(g); return !!k && (!!k.elle || !!k.sabit?.e.includes(id) || !!k.sabit?.t.includes(id)); };
-  const sorunlar = $derived(gunler.flatMap(g => { const k = kayitAl(g); return k ? [...k.e, ...k.t].filter(id => !calisiyor(id, g)).map(id => `${tarih(g)}: ${ad(id)} o gün artık mesaide değil (izin ya da rapor sonradan girilmiş); yeniden oluşturun ya da bilerek bırakın.`) : []; }));
+  // Cuma masa kuralı: onay listesinde Masa 1, Masa 2, Masa 7 ve jokerlerden en az 2 eczacı masada kalır
+  const cumaGrubu = $derived.by(() => {
+    const cu = gunler.find(g => cumaMi(g)), k = cu && kayitAl(cu);
+    if (!hafta || !cu || !k) return null;
+    const og = (onayHaftasiHesapla(veriAnlik(), ...hafta.pzt) as OnayHaftasi).gunler[4];
+    if (!og || og.tatil) return null;
+    const l = [og.masa[0], og.masa[1], og.masa[6], ...og.joker].filter(h => h?.id && !h.tekniker).map(h => h!.id as number);
+    const oglende = k.e.filter(id => l.includes(id));
+    return oglende.length > Math.max(0, l.length - 2) ? `${tarih(cu)} Cuma: onay listesinde Masa 1, Masa 2, Masa 7 ve jokerlerden masada ${l.length - oglende.length} eczacı kalıyor (en az 2 olmalı); öğlende: ${oglende.map(ad).join(", ")}. Elle değiştirin ya da yeniden oluşturun.` : null;
+  });
+  const sorunlar = $derived([...gunler.flatMap(g => { const k = kayitAl(g); return k ? [...k.e, ...k.t].filter(id => !calisiyor(id, g)).map(id => `${tarih(g)}: ${ad(id)} o gün artık mesaide değil (izin ya da rapor sonradan girilmiş); yeniden oluşturun ya da bilerek bırakın.`) : []; }), ...(cumaGrubu ? [cumaGrubu] : [])]);
 
   const yillik = $derived(oglenYillikHesapla(veriAnlik(), y, m) as Record<number, { top: number; cuma: number; ay: number; ayCuma: number }>);
   const SIRA: Partial<Record<Rol, number>> = { eczaci: 0, teknisyen: 1 };
