@@ -182,7 +182,7 @@
       <div class="panel-bas"><h2>Servis dağıtımı · {gunAdi(secGun)}</h2>
         <p class="lejant"><span><i class="etk yb">YB</i>Yoğun bakım</span><span><i class="etk zor">ZOR</i>Zor servis</span><span><i class="etk elle">✎</i>Elle atandı</span><span><u class="ort-ornek"></u>Ortalama</span></p></div>
       <div class="tablo-kap">
-        <table class="tablo dagitim">
+        <table class="tablo dagitim koyu-bas">
           <thead><tr><th class="sag">Sıra</th><th>Tekniker</th><th>Servisler <span class="ince">(başka teknikere vermek için servise dokunun)</span></th><th class="sag">Servis</th><th class="sag">YB</th><th class="sag">Zor</th><th class="sag">Yük</th><th>Yük dengesi</th></tr></thead>
           <tbody>
             {#each S.kisi as p, i (p.id)}
@@ -277,7 +277,7 @@
   .not.dip { margin: 0; padding: var(--b2) var(--b4); border-top: 1px solid var(--cizgi-acik); }
   .lejant { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: var(--f-xs); color: var(--yazi-2); }
   .lejant > span { display: inline-flex; align-items: center; gap: 5px; }
-  .ince { font-weight: 400; color: var(--yazi-2); letter-spacing: 0; }
+  .ince { font-weight: 400; color: #BFE3E8; letter-spacing: 0; text-transform: none; }
   .dagitim td { vertical-align: top; }
   .ad-hucre { font-weight: 700; white-space: nowrap; color: var(--lacivert); }
   .servisler { display: flex; flex-wrap: wrap; gap: 4px; min-width: 320px; }

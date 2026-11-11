@@ -177,36 +177,38 @@
   .hafta { display: grid; text-align: left; gap: 1px; padding: 6px 14px; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); color: var(--lacivert); cursor: pointer; font: inherit; }
   .hafta b { font-size: var(--f-sm); }
   .hafta small { font-size: var(--f-xs); color: var(--yazi-2); }
-  .hafta[aria-pressed="true"] { background: var(--vurgu); border-color: var(--vurgu); color: var(--vurgu-yazi); }
-  .hafta[aria-pressed="true"] small { color: var(--vurgu-yazi); opacity: .85; }
+  .hafta[aria-pressed="true"] { background: var(--menu-zemin); border-color: var(--menu-zemin); color: #FFFFFF; }
+  .hafta[aria-pressed="true"] small { color: #BFE3E8; opacity: 1; }
   .bant { padding: var(--b2) var(--b4); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 600; display: flex; gap: 8px; align-items: center; background: var(--vurgu-zemin); color: var(--vurgu); }
   .bant.hata { background: var(--hata-zemin, #fde2e2); color: var(--hata); }
   .panel { margin-bottom: var(--b4); }
   .lejant { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: var(--f-xs); color: var(--yazi-2); }
   .lejant span { display: inline-flex; align-items: center; gap: 5px; }
   .ornek { display: inline-block; width: 14px; height: 12px; border: 1px solid var(--cizgi); }
-  .o-joker { background: var(--arife-zemin); }
+  .o-joker { background: color-mix(in srgb, var(--acik-mavi) 30%, var(--yuzey)); }
   .o-bos { background: var(--hata-zemin, #fde2e2); border-color: var(--hata); }
   .tablo-kap { overflow-x: auto; }
   .onay { width: 100%; min-width: 900px; table-layout: fixed; border-collapse: collapse; font-size: var(--f-sm); }
   .onay th, .onay td { border-bottom: 1px solid var(--cizgi-acik); border-right: 1px solid var(--cizgi-acik); padding: 8px 10px; text-align: center; vertical-align: middle; }
-  .onay thead th { background: var(--tablo-bas); color: var(--lacivert); font-weight: 700; }
+  .onay thead th { background: var(--serit); color: #FFFFFF; font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; border-right-color: color-mix(in srgb, var(--acik-mavi) 25%, var(--serit)); border-bottom: 0; }
+  .onay thead th:first-child { border-top-left-radius: var(--r-kucuk); }
+  .onay thead th:last-child { border-top-right-radius: var(--r-kucuk); border-right: 0; }
   .onay tbody th small { display: block; font-weight: 500; color: var(--yazi-2); font-size: var(--f-xs); }
   .onay thead th:first-child { width: 110px; }
   .onay.sayilar { min-width: 640px; }
   .onay .cuma { display: block; font-size: var(--f-xs); color: var(--yazi-2); }
-  .onay tbody th { text-align: left; color: var(--lacivert); background: var(--panel-bas); white-space: nowrap; width: 110px; position: sticky; left: 0; z-index: 1; }
+  .onay tbody th { text-align: left; color: var(--lacivert); background: var(--tablo-bas); white-space: nowrap; width: 110px; position: sticky; left: 0; z-index: 1; }
   .onay td b { display: block; font-weight: 600; }
   .kisi-d { border: 0; background: transparent; font: inherit; color: inherit; cursor: pointer; width: 100%; min-height: 32px; padding: 2px; border-radius: var(--r-kucuk); }
-  .kisi-d:hover { outline: 2px solid var(--altin); outline-offset: -2px; }
+  .kisi-d:hover { outline: 2px solid var(--vurgu); outline-offset: -2px; }
   .kisi-d:focus-visible { outline: 2px solid var(--odak); outline-offset: -2px; }
   .degis-l { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
   .degis-l .dugme { width: 100%; justify-content: space-between; }
   .degis-l small { color: var(--yazi-2); }
   .aciklama-k { font-size: var(--f-sm); color: var(--yazi-2); margin-top: var(--b3); }
-  .onay td.yerine { background: var(--arife-zemin); }
+  .onay td.yerine { background: color-mix(in srgb, var(--acik-mavi) 30%, var(--yuzey)); }
   .onay td.bos { background: var(--hata-zemin, #fde2e2); color: var(--hata); font-weight: 700; }
   .onay .tatil { background: var(--yuzey-2); color: var(--soluk); }
   .onay .ilk-joker { border-left: 2px solid var(--cizgi); }
-  .onay thead th.joker-bas { background: color-mix(in srgb, var(--acik-mavi) 30%, var(--tablo-bas)); }
+  .onay thead th.joker-bas { background: var(--nobet-hucre); }
 </style>

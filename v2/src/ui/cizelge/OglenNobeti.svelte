@@ -264,7 +264,7 @@
   <div class="alt-duzen">
     <section class="panel">
       <div class="panel-bas"><h2>Öğlen nöbeti kuralları</h2></div>
-      <table class="tablo">
+      <table class="tablo koyu-bas">
         <thead><tr><th>Gün</th><th class="sag">Eczacı</th><th class="sag">Tekniker</th></tr></thead>
         <tbody>
           <tr><td>Pazartesi – Perşembe</td><td class="sag">{OGLEN_GEREK.hafta.e}</td><td class="sag">{OGLEN_GEREK.hafta.t}</td></tr>
@@ -325,19 +325,20 @@
   .hafta { display: grid; text-align: left; gap: 1px; padding: 6px 14px; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); color: var(--lacivert); cursor: pointer; font: inherit; }
   .hafta b { font-size: var(--f-sm); }
   .hafta small { font-size: var(--f-xs); color: var(--yazi-2); }
-  .hafta[aria-pressed="true"] { background: var(--vurgu); border-color: var(--vurgu); color: var(--vurgu-yazi); }
-  .hafta[aria-pressed="true"] small { color: var(--vurgu-yazi); opacity: .85; }
+  .hafta[aria-pressed="true"] { background: var(--menu-zemin); border-color: var(--menu-zemin); color: #FFFFFF; }
+  .hafta[aria-pressed="true"] small { color: #BFE3E8; opacity: 1; }
   .ust-duzen { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--b4); align-items: start; }
   .form { border-collapse: collapse; width: 100%; table-layout: fixed; }
   .form th, .form td { border: 1px solid var(--cizgi); text-align: left; }
-  .form thead th { background: var(--tablo-bas); color: var(--lacivert); font-size: var(--f-sm); padding: 8px 12px; }
-  .form thead th small { display: block; font-weight: 500; color: var(--yazi-2); font-size: var(--f-xs); }
-  .form thead th.cuma { background: color-mix(in srgb, var(--haz) 22%, var(--yuzey)); }
-  .form thead th.bugun { box-shadow: inset 0 -3px 0 var(--lacivert); }
-  .form th.yer { width: 110px; background: var(--yuzey-2); color: var(--lacivert); font-size: var(--f-xs); font-weight: 700; padding: 8px 12px; }
+  .form thead th { background: var(--serit); color: #FFFFFF; font-size: var(--f-sm); padding: 8px 12px; border-color: color-mix(in srgb, var(--acik-mavi) 25%, var(--serit)); }
+  .form thead th.yer { background: var(--serit); }
+  .form thead th small { display: block; font-weight: 600; color: #BFE3E8; font-size: var(--f-xs); }
+  .form thead th.cuma { background: var(--nobet-hucre); }
+  .form thead th.bugun { box-shadow: inset 0 -3px 0 var(--acik-mavi); }
+  .form th.yer { width: 110px; background: var(--tablo-bas); color: var(--lacivert); font-size: var(--f-xs); font-weight: 700; padding: 8px 12px; }
   .form tr.t th.yer { background: color-mix(in srgb, var(--acik-mavi) 16%, var(--yuzey)); }
   .form td { padding: 0; height: 48px; }
-  .form td.cuma { background: color-mix(in srgb, var(--haz) 7%, var(--yuzey)); }
+  .form td.cuma { background: var(--hs-zemin); }
   .form td.kapali { background: var(--yuzey-2); color: var(--soluk); font-size: var(--f-xs); padding: 6px 12px; }
   .form td.sorunlu .ad, .form td.sorunlu .ad-kisa { color: var(--hata); text-decoration: line-through; }
   .hucre { display: flex; align-items: center; gap: 6px; width: 100%; height: 100%; min-height: 48px; padding: 6px 12px; border: 0; background: none; font: inherit; color: var(--yazi); font-weight: 600; font-size: var(--f-sm); text-align: left; cursor: pointer; }
