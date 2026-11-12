@@ -156,7 +156,7 @@
       const { oglenPdf } = await ciktiPaketi();
       const blob = oglenPdf({
         y, m, kurum: depo.veri.kurum.ad, donem: haftaMetni(hafta) + " " + hafta.gunler[4][0],
-        haftalar: [gunler.flatMap(g => { const k = kayitAl(g); return k ? [{ gun: g[2], dw: haftaGunu(...g), e: k.e.map(ad), t: k.t.map(ad) }] : []; })],
+        haftalar: [gunler.flatMap(g => { const k = kayitAl(g); return k ? [{ gun: g[2], ay: g[1], dw: haftaGunu(...g), e: k.e.map(ad), t: k.t.map(ad), eN: k.e.map(id => nobetciMi(id, g)), tN: k.t.map(id => nobetciMi(id, g)) }] : []; })],
         ozet: [],
       });
       const [a, b, d] = hafta.pzt;

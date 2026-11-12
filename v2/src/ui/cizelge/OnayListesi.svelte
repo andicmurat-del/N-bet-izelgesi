@@ -125,12 +125,12 @@
       const { onayPdf } = await ciktiPaketi();
       const g = H.gunler;
       const satirlar = [
-        ...Array.from({ length: 7 }, (_, i) => ({ yer: `Masa ${i + 1}`, hucre: g.map(x => ({ ad: x.masa[i]?.bos ? "" : x.masa[i]?.ad ?? "", yerine: !!x.masa[i]?.tekniker, bos: !x.tatil && i < 6 && !x.masa[i]?.id && !x.masa[i]?.bos })) })),
-        ...Array.from({ length: jokerSatir }, (_, i) => ({ yer: `Joker ${i + 1}`, hucre: g.map(x => ({ ad: x.joker[i]?.ad ?? "" })) })),
+        ...Array.from({ length: 7 }, (_, i) => ({ yer: `Masa ${i + 1}`, hucre: g.map(x => ({ ad: x.masa[i]?.bos ? "" : x.masa[i]?.ad ?? "", elleBos: !!x.masa[i]?.bos, yerine: !!x.masa[i]?.tekniker, bos: !x.tatil && i < 6 && !x.masa[i]?.id && !x.masa[i]?.bos })) })),
+        ...Array.from({ length: jokerSatir }, (_, i) => ({ yer: `Joker ${i + 1}`, joker: true, hucre: g.map(x => ({ ad: x.joker[i]?.ad ?? "" })) })),
       ];
       const blob = onayPdf({
         kurum: depo.veri.kurum.ad, donem: `${haftaMetni(hafta)} ${hafta.gunler[4][0]}`,
-        gunler: g.map(x => ({ baslik: `${x.d} ${GUN_UZUN[x.dw]}${x.arife ? " (arife)" : ""}`, tatil: x.tatil })),
+        gunler: g.map(x => ({ baslik: GUN_UZUN[x.dw], alt: `${x.d} ${AYLAR[x.m]}${x.arife ? " · arife" : ""}`, tatil: x.tatil })),
         satirlar, notlar: ["Masaya oturan o masanın listelerini onaylar. Renkli hücre: eczacı yetmediği için masaya oturan hazırlama teknikeri."],
       });
       durum = (await dosyaKaydet(`onay-listesi-${H.pzt}.pdf`, blob, "application/pdf")) ? "PDF kaydedildi." : "";
