@@ -9,7 +9,7 @@
   import { depo, veriAnlik, aydaCalisanlar, acilGunu, acilGunuAyarla, acilAyiniSil, acilKaydet, acilElleMi, resmiTatilMi, tatilMi, listeOnayi, listeyiOnayla, listeOnayiniKaldir } from "../../veri/depo.svelte";
   import { acilAdaylariHesapla, acilDenetle, acilHesapla, acilKadrosunda, acilSorunluGunler } from "../../motor";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
-  import { AYLAR as AYLAR_AD, GUN_KISA, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
+  import { AYLAR as AYLAR_AD, GUN_KISA, GUN_UZUN, adIcerir, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
   import OnaySorusu from "../ortak/OnaySorusu.svelte";
@@ -67,6 +67,43 @@
   const sorunluMu = (g: number) => sorunluGunler.some(x => x.gun === g);
   // kişi başı aylık özet (puantajdaki gibi; acil kadrosu, hazırlama yok)
   const ozetSatirlari = $derived(dolu ? (puantajIzgarasi(y, m) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => acilKadrosunda(r.s)) as never : []);
+  // görünüm: Günlük Eczane'deki gibi Takvim / Liste; liste görünümünde süzgeç düğmeleri, kişi seçimi ve ad arama,
+  // günler haftalara göre gruplanır
+  let nobetGorunum = $state<"takvim" | "liste">("liste");
+  type Filtre = "tumu" | "hi" | "hs" | "degisen" | "sorunlu" | "elle" | "bos";
+  let filtre = $state<Filtre>("tumu");
+  let kisiF = $state<number | null>(null);
+  let ara = $state("");
+  const degistiMi = (g: number) => guncelMi && !!guncel?.degisen.has(g);
+  const filtreUy: Record<Filtre, (g: number) => boolean> = {
+    tumu: () => true, hi: g => !tatilMi(y, m, g), hs: g => tatilMi(y, m, g), degisen: degistiMi, sorunlu: g => sorunluMu(g), elle: g => acilElleMi(y, m, g), bos: g => goster(g).length < 2,
+  };
+  const FILTRELER = $derived(([["tumu", "Tümü"], ["hi", "Hafta içi"], ["hs", "Hafta sonu / tatil"], ["degisen", "Değişen"], ["sorunlu", "Sorunlu"], ["elle", "Elle"], ["bos", "Eksik"]] as [Filtre, string][])
+    .filter(([f]) => f !== "degisen" || guncelMi));
+  const kisiUyar = (g: number) => {
+    const l = goster(g);
+    if (kisiF !== null && !l.includes(kisiF)) return false;
+    return !ara.trim() || l.some(id => adIcerir(ad(id), ara));
+  };
+  const filtreSayisi = $derived(Object.fromEntries(FILTRELER.map(([f]) => [f, gunler.filter(g => filtreUy[f](g) && kisiUyar(g)).length])) as Record<Filtre, number>);
+  // haftalar (Pazartesi başlar)
+  const haftalar = $derived.by(() => {
+    const ilk = haftaGunu(y, m, 1), n = gunler.length;
+    const h: { no: number; yarim: boolean; gunler: number[] }[] = [];
+    for (const g of gunler) {
+      const w = Math.floor((g - 1 + ilk) / 7);
+      if (!h[w]) { const bas = w * 7 - ilk + 1; h[w] = { no: w + 1, yarim: bas < 1 || bas + 6 > n, gunler: [] }; }
+      if (filtreUy[filtre](g) && kisiUyar(g)) h[w].gunler.push(g);
+    }
+    return h.filter(x => x && x.gunler.length);
+  });
+  $effect(() => { if (filtre === "degisen" && !guncelMi) filtre = "tumu"; });
+  // takvim görünümü: haftalık bloklar (7'şer hücre, ay dışı günler boş)
+  const takvimHaftalari = $derived.by(() => {
+    const h: (number | null)[] = [...Array(haftaGunu(y, m, 1)).fill(null), ...gunler];
+    while (h.length % 7) h.push(null);
+    return Array.from({ length: h.length / 7 }, (_, i) => h.slice(i * 7, i * 7 + 7));
+  });
   const bugun = new Date();
   const bugunMu = (d: number) => bugun.getFullYear() === y && bugun.getMonth() === m && bugun.getDate() === d;
 
@@ -132,6 +169,7 @@
         {#if dolu}<button class="dugme ana" onclick={() => (onaySor = true)}><Ikon ad="tamam" />Onayla</button>{/if}
       {/if}
       {#if degisimVar}<div class="secim" role="group" aria-label="Liste"><button aria-pressed={gorunum === "guncel"} onclick={() => (gorunum = "guncel")} title="Nöbet değişimleri işlenmiş liste">Güncel</button><button aria-pressed={gorunum === "asil"} onclick={() => (gorunum = "asil")} title="Değişimlerden önceki liste">{onay ? "Onaylanan" : "Asıl liste"}</button></div>{/if}
+      {#if dolu}<div class="secim" role="group" aria-label="Görünüm"><button aria-pressed={nobetGorunum === "takvim"} onclick={() => (nobetGorunum = "takvim")}>Takvim</button><button aria-pressed={nobetGorunum === "liste"} onclick={() => (nobetGorunum = "liste")}>Liste</button></div>{/if}
       {#if dolu}
         <button class="dugme" onclick={() => cikti("pdf")}><Ikon ad="indir" />PDF</button>
         <button class="dugme" onclick={() => cikti("xlsx")}><Ikon ad="indir" />Excel</button>
@@ -148,23 +186,87 @@
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
   {#if degisimVar}<p class="bant bilgi"><Ikon ad="bilgi" boyut={16} />{guncelMi ? `Güncel liste gösteriliyor: puantajdaki nöbet değişimleri işlendi; değişen ${guncel!.degisen.size} gün işaretli. Değişimlerden önceki liste "${onay ? "Onaylanan" : "Asıl liste"}" görünümünde.` : `${onay ? "Onaylanan" : "Asıl"} liste gösteriliyor (değişimlerden önceki hâli). Değişimler "Güncel" görünümünde.`}</p>{/if}
 
+  {#snippet adSnip(id: number | undefined)}
+    {#if id === undefined}—{:else if id === vurgu}<mark class="vurgu-ad">{ad(id)}</mark>{:else}{ad(id)}{/if}
+  {/snippet}
+  {#if dolu && nobetGorunum === "liste"}
+  <section class="panel takvim-kutu" aria-label="{ayAdi(y, m)} acil eczane nöbet listesi">
+    <div class="panel-bas"><h2>{ayAdi(y, m)} acil eczane nöbet listesi{guncelMi ? " · güncel" : ""}</h2><VurguSecici kisiler={adaylar} bind:vurgu /></div>
+    <div class="filtreler">
+      <div class="cipler" role="group" aria-label="Günleri süz">
+        {#each FILTRELER as [f, fad]}<button class="cip" aria-pressed={filtre === f} onclick={() => (filtre = f)}>{fad} <span class="rakam">{filtreSayisi[f]}</span></button>{/each}
+      </div>
+      <div class="ara">
+        <select bind:value={kisiF} aria-label="Kişi"><option value={null}>Kişi: Tümü</option>{#each adaylar as k (k.id)}<option value={k.id}>{k.name}</option>{/each}</select>
+        <input type="search" bind:value={ara} placeholder="Ad ara" aria-label="Ad ara" />
+      </div>
+    </div>
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin) -->
+    <div class="tablo-kap ht-liste-kap" tabindex="0" role="region" aria-label="Acil eczane nöbet listesi tablosu">
+      <table class="tablo liste ht-liste acil-liste">
+        <thead><tr><th><span class="gizli-yazi">Hafta</span></th><th>Tarih</th><th>Gün</th><th class="ad-sut">1. nöbetçi</th><th class="ad-sut">2. nöbetçi</th><th class="durum-sut">Durum</th></tr></thead>
+        <tbody>
+          {#each haftalar as h (h.no)}
+            <tr class="bosluk-satir" aria-hidden="true"><td colspan="6"></td></tr>
+            {#each h.gunler as g, gi (g)}
+              {@const l = goster(g)}
+              <tr class:ilk={gi === 0} class:son={gi === h.gunler.length - 1} class:bugun={bugunMu(g)} class:hs={tatilMi(y, m, g)} class:sorunlu-satir={sorunluMu(g)} class:vurgulu={vurgu !== null && l.includes(vurgu)} onclick={e => { if (!(e.target as HTMLElement).closest(".hno")) gunAc(g); }}>
+                {#if gi === 0}<td class="hno" rowspan={h.gunler.length} title="{h.no}. hafta{h.yarim ? ' (yarım)' : ''}"><b class="rakam">{h.no}</b><small>HAFTA</small></td>{/if}
+                <td class="rakam tarih"><span class="t-uzun">{String(g).padStart(2, "0")}.{String(m + 1).padStart(2, "0")}.{y}</span><span class="t-kisa">{g} {AYLAR_AD[m].slice(0, 3)}</span></td>
+                <td><span class="t-uzun">{GUN_UZUN[haftaGunu(y, m, g)]}</span><span class="t-kisa">{GUN_KISA[haftaGunu(y, m, g)]}</span></td>
+                <td>{@render adSnip(l[0])}</td>
+                <td>{@render adSnip(l[1])}</td>
+                <td class="durum">
+                  {#if degistiMi(g)}<span class="etk degisti">değişti</span>{/if}
+                  {#if sorunluMu(g)}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />sorunlu</span>{:else if l.length < 2}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />{l.length ? "eksik" : "nöbetçi yok"}</span>{/if}
+                  {#if acilElleMi(y, m, g)}<span class="etk elle"><Ikon ad="kilit" boyut={12} />elle</span>{/if}
+                  {#if resmiTatilMi(y, m, g)}<span class="etk hsr">resmi tatil</span>{:else if tatilMi(y, m, g)}<span class="etk hsr">hafta sonu</span>{/if}
+                </td>
+              </tr>
+            {/each}
+          {:else}
+            <tr><td colspan="6" class="bos-sonuc">Bu süzgece uyan gün yok.</td></tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {:else}
   <section class="panel takvim-kutu" aria-label="{ayAdi(y, m)} acil eczane nöbetleri">
     <div class="panel-bas"><h2>{ayAdi(y, m)} acil eczane nöbetleri{guncelMi ? " · güncel" : ""}</h2><VurguSecici kisiler={adaylar} bind:vurgu /></div>
-    <div class="takvim" class:vurgulu={vurgu !== null}>
-      {#each GUN_KISA as g}<div class="bas" aria-hidden="true">{g}</div>{/each}
-      {#each { length: haftaGunu(y, m, 1) } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
-      {#each gunler as g (g)}
-        {@const l = goster(g)}
-        <button class="gun" class:tatil={tatilMi(y, m, g)} class:bugun={bugunMu(g)} class:dolu={l.length} class:sorunlu={sorunluMu(g)} class:vurgu={vurgu !== null && l.includes(vurgu)} class:soluk={vurgu !== null && !l.includes(vurgu)} onclick={() => gunAc(g)}
-          aria-label="{gunMetni(y, m, g)}: acil eczane nöbetçisi {l.map(ad).join(' ve ') || 'yok'}">
-          <span class="ust serit"><b class="no rakam">{g}</b>{#if acilElleMi(y, m, g)}<span class="elle" title="Elle düzenlendi; yeniden oluşturmada korunur">elle</span>{/if}<span class="gunadi">{GUN_KISA[haftaGunu(y, m, g)]}</span>{#if guncelMi && guncel!.degisen.has(g)}<span class="degisti" title="Bu günde nöbet değişimi var">değişti</span>{/if}{#if resmiTatilMi(y, m, g)}<span class="etiket">Resmi tatil</span>{/if}</span>
-          <span class="kisiler">
-            {#each l as id}<span class="kisi" class:ben={id === vurgu}><span class="isaret servis"></span><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span></span>{:else}<span class="yok"><span class="ad">Nöbetçi yok</span><span class="ad-kisa" aria-hidden="true">–</span></span>{/each}
-          </span>
-        </button>
+    <div class="ht" class:vurgulu={vurgu !== null}>
+      <div class="ht-bas" aria-hidden="true"><span></span>{#each GUN_UZUN as g, i}<span class:hs={i >= 5}><span class="g-uzun">{g}</span><span class="g-kisa">{GUN_KISA[i]}</span></span>{/each}</div>
+      {#each takvimHaftalari as h, w}
+        <div class="ht-hafta">
+          <div class="ht-no" aria-hidden="true"><b class="rakam">{w + 1}</b><small>HAFTA</small></div>
+          {#each h as g, i (i)}
+            {#if g === null}<div class="ht-bos" aria-hidden="true"></div>
+            {:else}
+              {@const l = goster(g)}
+              <button class="ht-gun" class:hs={tatilMi(y, m, g)} class:bugun={bugunMu(g)} class:sorunlu={sorunluMu(g)} class:vurgu={vurgu !== null && l.includes(vurgu)} class:soluk={vurgu !== null && !l.includes(vurgu)} onclick={() => gunAc(g)}
+                aria-label="{gunMetni(y, m, g)}: acil eczane nöbetçisi {l.map(ad).join(' ve ') || 'yok'}">
+                <span class="ht-ust">
+                  <span class="rakam t-uzun">{String(g).padStart(2, "0")}.{String(m + 1).padStart(2, "0")}.{y}</span><span class="rakam t-kisa">{g}</span>
+                  <span class="ht-sag">
+                    {#if sorunluMu(g)}<span class="sorun-simge" title="Bu günde yazılamayan ya da art arda nöbet tutan var"><Ikon ad="uyari" boyut={13} /></span>{/if}
+                    {#if guncelMi && guncel!.degisen.has(g)}<span class="degisti" title="Bu günde nöbet değişimi var">değişti</span>{/if}
+                    {#if acilElleMi(y, m, g)}<span class="kilit" title="Elle düzenlendi; yeniden oluşturmada korunur"><Ikon ad="kilit" boyut={12} /></span>{/if}
+                    <span class="gunadi">{resmiTatilMi(y, m, g) ? "Resmi tatil" : GUN_KISA[haftaGunu(y, m, g)]}</span>
+                  </span>
+                </span>
+                {#each l as id, n (id)}
+                  <span class="ht-satir ecz"><span class="ht-et">{n + 1}.</span><span class="ht-ad"><span class:ben={id === vurgu}><span class="ad">{ad(id)}</span><span class="ad-kisa">{kisa(id)}</span></span></span></span>
+                {:else}
+                  <span class="ht-satir yok"><span class="ht-et">—</span><span class="ht-ad"><span><span class="ad">Nöbetçi yok</span><span class="ad-kisa">–</span></span></span></span>
+                {/each}
+              </button>
+            {/if}
+          {/each}
+        </div>
       {/each}
     </div>
   </section>
+  {/if}
 
   <div class="blok">
     {#if dolu}<AylikOzet satirlar={ozetSatirlari} baslik="Kişi özeti" hazirlama={false} bind:vurgu />
@@ -215,22 +317,6 @@
   .bant { padding: var(--b2) var(--b4); border: 1px solid var(--cizgi); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 600; background: var(--vurgu-zemin); color: var(--vurgu); }
   .ozet-serit { margin-bottom: var(--b3); }
   .takvim-kutu { margin-top: var(--b3); }
-  .takvim { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
-  .bas, .bosluk, .gun { border-right: 1px solid var(--cizgi); border-bottom: 1px solid var(--cizgi); }
-  .takvim > :nth-child(7n) { border-right: 0; }
-  .bas { background: var(--tablo-bas); color: var(--lacivert); font-size: var(--f-xs); font-weight: 700; text-align: center; padding: 6px 0; }
-  .bosluk { background: var(--yuzey-2); }
-  .gun { display: flex; flex-direction: column; width: 100%; aspect-ratio: 5 / 4; padding: 0; text-align: left; border-top: 0; border-left: 0; border-radius: 0; background: var(--yuzey); cursor: pointer; min-width: 0; }
-  .gun:hover { background: var(--yuzey-2); }
-  .gun:focus-visible { outline: 2px solid var(--odak); outline-offset: -2px; }
-  .gun.tatil .serit { background: color-mix(in srgb, var(--acik-mavi) 28%, var(--yuzey)); }
-  .gun.bugun .serit b { text-decoration: underline; text-underline-offset: 3px; }
-  .gun.sorunlu { background: var(--dikkat-zemin); }
-  .gun.sorunlu .serit { box-shadow: inset 0 -2px 0 var(--dikkat); }
-  .degisti { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--dikkat); background: var(--dikkat-zemin); border-radius: 3px; padding: 0 4px; }
-  .vurgulu .gun.soluk { opacity: .38; }
-  .vurgulu .gun.vurgu { box-shadow: inset 0 0 0 2px var(--lacivert); }
-  .kisi.ben { background: var(--vurgu-zemin); box-shadow: 0 0 0 2px var(--vurgu-zemin); border-radius: 3px; }
   .bant { display: block; }
   .bant.bilgi { background: var(--bilgi-zemin); color: var(--bilgi); }
   .oneri { display: grid; gap: 6px; padding: var(--b3); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey-2); margin-bottom: var(--b3); }
@@ -241,13 +327,6 @@
   .aday small.uyari { color: var(--dikkat); }
   .aday small.uygun { color: var(--vurgu); }
   .ipucu { font-size: var(--f-xs); color: var(--soluk); }
-  .ust { display: flex; align-items: center; gap: 6px; min-height: 24px; padding: 2px 8px; background: var(--panel-bas); border-bottom: 1px solid var(--cizgi-acik); font-size: var(--f-xs); color: var(--yazi-2); }
-  .no { font-weight: 700; font-size: var(--f-sm); color: var(--lacivert); }
-  .gunadi { font-size: var(--f-xs); color: var(--yazi-2); }
-  .etiket { font-size: var(--f-xs); font-weight: 600; color: var(--tatil); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .kisiler { display: grid; gap: 3px; min-width: 0; padding: 6px 8px 8px; }
-  .kisi { display: flex; align-items: baseline; gap: 6px; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; min-width: 0; }
-  .kisi .isaret { transform: translateY(-1px) rotate(45deg) scale(.85); }
   .yok { font-size: var(--f-xs); color: var(--soluk); }
   .blok { margin-top: var(--b5); display: grid; gap: var(--b2); }
   .blok h2 { font-size: var(--f-lg); }
@@ -258,21 +337,48 @@
   .not { padding: var(--b2) var(--b3); border-radius: var(--r-kucuk); font-size: var(--f-sm); font-weight: 500; background: var(--yuzey-2); color: var(--yazi-2); }
   .not.hata { background: var(--hata-zemin); color: var(--hata); }
 
+  /* liste görünümü (Günlük Eczane listesiyle aynı) */
+  .liste tbody tr { cursor: pointer; }
+  .liste tbody tr:hover > td:not(.hno):not(.tarih) { background: var(--vurgu-zemin); }
+  .liste tr.sorunlu-satir > td:not(.hno):not(.tarih) { background: var(--dikkat-zemin); }
+  .liste tbody tr.vurgulu > td:not(.hno):not(.tarih) { background: color-mix(in srgb, var(--vurgu) 12%, var(--yuzey)); }
+  .liste tbody tr.vurgulu > .tarih { box-shadow: inset 3px 0 0 var(--lacivert); }
+  .durum { white-space: nowrap; }
+  /* acil listesi: iki nöbetçi sütunu yan yana, boşluğu Durum sütunu alır */
+  .acil-liste th.ad-sut { width: 190px; min-width: 150px; }
+  .acil-liste th.durum-sut { width: 100%; }
+  .acil-liste .t-kisa { display: none; }
+  @media (max-width: 720px) {
+    .acil-liste .t-uzun { display: none; } .acil-liste .t-kisa { display: inline; }
+    .acil-liste th.ad-sut { width: auto; min-width: 0; }
+    .acil-liste th, .acil-liste td { padding-left: 8px; padding-right: 8px; }
+    .acil-liste td:nth-child(4), .acil-liste td:nth-child(5) { white-space: nowrap; }
+  }
+  .vurgu-ad { background: color-mix(in srgb, var(--altin) 35%, transparent); color: inherit; font-weight: 700; padding: 0 3px; border-radius: 3px; }
+  .etk { display: inline-flex; align-items: center; gap: 3px; font-size: var(--f-xs); font-weight: 600; padding: 1px 6px; border-radius: 2px; margin-right: 4px; }
+  .etk.degisti { background: color-mix(in srgb, var(--izin) 14%, var(--yuzey)); color: var(--izin); }
+  .etk.esnek { background: var(--hata-zemin); color: var(--hata); }
+  .etk.elle { background: var(--yuzey-2); color: var(--yazi-2); }
+  .etk.hsr { background: color-mix(in srgb, var(--acik-mavi) 30%, var(--yuzey)); color: var(--lacivert); }
+  .bos-sonuc { color: var(--soluk); text-align: center; padding: var(--b4); cursor: default; }
+  .filtreler { display: flex; flex-wrap: wrap; gap: var(--b2); align-items: center; justify-content: space-between; padding: var(--b3) var(--b4); border-bottom: 1px solid var(--cizgi); }
+  .cipler { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cip { border: 1px solid var(--cizgi); background: var(--yuzey); color: var(--yazi); padding: 5px 12px; border-radius: 999px; font-weight: 600; font-size: var(--f-sm); cursor: pointer; min-height: 32px; }
+  .cip span { color: var(--yazi-2); font-weight: 500; }
+  .cip[aria-pressed="true"] { background: var(--vurgu); border-color: var(--vurgu); color: var(--vurgu-yazi); }
+  .cip[aria-pressed="true"] span { color: var(--vurgu-yazi); opacity: .85; }
+  .ara { display: flex; gap: 6px; }
+  .ara select, .ara input { min-height: 34px; padding: 0 var(--b3); font-size: var(--f-sm); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--yuzey); color: var(--yazi); }
+  .ara select:focus-visible, .ara input:focus-visible { outline: none; border-color: var(--vurgu); box-shadow: 0 0 0 3px color-mix(in srgb, var(--vurgu) 22%, transparent); }
+  .ara input { width: 180px; }
+
   .ad-kisa { display: none; }
-  .elle { margin-left: auto; font-size: 11px; color: var(--soluk); }
   /* telefon: aynı 7 sütunlu takvim, kısa adlar */
   @media (max-width: 720px) {
-    .bas { font-size: 11px; padding: 4px 0; }
-    .gun { aspect-ratio: auto; min-height: 62px; }
-    .ust { padding: 1px 4px; min-height: 18px; }
-    .kisiler { padding: 3px 3px 4px; gap: 1px; }
-    .no { font-size: 12px; }
-    .etiket, .gunadi { display: none; }
-    .kisi { font-size: 10.5px; gap: 2px; font-weight: 600; }
-    .kisi .isaret { display: none; }
-    .kisi .ad { display: none; }
     .ad-kisa { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .yok { font-size: 10px; }
     .iki { grid-template-columns: 1fr; }
+    .ara { width: 100%; }
+    .ara select, .ara input { flex: 1; min-width: 0; width: auto; }
   }
 </style>

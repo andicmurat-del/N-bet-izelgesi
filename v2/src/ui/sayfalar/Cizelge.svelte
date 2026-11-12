@@ -308,18 +308,19 @@
               </div>
             </div>
             <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin) -->
-            <div class="tablo-kap" tabindex="0" role="region" aria-label="Nöbet listesi tablosu">
-              <table class="tablo liste">
-                <thead><tr><th>Tarih</th><th>Gün</th><th>Nöbetçi eczacı</th><th>Nöbetçi tekniker</th><th>Hazırlama 1</th><th>Hazırlama 2</th><th>Durum</th></tr></thead>
+            <div class="tablo-kap ht-liste-kap" tabindex="0" role="region" aria-label="Nöbet listesi tablosu">
+              <table class="tablo liste ht-liste">
+                <thead><tr><th><span class="gizli-yazi">Hafta</span></th><th>Tarih</th><th>Gün</th><th class="genis">Nöbetçi eczacı</th><th class="genis">Nöbetçi tekniker</th><th class="genis">Hazırlama 1</th><th class="genis">Hazırlama 2</th><th>Durum</th></tr></thead>
                 <tbody>
                   {#each haftalar as h (h.no)}
-                    <tr class="grup"><td colspan="7">{h.no}. hafta{h.yarim ? " (yarım)" : ""}</td></tr>
-                    {#each h.gunler as g (g.day)}
+                    <tr class="bosluk-satir" aria-hidden="true"><td colspan="8"></td></tr>
+                    {#each h.gunler as g, gi (g.day)}
                       {@const ec = g.assigned.filter(p => eczaciRol(p.role))}
                       {@const tk = g.assigned.filter(p => !eczaciRol(p.role))}
                       {@const rt = resmiTatilMi(depo.yil, depo.ay, g.day)}
-                      <tr class:secili-satir={seciliGun === g.day} class:hs={g.tatil} class:vurgulu={vurgu !== null && (g.assigned.some(p => p.id === vurgu) || (g.tatil && g.prep.some(p => p.id === vurgu)))} onclick={() => gunAc(g.day)}>
-                        <td class="rakam"><b>{g.day} {AYLAR[depo.ay]}</b></td>
+                      <tr class:ilk={gi === 0} class:son={gi === h.gunler.length - 1} class:bugun={bugunTarih.getFullYear() === depo.yil && bugunTarih.getMonth() === depo.ay && bugunTarih.getDate() === g.day} class:secili-satir={seciliGun === g.day} class:hs={g.tatil} class:vurgulu={vurgu !== null && (g.assigned.some(p => p.id === vurgu) || (g.tatil && g.prep.some(p => p.id === vurgu)))} onclick={e => { if (!(e.target as HTMLElement).closest(".hno")) gunAc(g.day); }}>
+                        {#if gi === 0}<td class="hno" rowspan={h.gunler.length} title="{h.no}. hafta{h.yarim ? ' (yarım)' : ''}"><b class="rakam">{h.no}</b><small>HAFTA</small></td>{/if}
+                        <td class="rakam tarih">{String(g.day).padStart(2, "0")}.{String(depo.ay + 1).padStart(2, "0")}.{depo.yil}</td>
                         <td>{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</td>
                         <td>{@render adlar(ec)}</td>
                         <td>{@render adlar(tk)}</td>
@@ -334,7 +335,7 @@
                       </tr>
                     {/each}
                   {:else}
-                    <tr><td colspan="7" class="bos-sonuc">Bu süzgece uyan gün yok.</td></tr>
+                    <tr><td colspan="8" class="bos-sonuc">Bu süzgece uyan gün yok.</td></tr>
                   {/each}
                 </tbody>
               </table>
@@ -430,17 +431,12 @@
   .lj-ecz { font-weight: 700; color: var(--lacivert); }
   .lj-tek { font-weight: 600; color: var(--tek); }
   .lj-haz { color: var(--haz); }
-  .liste tbody tr:hover > * { background: var(--vurgu-zemin); }
-  .liste tbody tr.vurgulu > * { background: color-mix(in srgb, var(--altin) 16%, var(--yuzey)); }
-  .liste tbody tr.vurgulu > :first-child { box-shadow: inset 3px 0 0 var(--altin); }
+  .liste tbody tr:hover > td:not(.hno):not(.tarih) { background: var(--vurgu-zemin); }
+  .liste tbody tr.vurgulu > td:not(.hno):not(.tarih) { background: color-mix(in srgb, var(--vurgu) 12%, var(--yuzey)); }
+  .liste tbody tr.vurgulu > .tarih { box-shadow: inset 3px 0 0 var(--lacivert); }
   .vurgu-ad { background: color-mix(in srgb, var(--altin) 35%, transparent); color: inherit; font-weight: 700; padding: 0 3px; border-radius: 3px; }
-  .liste tr.secili-satir > * { box-shadow: inset 0 2px 0 var(--altin), inset 0 -2px 0 var(--altin); }
-  .liste td:nth-child(n+3):not(.durum) { min-width: 150px; }
-  .liste tr.hs > * { background: color-mix(in srgb, var(--acik-mavi) 14%, var(--yuzey)); }
-  .liste tr.grup > td { background: var(--panel-bas); font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--lacivert); padding-top: 5px; padding-bottom: 5px; cursor: default; }
-  .liste tbody tr.grup:hover > * { background: var(--panel-bas); }
-  .liste tr.secili-satir > * { background: color-mix(in srgb, var(--altin) 16%, var(--yuzey)); }
-  .durum, .liste td:first-child { white-space: nowrap; }
+  .liste tr.secili-satir > td:not(.hno) { box-shadow: inset 0 2px 0 var(--lacivert), inset 0 -2px 0 var(--lacivert); }
+  .durum { white-space: nowrap; }
   .etk { display: inline-flex; align-items: center; gap: 3px; font-size: var(--f-xs); font-weight: 600; padding: 1px 6px; border-radius: 2px; margin-right: 4px; }
   .etk.degisti { background: color-mix(in srgb, var(--izin) 14%, var(--yuzey)); color: var(--izin); }
   .etk.esnek { background: var(--hata-zemin); color: var(--hata); }

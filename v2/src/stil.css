@@ -202,3 +202,101 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--vurgu); }
 
 /* yalnız ekran okuyucuya görünen yazı */
 .gizli-yazi { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Haftalık form takvimi (Günlük Eczane ve Acil Eczane nöbet takvimleri): her hafta ayrı blok, solda hafta numarası;
+   her günde tarih başlığı ve görev etiketli satırlar (ECZ / TEK / HAZ). Hafta sonu başlığı turkuaz. */
+.ht { display: grid; gap: var(--b3); padding: var(--b3); }
+.ht-bas, .ht-hafta { display: grid; grid-template-columns: 64px repeat(7, minmax(0, 1fr)); }
+.ht-bas { background: var(--serit); border-radius: var(--r); color: #FFFFFF; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-align: center; text-transform: uppercase; }
+.ht-bas > * { padding: 8px 0; }
+.ht-bas .hs { color: #9FD9E0; }
+.ht-bas .g-kisa { display: none; }
+.ht-hafta { border: 1px solid var(--cizgi); border-radius: var(--r); overflow: hidden; background: var(--yuzey); }
+.ht-no { display: grid; place-items: center; align-content: center; background: var(--menu-zemin); color: #FFFFFF; text-align: center; }
+.ht-no b { font-size: 24px; font-weight: 800; line-height: 1; }
+.ht-no small { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; color: #BFE3E8; }
+.ht-bos { border-left: 1px solid var(--cizgi); background: repeating-linear-gradient(135deg, var(--yuzey-2) 0 6px, var(--yuzey) 6px 12px); }
+.ht-gun { display: flex; flex-direction: column; min-width: 0; min-height: 112px; padding: 0; border: 0; border-left: 1px solid var(--cizgi); border-radius: 0; background: var(--yuzey); color: var(--yazi); text-align: left; cursor: pointer; font: inherit; transition: opacity .15s; }
+.ht-gun.hs { background: var(--hs-zemin); }
+.ht-gun:hover .ht-ad { background: color-mix(in srgb, var(--vurgu-zemin) 45%, transparent); }
+.ht-gun:focus-visible { outline: 2px solid var(--odak); outline-offset: -2px; }
+.ht-ust { display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 8px; background: var(--tablo-bas); color: var(--lacivert); border-bottom: 1px solid var(--cizgi); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.ht-gun.hs .ht-ust { background: color-mix(in srgb, var(--acik-mavi) 42%, var(--yuzey)); }
+.ht-gun.bugun .ht-ust { background: var(--vurgu); color: var(--vurgu-yazi); }
+.ht-ust .t-kisa { display: none; }
+.ht-sag { margin-left: auto; display: inline-flex; gap: 4px; align-items: center; font-weight: 600; min-width: 0; overflow: hidden; }
+.ht-sag .degisti { font-size: 11px; font-weight: 700; color: var(--dikkat); background: var(--dikkat-zemin); border-radius: 3px; padding: 0 4px; }
+.ht-sag .sorun-simge { color: var(--hata); display: inline-flex; }
+.ht-gun.bugun .ht-sag .sorun-simge { color: inherit; }
+.ht-sag .kilit { display: inline-flex; opacity: .8; }
+.ht-satir { display: grid; grid-template-columns: 38px minmax(0, 1fr); flex: 1; min-height: 28px; border-bottom: 1px solid var(--cizgi-acik); }
+.ht-satir:last-child { border-bottom: 0; }
+.ht-et { display: grid; place-items: center; background: var(--tablo-bas); border-right: 1px solid var(--cizgi-acik); font-size: 10.5px; font-weight: 700; letter-spacing: .05em; color: var(--yazi-2); }
+.ht-ad { display: flex; align-items: center; gap: 4px; padding: 0 8px; min-width: 0; font-size: 13.5px; font-weight: 600; color: var(--yazi); }
+.ht-ad > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ht-ad .ad-kisa { display: none; }
+.ht-satir.ecz .ht-ad { font-weight: 700; color: var(--lacivert); }
+.ht-satir.des .ht-ad { color: var(--destek); }
+.ht-satir.haz .ht-ad { color: var(--haz); }
+.ht-satir.yok .ht-ad { color: var(--soluk); font-weight: 400; }
+.ht-ad .ben { background: color-mix(in srgb, var(--altin) 35%, transparent); border-radius: 3px; padding: 0 3px; }
+.ht-gun.sorun { box-shadow: inset 0 -3px 0 var(--hata); }
+.ht-gun.sorunlu .ht-ad { background: var(--dikkat-zemin); }
+.ht-gun.sorunlu { box-shadow: inset 0 -3px 0 var(--dikkat); }
+.ht-gun.secili { box-shadow: inset 0 0 0 3px var(--lacivert); position: relative; z-index: 1; }
+.ht.vurgulu .ht-gun.soluk { opacity: .38; }
+.ht.vurgulu .ht-gun.vurgu { box-shadow: inset 0 0 0 2px var(--lacivert); }
+/* telefon: aynı haftalık bloklar; etiket sütunu yok, kısa adlar, görev rengi yazıda */
+@media (max-width: 720px) {
+  .ht { gap: var(--b2); padding: var(--b2); }
+  .ht-bas, .ht-hafta { grid-template-columns: 20px repeat(7, minmax(0, 1fr)); }
+  .ht-bas { font-size: 10.5px; letter-spacing: 0; border-radius: var(--r-kucuk); }
+  .ht-bas > * { padding: 5px 0; }
+  .ht-bas .g-uzun { display: none; } .ht-bas .g-kisa { display: inline; }
+  .ht-hafta { border-radius: var(--r-kucuk); }
+  .ht-no b { font-size: 13px; } .ht-no small { display: none; }
+  .ht-gun { min-height: 66px; }
+  .ht-ust { min-height: 20px; padding: 0 3px; gap: 2px; font-size: 12px; }
+  .ht-ust .t-uzun, .ht-sag .gunadi, .ht-sag .degisti { display: none; } .ht-ust .t-kisa { display: inline; }
+  .ht-satir { grid-template-columns: minmax(0, 1fr); min-height: 17px; border-bottom: 0; flex: 0 0 auto; }
+  .ht-et { display: none; }
+  .ht-ad { padding: 0 3px; font-size: 10.5px; }
+  .ht-ad .ad { display: none; } .ht-ad .ad-kisa { display: inline; }
+  .ht-satir.tek .ht-ad { color: var(--tek); }
+  .ht-satir.haz .ht-ad > span { white-space: normal; line-height: 1.2; padding-bottom: 2px; }
+}
+
+/* Liste görünümü, takvimle aynı tema (Günlük ve Acil nöbet listeleri): koyu başlık, her hafta ayrı blok ve solda
+   hafta numarası, tarih sütunu başlık renginde, hafta sonu turkuaz. */
+.ht-liste-kap { padding: var(--b3); }
+.tablo.ht-liste { border-collapse: separate; border-spacing: 0; }
+.tablo.ht-liste thead th { background: var(--serit); color: #FFFFFF; font-size: 12px; letter-spacing: .12em; border-bottom: 0; padding: 9px 12px; }
+.tablo.ht-liste thead th:first-child { border-radius: var(--r) 0 0 var(--r); width: 64px; }
+.tablo.ht-liste thead th:last-child { border-radius: 0 var(--r) var(--r) 0; }
+.tablo.ht-liste thead th.genis { min-width: 150px; }
+.tablo.ht-liste tbody tr.bosluk-satir > td { height: 10px; padding: 0; border: 0; background: transparent !important; cursor: default; box-shadow: none; }
+.tablo.ht-liste tbody td { border-bottom: 1px solid var(--cizgi-acik); background: var(--yuzey); }
+.tablo.ht-liste tbody td:last-child { border-right: 1px solid var(--cizgi); }
+.tablo.ht-liste tbody tr.ilk > td { border-top: 1px solid var(--cizgi); }
+.tablo.ht-liste tbody tr.son > td { border-bottom: 1px solid var(--cizgi); }
+.tablo.ht-liste tbody tr.ilk > td:last-child { border-top-right-radius: var(--r); }
+.tablo.ht-liste tbody tr.son > td:last-child { border-bottom-right-radius: var(--r); }
+.tablo.ht-liste tbody td.hno { width: 64px; padding: 0; border: 0; border-radius: var(--r) 0 0 var(--r); background: var(--menu-zemin) !important; color: #FFFFFF; text-align: center; vertical-align: middle; cursor: default; box-shadow: none !important; }
+.tablo.ht-liste td.hno b { display: block; font-size: 24px; font-weight: 800; line-height: 1; }
+.tablo.ht-liste td.hno small { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; color: #BFE3E8; }
+.tablo.ht-liste td.tarih { background: var(--tablo-bas); color: var(--lacivert); font-weight: 700; white-space: nowrap; border-right: 1px solid var(--cizgi-acik); }
+.tablo.ht-liste tr.hs { background: transparent !important; }
+.tablo.ht-liste tr.hs > td { background: var(--hs-zemin); }
+.tablo.ht-liste tr.hs > td.tarih { background: color-mix(in srgb, var(--acik-mavi) 42%, var(--yuzey)); }
+.tablo.ht-liste tr.bugun > td.tarih { background: var(--vurgu); color: var(--vurgu-yazi); }
+@media (max-width: 720px) {
+  .ht-liste-kap { padding: var(--b2); }
+  .tablo.ht-liste thead th:first-child, .tablo.ht-liste tbody td.hno { width: 30px; }
+  .tablo.ht-liste td.hno b { font-size: 15px; } .tablo.ht-liste td.hno small { display: none; }
+  .tablo.ht-liste thead th { letter-spacing: .06em; padding: 8px 10px; }
+}
+
+/* koyu başlıklı tablo (takvim temasıyla aynı başlık şeridi) */
+.tablo.koyu-bas thead th { background: var(--serit); color: #FFFFFF; border-bottom: 0; letter-spacing: .08em; }
+.tablo.koyu-bas thead th:first-child { border-top-left-radius: var(--r-kucuk); }
+.tablo.koyu-bas thead th:last-child { border-top-right-radius: var(--r-kucuk); }

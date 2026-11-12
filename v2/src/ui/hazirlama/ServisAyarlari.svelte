@@ -90,7 +90,7 @@
   .tablo-kap { overflow-x: auto; max-height: 70vh; overflow-y: auto; }
   table { border-collapse: collapse; width: 100%; font-size: var(--f-sm); }
   th, td { padding: 6px 12px; border: 1px solid var(--cizgi-acik); text-align: center; white-space: nowrap; }
-  thead th { position: sticky; top: 0; z-index: 1; background: var(--tablo-bas); font-size: var(--f-xs); color: var(--lacivert); font-weight: 700; }
+  thead th { position: sticky; top: 0; z-index: 1; background: var(--serit); font-size: var(--f-xs); color: #FFFFFF; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
   .sol { text-align: left; }
   tbody th { font-weight: 500; }
   .ad { display: inline-flex; align-items: center; gap: var(--b2); cursor: pointer; }

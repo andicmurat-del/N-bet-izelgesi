@@ -40,7 +40,7 @@ export function puantajPdf(G: Izgara, y: number, m: number, kurum: string, onay:
   const doc = yeniPdf();
   const W = 297, H = 210, K = 8;
   doc.setProperties({ title: `${AYLAR[m]} ${y} puantaj`, creator: "Nöbet Çizelgesi" });
-  doc.setFont("CizelgeSans", "bold"); doc.setFontSize(14); doc.setTextColor(19, 33, 44);
+  doc.setFont("CizelgeSans", "bold"); doc.setFontSize(14); doc.setTextColor(14, 74, 88);
   doc.text(baslik(y, m, kurum), K, 13);
   doc.setFont("CizelgeSans", "normal"); doc.setFontSize(8); doc.setTextColor(88, 105, 120);
   doc.text(onay ? `Onaylandı: ${new Date(onay.zaman).toLocaleDateString("tr-TR")}${onay.kim ? " · " + onay.kim : ""}` : "Çizelge onaylanmadı", W - K, 13, { align: "right" });
@@ -51,11 +51,11 @@ export function puantajPdf(G: Izgara, y: number, m: number, kurum: string, onay:
     body: G.satirlar.map((r, i) => [String(i + 1), ONEK[r.s.role] + buyukAd(r.s.name), ...r.cells.map((h, k) => kodMetni(h.kod, h.saat, G.gunler[k].arife)), String(r.toplam), r.aylik === null ? "–" : String(r.aylik), String(r.fm), String(r.fmGunduz), String(r.fmGece)]),
     theme: "grid",
     // kişi sayısı azsa satırlar yükselir: tablo sayfayı doldurur, hücreler okunur kalır
-    styles: { font: "CizelgeSans", fontSize: 7.5, cellPadding: { top: Math.min(3, Math.max(0.8, 60 / Math.max(1, G.satirlar.length))), bottom: Math.min(3, Math.max(0.8, 60 / Math.max(1, G.satirlar.length))), left: 0.5, right: 0.5 }, halign: "center", valign: "middle", textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.12, overflow: "visible" },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [208, 230, 235], textColor: [21, 38, 43], fontSize: 6.5, cellPadding: 0.8 },
+    styles: { font: "CizelgeSans", fontSize: 7.5, cellPadding: { top: Math.min(3, Math.max(0.8, 60 / Math.max(1, G.satirlar.length))), bottom: Math.min(3, Math.max(0.8, 60 / Math.max(1, G.satirlar.length))), left: 0.5, right: 0.5 }, halign: "center", valign: "middle", textColor: [21, 38, 43], lineColor: [170, 190, 196], lineWidth: 0.12, overflow: "visible" },
+    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [8, 51, 63], textColor: [255, 255, 255], fontSize: 6.5, cellPadding: 0.8 },
     columnStyles: { 0: { cellWidth: 6 }, 1: { halign: "left", cellWidth: 42, overflow: "linebreak", fontSize: 7.5 } },
     didParseCell: h => {
-      if (tatilSutun.has(h.column.index)) h.cell.styles.fillColor = h.section === "head" ? [236, 218, 190] : [251, 240, 224];
+      if (tatilSutun.has(h.column.index)) { h.cell.styles.fillColor = h.section === "head" ? [193, 230, 235] : [240, 247, 248]; if (h.section === "head") h.cell.styles.textColor = [14, 74, 88]; }
       if (h.section === "body" && h.column.index === G.gunler.length + 4) h.cell.styles.fontStyle = "bold";
     },
   });

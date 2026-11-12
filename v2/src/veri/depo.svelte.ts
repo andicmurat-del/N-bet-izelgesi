@@ -184,7 +184,11 @@ export function veriyiDogrula(ham: unknown): Veri {
   for (const [gun, x] of Object.entries(nesne(nesne(o.onayMasa).elle))) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(gun)) continue;
     const l: Record<string, string> = {};
-    for (const [id, yer] of Object.entries(nesne(x))) if (kisiIdleri.has(Number(id)) && typeof yer === "string" && /^([1-7]|J)$/.test(yer)) l[id] = yer;
+    for (const [id, yer] of Object.entries(nesne(x))) {
+      if (kisiIdleri.has(Number(id)) && typeof yer === "string" && /^([1-7]|J)$/.test(yer)) l[id] = yer;
+      // elle boş bırakılan masalar ("3,5")
+      else if (id === "bos" && typeof yer === "string") { const b = [...new Set(yer.split(",").filter(x => /^[1-7]$/.test(x)))].sort(); if (b.length) l.bos = b.join(","); }
+    }
     if (Object.keys(l).length) v.onayMasa.elle[gun] = l;
   }
   return v;
@@ -554,7 +558,7 @@ export function acilKaydet(y: number, m: number, gunler: { gun: number; ids: num
 
 // ---------- onay listesi masaları ----------
 /** günün yerlerini elle kaydeder (gun: "YYYY-AA-GG"; kişi id → yer "1"–"7" ya da "J"); null: gün otomatiğe döner */
-export function onayGunuAyarla(gun: string, yer: Record<number, string> | null) {
+export function onayGunuAyarla(gun: string, yer: Record<string, string> | null) {
   const [gy, gm, gd] = gun.split("-").map(Number);
   if (haftaOnayi("onay", gy, gm - 1, gd)) return;
   if (!yer || !Object.keys(yer).length) { delete depo.veri.onayMasa.elle[gun]; return; }

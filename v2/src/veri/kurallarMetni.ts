@@ -270,7 +270,7 @@ Ayarlar > Yedek al ile alınan dosya şu alanları taşır (aylar 0'dan sayılı
 - \`degisimler\`: nöbet değişimi ve izin nedeniyle yerine geçme kayıtları (cik: çıkan, yer: giren, gorev: N ya da H).
 - \`acil\`: "yil-ay" → gün → acil nöbetçi id'leri; \`acilElle\`: elle düzenlenen günler.
 - \`oglen\`: "yil-ay" → gün → { e: eczacı id'leri, t: tekniker id'leri, sabit: elle yazılan yerler }.
-- \`onayMasa.elle\`: "YYYY-AA-GG" → kişi id → yer ("1"–"7", "J" joker).
+- \`onayMasa.elle\`: "YYYY-AA-GG" → kişi id → yer ("1"–"7", "J" joker); "bos" → elle boş bırakılan masalar ("3,5").
 - \`listeOnay\`: \`acil\` "yil-ay" → onay; \`oglen\` ve \`onay\` (onay listesi) haftanın Pazartesi'si "YYYY-AA-GG" → onay ({ zaman, kim }).
 - \`servisAyar\`, \`servisKayit\`: servis ayarları ve gün gün servis dağıtımı.
 

@@ -35,7 +35,7 @@
   let onKullanildi = false;
   $effect(() => { y; m; untrack(() => {
     const o = !onKullanildi ? on : null; onKullanildi = true;
-    kisi = o ? String(o.kisi) : ""; bas = o ? o.gun : ilkGun(); bit = bas; if (o) tur = o.tur; durum = null;
+    kisi = o ? String(o.kisi) : ""; bas = o ? o.gun : ilkGun(); bit = bas; elleSecildi = !!o; if (o) tur = o.tur; durum = null;
   }); });
   $effect(() => { if (bit < bas) bit = bas; });
 
@@ -73,22 +73,64 @@
   $effect(() => { kisi; tur; bas; bit; JSON.stringify(secim); onayAdimi = null; });
 
   const gunAdi = (g: number) => gunMetni(y, m, g);
-  // takvimde aralık seçimi: basılı tutup sürükle; ya da önce başlangıca, sonra bitişe dokun
-  let suruk = $state(false), capa = 1, tekSecim = false;
-  // dokunmatikte parmak takvim üzerinde sayfayı kaydırabilsin: seçim basınca değil dokunma bitince (click)
-  let dokunma = false;
-  function takvimBas(d: number, e: PointerEvent) {
-    dokunma = e.pointerType === "touch";
-    if (dokunma || e.button !== 0) return;
-    sec(d);
-    suruk = true;
+  // takvimde aralık seçimi:
+  // - dokunma / tıklama: tek gün seçiliyken başka bir güne dokunmak aralığı o güne kadar uzatır (ileri ya da geri);
+  //   aralığın hemen yanındaki güne dokunmak aralığı bir gün büyütür (günlere sırayla dokunarak 5 gün seçilebilir);
+  //   aralığın içine ya da uzağındaki bir güne dokunmak yeni seçimi o günden başlatır
+  // - bilgisayar: fareyle basılı tutup sürükle
+  // - telefon: güne basılı tut (yarım saniye), sonra parmağı kaldırmadan kaydır; kısa dokunuş sayfayı kaydırmayı engellemez
+  let suruk = $state(false), capa = 1, surukOldu = false, fareBasi = 0;
+  // açılıştaki hazır seçim (bugün) uzatılmaz: ilk dokunuş seçimi o günden başlatır
+  let elleSecildi = false, secimIpucu = $state(false);
+  $effect(() => { bas; bit; secimIpucu = elleSecildi && bas === bit; });
+  function secimYap(d: number) {
+    const tek = bas === bit;
+    if (!elleSecildi) { elleSecildi = true; bas = bit = capa = d; return; }
+    if (tek && d !== bas) { capa = bas; bas = Math.min(capa, d); bit = Math.max(capa, d); }
+    else if (!tek && d === bit + 1) bit = d;
+    else if (!tek && d === bas - 1) bas = d;
+    else { bas = d; bit = d; capa = d; }
   }
-  function takvimTikla(d: number) { if (dokunma) { dokunma = false; sec(d); } }
-  function sec(d: number) {
-    if (tekSecim && bas === bit && d > bas) { bit = d; tekSecim = false; }
-    else { bas = d; bit = d; capa = d; tekSecim = true; }
+  function aralikYap(d: number) { bas = Math.min(capa, d); bit = Math.max(capa, d); }
+  // fare: basılı tutup başka güne geçince sürükleme başlar; geçmeden bırakılırsa normal tıklama
+  function fareBas(d: number, e: PointerEvent) {
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    fareBasi = d; suruk = true; surukOldu = false;
   }
-  function takvimGez(d: number) { if (!suruk) return; bas = Math.min(capa, d); bit = Math.max(capa, d); if (d !== capa) tekSecim = false; }
+  function takvimGez(d: number) {
+    if (!suruk || d === fareBasi && !surukOldu) return;
+    if (!surukOldu && fareBasi) { surukOldu = true; capa = fareBasi; elleSecildi = true; }
+    aralikYap(d);
+  }
+  function takvimTikla(d: number) {
+    if (surukOldu) { surukOldu = false; return; }
+    secimYap(d);
+  }
+  // telefonda basılı tutup kaydırma
+  function dokunmatik(el: HTMLElement) {
+    let zaman: ReturnType<typeof setTimeout> | null = null, x0 = 0, y0 = 0, aktif = false;
+    const gunAl = (x: number, y: number) => Number((document.elementFromPoint(x, y)?.closest("[data-gun]") as HTMLElement | null)?.dataset.gun) || 0;
+    const iptal = () => { if (zaman) clearTimeout(zaman); zaman = null; };
+    const bas_ = (e: TouchEvent) => {
+      if (e.touches.length !== 1) { iptal(); return; }
+      const t = e.touches[0], d = gunAl(t.clientX, t.clientY); if (!d) return;
+      x0 = t.clientX; y0 = t.clientY; aktif = false;
+      zaman = setTimeout(() => { aktif = true; suruk = true; surukOldu = true; elleSecildi = true; bas = bit = capa = d; navigator.vibrate?.(15); }, 450);
+    };
+    const gez = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (!aktif) { if (Math.hypot(t.clientX - x0, t.clientY - y0) > 10) iptal(); return; }
+      e.preventDefault();
+      const d = gunAl(t.clientX, t.clientY); if (d) aralikYap(d);
+    };
+    const bit_ = () => { iptal(); if (aktif) { aktif = false; suruk = false; setTimeout(() => (surukOldu = false), 400); } };
+    el.addEventListener("touchstart", bas_, { passive: true });
+    el.addEventListener("touchmove", gez, { passive: false });
+    el.addEventListener("touchend", bit_); el.addEventListener("touchcancel", bit_);
+    const menu = (e: Event) => { if (aktif || zaman) e.preventDefault(); };
+    el.addEventListener("contextmenu", menu);
+    return { destroy() { el.removeEventListener("touchstart", bas_); el.removeEventListener("touchmove", gez); el.removeEventListener("touchend", bit_); el.removeEventListener("touchcancel", bit_); el.removeEventListener("contextmenu", menu); iptal(); } };
+  }
   const KOD_YAZI: Record<string, string> = { N: "Nöbet", H: "Hazırlama", NI: "Nİ", YI: "Yİ", R: "R", DI: "Dİ" };
   const enUygun = (l: Aday[]) => (l.find(x => !x.engel && !x.uyari) ?? l.find(x => !x.engel))?.id;
   function kaydet() {
@@ -105,7 +147,7 @@
     const adi = r.s.name;
     izinUygula(y, m, r.s.id, tur, bas, bit, sec.map(({ gun, gorev, yer }) => ({ gun, gorev, yer })));
     durum = { tur: "tamam", metin: `${adi}: ${IZIN_AD[tur].toLocaleLowerCase("tr")} kaydedildi${sec.some(s => s.yer) ? "; yerine geçenler çizelgeye ve puantaja işlendi (yıllık eşitlikte görev " + adi + " adına sayılır)." : "."}` };
-    kisi = ""; onayAdimi = null;
+    kisi = ""; onayAdimi = null; elleSecildi = false;
   }
 
   const kayitlar = $derived(ayIzinleri(y, m).filter(x => { const k = depo.veri.staff.find(s => s.id === x.id); return !k || kimler(k); }));
@@ -119,7 +161,7 @@
   }
 </script>
 
-<svelte:window onpointerup={() => (suruk = false)} onpointercancel={() => (suruk = false)} />
+<svelte:window onpointerup={() => { suruk = false; fareBasi = 0; setTimeout(() => (surukOldu = false), 0); }} onpointercancel={() => { suruk = false; fareBasi = 0; }} />
 <div class="duzen">
   <section class="kart panel-blok form" aria-labelledby="izin-baslik">
     <h2 id="izin-baslik">Yeni kayıt</h2>
@@ -132,17 +174,17 @@
         {#each TURLER as t}<label class:secili={tur === t}><input type="radio" name="izin-tur" value={t} bind:group={tur} />{IZIN_AD[t].replace(/ \(.*\)$/, "")}</label>{/each}
       </fieldset>
     </div>
-    <p class="ipucu">Takvimde önce başlangıç gününe, sonra bitiş gününe dokunun (bilgisayarda fareyle sürükleyerek de seçebilirsiniz).{r ? " Kişinin görevleri takvimde görünür." : ""}</p>
-    <div class="takvim" role="group" aria-label="Tarih aralığı">
+    <p class="ipucu">Takvimde başlangıç gününe, sonra bitiş gününe dokunun ya da günlere sırayla dokunun. Telefonda güne basılı tutup parmağınızı kaydırarak, bilgisayarda fareyle sürükleyerek de seçebilirsiniz. Yeni seçim için aralığın içine ya da uzağındaki bir güne dokunun.{r ? " Kişinin görevleri takvimde görünür." : ""}</p>
+    <div class="takvim" class:suruk role="group" aria-label="Tarih aralığı" use:dokunmatik>
       {#each GUN_KISA as d}<div class="bas" aria-hidden="true">{d}</div>{/each}
       {#each { length: haftaGunu(y, m, 1) } as _}<div class="bosluk" aria-hidden="true"></div>{/each}
       {#each G.gunler as g (g.gun)}
         {@const c = r?.cells[g.gun - 1]}
         {@const sec = g.gun >= bas && g.gun <= bit}
-        <button class="gun" class:hs={g.tatil} class:sec class:ilk={sec && g.gun === bas} class:son={sec && g.gun === bit}
+        <button class="gun" data-gun={g.gun} class:hs={g.tatil} class:sec class:ilk={sec && g.gun === bas} class:son={sec && g.gun === bit}
           aria-pressed={sec} aria-label="{gunAdi(g.gun)}{c && KOD_YAZI[c.kod] ? ', ' + KOD_YAZI[c.kod] : ''}"
-          onpointerdown={e => takvimBas(g.gun, e)} onclick={() => takvimTikla(g.gun)} onpointerenter={() => takvimGez(g.gun)}
-          onkeydown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (tekSecim && bas === bit && g.gun > bas) { bit = g.gun; tekSecim = false; } else { bas = bit = capa = g.gun; tekSecim = true; } } }}>
+          onpointerdown={e => fareBas(g.gun, e)} onclick={() => takvimTikla(g.gun)} onpointerenter={() => takvimGez(g.gun)}
+          onkeydown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); secimYap(g.gun); } }}>
           <b class="rakam">{g.gun}</b>
           {#if c && KOD_YAZI[c.kod]}<span class="gv k-{c.acil ? 'A' : c.kod}">{c.acil ? "Acil" : KOD_YAZI[c.kod]}</span>{/if}
           {#if sec}<span class="isr">{IZIN_KISA[tur]}</span>{/if}
@@ -153,7 +195,7 @@
 
   <div class="yan">
   <section class="kart panel-blok secim-panel" aria-live="polite">
-    <h2>Seçim · {bas === bit ? gunAdi(bas) : `${bas}–${bit}. günler`}<span class="sayi">{bit - bas + 1} gün</span></h2>
+    <h2>Seçim · {bas === bit ? gunAdi(bas) : `${bas}–${bit}. günler`}<span class="sayi">{bit - bas + 1} gün</span>{#if bas === bit && secimIpucu}<small class="ipucu-k">Birden çok gün için bitiş gününe dokunun</small>{/if}{#if bas !== bit}<button class="ny temizle" onclick={() => { bit = bas; capa = bas; elleSecildi = false; }}>Seçimi temizle</button>{/if}</h2>
     {#if !r}
       <p class="satir notr">Kişiyi ve türü seçip takvimde günleri işaretleyin; puantaja etkisi ve görev çakışmaları burada görünür.</p>
     {:else if etki}
@@ -254,6 +296,8 @@
   .ozet-u { display: block; }
   .kucuk-bas { font-size: 11px; font-weight: 700; color: var(--yazi-2); }
   .oneri { display: flex; flex-wrap: wrap; gap: 4px; }
+  .temizle { margin-left: var(--b2); font-weight: 600; }
+  .ipucu-k { margin-left: var(--b2); font-size: var(--f-xs); font-weight: 500; color: var(--yazi-2); }
   .ny { border: 1px solid var(--cizgi); background: var(--yuzey); padding: 4px 9px; font: inherit; font-size: var(--f-xs); border-radius: var(--r-kucuk); cursor: pointer; color: var(--yazi); }
   .ny.s { border-color: var(--vurgu); background: var(--vurgu-zemin); color: var(--vurgu); font-weight: 700; }
   .kucuk-sec { font-size: var(--f-xs); min-height: 30px; }
@@ -295,7 +339,7 @@
   .k-NI { background: var(--es-zemin); color: var(--es); }
   .k-DI { background: var(--yuzey); color: var(--yazi-2); box-shadow: inset 0 0 0 1px var(--cizgi); }
   @media (max-width: 1100px) { .duzen { grid-template-columns: 1fr; } }
-  @media (pointer: coarse) { .takvim { touch-action: manipulation; } }
+  @media (pointer: coarse) { .takvim { touch-action: manipulation; -webkit-touch-callout: none; } .takvim.suruk { touch-action: none; } }
   @media (max-width: 720px) { .ust-form { grid-template-columns: 1fr; } .takvim .gun { min-height: 50px; padding: 3px; } .gv { font-size: 0; width: 8px; height: 8px; padding: 0; border-radius: 50%; } }
   @media (max-width: 480px) { .kart { padding: 0 var(--b4) var(--b4); } .iki { grid-template-columns: 1fr; } }
 </style>

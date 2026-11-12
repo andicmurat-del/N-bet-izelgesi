@@ -1,48 +1,36 @@
-// Onay listesi masaları: haftalık PDF (A4 yatay; satırlarda haftanın günleri, sütunlarda masalar ve jokerler).
-// Resmi çıktı: adlar büyük harf; joker / teknikerin eksik masaya oturduğu hücre renkli.
-import { autoTable } from "jspdf-autotable";
-import { yeniPdf } from "./pdfOrtak";
-import { buyukAd } from "../veri/tarih";
+// Onay listesi masaları: haftalık PDF, programdaki tabloyla aynı görünüm: koyu başlık (GÜN, MASA 1…, jokerler ayrı
+// renkte), satır başında gün adı ve tarih, hücrelerde adlar; teknikerin oturduğu hücre açık turkuaz, program
+// dolduramadığı masa kırmızı "Boş", elle boş bırakılan masa boş. Sayfa tablonun boyunda (A4 değil).
+import { yeniPdf, ekranTablosuCiz, type EkranHucre, type EkranSutun } from "./pdfOrtak";
 
 export interface OnayCiktiVerisi {
   kurum: string;
-  /** başlıktaki dönem (ör. "9–13 Kasım 2026") */
+  /** belge adı için dönem (ör. "9–13 Kasım 2026") */
   donem: string;
-  /** sütun başlıkları (ör. "Pazartesi 9 Kasım"); tatil: o gün liste yok */
-  gunler: { baslik: string; tatil: boolean }[];
-  /** yerler (tabloda sütun): yer adı ve gün gün hücre (ad, açıklama) */
-  satirlar: { yer: string; hucre: { ad: string; bos?: boolean; yerine?: boolean }[] }[];
+  /** satır başları: gün adı ve tarih (ör. "Pazartesi", "9 Kasım"); tatil: o gün liste yok */
+  gunler: { baslik: string; alt?: string; tatil: boolean }[];
+  /** yerler (tabloda sütun): yer adı, joker mi, gün gün hücre */
+  satirlar: { yer: string; joker?: boolean; hucre: { ad: string; bos?: boolean; yerine?: boolean; elleBos?: boolean }[] }[];
   notlar: string[];
 }
 
 export function onayPdf(v: OnayCiktiVerisi): Blob {
-  const doc = yeniPdf("landscape");
-  const W = 297, K = 12;
+  const K = 5, GUN = 30, SUT = 30, BAS = 9, SAT = 14;
+  const sutunlar: EkranSutun[] = [{ w: GUN, bas: "Gün" }, ...v.satirlar.map((r, i) => ({ w: SUT, bas: r.yer, basZemin: r.joker ? [27, 107, 123] as const : undefined, ayrac: r.joker && !v.satirlar[i - 1]?.joker }))];
+  const satirlar: EkranHucre[][] = v.gunler.map((g, gi) => [
+    { t: g.baslik, alt: g.alt, kalin: true, renk: [14, 74, 88], hiza: "left", zemin: [239, 245, 246] },
+    ...v.satirlar.map((r, si): EkranHucre => {
+      if (g.tatil) return { t: si === 0 ? "Resmi tatil" : "", renk: [86, 106, 112], zemin: [245, 249, 250] };
+      const h = r.hucre[gi];
+      if (h?.bos) return { t: "Boş", kalin: true, renk: [179, 38, 30], zemin: [253, 241, 240] };
+      if (h?.elleBos) return { t: "" };
+      if (!h?.ad) return { t: "–", renk: [86, 106, 112] };
+      return { t: h.ad, kalin: true, zemin: h.yerine ? [214, 239, 243] : undefined };
+    }),
+  ]);
+  const W = sutunlar.reduce((a, c) => a + c.w, 0) + 2 * K, H = BAS + satirlar.length * SAT + 2 * K;
+  const doc = yeniPdf(W > H ? "landscape" : "portrait", [W, H]);
   doc.setProperties({ title: `${v.donem} onay listesi masaları`, creator: "Nöbet Çizelgesi" });
-  doc.setFont("CizelgeSans", "bold"); doc.setFontSize(14); doc.setTextColor(19, 33, 44);
-  doc.text(`${v.kurum ? buyukAd(v.kurum) + " · " : ""}${v.donem} onay listesi masaları`, K, 16);
-  autoTable(doc, {
-    startY: 22, margin: { left: K, right: K, bottom: 24 },
-    head: [["Gün", ...v.satirlar.map(r => r.yer)]],
-    body: v.gunler.map((g, gi) => [g.baslik, ...v.satirlar.map(r => { const h = r.hucre[gi]; return g.tatil ? "" : h.bos ? "BOŞ" : h.ad ? buyukAd(h.ad) : "–"; })]),
-    theme: "grid",
-    styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 2, halign: "center", valign: "middle", textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.2 },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [208, 230, 235] },
-    columnStyles: { 0: { cellWidth: 30, fontStyle: "bold", halign: "left" } },
-    didParseCell: h => {
-      if (h.section !== "body") return;
-      const g = v.gunler[h.row.index];
-      if (g.tatil) { h.cell.styles.fillColor = [238, 241, 243]; h.cell.styles.textColor = [110, 120, 130]; if (h.column.index === 1) h.cell.text = ["Resmi tatil"]; return; }
-      if (h.column.index === 0) return;
-      const c = v.satirlar[h.column.index - 1].hucre[h.row.index];
-      if (c?.bos) { h.cell.styles.fillColor = [253, 226, 226]; h.cell.styles.textColor = [160, 30, 30]; h.cell.styles.fontStyle = "bold"; }
-      else if (c?.yerine) h.cell.styles.fillColor = [255, 246, 222];
-    },
-  });
-  const H = doc.internal.pageSize.getHeight();
-  doc.setFont("CizelgeSans", "normal"); doc.setFontSize(8); doc.setTextColor(88, 105, 120);
-  v.notlar.forEach((t, i) => doc.text(t, K, H - 18 + i * 4));
-  doc.setTextColor(19, 33, 44);
-  doc.text("Düzenleyen: __________________          Onaylayan: __________________", W - K, H - 8, { align: "right" });
+  ekranTablosuCiz(doc, { x: K, y: K, basH: BAS, satirH: SAT, sutunlar, satirlar });
   return doc.output("blob");
 }

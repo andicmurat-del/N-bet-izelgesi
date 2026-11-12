@@ -1,6 +1,6 @@
 // Acil servis nöbet çizelgesi: Excel (gün listesi + kişi özeti) ve PDF (A4 yatay takvim + kişi özeti). Resmi çıktı: adlar büyük harf.
 import { autoTable } from "jspdf-autotable";
-import { yeniPdf } from "./pdfOrtak";
+import { yeniPdf, haftalikTakvimCiz, PDF_TABLO_BAS } from "./pdfOrtak";
 import { xlsxKitap, type Hucre } from "./xlsx";
 import { AYLAR, GUN_UZUN, buyukAd } from "../veri/tarih";
 
@@ -39,38 +39,26 @@ export function acilPdf(v: AcilVerisi): Blob {
   doc.setProperties({ title: `${AYLAR[v.m]} ${v.y} acil eczane nöbet listesi`, creator: "Nöbet Çizelgesi" });
   doc.setFont("CizelgeSans", "bold"); doc.setFontSize(14); doc.setTextColor(19, 33, 44);
   doc.text(baslik(v), K, 14);
-  // takvim: haftalar satır, günler sütun
-  const ilk = v.gunler[0]?.dw ?? 0, hucreler: (AcilVerisi["gunler"][number] | null)[] = [...Array(ilk).fill(null), ...v.gunler];
-  while (hucreler.length % 7) hucreler.push(null);
-  const haftalar = Array.from({ length: hucreler.length / 7 }, (_, i) => hucreler.slice(i * 7, i * 7 + 7));
-  autoTable(doc, {
-    startY: 19, margin: { left: K, right: K },
-    head: [GUN_UZUN],
-    body: haftalar.map(h => h.map(g => (g ? `${g.gun}${g.resmi ? "  Resmi tatil" : ""}\n${g.adlar.map(buyukAd).join("\n") || " "}` : ""))),
-    theme: "grid",
-    styles: { font: "CizelgeSans", fontSize: 9, cellPadding: 2.2, valign: "top", textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.15, minCellHeight: 24 },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [208, 230, 235], halign: "center", minCellHeight: 0 },
-    didParseCell: h => {
-      if (h.section !== "body") return;
-      const g = haftalar[h.row.index][h.column.index];
-      if (g?.tatil) h.cell.styles.fillColor = [251, 240, 224];
-      if (!g) h.cell.styles.fillColor = [244, 248, 249];
-    },
+  // takvim: ekrandaki haftalık form (her hafta ayrı blok)
+  const hafta = Math.ceil(((v.gunler[0]?.dw ?? 0) + v.gunler.length) / 7), TY = 19, TH = 7 + hafta * 21.8;
+  haftalikTakvimCiz(doc, {
+    x: K, y: TY, w: W - 2 * K, h: TH, yil: v.y, ay: v.m,
+    gunler: v.gunler.map(g => ({ gun: g.gun, dw: g.dw, tatil: g.tatil, etiket: g.resmi ? "Resmi tatil" : "", satirlar: g.adlar.map((a, k) => ({ et: k + 1 + ".", ad: buyukAd(a), tur: "ecz" as const })) })),
   });
-  const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 150;
+  const sonY = TY + TH;
   if (v.ozet.length) {
     autoTable(doc, {
-      startY: sonY + 8, margin: { left: K, right: K },
+      startY: sonY + 6, margin: { left: K, right: K },
       head: [["Ad soyad", "Nöbet", "Hafta sonu / tatil", "Nöbet günleri"]],
       body: v.ozet.map(o => [buyukAd(o.ad), String(o.gunler.length), String(o.tatil), o.gunler.join(", ")]),
       theme: "grid",
       styles: { font: "CizelgeSans", fontSize: 9, cellPadding: 1.8, textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.15 },
-      headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [208, 230, 235] },
+      headStyles: PDF_TABLO_BAS,
       columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 20, halign: "center" }, 2: { cellWidth: 34, halign: "center" } },
     });
   }
   doc.setFontSize(8); doc.setTextColor(88, 105, 120);
-  doc.text("Gölgeli günler: hafta sonu ve resmi tatil. Acil eczane nöbeti puantajda 24 saat sayılır; ertesi gün mesai günüyse nöbet izni.", K, 200);
+  doc.text("Turkuaz başlık: hafta sonu ve resmi tatil. Acil eczane nöbeti puantajda 24 saat sayılır; ertesi gün mesai günüyse nöbet izni.", K, 200);
   doc.setTextColor(19, 33, 44);
   doc.text("Düzenleyen: ________________________          Onaylayan: ________________________", W - K, 205, { align: "right" });
   return doc.output("blob");

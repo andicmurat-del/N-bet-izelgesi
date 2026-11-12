@@ -18,7 +18,7 @@ export interface ServisGunCiktisi {
 }
 
 type Rgb = [number, number, number];
-const YAZI: Rgb = [21, 38, 43], SOLUK: Rgb = [70, 89, 95], BASLIK: Rgb = [208, 230, 235], CIZGI: Rgb = [150, 160, 170];
+const YAZI: Rgb = [21, 38, 43], SOLUK: Rgb = [70, 89, 95], BASLIK: Rgb = [14, 74, 88], CIZGI: Rgb = [150, 160, 170];
 const ybMi = (sn: string) => /\sYB$/.test(sn);
 const sirala = <T extends { name: string }>(l: T[]) => [...l].sort((a, b) => Number(ybMi(b.name)) - Number(ybMi(a.name)) || a.name.localeCompare(b.name, "tr"));
 const servisSayisi = (v: ServisGunCiktisi) => v.kisiler.reduce((t, k) => t + k.items.length, 0);
@@ -27,7 +27,7 @@ const gunNotu = (v: ServisGunCiktisi) => (v.n > 1 ? ` · çok günlük servisler
 function ust(doc: jsPDF, W: number, K: number, kurum: string, baslik: string, alt: string) {
   doc.setFont("CizelgeSans", "normal"); doc.setFontSize(9); doc.setTextColor(...SOLUK);
   if (kurum) doc.text(buyukAd(kurum), K, 11);
-  doc.setFont("CizelgeSans", "bold"); doc.setFontSize(15); doc.setTextColor(...YAZI);
+  doc.setFont("CizelgeSans", "bold"); doc.setFontSize(15); doc.setTextColor(14, 74, 88);
   doc.text(baslik, K, 18.5);
   doc.setFont("CizelgeSans", "normal"); doc.setFontSize(9.5); doc.setTextColor(...SOLUK);
   doc.text(alt, K, 24.5, { maxWidth: W - 2 * K });
@@ -47,7 +47,7 @@ export function servisTekSayfaPdf(v: ServisGunCiktisi): Blob {
     const x = K + (i % kol) * (bw + bosluk), y = top + Math.floor(i / kol) * (bh + bosluk);
     doc.setDrawColor(...CIZGI); doc.setLineWidth(0.3); doc.roundedRect(x, y, bw, bh, 2, 2);
     doc.setFillColor(...BASLIK); doc.roundedRect(x, y, bw, 11, 2, 2, "F"); doc.rect(x, y + 6, bw, 5, "F");
-    doc.setFont("CizelgeSans", "bold"); doc.setFontSize(11); doc.setTextColor(...YAZI);
+    doc.setFont("CizelgeSans", "bold"); doc.setFontSize(11); doc.setTextColor(255, 255, 255);
     doc.text(buyukAd(k.ad), x + bw / 2, y + 7.4, { maxWidth: bw - 6, align: "center" });
     doc.setFont("CizelgeSans", "normal"); doc.setFontSize(8); doc.setTextColor(...SOLUK);
     doc.text(`${k.items.length} servis · ${k.yb} YB`, x + 3, y + 15.5);
@@ -71,7 +71,7 @@ export function servisKisiPdf(v: ServisGunCiktisi): Blob {
       body: items.map((s, j) => [String(j + 1), s.name, s.multi && v.n > 1 ? `${v.n} günlük` : "Tek günlük", ""]),
       theme: "grid",
       styles: { font: "CizelgeSans", fontSize: 11, cellPadding: { top: 3.2, bottom: 3.2, left: 2.5, right: 2.5 }, textColor: YAZI, lineColor: CIZGI, lineWidth: 0.2, valign: "middle" },
-      headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: BASLIK, fontSize: 10 },
+      headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: BASLIK, textColor: [255, 255, 255], fontSize: 10 },
       columnStyles: { 0: { cellWidth: 10, halign: "center" }, 1: { fontStyle: "bold" }, 2: { cellWidth: 32 }, 3: { cellWidth: 28 } },
       didDrawCell: h => { if (h.section === "body" && h.column.index === 3) { doc.setDrawColor(110, 120, 130); doc.rect(h.cell.x + h.cell.width / 2 - 2.5, h.cell.y + h.cell.height / 2 - 2.5, 5, 5); } },
     });
@@ -100,7 +100,7 @@ export function servisTopluPdf(v: ServisGunCiktisi): Blob {
   const ortak = {
     theme: "grid" as const, head: [["Servis", "Hazırlayan"]], startY: 30, tableWidth: tw,
     styles: { font: "CizelgeSans", fontSize: fs, cellPadding: { top: dikey, bottom: dikey, left: pad, right: pad }, textColor: YAZI, lineColor: CIZGI, lineWidth: 0.15, valign: "middle" as const },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold" as const, fillColor: BASLIK },
+    headStyles: { font: "CizelgeSans", fontStyle: "bold" as const, fillColor: BASLIK, textColor: [255, 255, 255] as Rgb },
     alternateRowStyles: { fillColor: [244, 248, 249] as Rgb },
     columnStyles: { 0: { cellWidth: tw - s2 }, 1: { fontStyle: "bold" as const, cellWidth: s2 } },
   };
