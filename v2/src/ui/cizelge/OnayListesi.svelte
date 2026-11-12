@@ -130,7 +130,7 @@
       ];
       const blob = onayPdf({
         kurum: depo.veri.kurum.ad, donem: `${haftaMetni(hafta)} ${hafta.gunler[4][0]}`,
-        gunler: g.map(x => ({ baslik: `${GUN_UZUN[x.dw]} ${x.d} ${AYLAR[x.m]}${x.arife ? " (arife)" : ""}`, tatil: x.tatil })),
+        gunler: g.map(x => ({ baslik: `${x.d} ${GUN_UZUN[x.dw]}${x.arife ? " (arife)" : ""}`, tatil: x.tatil })),
         satirlar, notlar: ["Masaya oturan o masanın listelerini onaylar. Renkli hücre: eczacı yetmediği için masaya oturan hazırlama teknikeri."],
       });
       durum = (await dosyaKaydet(`onay-listesi-${H.pzt}.pdf`, blob, "application/pdf")) ? "PDF kaydedildi." : "";
