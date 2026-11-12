@@ -49,11 +49,13 @@
 
   // elle yer değiştirme: tablodaki bir kişiye dokunulur, o gün oturan başka biriyle yeri değiştirilir; gün elle kaydedilir
   let degisAcik = $state(false);
-  let degis = $state<{ g: OnayGunu; id: number; ad: string; yer: string; tek?: true } | null>(null);
+  let degis = $state<{ g: OnayGunu; id: number; ad: string; yer: string; tek?: true; bos?: true } | null>(null);
   const isoGun = (g: OnayGunu) => `${g.y}-${String(g.m + 1).padStart(2, "0")}-${String(g.d).padStart(2, "0")}`;
   /** günün eczacı yerleri: kişi id → yer ("1"–"7", "J"); elle seçilen teknikerler de (tekniker: true ile hepsi) */
   const gunYerleri = (g: OnayGunu, tekniker: "elle" | "hepsi" | "yok" = "elle") => {
-    const l: Record<number, string> = {};
+    const l: Record<string, string> = {};
+    const b = g.masa.map((h, i) => (h.bos ? String(i + 1) : "")).filter(Boolean);
+    if (b.length && tekniker !== "yok") l.bos = b.join(",");
     g.masa.forEach((h, i) => { if (h.id && (!h.tekniker || tekniker === "hepsi" || (tekniker === "elle" && h.elle))) l[h.id] = String(i + 1); });
     g.joker.forEach(h => { if (h.id) l[h.id] = "J"; });
     return l;
@@ -66,6 +68,11 @@
   const secenekler = $derived.by((): Secenek[] => {
     if (!degis) return [];
     const g = degis.g, l: Secenek[] = [];
+    if (degis.bos) {   // boş bırakılan masa: jokerdeki eczacılar ya da (Masa 1–6) masada olmayan teknikerler oturabilir
+      const out: Secenek[] = g.joker.filter(h => h.id).map(h => ({ id: h.id!, ad: h.ad, yer: "J", tek: false }));
+      if (ilk6(degis.yer)) for (const t of g.tekAday ?? []) if (!g.masa.some(h => h.id === t.id)) out.push({ id: t.id, ad: t.ad, yer: "", tek: true });
+      return out;
+    }
     g.masa.forEach((h, i) => { if (h.id && h.id !== degis!.id) l.push({ id: h.id, ad: h.ad, yer: String(i + 1), tek: !!h.tekniker }); });
     g.joker.forEach(h => { if (h.id && h.id !== degis!.id) l.push({ id: h.id, ad: h.ad, yer: "J", tek: false }); });
     const out = l.filter(o => (degis!.tek || o.tek ? ilk6(o.yer) && ilk6(degis!.yer) : true));
@@ -74,10 +81,33 @@
   });
   function degisAc(g: OnayGunu, id: number, ad: string, yer: string) { if (onay) return; degis = { g, id, ad, yer }; degisAcik = true; }
   function tekAc(g: OnayGunu, id: number, ad: string, yer: string) { if (onay) return; degis = { g, id, ad, yer, tek: true }; degisAcik = true; }
+  const bosEkle = (l: Record<string, string>, yer: string, ekle: boolean) => {
+    const b = new Set((l.bos ?? "").split(",").filter(Boolean));
+    if (ekle) b.add(yer); else b.delete(yer);
+    if (b.size) l.bos = [...b].sort().join(","); else delete l.bos;
+  };
+  function bosAc(g: OnayGunu, yer: string) { if (onay) return; degis = { g, id: 0, ad: "Boş masa", yer, bos: true }; degisAcik = true; }
+  // masayı elle boş bırak: eczacı jokere geçer, tekniker kalkar
+  function bosBirak() {
+    if (!degis || degis.bos || degis.yer === "J") return;
+    const l = gunYerleri(degis.g, "hepsi");
+    if (degis.tek) delete l[degis.id]; else l[degis.id] = "J";
+    bosEkle(l, degis.yer, true);
+    onayGunuAyarla(isoGun(degis.g), l);
+    degisAcik = false;
+  }
+  function bosKaldir() {
+    if (!degis?.bos) return;
+    const l = gunYerleri(degis.g, "hepsi");
+    bosEkle(l, degis.yer, false);
+    onayGunuAyarla(isoGun(degis.g), l);
+    degisAcik = false;
+  }
   function degistir(o: Secenek) {
     if (!degis) return;
-    const l = gunYerleri(degis.g, degis.tek || o.tek ? "hepsi" : "elle");
-    if (!o.yer) { delete l[degis.id]; l[o.id] = degis.yer; }   // masada olmayan tekniker oturur, eskisi kalkar
+    const l = gunYerleri(degis.g, degis.tek || o.tek || degis.bos ? "hepsi" : "elle");
+    if (degis.bos) { bosEkle(l, degis.yer, false); l[o.id] = degis.yer; }
+    else if (!o.yer) { delete l[degis.id]; l[o.id] = degis.yer; }   // masada olmayan tekniker oturur, eskisi kalkar
     else { l[o.id] = degis.yer; l[degis.id] = o.yer; }
     onayGunuAyarla(isoGun(degis.g), l);
     degisAcik = false;
@@ -95,7 +125,7 @@
       const { onayPdf } = await ciktiPaketi();
       const g = H.gunler;
       const satirlar = [
-        ...Array.from({ length: 7 }, (_, i) => ({ yer: `Masa ${i + 1}`, hucre: g.map(x => ({ ad: x.masa[i]?.ad ?? "", yerine: !!x.masa[i]?.tekniker, bos: !x.tatil && i < 6 && !x.masa[i]?.id })) })),
+        ...Array.from({ length: 7 }, (_, i) => ({ yer: `Masa ${i + 1}`, hucre: g.map(x => ({ ad: x.masa[i]?.bos ? "Boş (elle)" : x.masa[i]?.ad ?? "", yerine: !!x.masa[i]?.tekniker, bos: !x.tatil && i < 6 && !x.masa[i]?.id && !x.masa[i]?.bos })) })),
         ...Array.from({ length: jokerSatir }, (_, i) => ({ yer: `Joker ${i + 1}`, hucre: g.map(x => ({ ad: x.joker[i]?.ad ?? "" })) })),
       ];
       const blob = onayPdf({
@@ -124,7 +154,7 @@
   {#each haftalar as h, i}<button class="hafta" aria-pressed={secili === i} onclick={() => (secili = i)}><b>{i + 1}. hafta{#if haftaOnayi("onay", ...h.pzt)}{" "}<Ikon ad="tamam" boyut={13} />{/if}</b><small>{haftaMetni(h)}{haftaOnayi("onay", ...h.pzt) ? " · onaylı" : ""}</small></button>{/each}
 </div>
 
-<Bilgi baslik="Onay masaları nasıl dağıtılır?"><p>Yerler her gün yeniden dağıtılır; sabit sıra yoktur. O gün çalışan eczacılar (acilde tutanlar dahil, kemoterapi eczacıları hariç; nöbet ertesi, izin, rapor olan yok) Masa 1–6'ya oturur. 7. kişi joker olur; 8 ve daha çok kişide fazlalardan ilki Masa 7'ye oturur, kalanlar joker. Kimse önceki çalıştığı gün oturduğu yere oturmaz, mümkünse aynı hafta içinde de aynı yere ikinci kez oturmaz. Yıl boyunca herkes her masaya (ve jokerliğe) eşit oturur: her gün kişi, yıl içinde en az oturduğu yere yerleştirilir. Cuma hafta sonu listeleriyle birlikte 3 günlük iş olduğundan ayrı sayılır: Cumalar kendi arasında, Pazartesi–Perşembe kendi arasında eşitlenir. İlk 6 masa dolmazsa o günün hazırlama teknikerlerinden biri oturur (yıl boyunca sırayla); oturan teknikere dokunup o gün çalışan başka bir hazırlama teknikerini elle seçebilirsiniz. Tablodaki bir kişiye dokunarak o gün başka biriyle yerini değiştirebilirsiniz; gün elle kaydedilir. Liste haftalık onaylanır; öğlen nöbeti, haftanın onay listesi onaylandıktan sonra yazılır. Hafta içi, arife dahil; resmi tatilde liste yok.</p></Bilgi>
+<Bilgi baslik="Onay masaları nasıl dağıtılır?"><p>Yerler her gün yeniden dağıtılır; sabit sıra yoktur. O gün çalışan eczacılar (acilde tutanlar dahil, kemoterapi eczacıları hariç; nöbet ertesi, izin, rapor olan yok) Masa 1–6'ya oturur. 7. kişi joker olur; 8 ve daha çok kişide fazlalardan ilki Masa 7'ye oturur, kalanlar joker. Kimse önceki çalıştığı gün oturduğu yere oturmaz, mümkünse aynı hafta içinde de aynı yere ikinci kez oturmaz. Yıl boyunca herkes her masaya (ve jokerliğe) eşit oturur: her gün kişi, yıl içinde en az oturduğu yere yerleştirilir. Cuma hafta sonu listeleriyle birlikte 3 günlük iş olduğundan ayrı sayılır: Cumalar kendi arasında, Pazartesi–Perşembe kendi arasında eşitlenir. İlk 6 masa dolmazsa o günün hazırlama teknikerlerinden biri oturur (yıl boyunca sırayla); oturan teknikere dokunup o gün çalışan başka bir hazırlama teknikerini elle seçebilirsiniz. Bir masa yalnız elle boş bırakılabilir: kişiye dokunup "Masayı boş bırak"ı seçin (eczacı jokere geçer). Tablodaki bir kişiye dokunarak o gün başka biriyle yerini değiştirebilirsiniz; gün elle kaydedilir. Liste haftalık onaylanır; öğlen nöbeti, haftanın onay listesi onaylandıktan sonra yazılır. Hafta içi, arife dahil; resmi tatilde liste yok.</p></Bilgi>
 
 {#if H}
     {#each H.gunler.filter(g => g.uyari.length) as g}<p class="bant hata">{g.d} {AYLAR[g.m]}: {g.uyari.join(" ")}</p>{/each}
@@ -141,7 +171,8 @@
                 {:else}
                   {#each Array.from({ length: 7 }, (_, i) => i) as i}
                     {@const h = g.masa[i]}
-                    {#if !h?.id}<td class:bos={i < 6} class:ek={i === 6}>{i < 6 ? "Boş" : "–"}</td>
+                    {#if h?.bos}<td class="bos-elle" class:ek={i === 6}>{#if onay}Boş (elle){:else}<button class="kisi-d" onclick={() => bosAc(g, String(i + 1))} aria-label="Masa {i + 1} elle boş bırakıldı: doldur">Boş (elle)</button>{/if}</td>
+                    {:else if !h?.id}<td class:bos={i < 6} class:ek={i === 6}>{i < 6 ? "Boş" : "–"}</td>
                     {:else}<td class:yerine={!!h.tekniker} class:ek={i === 6} title={h.not}>{#if h.tekniker && onay}<b>{h.ad}</b>{:else if h.tekniker}<button class="kisi-d" onclick={() => tekAc(g, h.id!, h.ad, String(i + 1))} aria-label="{h.ad} (tekniker), Masa {i + 1}: başka tekniker seç"><b>{h.ad}</b></button>{:else if onay}<b>{h.ad}</b>{:else}<button class="kisi-d" onclick={() => degisAc(g, h.id!, h.ad, String(i + 1))} aria-label="{h.ad}, Masa {i + 1}: yer değiştir"><b>{h.ad}</b></button>{/if}</td>{/if}
                   {/each}
                   {#each Array.from({ length: jokerSatir }, (_, i) => i) as i}
@@ -168,12 +199,14 @@
 
 
 {#if degis}
-  <Pencere bind:acik={degisAcik} baslik="{degis.ad} · {degis.yer === 'J' ? 'Joker' : 'Masa ' + degis.yer}" altBaslik="{degis.g.d} {AYLAR[degis.g.m]} {GUN_UZUN[degis.g.dw]} · yerini kiminle değiştirsin?">
+  <Pencere bind:acik={degisAcik} baslik={degis.bos ? 'Masa ' + degis.yer + ' · boş (elle)' : degis.ad + ' · ' + (degis.yer === 'J' ? 'Joker' : 'Masa ' + degis.yer)} altBaslik="{degis.g.d} {AYLAR[degis.g.m]} {GUN_UZUN[degis.g.dw]} · {degis.bos ? 'bu masaya kim otursun?' : 'yerini kiminle değiştirsin?'}">
     {#if secenekler.length}
       <ul class="degis-l">
         {#each secenekler as o (o.id)}<li><button class="dugme" onclick={() => degistir(o)}><span>{o.ad}</span><small>{o.yer ? (o.yer === "J" ? "Joker" : "Masa " + o.yer) + (o.tek ? " · tekniker" : "") : "masada değil · tekniker"}</small></button></li>{/each}
       </ul>
-    {:else}<p class="aciklama-k">O gün yer değiştirilebilecek kimse yok.</p>{/if}
+    {:else}<p class="aciklama-k">{degis.bos ? "Jokerde eczacı ya da masada olmayan tekniker yok." : "O gün yer değiştirilebilecek kimse yok."}</p>{/if}
+    {#if degis.bos}<p class="bos-sec"><button class="dugme" onclick={bosKaldir}><Ikon ad="yenile" />Boşluğu kaldır (program doldursun)</button></p>
+    {:else if degis.yer !== "J"}<p class="bos-sec"><button class="dugme" onclick={bosBirak}><Ikon ad="kapat" />Masayı boş bırak{degis.tek ? "" : " (eczacı jokere geçer)"}</button></p>{/if}
     <p class="aciklama-k">{degis.tek || ilk6(degis.yer) ? "Tekniker yalnız Masa 1–6'ya oturabilir; masada olmayan seçenekler o gün çalışan hazırlama teknikerleridir. " : ""}Değiştirilen gün elle kaydedilir; eşitlikte gerçekte oturulan yer sayılır, sonraki günler buna göre dengelenir.</p>
     {#snippet altlik()}
       {#if degis?.g.elle}<button class="dugme sade" onclick={otomatigeBirak}>Günü otomatiğe bırak</button>{/if}
@@ -238,6 +271,8 @@
   .aciklama-k { font-size: var(--f-sm); color: var(--yazi-2); margin-top: var(--b3); }
   .onay td.yerine { background: color-mix(in srgb, var(--acik-mavi) 30%, var(--yuzey)); }
   .onay td.bos { background: var(--hata-zemin, #fde2e2); color: var(--hata); font-weight: 700; }
+  .onay td.bos-elle { background: repeating-linear-gradient(135deg, var(--yuzey-2) 0 6px, var(--yuzey) 6px 12px); color: var(--yazi-2); font-weight: 600; }
+  .bos-sec { margin: var(--b3) 0 0; }
   .onay .tatil { background: var(--yuzey-2); color: var(--soluk); }
   .onay .ilk-joker { border-left: 2px solid var(--cizgi); }
   .onay thead th.joker-bas { background: var(--nobet-hucre); }

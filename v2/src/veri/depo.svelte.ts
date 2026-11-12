@@ -554,7 +554,7 @@ export function acilKaydet(y: number, m: number, gunler: { gun: number; ids: num
 
 // ---------- onay listesi masaları ----------
 /** günün yerlerini elle kaydeder (gun: "YYYY-AA-GG"; kişi id → yer "1"–"7" ya da "J"); null: gün otomatiğe döner */
-export function onayGunuAyarla(gun: string, yer: Record<number, string> | null) {
+export function onayGunuAyarla(gun: string, yer: Record<string, string> | null) {
   const [gy, gm, gd] = gun.split("-").map(Number);
   if (haftaOnayi("onay", gy, gm - 1, gd)) return;
   if (!yer || !Object.keys(yer).length) { delete depo.veri.onayMasa.elle[gun]; return; }

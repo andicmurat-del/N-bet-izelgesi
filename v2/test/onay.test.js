@@ -94,6 +94,27 @@ describe("onay listesi masaları", () => {
     expect(g.uyari).toEqual([]);
   });
 
+  test("masa yalnız elle boş bırakılabilir: eczacı jokere geçer, tekniker konmaz, uyarı yok", () => {
+    const v = JSON.parse(JSON.stringify(veri)); v.puantaj = {};
+    const g0 = onayHaftasiHesapla(v, 2026, 10, 9).gunler[1];   // 10 Kasım: 9 eczacı
+    const E = {}; g0.masa.forEach((h, i) => { if (h.id) E[h.id] = String(i + 1); }); g0.joker.forEach(h => (E[h.id] = "J"));
+    const kisi = g0.masa[2].id; E[kisi] = "J"; E.bos = "3";
+    v.onayMasa = { elle: { "2026-11-10": E } };
+    const g = onayHaftasiHesapla(v, 2026, 10, 9).gunler[1];
+    expect(g.masa[2]).toMatchObject({ id: null, bos: true });
+    expect(g.joker.map(h => h.id)).toContain(kisi);
+    expect(g.masa.some(h => h.tekniker)).toBe(false);
+    expect(g.uyari).toEqual([]);
+    // 11 Kasım: tekniker oturan masa elle boş: tekniker konmaz
+    const h0 = H.gunler[2], tno = String(h0.masa.findIndex(h => h.tekniker) + 1);
+    const F = {}; h0.masa.forEach((h, i) => { if (h.id && !h.tekniker) F[h.id] = String(i + 1); }); F.bos = tno;
+    const w = JSON.parse(JSON.stringify(veri)); w.onayMasa = { elle: { "2026-11-11": F } };
+    const g2 = onayHaftasiHesapla(w, 2026, 10, 9).gunler[2];
+    expect(g2.masa.some(h => h.tekniker)).toBe(false);
+    expect(g2.masa[Number(tno) - 1].bos).toBe(true);
+    expect(g2.uyari).toEqual([]);
+  });
+
   test("tekniker sırası yıl boyunca: masaya oturan tekniker sonraki sefer arkaya geçer", () => {
     const v = JSON.parse(JSON.stringify(veri));
     v.puantaj["2026-10"] = Object.fromEntries([1, 2, 3, 4].map(id => [id, { 16: "R", 17: "R" }]));
