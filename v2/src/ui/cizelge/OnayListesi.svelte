@@ -58,28 +58,27 @@
     g.joker.forEach(h => { if (h.id) l[h.id] = "J"; });
     return l;
   };
-  const digerleri = $derived(degis && !degis.tek ? Object.entries(gunYerleri(degis.g, "yok")).filter(([id]) => Number(id) !== degis!.id).map(([id, yer]) => ({ id: Number(id), yer, ad: [...degis!.g.masa, ...degis!.g.joker].find(h => h.id === Number(id))?.ad ?? "" })) : []);
+  // yer değiştirme seçenekleri: o gün oturan herkes (eczacılar ve masadaki teknikerler); tekniker yalnız Masa 1–6'ya
+  // oturabildiği için joker / Masa 7 ile tekniker arasında değişim yok. Teknikere dokununca o gün çalışan, masada
+  // olmayan hazırlama teknikerleri de seçilebilir.
+  type Secenek = { id: number; ad: string; yer: string; tek: boolean };
+  const ilk6 = (yer: string) => ["1", "2", "3", "4", "5", "6"].includes(yer);
+  const secenekler = $derived.by((): Secenek[] => {
+    if (!degis) return [];
+    const g = degis.g, l: Secenek[] = [];
+    g.masa.forEach((h, i) => { if (h.id && h.id !== degis!.id) l.push({ id: h.id, ad: h.ad, yer: String(i + 1), tek: !!h.tekniker }); });
+    g.joker.forEach(h => { if (h.id && h.id !== degis!.id) l.push({ id: h.id, ad: h.ad, yer: "J", tek: false }); });
+    const out = l.filter(o => (degis!.tek || o.tek ? ilk6(o.yer) && ilk6(degis!.yer) : true));
+    if (degis.tek) for (const t of g.tekAday ?? []) if (t.id !== degis.id && !l.some(o => o.id === t.id)) out.push({ id: t.id, ad: t.ad, yer: "", tek: true });
+    return out;
+  });
   function degisAc(g: OnayGunu, id: number, ad: string, yer: string) { if (onay) return; degis = { g, id, ad, yer }; degisAcik = true; }
-  // boş masaya oturan teknikeri elle seçme: o gün çalışan hazırlama teknikerlerinden (masada olmayanlar ya da başka
-  // masadaki teknikerle yer değiştirme); gün elle kaydedilir
   function tekAc(g: OnayGunu, id: number, ad: string, yer: string) { if (onay) return; degis = { g, id, ad, yer, tek: true }; degisAcik = true; }
-  const tekSecenek = $derived(degis?.tek ? (degis.g.tekAday ?? []).filter(t => t.id !== degis!.id).map(t => {
-    const i = degis!.g.masa.findIndex(h => h.id === t.id && h.tekniker);
-    return { ...t, yer: i >= 0 ? String(i + 1) : "" };
-  }) : []);
-  function tekDegistir(t: { id: number; yer: string }) {
+  function degistir(o: Secenek) {
     if (!degis) return;
-    const l = gunYerleri(degis.g, "hepsi");
-    delete l[degis.id];
-    l[t.id] = degis.yer;
-    if (t.yer) l[degis.id] = t.yer;   // başka masadaki teknikerle yer değiştirme
-    onayGunuAyarla(isoGun(degis.g), l);
-    degisAcik = false;
-  }
-  function degistir(baska: { id: number; yer: string }) {
-    if (!degis) return;
-    const l = gunYerleri(degis.g, "elle");
-    l[baska.id] = degis.yer; l[degis.id] = baska.yer;
+    const l = gunYerleri(degis.g, degis.tek || o.tek ? "hepsi" : "elle");
+    if (!o.yer) { delete l[degis.id]; l[o.id] = degis.yer; }   // masada olmayan tekniker oturur, eskisi kalkar
+    else { l[o.id] = degis.yer; l[degis.id] = o.yer; }
     onayGunuAyarla(isoGun(degis.g), l);
     degisAcik = false;
   }
@@ -169,19 +168,13 @@
 
 
 {#if degis}
-  <Pencere bind:acik={degisAcik} baslik="{degis.ad} · {degis.yer === 'J' ? 'Joker' : 'Masa ' + degis.yer}" altBaslik="{degis.g.d} {AYLAR[degis.g.m]} {GUN_UZUN[degis.g.dw]} · {degis.tek ? 'bu masaya hangi tekniker otursun?' : 'yerini kiminle değiştirsin?'}">
-    {#if degis.tek}
-      {#if tekSecenek.length}
-        <ul class="degis-l">
-          {#each tekSecenek as t (t.id)}<li><button class="dugme" onclick={() => tekDegistir(t)}><span>{t.ad}</span><small>{t.yer ? "Masa " + t.yer + " · yer değiştir" : "o gün çalışıyor"}</small></button></li>{/each}
-        </ul>
-      {:else}<p class="aciklama-k">O gün boş masaya oturabilecek başka hazırlama teknikeri yok.</p>{/if}
-    {:else}
-    <ul class="degis-l">
-      {#each digerleri as o (o.id)}<li><button class="dugme" onclick={() => degistir(o)}><span>{o.ad}</span><small>{o.yer === "J" ? "Joker" : "Masa " + o.yer}</small></button></li>{/each}
-    </ul>
-    {/if}
-    <p class="aciklama-k">{degis.tek ? "Seçenekler o gün çalışan hazırlama teknikerleridir. " : ""}Değiştirilen gün elle kaydedilir; eşitlikte gerçekte oturulan yer sayılır, sonraki günler buna göre dengelenir.</p>
+  <Pencere bind:acik={degisAcik} baslik="{degis.ad} · {degis.yer === 'J' ? 'Joker' : 'Masa ' + degis.yer}" altBaslik="{degis.g.d} {AYLAR[degis.g.m]} {GUN_UZUN[degis.g.dw]} · yerini kiminle değiştirsin?">
+    {#if secenekler.length}
+      <ul class="degis-l">
+        {#each secenekler as o (o.id)}<li><button class="dugme" onclick={() => degistir(o)}><span>{o.ad}</span><small>{o.yer ? (o.yer === "J" ? "Joker" : "Masa " + o.yer) + (o.tek ? " · tekniker" : "") : "masada değil · tekniker"}</small></button></li>{/each}
+      </ul>
+    {:else}<p class="aciklama-k">O gün yer değiştirilebilecek kimse yok.</p>{/if}
+    <p class="aciklama-k">{degis.tek || ilk6(degis.yer) ? "Tekniker yalnız Masa 1–6'ya oturabilir; masada olmayan seçenekler o gün çalışan hazırlama teknikerleridir. " : ""}Değiştirilen gün elle kaydedilir; eşitlikte gerçekte oturulan yer sayılır, sonraki günler buna göre dengelenir.</p>
     {#snippet altlik()}
       {#if degis?.g.elle}<button class="dugme sade" onclick={otomatigeBirak}>Günü otomatiğe bırak</button>{/if}
       <span style="flex:1"></span>

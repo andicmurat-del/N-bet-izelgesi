@@ -80,6 +80,20 @@ describe("onay listesi masaları", () => {
     expect(onayHaftasiHesapla(v, 2026, 10, 9).gunler[2].masa.filter(h => h.tekniker).map(h => h.ad)).toEqual(["T1"]);
   });
 
+  test("tekniker ile eczacı elle yer değiştirebilir (tekniker başka masaya geçer)", () => {
+    const g0 = H.gunler[2], tno = g0.masa.findIndex(h => h.tekniker) + 1, eno = tno === 3 ? 4 : 3;
+    const ecz = g0.masa[eno - 1], tek = g0.masa[tno - 1];
+    const E = {};
+    g0.masa.forEach((h, i) => { if (h.id) E[h.id] = String(i + 1); });
+    E[ecz.id] = String(tno); E[tek.id] = String(eno);
+    const v = JSON.parse(JSON.stringify(veri)); v.onayMasa = { elle: { "2026-11-11": E } };
+    const g = onayHaftasiHesapla(v, 2026, 10, 9).gunler[2];
+    expect(g.masa[tno - 1]).toMatchObject({ id: ecz.id });
+    expect(g.masa[eno - 1]).toMatchObject({ id: tek.id, tekniker: true });
+    expect(g.masa.slice(0, 6).every(h => h.id)).toBe(true);
+    expect(g.uyari).toEqual([]);
+  });
+
   test("tekniker sırası yıl boyunca: masaya oturan tekniker sonraki sefer arkaya geçer", () => {
     const v = JSON.parse(JSON.stringify(veri));
     v.puantaj["2026-10"] = Object.fromEntries([1, 2, 3, 4].map(id => [id, { 16: "R", 17: "R" }]));
