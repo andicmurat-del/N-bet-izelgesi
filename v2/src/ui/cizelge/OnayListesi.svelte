@@ -83,6 +83,10 @@
     onayGunuAyarla(isoGun(degis.g), l);
     degisAcik = false;
   }
+  // yeniden dağıt: haftadaki elle değişiklikler silinir, yerleri program baştan dağıtır (onaylı haftada yok)
+  const elleGunler = $derived((H?.gunler ?? []).filter(g => g.elle));
+  let dagitSor = $state(false);
+  function yenidenDagit() { for (const g of elleGunler) onayGunuAyarla(isoGun(g), null); dagitSor = false; durum = "Hafta yeniden dağıtıldı."; }
   function otomatigeBirak() { if (degis) onayGunuAyarla(isoGun(degis.g), null); degisAcik = false; }
 
   let durum = $state("");
@@ -108,7 +112,8 @@
 <IslemAlani>
   {#if H}
     {#if onay}<button class="dugme" onclick={onayiKaldir}>Onayı kaldır</button>
-    {:else}<button class="dugme ana" onclick={() => (onaySor = true)}><Ikon ad="tamam" />Haftayı onayla</button>{/if}
+    {:else}<button class="dugme" onclick={() => (dagitSor = true)} disabled={!elleGunler.length} title={elleGunler.length ? "Bu haftadaki elle değişiklikleri silip yerleri yeniden dağıtır" : "Bu hafta elle değişiklik yok; liste zaten güncel verilere göre dağıtılmış"}><Ikon ad="yenile" />Yeniden dağıt</button>
+      <button class="dugme ana" onclick={() => (onaySor = true)}><Ikon ad="tamam" />Haftayı onayla</button>{/if}
   {/if}
   {#if H}<button class="dugme" onclick={pdf}><Ikon ad="indir" />Haftalık PDF</button>{/if}
 </IslemAlani>
@@ -186,6 +191,14 @@
 {/if}
 {#if hafta}
   <OnaySorusu bind:acik={onaySor} ne="{haftaMetni(hafta)} onay listesi" sorunlar={(H?.gunler ?? []).flatMap(g => g.uyari.map(u => `${g.d} ${AYLAR[g.m]}: ${u}`))} onaylayan={depo.veri.kurum.onaylayan} onayla={() => haftayiOnayla("onay", ...hafta.pzt)} />
+  <Pencere bind:acik={dagitSor} baslik="Hafta yeniden dağıtılsın mı?" altBaslik="{haftaMetni(hafta)} onay listesi">
+    <p>Bu haftada elle değiştirilen günler ({elleGunler.map(g => `${g.d} ${AYLAR[g.m]}`).join(", ")}) silinir; o günlerin masalarını ve teknikerlerini program güncel puantaja göre yeniden dağıtır. Sonraki haftalar da buna göre dengelenir.</p>
+    {#snippet altlik()}
+      <span style="flex:1"></span>
+      <button class="dugme" onclick={() => (dagitSor = false)}>Vazgeç</button>
+      <button class="dugme ana" onclick={yenidenDagit}>Yeniden dağıt</button>
+    {/snippet}
+  </Pencere>
   <Pencere bind:acik={kaldirSor} baslik="Onay kaldırılsın mı?" altBaslik="{haftaMetni(hafta)} onay listesi">
     <p>Bu haftanın öğlen nöbeti yazılmış. Onay listesinin onayı kalkınca haftanın öğlen nöbeti de (onaylıysa onayıyla birlikte) silinir; onay listesini yeniden onaylayıp öğlen nöbetini yeniden oluşturmanız gerekir.</p>
     {#snippet altlik()}
