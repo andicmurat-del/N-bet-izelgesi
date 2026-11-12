@@ -28,6 +28,9 @@ describe("yedek doğrulama", () => {
     o.onayMasa = { yerlesim: {}, elle: { "2026-11-09": { 1: "1", 2: "J", 3: "9", 99: "2" }, "x": { 1: "1" } } };
     const v = veriyiDogrula(o);
     expect(v.onayMasa.elle).toEqual({ "2026-11-09": { 1: "1", 2: "J" } });
+    // elle boş bırakılan masalar korunur (geçersiz masa numaraları atılır)
+    o.onayMasa = { yerlesim: {}, elle: { "2026-11-10": { 1: "J", bos: "5,3,9,3" }, "2026-11-11": { bos: "x" } } };
+    expect(veriyiDogrula(o).onayMasa.elle).toEqual({ "2026-11-10": { 1: "J", bos: "3,5" } });
   });
   test("bozuk gün kaydı olan çizelge atılır; sağlam çizelgenin günleri alan alan kurulur", () => {
     const v = ornekVeri();
