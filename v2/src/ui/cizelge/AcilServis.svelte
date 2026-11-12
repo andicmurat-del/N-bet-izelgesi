@@ -203,8 +203,8 @@
     </div>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin) -->
     <div class="tablo-kap ht-liste-kap" tabindex="0" role="region" aria-label="Acil eczane nöbet listesi tablosu">
-      <table class="tablo liste ht-liste">
-        <thead><tr><th><span class="gizli-yazi">Hafta</span></th><th>Tarih</th><th>Gün</th><th class="genis">1. nöbetçi</th><th class="genis">2. nöbetçi</th><th>Durum</th></tr></thead>
+      <table class="tablo liste ht-liste acil-liste">
+        <thead><tr><th><span class="gizli-yazi">Hafta</span></th><th>Tarih</th><th>Gün</th><th class="ad-sut">1. nöbetçi</th><th class="ad-sut">2. nöbetçi</th><th class="durum-sut">Durum</th></tr></thead>
         <tbody>
           {#each haftalar as h (h.no)}
             <tr class="bosluk-satir" aria-hidden="true"><td colspan="6"></td></tr>
@@ -212,8 +212,8 @@
               {@const l = goster(g)}
               <tr class:ilk={gi === 0} class:son={gi === h.gunler.length - 1} class:bugun={bugunMu(g)} class:hs={tatilMi(y, m, g)} class:sorunlu-satir={sorunluMu(g)} class:vurgulu={vurgu !== null && l.includes(vurgu)} onclick={e => { if (!(e.target as HTMLElement).closest(".hno")) gunAc(g); }}>
                 {#if gi === 0}<td class="hno" rowspan={h.gunler.length} title="{h.no}. hafta{h.yarim ? ' (yarım)' : ''}"><b class="rakam">{h.no}</b><small>HAFTA</small></td>{/if}
-                <td class="rakam tarih">{String(g).padStart(2, "0")}.{String(m + 1).padStart(2, "0")}.{y}</td>
-                <td>{GUN_UZUN[haftaGunu(y, m, g)]}</td>
+                <td class="rakam tarih"><span class="t-uzun">{String(g).padStart(2, "0")}.{String(m + 1).padStart(2, "0")}.{y}</span><span class="t-kisa">{g} {AYLAR_AD[m].slice(0, 3)}</span></td>
+                <td><span class="t-uzun">{GUN_UZUN[haftaGunu(y, m, g)]}</span><span class="t-kisa">{GUN_KISA[haftaGunu(y, m, g)]}</span></td>
                 <td>{@render adSnip(l[0])}</td>
                 <td>{@render adSnip(l[1])}</td>
                 <td class="durum">
@@ -344,6 +344,16 @@
   .liste tbody tr.vurgulu > td:not(.hno):not(.tarih) { background: color-mix(in srgb, var(--vurgu) 12%, var(--yuzey)); }
   .liste tbody tr.vurgulu > .tarih { box-shadow: inset 3px 0 0 var(--lacivert); }
   .durum { white-space: nowrap; }
+  /* acil listesi: iki nöbetçi sütunu yan yana, boşluğu Durum sütunu alır */
+  .acil-liste th.ad-sut { width: 190px; min-width: 150px; }
+  .acil-liste th.durum-sut { width: 100%; }
+  .acil-liste .t-kisa { display: none; }
+  @media (max-width: 720px) {
+    .acil-liste .t-uzun { display: none; } .acil-liste .t-kisa { display: inline; }
+    .acil-liste th.ad-sut { width: auto; min-width: 0; }
+    .acil-liste th, .acil-liste td { padding-left: 8px; padding-right: 8px; }
+    .acil-liste td:nth-child(4), .acil-liste td:nth-child(5) { white-space: nowrap; }
+  }
   .vurgu-ad { background: color-mix(in srgb, var(--altin) 35%, transparent); color: inherit; font-weight: 700; padding: 0 3px; border-radius: 3px; }
   .etk { display: inline-flex; align-items: center; gap: 3px; font-size: var(--f-xs); font-weight: 600; padding: 1px 6px; border-radius: 2px; margin-right: 4px; }
   .etk.degisti { background: color-mix(in srgb, var(--izin) 14%, var(--yuzey)); color: var(--izin); }
