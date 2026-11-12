@@ -125,7 +125,7 @@
       const { onayPdf } = await ciktiPaketi();
       const g = H.gunler;
       const satirlar = [
-        ...Array.from({ length: 7 }, (_, i) => ({ yer: `Masa ${i + 1}`, hucre: g.map(x => ({ ad: x.masa[i]?.bos ? "Boş (elle)" : x.masa[i]?.ad ?? "", yerine: !!x.masa[i]?.tekniker, bos: !x.tatil && i < 6 && !x.masa[i]?.id && !x.masa[i]?.bos })) })),
+        ...Array.from({ length: 7 }, (_, i) => ({ yer: `Masa ${i + 1}`, hucre: g.map(x => ({ ad: x.masa[i]?.bos ? "" : x.masa[i]?.ad ?? "", yerine: !!x.masa[i]?.tekniker, bos: !x.tatil && i < 6 && !x.masa[i]?.id && !x.masa[i]?.bos })) })),
         ...Array.from({ length: jokerSatir }, (_, i) => ({ yer: `Joker ${i + 1}`, hucre: g.map(x => ({ ad: x.joker[i]?.ad ?? "" })) })),
       ];
       const blob = onayPdf({
@@ -171,7 +171,7 @@
                 {:else}
                   {#each Array.from({ length: 7 }, (_, i) => i) as i}
                     {@const h = g.masa[i]}
-                    {#if h?.bos}<td class="bos-elle" class:ek={i === 6}>{#if onay}Boş (elle){:else}<button class="kisi-d" onclick={() => bosAc(g, String(i + 1))} aria-label="Masa {i + 1} elle boş bırakıldı: doldur">Boş (elle)</button>{/if}</td>
+                    {#if h?.bos}<td class="bos-elle" class:ek={i === 6} title="Elle boş bırakıldı">{#if !onay}<button class="kisi-d bos-d" onclick={() => bosAc(g, String(i + 1))} aria-label="Masa {i + 1} elle boş bırakıldı: doldur"></button>{/if}</td>
                     {:else if !h?.id}<td class:bos={i < 6} class:ek={i === 6}>{i < 6 ? "Boş" : "–"}</td>
                     {:else}<td class:yerine={!!h.tekniker} class:ek={i === 6} title={h.not}>{#if h.tekniker && onay}<b>{h.ad}</b>{:else if h.tekniker}<button class="kisi-d" onclick={() => tekAc(g, h.id!, h.ad, String(i + 1))} aria-label="{h.ad} (tekniker), Masa {i + 1}: başka tekniker seç"><b>{h.ad}</b></button>{:else if onay}<b>{h.ad}</b>{:else}<button class="kisi-d" onclick={() => degisAc(g, h.id!, h.ad, String(i + 1))} aria-label="{h.ad}, Masa {i + 1}: yer değiştir"><b>{h.ad}</b></button>{/if}</td>{/if}
                   {/each}
@@ -271,7 +271,8 @@
   .aciklama-k { font-size: var(--f-sm); color: var(--yazi-2); margin-top: var(--b3); }
   .onay td.yerine { background: color-mix(in srgb, var(--acik-mavi) 30%, var(--yuzey)); }
   .onay td.bos { background: var(--hata-zemin, #fde2e2); color: var(--hata); font-weight: 700; }
-  .onay td.bos-elle { background: repeating-linear-gradient(135deg, var(--yuzey-2) 0 6px, var(--yuzey) 6px 12px); color: var(--yazi-2); font-weight: 600; }
+  .onay td.bos-elle { padding: 0; }
+  .onay td.bos-elle .bos-d { display: block; width: 100%; min-height: 44px; }
   .bos-sec { margin: var(--b3) 0 0; }
   .onay .tatil { background: var(--yuzey-2); color: var(--soluk); }
   .onay .ilk-joker { border-left: 2px solid var(--cizgi); }
