@@ -66,6 +66,20 @@ describe("onay listesi masaları", () => {
     expect(oturan(H2.gunler[1])).not.toContain("E9");
   });
 
+  test("boş masaya oturan tekniker elle seçilebilir; o gün çalışmayan tekniker seçilemez", () => {
+    const g0 = H.gunler[2];   // 11 Kasım: otomatik T1
+    const no = String(g0.masa.findIndex(h => h.tekniker) + 1);
+    expect(g0.tekAday.map(t => t.ad)).toEqual(["T1", "T2", "T3"]);
+    const v = JSON.parse(JSON.stringify(veri)); v.onayMasa = { elle: { "2026-11-11": { 13: no } } };
+    const g = onayHaftasiHesapla(v, 2026, 10, 9).gunler[2];
+    expect(g.masa[Number(no) - 1]).toMatchObject({ ad: "T3", tekniker: true, elle: true });
+    expect(g.elle).toBe(true);
+    expect(g.masa.filter(h => h.tekniker).map(h => h.ad)).toEqual(["T3"]);
+    v.puantaj["2026-10"][12] = { 11: "R" };   // T2 o gün raporlu: elle seçim yok sayılır, otomatik T1
+    v.onayMasa.elle["2026-11-11"] = { 12: no };
+    expect(onayHaftasiHesapla(v, 2026, 10, 9).gunler[2].masa.filter(h => h.tekniker).map(h => h.ad)).toEqual(["T1"]);
+  });
+
   test("tekniker sırası yıl boyunca: masaya oturan tekniker sonraki sefer arkaya geçer", () => {
     const v = JSON.parse(JSON.stringify(veri));
     v.puantaj["2026-10"] = Object.fromEntries([1, 2, 3, 4].map(id => [id, { 16: "R", 17: "R" }]));

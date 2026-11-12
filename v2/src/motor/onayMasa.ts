@@ -7,6 +7,7 @@
 //     oturduğu şekilde dağıtılır (en az toplam). Cuma (hafta sonu listeleri de onaylanır, 3 günlük iş) ayrı sayılır:
 //     Cumalar kendi arasında, Pazartesi–Perşembe kendi arasında eşitlenir. Yıl başında sayılar sıfırlanır.
 //   - İlk 6 masadan boş kalan olursa o günün hazırlama teknikerlerinden biri oturur; yıl boyunca sırayla (en az oturan).
+//     Hangi teknikerin oturacağı elle de seçilebilir (o gün çalışan hazırlama teknikerlerinden); elle seçilen sırayı sayar.
 //   - Elle değiştirilen günde kaydedilen yerler korunur (o gün çalışan ve yeri o gün var olanlar); kalanlar dağıtılır.
 //     Eşitlikte gerçekte oturulan yer sayılır.
 import { aktifGunMu, type Baglam } from "./baglam";
@@ -54,9 +55,10 @@ export function enAzAtama(c: number[][]): number[] {
   return out;
 }
 
-export interface OnayHucre { id: number | null; ad: string; not?: string; tekniker?: true }
+export interface OnayHucre { id: number | null; ad: string; not?: string; tekniker?: true; elle?: true }
 /** elle: gün elle değiştirildi */
-export interface OnayGunu { y: number; m: number; d: number; dw: number; tatil: boolean; arife: boolean; masa: OnayHucre[]; joker: OnayHucre[]; uyari: string[]; elle?: true }
+/** tekAday: o gün boş masaya oturabilecek (çalışan hazırlama) teknikerler */
+export interface OnayGunu { y: number; m: number; d: number; dw: number; tatil: boolean; arife: boolean; masa: OnayHucre[]; joker: OnayHucre[]; uyari: string[]; elle?: true; tekAday?: { id: number; ad: string }[] }
 /** kisiler: haftanın onay eczacıları ve yıl başından hafta sonuna kadar her yerde oturdukları gün sayısı (cuma: yalnız Cumalar) */
 export interface OnayHaftasi { pzt: string; gunler: OnayGunu[]; kisiler: { id: number; ad: string; say: Record<OnayYeri, number>; cuma: Record<OnayYeri, number> }[] }
 
@@ -113,7 +115,17 @@ function gunHesapla(B: Baglam, izgara: ReturnType<typeof izgaraOkuyucu>, y: numb
   if (bos.length) {
     const k = B.servisKayit?.[ayAnahtari(y, m)]?.gun?.[d]?.k as number[] | undefined;
     const tek = (k?.length ? k : B.staff.filter(s => s.role === "teknisyen").map(s => s.id)).filter(id => B.kisi(id)?.role === "teknisyen" && calisiyor(id));
+    g.tekAday = tek.map(id => ({ id, ad: ad(id) }));
     const sec = tek.slice().sort((a, b) => (D.tek[a] || 0) - (D.tek[b] || 0) || ad(a).localeCompare(ad(b), "tr") || a - b);
+    // elle seçilen teknikerler: o gün çalışan aday ve masası o gün boşsa oturur
+    if (E) for (const [k, yr] of Object.entries(E)) {
+      const id = Number(k), no = Number(yr), i = sec.indexOf(id);
+      if (i < 0 || !bos.includes(no)) continue;
+      sec.splice(i, 1); bos.splice(bos.indexOf(no), 1);
+      D.tek[id] = (D.tek[id] || 0) + 1;
+      g.masa[no - 1] = { id, ad: ad(id), tekniker: true, not: "tekniker (elle)", elle: true };
+      g.elle = true;
+    }
     for (const no of [...bos]) {
       const id = sec.shift(); if (id === undefined) break;
       D.tek[id] = (D.tek[id] || 0) + 1;
