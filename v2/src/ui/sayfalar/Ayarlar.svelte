@@ -51,7 +51,7 @@
     } finally { if (dosyaGirdi) dosyaGirdi.value = ""; }
   }
   function geriDon() {
-    durum = yuklemeOncesineDon() ? { tur: "tamam", metin: "Yedek yüklemeden önceki verilere dönüldü." } : { tur: "hata", metin: "Önceki veriler bulunamadı." };
+    durum = yuklemeOncesineDon() ? { tur: "tamam", metin: "Önceki verilere dönüldü." } : { tur: "hata", metin: "Önceki veriler bulunamadı." };
     geriAlinabilir = false;
   }
   // sayı alanları: boş ya da sınır dışı değer kaydedilmez, sınıra çekilir
@@ -59,7 +59,8 @@
   function sil() {
     if (!silOnayi) { silOnayi = true; return; }
     tumVeriyiSil(); silOnayi = false;
-    durum = { tur: "tamam", metin: "Tüm veriler silindi." };
+    geriAlinabilir = yuklemeOncesiVar();
+    durum = { tur: "tamam", metin: `Tüm veriler silindi.${geriAlinabilir ? " Yanlışlıkla sildiyseniz \"Önceki verilere dön\" ile geri alabilirsiniz." : ""}` };
   }
 </script>
 
@@ -120,7 +121,7 @@
     </div>
     <p class="aciklama">{yedekIzi.son ? `Son yedek: ${new Date(yedekIzi.son).toLocaleDateString("tr-TR")}.` : "Bu tarayıcıdan henüz yedek alınmadı."} Bir haftadır yedek alınmadıysa sayfanın üstünde hatırlatılır.</p>
     <p class="aciklama">Yedekten yükleme, bu tarayıcıdaki verilerin yerine geçer. Yanlış dosya seçerseniz hemen ardından önceki verilere dönebilirsiniz.</p>
-    {#if geriAlinabilir}<div><button class="dugme" onclick={geriDon}><Ikon ad="yenile" />Önceki verilere dön (yükleme ya da sunucudan alma öncesi)</button></div>{/if}
+    {#if geriAlinabilir}<div><button class="dugme" onclick={geriDon}><Ikon ad="yenile" />Önceki verilere dön (yükleme, sunucudan alma ya da silme öncesi)</button></div>{/if}
   </section>
 
   <section class="kart panel-blok bolum tehlikeli">

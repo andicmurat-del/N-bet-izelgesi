@@ -2,7 +2,7 @@
 import type { AyCizelgesi, Ayarlar, Gorevli, Kisi, OglenGunu, OglenSabit, PuantajKodu, Rol, Tercih, Veri } from "./tipler";
 import { ayAnahtari, gunAnahtari, gunSayisi, haftaAnahtari, haftaGunu, haftaIciGunleri, haftaSonuMu, tercihAnahtari } from "./tarih";
 import { oglenOnarimlariHesapla } from "../motor";
-import { eczaneHazirlamacisi, eczaneNobetcisi } from "../motor/baglam";
+import { Baglam, eczaneHazirlamacisi, eczaneNobetcisi } from "../motor/baglam";
 
 const ANAHTAR = "nobet-cizelgesi-v2";
 
@@ -423,8 +423,8 @@ export function kisiSil(id: number): boolean {
     for (const [g, l] of Object.entries(a)) { a[g] = l.filter(x => x !== id); if (!a[g].length) delete a[g]; }
     if (!Object.keys(a).length) delete depo.veri.acil[ayK];
   }
+  // öğlen nöbetinin kendi (haftalık) onayı var: yalnız onaylı haftalar korunur
   for (const [ayK, a] of Object.entries(depo.veri.oglen)) {
-    if (depo.veri.schedules[ayK]?.onay) continue;
     const [y, m] = ayK.split("-").map(Number);
     for (const [g, x] of Object.entries(a)) { if (oglenOnayli(y, m, Number(g))) continue; x.e = x.e.filter(i => i !== id); x.t = x.t.filter(i => i !== id); if (!x.e.length && !x.t.length) delete a[g]; }
     if (!Object.keys(a).length) delete depo.veri.oglen[ayK];
@@ -464,6 +464,10 @@ export function eskimeNedenleri(y: number, m: number): string[] {
   const n: string[] = [];
   const tatilFarki = c.days.filter(g => g.tatil !== tatilMi(y, m, g.day)).map(g => g.day);
   if (tatilFarki.length) n.push(`Tatil günleri değişti (${tatilFarki.join(", ")}).`);
+  // arife (ya da komşu günün tatili) sonradan işaretlendiyse nöbetin fazla mesai saati değişir (çizelge eski saati tutar)
+  const B = new Baglam(veriAnlik()), dim = gunSayisi(y, m);
+  const saatFarki = c.days.filter(g => !tatilFarki.includes(g.day) && g.fazlaMesai !== B.fazlaMesai(y, m, g.day, dim)).map(g => g.day);
+  if (saatFarki.length) n.push(`Arife ya da tatil değişikliği nedeniyle şu günlerin nöbet fazla mesaisi değişti: ${saatFarki.join(", ")}.`);
   const idler = new Set(depo.veri.staff.map(k => k.id));
   const silinen = new Set<string>();
   for (const g of c.days) for (const p of [...g.assigned, ...g.prep]) if (!idler.has(p.id)) silinen.add(p.name);
@@ -705,7 +709,10 @@ export function yedekHatirlatma(simdi = Date.now()): number | null {
   return gun >= YEDEK_GUN ? gun : null;
 }
 
+/** Tüm verileri siler. Silinen veri bir kez saklanır: yanlışlıkla silindiyse (sayfa yenilendikten sonra da)
+ *  "Önceki verilere dön" ile geri alınabilir; bu oturumda geri al da çalışır. */
 export function tumVeriyiSil() {
+  try { localStorage.setItem(ANAHTAR + "-yukleme-oncesi", JSON.stringify(veriAnlik())); } catch { /* yer yoksa geçilir */ }
   depo.veri = bosVeri();
 }
 

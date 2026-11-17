@@ -133,7 +133,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--vurgu); }
 .kart { background: var(--yuzey); border: 1px solid var(--cizgi-acik); border-radius: var(--r); box-shadow: var(--golge); }
 .panel { background: var(--yuzey); border: 1px solid var(--cizgi-acik); border-radius: var(--r); box-shadow: var(--golge); min-width: 0; overflow: hidden; }
 .panel > .panel-bas { display: flex; align-items: center; justify-content: space-between; gap: var(--b3); flex-wrap: wrap; min-height: 46px; padding: 8px var(--b4); background: var(--panel-bas); border-bottom: 1px solid var(--cizgi-acik); }
-.panel-bas h2, .panel-bas h3, .panel-bas .panel-baslik { font-size: var(--f-md); font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--lacivert); margin: 0; }
+.panel-bas h2, .panel-bas h3 { font-size: var(--f-md); font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--lacivert); margin: 0; }
 .panel > .panel-ic { padding: var(--b4); }
 
 /* bölüm paneli: ilk başlık üst banda dönüşür (Raporlar, Personel, Ayarlar ve alt görünümlerin bölümleri) */
@@ -151,7 +151,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--vurgu); }
 .tablo tbody tr:last-child > * { border-bottom: 0; }
 .tablo .sag, .tablo td.sayi { text-align: right; }
 .tablo .hs { background: var(--hs-zemin) !important; }
-.tablo .grup-satir > * { background: var(--tablo-bas) !important; font-weight: 700; color: var(--lacivert); font-size: var(--f-xs); letter-spacing: .05em; text-transform: uppercase; }
 .tablo-kap { overflow-x: auto; border-radius: var(--r-kucuk); }
 
 /* özet şerit: 4 sütun, ince çizgiyle bölünmüş */
