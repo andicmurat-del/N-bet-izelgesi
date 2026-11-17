@@ -3,7 +3,7 @@
   import { ciktiPaketi } from "../../disa/yukle";
   // Aylık puantaj cetveli: çizelgeden gelen nöbet/hazırlama, nöbet ertesi izin ve izinler; hücre elle değiştirilebilir.
   import { puantajHesapla } from "../../motor";
-  import { depo, duzKopya, ayCizelgesi, puantajKoduAyarla, puantajElleKodu } from "../../veri/depo.svelte";
+  import { depo, duzKopya, ayCizelgesi, listeOnayi, puantajKoduAyarla, puantajElleKodu } from "../../veri/depo.svelte";
   import type { Kisi, PuantajKodu } from "../../veri/tipler";
   import { ROL_AD } from "../../veri/tipler";
   import { AYLAR, GUN_KISA, gunMetni } from "../../veri/tarih";
@@ -95,7 +95,7 @@
     try {
       const m = await ciktiPaketi();
       const ad = `${acil ? "acil-" : ""}puantaj-${depo.yil}-${String(depo.ay + 1).padStart(2, "0")}.${tur}`;
-      const blob = tur === "xlsx" ? m.puantajKitabi(G, depo.yil, depo.ay, depo.veri.kurum.ad, acil) : m.puantajPdf(G, depo.yil, depo.ay, depo.veri.kurum.ad, c?.onay ?? null);
+      const blob = tur === "xlsx" ? m.puantajKitabi(G, depo.yil, depo.ay, depo.veri.kurum.ad, acil) : m.puantajPdf(G, depo.yil, depo.ay, depo.veri.kurum.ad, (acil ? listeOnayi("acil", depo.yil, depo.ay) : c?.onay) ?? null);
       durum = (await dosyaKaydet(ad, blob, blob.type || "application/pdf")) ? (tur === "pdf" ? "PDF" : "Excel dosyası") + " kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }
   }

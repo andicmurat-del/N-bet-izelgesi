@@ -63,7 +63,7 @@ export function oglenPdf(v: OglenVerisi): Blob {
   const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 150;
   if (v.ozet.length) {
     autoTable(doc, {
-      startY: sonY + 7, margin: { left: K, right: K, bottom: 22 },
+      startY: sonY + 7, margin: { left: K, right: K, bottom: 22 }, pageBreak: "avoid",
       head: [["Ad soyad", "Bu ay", "Bu ay Cuma", `Yıl (${v.y})`, "Yıl Cuma"]],
       body: v.ozet.map(o => [`${buyukAd(o.ad)}  (${o.rol})`, String(o.ay), o.ayCuma === null ? "–" : String(o.ayCuma), String(o.yil), o.yilCuma === null ? "–" : String(o.yilCuma)]),
       theme: "grid",

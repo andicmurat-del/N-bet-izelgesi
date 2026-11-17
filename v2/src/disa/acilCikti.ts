@@ -60,7 +60,7 @@ export function acilPdf(v: AcilVerisi): Blob {
   const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 150;
   if (v.ozet.length) {
     autoTable(doc, {
-      startY: sonY + 8, margin: { left: K, right: K },
+      startY: sonY + 8, margin: { left: K, right: K, bottom: 22 }, pageBreak: "avoid",
       head: [["Ad soyad", "Nöbet", "Hafta sonu / tatil", "Nöbet günleri"]],
       body: v.ozet.map(o => [buyukAd(o.ad), String(o.gunler.length), String(o.tatil), o.gunler.join(", ")]),
       theme: "grid",

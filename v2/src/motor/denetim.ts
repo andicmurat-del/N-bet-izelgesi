@@ -3,7 +3,7 @@
 import type { Gorevli } from "../veri/tipler";
 import { eczaneHazirlamacisi, eczaneNobetcisi, aktifGunMu, eczaciMi, ikiDisaridanSerbestMi, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
 import { acilNobetiYakin } from "./acil";
-import { cumaHaftaSonuUclu, fmKuralKisileri, hsKuralIhlali, hsSayilari } from "./istatistik";
+import { cumaHaftaSonuUclu, fmFarkiYapisal, fmKuralKisileri, hsKuralIhlali, hsSayilari } from "./istatistik";
 import { DURUM_AD, FM_MAX_FARK } from "./sabitler";
 import { AYLAR, ayGunSayisi, CUMA, CUMARTESI, haftaGunu, isoNo, oncekiAy, PAZAR, PERSEMBE, sonrakiAy, tarihNo } from "./takvim";
 
@@ -143,7 +143,7 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
       let mx = kk[0], mn = kk[0];
       kk.forEach(s => { if (top[s.id] > top[mx.id]) mx = s; if (top[s.id] < top[mn.id]) mn = s; });
       const fk = top[mx.id] - top[mn.id];
-      if (fk > FM_MAX_FARK) ekle("hata", "Kesin kural: bu değişiklikle fazla mesai farkı " + fk + " saat olur (en fazla " + FM_MAX_FARK + "). En çok " + mx.name + " (" + top[mx.id] + " sa), en az " + mn.name + " (" + top[mn.id] + " sa).");
+      if (fk > FM_MAX_FARK && !fmFarkiYapisal(B, y, m, top)) ekle("hata", "Kesin kural: bu değişiklikle fazla mesai farkı " + fk + " saat olur (en fazla " + FM_MAX_FARK + "). En çok " + mx.name + " (" + top[mx.id] + " sa), en az " + mn.name + " (" + top[mn.id] + " sa).");
     }
   }
   const hedef = B.sayi("fmHedef");
@@ -163,6 +163,16 @@ export function cizelgeCanliDenetim(B: Baglam, y: number, m: number, days: Motor
   if (eczsiz.length) out.push("Nöbette eczacı yok: " + eczsiz.map(d => d + ". gün").join(", ") + " (her gün en az bir eczacı nöbetçi olmalı).");
   const eksik = days.filter(g => g.assigned.length < 2).map(g => g.day + ". gün (" + g.assigned.length + "/2)");
   if (eksik.length) out.push("Nöbetçi sayısında eksik kişi: " + eksik.join(", ") + ".");
+  // çizelgeden sonra girilen izin, eş durumu (nöbetçi olmasın), puantajdaki izin / rapor ya da ayrılış tarihi: kişi o gün
+  // görev tutamaz ama çizelgede görevli duruyor (gün yeniden düzenlenmeli)
+  const yasak: string[] = [];
+  days.forEach(g => {
+    const l = new Map<number, string[]>();
+    g.assigned.forEach(p => { if (B.kesinYasak(p.id, y, m, g.day)) l.set(p.id, [p.name, "nöbet"]); });
+    (g.prep || []).forEach(p => { if (B.kesinYasak(p.id, y, m, g.day) && !l.has(p.id)) l.set(p.id, [p.name, "hazırlama"]); });
+    l.forEach(([ad, tur]) => yasak.push(ad + " (" + g.day + ". gün, " + tur + ")"));
+  });
+  if (yasak.length) out.push("İzinli ya da görev yazılamayan günde görevi olanlar (izin korunamadı): " + yasak.join(", ") + ". Günü açıp başka birini yazın ya da Puantaj > İzin ve rapor ile yerine birini seçin.");
   // "nöbet istiyor" işaretli olup o güne yazılmayanlar (izin, acil nöbeti vb. nedeniyle yazılamayan da görünür)
   const istek: string[] = [];
   days.forEach(g => B.staff.forEach(s => {

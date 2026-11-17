@@ -2,7 +2,7 @@
 // izin/rapor kaydı ve izin nedeniyle görevden düşen kişinin yerine geçen. Her değişim geri alınabilsin diye
 // puantajdaki önceki kodlarla birlikte depo.veri.degisimler'e yazılır; liste son 300 değişimi tutar (bu yılın izin/rapor
 // nedeniyle yerine geçmeleri silinmez: yıllık eşitlik ve yerine tutma sırası bunlara bakar), daha eskiler geri alınamaz.
-import { depo, tatilMi, tercihAl, veriAnlik } from "./depo.svelte";
+import { alan, depo, tatilMi, tercihAl, veriAnlik } from "./depo.svelte";
 import { puantajHesapla } from "../motor";
 import { ayAnahtari, gunSayisi, tercihAnahtari } from "./tarih";
 import type { Degisim, PuantajKodu } from "./tipler";
@@ -29,10 +29,10 @@ export function puantajIzgarasi(y: number, m: number): Izgara {
   return G;
 }
 const kisiAdi = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş)";
-const ayKodlari = (y: number, m: number) => (depo.veri.puantaj[ayAnahtari(y, m)] ??= {});
+const ayKodlari = (y: number, m: number) => alan(depo.veri.puantaj, ayAnahtari(y, m), () => ({}));
 function kodYaz(y: number, m: number, id: number, gun: number, kod: PuantajKodu | null) {
   const ayK = ayAnahtari(y, m);
-  if (kod) { (ayKodlari(y, m)[id] ??= {})[gun] = kod; return; }
+  if (kod) { alan(ayKodlari(y, m), id, () => ({}))[gun] = kod; return; }
   const a = depo.veri.puantaj[ayK];
   if (!a?.[id]) return;
   delete a[id][gun];

@@ -1,6 +1,6 @@
 // Bir ayın çizelgesinden sayımlar: kişi başı fazla mesai, gün türleri, hafta sonu kuralı, yıllık gün türü sayıları.
-import { eczaneNobetcisi, eczaneYillikEsit, aktifAydaMi, aktifGunMu, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
-import type { YilGunTipi } from "./sabitler";
+import { eczaciMi, eczaneNobetcisi, eczaneYillikEsit, aktifAydaMi, aktifGunMu, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
+import { FM_MAX_FARK, type YilGunTipi } from "./sabitler";
 import { ayGunSayisi, CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
 
 /** fazla mesai kuralına giren kişiler: ayın tamamında çalışan eczacı, tekniker ve dışarıdan gelen eczacı */
@@ -24,6 +24,20 @@ export function fmFarkBilgisi(B: Baglam, y: number, m: number, days: MotorGunu[]
   let enAz = k[0], enCok = k[0];
   k.forEach(s => { if ((t[s.id] || 0) < (t[enAz.id] || 0)) enAz = s; if ((t[s.id] || 0) > (t[enCok.id] || 0)) enCok = s; });
   return { fark: (t[enCok.id] || 0) - (t[enAz.id] || 0), enAz, enCok, t, kisiler: k };
+}
+
+/** Fazla mesai farkı kadro yapısından mı: eczacılar teknikerlerden azsa (her gün en az bir eczacı nöbetçi olduğundan)
+ *  eczacılar ortalama daha çok nöbet tutmak zorundadır, iki grup arasındaki fark kapanamaz. Eczacılar kendi aralarında,
+ *  teknikerler kendi aralarında eşitse (fark en fazla FM_MAX_FARK) ve en çok saat bir eczacıda, en az saat bir teknikerdeyse
+ *  kalan fark personel yapısındandır. t: kişi başı aylık fazla mesai */
+export function fmFarkiYapisal(B: Baglam, y: number, m: number, t: Record<number, number>, sinir = FM_MAX_FARK): boolean {
+  const kadro = B.staff.filter(s => eczaneNobetcisi(s) && aktifAydaMi(s, y, m));
+  const nE = kadro.filter(s => eczaciMi(s.role)).length;
+  if (!nE || nE >= kadro.length - nE) return false;
+  const kk = fmKuralKisileri(B, y, m), E = kk.filter(s => eczaciMi(s.role)).map(s => t[s.id] || 0), T = kk.filter(s => !eczaciMi(s.role)).map(s => t[s.id] || 0);
+  if (!E.length || !T.length) return false;
+  const aralik = (l: number[]) => Math.max(...l) - Math.min(...l);
+  return aralik(E) <= sinir && aralik(T) <= sinir && Math.max(...E) >= Math.max(...T) && Math.min(...T) <= Math.min(...E);
 }
 
 /** kişinin ay içindeki Cuma / Cumartesi / Pazar nöbet sayıları */

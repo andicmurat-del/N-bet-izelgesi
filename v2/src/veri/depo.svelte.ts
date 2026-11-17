@@ -2,6 +2,7 @@
 import type { AyCizelgesi, Ayarlar, Gorevli, Kisi, OglenGunu, OglenSabit, PuantajKodu, Rol, Tercih, Veri } from "./tipler";
 import { ayAnahtari, gunAnahtari, gunSayisi, haftaAnahtari, haftaGunu, haftaIciGunleri, haftaSonuMu, tercihAnahtari } from "./tarih";
 import { oglenOnarimlariHesapla } from "../motor";
+import { eczaneHazirlamacisi, eczaneNobetcisi } from "../motor/baglam";
 
 const ANAHTAR = "nobet-cizelgesi-v2";
 
@@ -221,6 +222,12 @@ export function duzKopya<T>(x: T): T {
   if (Array.isArray(x)) { const k = new Array(x.length); for (let i = 0; i < x.length; i++) k[i] = duzKopya(x[i]); return k as T; }
   if (x !== null && typeof x === "object") { const k: Record<string, unknown> = {}; for (const a of Object.keys(x)) k[a] = duzKopya((x as Record<string, unknown>)[a]); return k as T; }
   return x;
+}
+/** Durum (state) nesnesinde k alanını yoksa kurar ve alanın kendisini (izlenen hâlini) verir. "(o[k] ??= {})" atanan ham
+ *  nesneyi döndürür; ona yazılan değişiklik izlenmez (Svelte uyarısı: assignment_value_stale). */
+export function alan<T>(o: Record<string, T>, k: string | number, yeni: () => NoInfer<T>): T {
+  if (o[k] === undefined) o[k] = yeni();
+  return o[k];
 }
 // Verinin tek ortak kopyası: veri değişince bir kez alınır; motor hesapları (yalnız okur), kayıt ve geri alma bunu kullanır.
 // Bu kopya değiştirilmez: üzerinde değişiklik yapacak iş duzKopya(depo.veri) ile kendi kopyasını alır.
@@ -461,6 +468,14 @@ export function eskimeNedenleri(y: number, m: number): string[] {
   const silinen = new Set<string>();
   for (const g of c.days) for (const p of [...g.assigned, ...g.prep]) if (!idler.has(p.id)) silinen.add(p.name);
   if (silinen.size) n.push(`Çizelgede artık listede olmayan kişiler var: ${[...silinen].join(", ")}.`);
+  // görevi sonradan değişen (ör. acil servis personeli, destek ya da acilde nöbet tutan yapılan) kişi eczane görevinde kaldıysa
+  const kisi = new Map(depo.veri.staff.map(k => [k.id, k]));
+  const uygunsuz = new Set<string>();
+  for (const g of c.days) {
+    for (const p of g.assigned) { const k = kisi.get(p.id); if (k && !eczaneNobetcisi(k)) uygunsuz.add(k.name); }
+    for (const p of g.prep) { const k = kisi.get(p.id); if (k && !eczaneHazirlamacisi(k) && k.role !== "destek") uygunsuz.add(k.name); }
+  }
+  if (uygunsuz.size) n.push(`Görevi değiştiği için artık eczane nöbeti tutmayan kişiler çizelgede: ${[...uygunsuz].join(", ")}.`);
   return n;
 }
 
@@ -534,9 +549,9 @@ export const acilGunu = (y: number, m: number, gun: number): number[] => depo.ve
 export function acilGunuAyarla(y: number, m: number, gun: number, ids: number[], elle = true, onayliDuzeltme = false) {
   if (listeOnayi("acil", y, m) && !onayliDuzeltme) return;
   const ayK = ayAnahtari(y, m), tek = [...new Set(ids)].slice(0, 2);
-  if (elle && tek.length) (depo.veri.acilElle[ayK] ??= {})[gun] = true;
+  if (elle && tek.length) alan(depo.veri.acilElle, ayK, () => ({}))[gun] = true;
   else if (depo.veri.acilElle[ayK]) { delete depo.veri.acilElle[ayK][gun]; if (!Object.keys(depo.veri.acilElle[ayK]).length) delete depo.veri.acilElle[ayK]; }
-  if (tek.length) { (depo.veri.acil[ayK] ??= {})[gun] = tek; return; }
+  if (tek.length) { alan(depo.veri.acil, ayK, () => ({}))[gun] = tek; return; }
   const a = depo.veri.acil[ayK];
   if (!a) return;
   delete a[gun];
@@ -562,7 +577,6 @@ export function onayGunuAyarla(gun: string, yer: Record<number, string> | null) 
 }
 
 // ---------- öğlen nöbeti ----------
-export const oglenAyi = (y: number, m: number) => depo.veri.oglen[ayAnahtari(y, m)];
 /** onarim: izin / rapor sonrası kendiliğinden onarım (onaylı ayda da yapılır) */
 type OglenKaydi = { gun: number; e: number[]; t: number[]; elle?: true; sabit?: OglenSabit };
 const oglenKaydiYaz = (a: Record<string, OglenGunu>, g: OglenKaydi) => {
@@ -604,7 +618,7 @@ export function oglenHaftasiniSil(y: number, m: number, d: number) {
  *  geri kalanı yeniden yazılabilir); null: gün tamamen otomatiğe bırakılır */
 export function oglenGunuAyarla(y: number, m: number, gun: number, e: number[], t: number[], sabit: OglenSabit | null) {
   if (oglenOnayli(y, m, gun) || !haftaOnayi("onay", y, m, gun)) return;
-  const a = (depo.veri.oglen[ayAnahtari(y, m)] ??= {});
+  const a = alan(depo.veri.oglen, ayAnahtari(y, m), () => ({}));
   const E = [...new Set(e)], T = [...new Set(t)], sb = sabit ? oglenSabitDogrula(sabit, E, T) : undefined;
   a[gun] = { e: E, t: T, ...(sb ? { sabit: sb } : {}) };
 }
@@ -612,7 +626,7 @@ export function oglenGunuAyarla(y: number, m: number, gun: number, e: number[], 
 // ---------- puantaj ----------
 export function puantajKoduAyarla(y: number, m: number, id: number, gun: number, kod: PuantajKodu | null) {
   const ayK = ayAnahtari(y, m);
-  if (kod) { ((depo.veri.puantaj[ayK] ??= {})[id] ??= {})[gun] = kod; return; }
+  if (kod) { alan(alan(depo.veri.puantaj, ayK, () => ({})), id, () => ({}))[gun] = kod; return; }
   const a = depo.veri.puantaj[ayK]?.[id];
   if (!a) return;
   delete a[gun];

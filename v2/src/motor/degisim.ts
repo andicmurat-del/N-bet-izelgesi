@@ -133,7 +133,8 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
   };
   // günün nöbetinde eczacı kalıyor mu, iki dışarıdan gelen eczacı birlikte mi
   const gunEczaci = (gun: number) => {
-    const nb = G2.satirlar.filter(r => r.cells[gun - 1].kod === "N");
+    // acil eczane nöbetçisi de puantajda "N"dir; günlük eczanenin nöbetçileri yalnız acil olmayanlar
+    const nb = G2.satirlar.filter(r => r.cells[gun - 1].kod === "N" && !r.cells[gun - 1].acil);
     if (nb.length && !nb.some(r => eczaciMi(r.s.role))) out.engel.push(gun + " " + ay + " günü nöbette eczacı kalmıyor.");
     if (nb.filter(r => r.s.role === "nobetci").length > 1 && !ikiDisaridanSerbestMi(y, m, gun)) out.engel.push(gun + " " + ay + " günü iki kemoterapi eczacısı birlikte nöbetçi olur (Cuma ve Cumartesi dışında aynı güne yalnızca biri nöbet yazılır; hazırlama olabilir).");
   };

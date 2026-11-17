@@ -27,6 +27,19 @@ describe("nöbet değişimi", () => {
     expect(k.engel.some(t => t.includes("art arda"))).toBe(true);
   });
 
+  test("eczacının yerine tekniker yazılınca gün eczacısız kalır; o gün acil eczanede nöbetçi eczacı olması bunu örtmez", () => {
+    const days = veri.schedules[`${Y}-${M}`].days, ecz = p => p.role === "eczaci";
+    const g = days.findIndex(d => d.assigned.filter(ecz).length === 1 && d.assigned.length === 2) + 1;
+    const cikan = days[g - 1].assigned.find(ecz).id;
+    const v = { ...veri, staff: [...veri.staff, { id: 50, name: "Acil Ecz", role: "eczaci", acilTutar: true }], acil: { [`${Y}-${M}`]: { [g]: [50] } } };
+    const adaylar = yerineAdaylarHesapla(v, Y, M, g, cikan, "N");
+    const tek = adaylar.filter(a => a.rol === "teknisyen");
+    expect(tek.length).toBeGreaterThan(0);
+    tek.forEach(a => expect(a.k.engel.some(t => t.includes("nöbette eczacı kalmıyor"))).toBe(true));
+    // kurallara uyan ilk aday eczacıdır
+    expect(adaylar.find(a => !a.engel)?.rol).toBe("eczaci");
+  });
+
   test("denetim asıl veriyi değiştirmez", () => {
     const once = JSON.stringify(veri);
     degisimDenetle(veri, { y: Y, m: M, gorev: "N", tur: "devir", gun: 5, cik, yer: yerineAdaylarHesapla(veri, Y, M, 5, cik, "N")[0].id });

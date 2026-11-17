@@ -3,6 +3,7 @@ import { describe, test, expect } from "vitest";
 import { canliDenetimHesapla, cizelgeOlustur, gunuDenetle, uyariSiniflandir } from "../src/motor";
 import { cizelgeUret } from "../src/motor/nobet/olustur";
 import { Baglam } from "../src/motor/baglam";
+import { fmFarkiYapisal } from "../src/motor/istatistik";
 import { senaryo } from "./tarama/ortak";
 
 const staff = [
@@ -149,11 +150,34 @@ describe("çizelgenin o anki hâlinin denetimi (Kural denetimi paneli, onay)", (
     l.forEach(t => expect(uyariSiniflandir(t).seviye).toBe("hata"));
     expect(uyariSiniflandir(l[0]).baslik).toBe("Eczacısız gün");
   });
+  test("çizelgeden sonra izinli işaretlenen ya da raporlu görevli hata olarak listelenir", () => {
+    const c = kopya(), p = c.days[4].assigned[0], h = c.days.find(g => g.prep.length);
+    const v = { ...veri, prefs: { [`${p.id}-${Y}-${M}-5`]: "izinli" }, puantaj: { [`${Y}-${M}`]: { [h.prep[0].id]: { [h.day]: "R" } } } };
+    const l = canliDenetimHesapla(v, c).filter(t => t.startsWith("İzinli ya da"));
+    expect(l.length).toBe(1);
+    expect(l[0]).toContain(`${p.name} (5. gün, nöbet)`);
+    expect(l[0]).toContain(`${h.prep[0].name} (${h.day}. gün, hazırlama)`);
+    expect(uyariSiniflandir(l[0])).toEqual({ seviye: "hata", baslik: "İzinli günde görev" });
+  });
   test("karşılanmayan nöbet isteği uyarı olarak listelenir", () => {
     const c = kopya(), d = c.days.findIndex(g => !g.assigned.some(p => p.id === 3)) + 1;
     const v = { ...veri, prefs: { [`3-${Y}-${M}-${d}`]: "want" } };
     const l = canliDenetimHesapla(v, c);
     expect(l).toEqual([`Nöbet istediği güne yazılmayanlar: E3 (${d}. gün).`]);
     expect(uyariSiniflandir(l[0]).seviye).toBe("uyari");
+  });
+});
+
+describe("eczacı az olduğunda fazla mesai / nöbet farkı", () => {
+  // her gün en az bir eczacı nöbetçi: eczacılar teknikerlerden azsa iki grup arasındaki fark kapanamaz (kesin kural hatası değil)
+  const kadro = (nE, nT) => new Baglam({ staff: [...Array(nE)].map((_, i) => ({ id: i + 1, name: "E" + i, role: "eczaci" })).concat([...Array(nT)].map((_, i) => ({ id: 100 + i, name: "T" + i, role: "teknisyen" }))) });
+  const t = (e, tk) => Object.fromEntries([...e.map((x, i) => [i + 1, x]), ...tk.map((x, i) => [100 + i, x])]);
+  test("gruplar kendi içinde eşitse fark yapısaldır", () => {
+    expect(fmFarkiYapisal(kadro(2, 4), 2026, 9, t([72, 64], [48, 48, 56, 48]))).toBe(true);
+  });
+  test("eczacılar kendi içinde eşit değilse ya da eczacı az değilse yapısal sayılmaz", () => {
+    expect(fmFarkiYapisal(kadro(2, 4), 2026, 9, t([80, 64], [48, 48, 56, 48]))).toBe(false);
+    expect(fmFarkiYapisal(kadro(3, 3), 2026, 9, t([72, 64, 64], [48, 48, 48]))).toBe(false);
+    expect(fmFarkiYapisal(kadro(2, 4), 2026, 9, t([48, 48], [72, 64, 64, 64]))).toBe(false);
   });
 });

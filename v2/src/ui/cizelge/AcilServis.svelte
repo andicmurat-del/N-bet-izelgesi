@@ -37,6 +37,8 @@
   const ad = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş kişi)";
   const kisa = (id: number) => kisaAd(ad(id), depo.veri.staff.map(k => k.name));
   const dolu = $derived(gunler.filter(g => acilGunu(y, m, g).length).length);
+  /** iki nöbetçisi de yazılı günler (doluluk göstergesi) */
+  const tam = $derived(gunler.filter(g => acilGunu(y, m, g).length >= 2).length);
   // güncel liste: puantajdaki acil nöbet değişimleri (yerine tutma) işlenmiş hâli; asıl (onaylanan) liste ayrı görünümde.
   // Her gün acil nöbetçileri puantajdan okunur; değişmeyen kişi yerinde kalır, değişenin yerine yeni gelen yazılır.
   const guncel = $derived.by(() => {
@@ -119,7 +121,7 @@
   </section>
 {:else}
   <div class="ozet-serit">
-    <div><small>Doluluk</small><b>{dolu}/{gunler.length} gün</b><span>Her gün 2 nöbetçi</span></div>
+    <div><small>Doluluk</small><b>{tam}/{gunler.length} gün</b><span>Her gün 2 nöbetçi</span></div>
     <div><small>Acil kadrosu</small><b>{adaylar.length} kişi</b><span>Acil servis personeli ve acilde tutan eczacılar</span></div>
     <div><small>Sorunlu gün</small><b>{sorunluGunler.length}</b><span>{sorunluGunler.length ? "İzin / rapor ya da art arda nöbet" : "Yazılamayan nöbetçi yok"}</span></div>
     <div><small>Onay durumu</small><b>{#if onay}<span class="rozet tamam">Onaylı</span>{:else}<span class="rozet notr">Taslak</span>{/if}</b><span>{onay ? onayMetni : "Onaylanınca liste kilitlenir"}</span></div>

@@ -1,7 +1,7 @@
 // 4. adım: bitmiş çizelgenin denetimi. Kural esnetilen günler işaretlenir (conflict) ve kullanıcıya gösterilecek
 // uyarılar yazılır. Uyarı metinleri raporlar.ts'deki kalıplarla (uyariSiniflandir) sınıflandırılır; metni değiştirirken orayı da güncelleyin.
 import { aktifGunMu, eczaciMi } from "../baglam";
-import { fmFarkBilgisi, fmKuralKisileri, hsKuralIhlali, hsSayilari, yilGunSayilari } from "../istatistik";
+import { fmFarkBilgisi, fmFarkiYapisal, fmKuralKisileri, hsKuralIhlali, hsSayilari, yilGunSayilari } from "../istatistik";
 import { FM_MAX_FARK, HAZ_SAYISI, YIL_GUN_TIP } from "../sabitler";
 import { AYLAR, CUMA, CUMARTESI, haftaGunu, PAZAR } from "../takvim";
 import { kadroYetersizlikNedenleri } from "./kapasite";
@@ -117,12 +117,15 @@ export function uyarilariYaz(K: AramaKurulumu, kural: Kurallar): string[] {
     days.forEach(dd => dd.assigned.forEach(p => { if (nc[p.id] !== undefined) nc[p.id]++; }));
     if (kk.length > 1) {
       const v = kk.map(s => nc[s.id]), mx = Math.max(...v), mn = Math.min(...v);
-      if (mx - mn > 2) warnings.push("Nöbet sayısı farkı sağlanamadı: kişiler arasındaki fark " + (mx - mn) + " (en fazla 2). En çok: " + kk.filter(s => nc[s.id] === mx).map(s => s.name + " (" + mx + ")").join(", ") + "; en az: " + kk.filter(s => nc[s.id] === mn).map(s => s.name + " (" + mn + ")").join(", ") + ".");
+      const yapisalYazildi = warnings.some(w => w.startsWith("Eczacı sayısı ("));
+      if (mx - mn > 2 && fmFarkiYapisal(B, y, m, nc, 2)) { if (!yapisalYazildi) warnings.push("Eczacı sayısı teknikerlerden az: her gün en az bir eczacı nöbetçi olması gerektiğinden eczacılar teknikerlerden daha çok nöbet tutar; nöbet sayısı farkı " + (mx - mn) + " (en çok: " + kk.filter(s => nc[s.id] === mx).map(s => s.name + " " + mx).join(", ") + "; en az: " + kk.filter(s => nc[s.id] === mn).map(s => s.name + " " + mn).join(", ") + "). Eczacılar kendi aralarında, teknikerler kendi aralarında eşit (fark en fazla 2); personel yapısından kaynaklanır, normaldir."); }
+      else if (mx - mn > 2) warnings.push("Nöbet sayısı farkı sağlanamadı: kişiler arasındaki fark " + (mx - mn) + " (en fazla 2). En çok: " + kk.filter(s => nc[s.id] === mx).map(s => s.name + " (" + mx + ")").join(", ") + "; en az: " + kk.filter(s => nc[s.id] === mn).map(s => s.name + " (" + mn + ")").join(", ") + ".");
     }
   }
   {
     const fb = fmFarkBilgisi(B, y, m, days);
-    if (fb.fark > FM_MAX_FARK && fb.enCok && fb.enAz) warnings.push("KESİN KURAL sağlanamadı: fazla mesai farkı " + fb.fark + " saat (en fazla " + FM_MAX_FARK + "). En çok: " + fb.enCok.name + " (" + (fb.t[fb.enCok.id] || 0) + " sa), en az: " + fb.enAz.name + " (" + (fb.t[fb.enAz.id] || 0) + " sa). Hazırlama eşitliği fazla mesaiden önce gelir: hazırlama farkını en fazla 1 tutmak için ya da uzun izin, az eczacı, kilitli günler nedeniyle olur.");
+    if (fb.fark > FM_MAX_FARK && fb.enCok && fb.enAz && fmFarkiYapisal(B, y, m, fb.t)) { if (!warnings.some(w => w.startsWith("Eczacı sayısı ("))) warnings.push("Eczacı sayısı teknikerlerden az: her gün en az bir eczacı nöbetçi olması gerektiğinden eczacılar teknikerlerden daha çok nöbet tutar; bu yüzden aralarında " + fb.fark + " saat fazla mesai farkı kalır (en çok: " + fb.enCok.name + " " + (fb.t[fb.enCok.id] || 0) + " sa, en az: " + fb.enAz.name + " " + (fb.t[fb.enAz.id] || 0) + " sa). Eczacılar kendi aralarında, teknikerler kendi aralarında eşit (fark en fazla " + FM_MAX_FARK + " saat); personel yapısından kaynaklanır, normaldir."); }
+    else if (fb.fark > FM_MAX_FARK && fb.enCok && fb.enAz) warnings.push("KESİN KURAL sağlanamadı: fazla mesai farkı " + fb.fark + " saat (en fazla " + FM_MAX_FARK + "). En çok: " + fb.enCok.name + " (" + (fb.t[fb.enCok.id] || 0) + " sa), en az: " + fb.enAz.name + " (" + (fb.t[fb.enAz.id] || 0) + " sa). Hazırlama eşitliği fazla mesaiden önce gelir: hazırlama farkını en fazla 1 tutmak için ya da uzun izin, az eczacı, kilitli günler nedeniyle olur.");
   }
   // Cumartesi/Pazar nöbeti ayardaki üst sınırı aşanlar
   {

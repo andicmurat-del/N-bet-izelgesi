@@ -1,7 +1,7 @@
 // Veri katmanı: yedek doğrulama, kişi numarası, silme koruması, izin/rapor ve nöbet değişimi (geri alma dahil).
 // .svelte.ts dosyaları vitest'te sunucu kipinde derlenir: $state düz nesnedir, $effect çalışmaz (kayıt yapılmaz).
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import { depo, bosVeri, veriyiDogrula, cizelgeKaydet, yedekAlindi, yedekErtele, yedekHatirlatma, yedekIzi, yedekVerisi, yedektenYukle, kisiEkle, kisiSil, onayliGoreviVar, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenHaftasiniSil, oglenHaftaKaydet, oglenKaydet, haftayiOnayla, haftaOnayiniKaldir, haftaOnayi, onayGunuAyarla } from "../src/veri/depo.svelte.ts";
+import { depo, bosVeri, veriyiDogrula, cizelgeKaydet, yedekAlindi, yedekErtele, yedekHatirlatma, yedekIzi, yedekVerisi, yedektenYukle, kisiEkle, kisiGuncelle, kisiSil, onayliGoreviVar, eskimeNedenleri, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenHaftasiniSil, oglenHaftaKaydet, oglenKaydet, haftayiOnayla, haftaOnayiniKaldir, haftaOnayi, onayGunuAyarla } from "../src/veri/depo.svelte.ts";
 import { degisimUygula, degisimGeriAl, izinUygula, puantajIzgarasi } from "../src/veri/degisim.svelte.ts";
 import { adAnahtari, adIcerir } from "../src/veri/tarih.ts";
 
@@ -109,6 +109,14 @@ describe("kişiler", () => {
     expect(kisiSil(1)).toBe(false);
     expect(depo.veri.staff.some(k => k.id === 9)).toBe(true);
     expect(depo.veri.acil[AY][5]).toEqual([9]);
+  });
+  test("görevi sonradan değişen (eczane nöbeti tutmayan) kişi çizelgede kalırsa çizelge eskimiş sayılır", () => {
+    expect(eskimeNedenleri(Y, M)).toEqual([]);
+    kisiGuncelle(5, { role: "servis" });
+    expect(eskimeNedenleri(Y, M).some(t => t.startsWith("Görevi değiştiği için") && t.includes("K5"))).toBe(true);
+    kisiGuncelle(5, { role: "teknisyen" });
+    kisiGuncelle(1, { acilTutar: true });   // acilde nöbet tutan eczacı eczane nöbeti tutmaz
+    expect(eskimeNedenleri(Y, M).some(t => t.includes("K1"))).toBe(true);
   });
   test("onaysız ayda silinen kişinin değişim kayıtları da gider", () => {
     degisimUygula({ y: Y, m: M, gorev: "N", tur: "devir", gun: 1, cik: 1, yer: 3 });
