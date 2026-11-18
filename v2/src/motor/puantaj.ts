@@ -80,7 +80,7 @@ export function puantajIzgarasi(B: Baglam, y: number, m: number): PuantajIzgaras
         } else kod = "B";
       }
       let saat = kod === "M" && g.arife ? g.ms : kodSaati(B, kod);
-      // elle düzenlenen tatil gününün saatleri: eczane nöbetinde yazılan fazla mesai (nöbet süresi, takvimdeki fazla
+      // elle düzenlenen günün saatleri: eczane nöbetinde yazılan fazla mesai (nöbet süresi, takvimdeki fazla
       // mesaiden farkı kadar değişir; ertesi günün nöbet izni yine düşülür), hazırlamada yazılan saat
       const sg = sch && sch.days[i];
       if (sg && kod === "N" && !acilFlag && typeof sg.fmNobet === "number") saat = Math.max(0, saat + sg.fmNobet - B.fazlaMesai(y, m, g.gun, dim));
@@ -124,7 +124,7 @@ export function puantajIzgarasi(B: Baglam, y: number, m: number): PuantajIzgaras
       const gunduzOnce = B.sayi("niDusum") !== 2; let gece = 0;
       hucre.forEach((c, i) => {
         if (c.kod !== "N") return;
-        // nöbetin süresi (elle düzenlenen tatil gününde yazılan fazla mesaiye göre farklı olabilir)
+        // nöbetin süresi (elle düzenlenen günde yazılan fazla mesaiye göre farklı olabilir)
         const L = c.saat, gecePay = Math.min(12, L);
         let gd = Math.max(0, L - gecePay - gunler[i].ms), gc = gecePay;
         const D = i + 1 < hucre.length ? (hucre[i + 1].kod === "NI" ? gunler[i + 1].ms : 0) : ileriNI;

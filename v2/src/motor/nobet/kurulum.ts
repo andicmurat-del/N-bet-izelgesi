@@ -29,7 +29,7 @@ export function aramaKur(A: AyBilgisi, days: MotorGunu[]) {
   const GUN_SAY = days.length;
   const gunDow = days.map(dy => haftaGunu(y, m, dy.day));
   const gunFm = days.map(dy => dy.fazlaMesai);
-  // günün hazırlama saati (elle düzenlenen tatil gününde elle yazılan, yoksa ayardaki)
+  // günün hazırlama saati (elle düzenlenen tatil gününde yazılan, yoksa ayardaki)
   const gunHz = days.map(dy => gunHazSaat(B, dy));
   const resmiGunDizi = days.map(dy => B.resmiTatilMi(y, m, dy.day)), resmiGunVar = resmiGunDizi.some(Boolean);
   const cuGunDizi = days.map(dy => B.cumaTipiMi(y, m, dy.day));

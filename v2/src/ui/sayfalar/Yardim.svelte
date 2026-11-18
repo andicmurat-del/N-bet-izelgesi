@@ -10,7 +10,7 @@
       "Günlük Eczane > İzinler: yıllık izinleri, nöbet isteklerini (+ / −) ve eş durumlarını işaretleyin; Resmi tatil ve arife sekmesinde bayramları işaretleyin.",
       "Nöbet Listesi > Çizelgeyi oluştur. Çubuk dolana kadar bekleyin; aynı bilgilerle her bilgisayarda aynı çizelge çıkar.",
       "Kural denetimi panelindeki kırmızı (hata) ve sarı (dikkat) satırlara bakın. Bir günü değiştirmek için güne dokunup \"Nöbet değişikliği yap\". Elle değiştirilen gün kilitlenir; yeniden oluşturmada korunur.",
-      "Tatil gününde nöbetçi / hazırlama sayısını ve o günün fazla mesai saatlerini aynı pencereden değiştirebilirsiniz.",
+      "Aynı pencereden o günün nöbetçi sayısını ve nöbet fazla mesaisini (tatil gününde hazırlama sayısını ve saatini de) değiştirebilirsiniz.",
       "Uygunsa Onayla; sonra PDF ya da Excel alın. Personele göndermek için \"Paylaş\" ile metin olarak kopyalayın (tüm liste ya da tek kişinin nöbetleri).",
     ] },
     { baslik: "Her ay: acil eczane nöbet listesi", adimlar: [

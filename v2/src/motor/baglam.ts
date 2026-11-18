@@ -14,7 +14,7 @@ export interface MotorGunu {
   assigned: Gorevli[];
   prep: Gorevli[];
   locked: boolean;
-  /** elle düzenlenen tatil gününde: nöbetçi / hazırlama sayısı, nöbet fazla mesaisi ve hazırlama saati (veri/tipler.ts) */
+  /** elle düzenlenen günde: nöbetçi sayısı ve nöbet fazla mesaisi; tatil gününde hazırlama sayısı ve saati (veri/tipler.ts) */
   nobetSay?: number; hazSay?: number; fmNobet?: number; fmHaz?: number;
 }
 /** günün nöbet fazla mesaisi: elle yazıldıysa o, yoksa takvimden (24 − o günün mesaisi − ertesi günün mesaisi) */

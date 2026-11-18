@@ -177,8 +177,8 @@ Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Ay
 
 Kadro bir kuralı imkânsız kılıyorsa (ör. tatilde yeterli kişi yok) program bunu nedeniyle birlikte söyler ve kuralı esnettiği
 günü kırmızı işaretler. Elle düzenlenen (kilitli) günler yeniden oluşturmada korunur; ihlalleri uyarı olarak gösterilir.
-Tatil gününde elle düzenlerken nöbetçi sayısı (1–4), hazırlama sayısı (0–4), nöbet fazla mesaisi ve hazırlama saati de
-elle belirlenebilir; yazılan saatler o günün her nöbetçisine / hazırlamacısına yazılır ve puantaja, raporlara, eşitlik
+Bir günü elle düzenlerken nöbetçi sayısı (1–4) ve nöbet fazla mesaisi, tatil gününde ayrıca hazırlama sayısı (0–4) ve
+hazırlama saati de elle belirlenebilir; yazılan saatler o günün her nöbetçisine / hazırlamacısına yazılır ve puantaja, raporlara, eşitlik
 hesabına bu saatler girer (puantajda nöbet süresi yazılan fazla mesai kadar değişir; ertesi günün nöbet izni yine düşülür).
 
 ### Öncelik sırası
@@ -277,7 +277,7 @@ Ayarlar > Yedek al ile alınan dosya şu alanları taşır (aylar 0'dan sayılı
 - \`prefs\`: "kisiId-yil-ay-gun" → izinli / want (istiyor) / avoid (istemiyor) / esVar / esYok.
 - \`manualTatil\`, \`arife\`: "yil-ay-gun" → true.
 - \`settings\`: minAra, acilMinAra, destekAylik, arifeSaat; gelişmiş: nobetSuresi, mesai, hazSaat, maxThu, hsUst, thuHaftaSonu, cumaEsles, fmHedef, niDusum, acilArdArda, oglenHE / oglenHT / oglenCE / oglenCT.
-- \`schedules\`: "yil-ay" → { year, month, days: [{ day, tatil, assigned (nöbetçiler), prep (hazırlamacılar), locked (elle), conflict (kural esnedi), fazlaMesai, elle düzenlenen tatil gününde nobetSay / hazSay / fmNobet / fmHaz }], uyarilar, onay }.
+- \`schedules\`: "yil-ay" → { year, month, days: [{ day, tatil, assigned (nöbetçiler), prep (hazırlamacılar), locked (elle), conflict (kural esnedi), fazlaMesai, elle düzenlenen günde nobetSay / fmNobet (tatil gününde hazSay / fmHaz da) }], uyarilar, onay }.
 - \`puantaj\`: "yil-ay" → kişi id → gün → elle yazılan kod (M, N, H, NI, YI, R, DI, B).
 - \`degisimler\`: nöbet değişimi ve izin nedeniyle yerine geçme kayıtları (cik: çıkan, yer: giren, gorev: N ya da H).
 - \`acil\`: "yil-ay" → gün → acil nöbetçi id'leri; \`acilElle\`: elle düzenlenen günler.

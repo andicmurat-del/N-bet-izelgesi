@@ -383,6 +383,17 @@ describe("tatil gününde elle nöbetçi / hazırlama sayısı ve fazla mesai", 
     expect([h.nobetSay, h.hazSay, h.fmNobet, h.fmHaz]).toEqual([undefined, undefined, undefined, undefined]);
     expect(h.fazlaMesai).toBe(16);
   });
+  test("hafta içi günde de nöbetçi sayısı ve nöbet fazla mesaisi elle yazılır; ertesi günün nöbet izni yine düşülür", () => {
+    // 6 Ekim 2026 Salı: nöbetçiler K2, K6; takvime göre 8 saat (24 − 8 − 8)
+    const fm2 = satir(2).fm;
+    gunuGuncelle(Y, M, 6, [kisi(2), kisi(6), kisi(3)], [], { nobetSay: 3, fmNobet: 16 });
+    expect(depo.veri.schedules[AY].days[5]).toMatchObject({ locked: true, nobetSay: 3, fmNobet: 16, fazlaMesai: 16 });
+    // nöbet saati 24 + (16 − 8) = 32 sayılır; Çarşamba nöbet izni 8 saat düşülür: fazla mesai 8 saat artar
+    expect(satir(2).cells[5]).toMatchObject({ kod: "N", saat: 32 });
+    expect(satir(2).cells[6].kod).toBe("NI");
+    expect(satir(2).fm).toBe(fm2 + 8);
+    expect(satir(2).fmGunduz + satir(2).fmGece).toBe(satir(2).fm);
+  });
   test("düzen yedekte korunur; sınır dışı değerler atılır", () => {
     const o = kopya(depo.veri);
     Object.assign(o.schedules[AY].days[3], { locked: true, nobetSay: 3, hazSay: 0, fmNobet: 12.5, fmHaz: 4 });

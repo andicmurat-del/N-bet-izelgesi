@@ -49,9 +49,9 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
   }
 
   // ---------- 1. sayfa: ay takvimi ----------
-  // elle sayısı değiştirilen tatil günleri varsa başlıkta söylenir
+  // elle sayısı değiştirilen günler varsa başlıkta söylenir
   const elleSayi = c.days.some(g => (g.nobetSay ?? 2) !== 2 || (g.hazSay ?? 2) !== 2);
-  ust("Her gün 2 nöbetçi · tatil günlerinde 2 hazırlama (H1, H2)" + (elleSayi ? " · bazı tatil günlerinde sayılar elle belirlendi" : ""));
+  ust("Her gün 2 nöbetçi · tatil günlerinde 2 hazırlama (H1, H2)" + (elleSayi ? " · bazı günlerde sayılar elle belirlendi" : ""));
   const bos = haftaGunu(y0, m, 1), satir = Math.ceil((bos + c.days.length) / 7);
   const ty = 25, th = 7, alan = H - ty - th - 22, ch = alan / satir, cw = (W - 2 * K) / 7;
   doc.setFont("CizelgeSans", "bold"); doc.setFontSize(9);

@@ -1,6 +1,6 @@
 <script lang="ts">
   // Bir günü elle düzenleme: nöbetçiler ve (tatil günüyse) hazırlama. Seçim değiştikçe kurallar anında denetlenir.
-  // Tatil gününde nöbetçi ve hazırlama sayısı ile o günün fazla mesai saatleri de elle belirlenebilir.
+  // Her gün nöbetçi sayısı ve nöbet fazla mesaisi, tatil gününde ayrıca hazırlama sayısı ve saati elle belirlenebilir.
   import { gunuDenetle, acilKadrosunda } from "../../motor";
   import { Baglam } from "../../motor/baglam";
   import { depo, veriAnlik, duzKopya, gunuGuncelle, gunKilidiniKaldir, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
@@ -51,11 +51,11 @@
   // saat alanları: boş = takvimden; 0–48 saat (yarım saat olabilir)
   const saatOku = (t: string): number | undefined | null => { const x = t.trim().replace(",", "."); if (!x) return undefined; const v = Number(x); return Number.isFinite(v) && v >= 0 && v <= 48 ? Math.round(v * 2) / 2 : null; };
   const fmNobet = $derived(saatOku(fmN)), fmHaz = $derived(saatOku(fmH));
-  const saatHatasi = $derived(g.tatil && (fmNobet === null || fmHaz === null));
-  /** günün yeni düzeni: yalnız tatil gününde (hafta içi günde düzen yoktur) */
-  const duzen = $derived<GunDuzeni | null>(g.tatil && !saatHatasi ? {
-    ...(nSay !== 2 ? { nobetSay: nSay } : {}), ...(hSay !== 2 ? { hazSay: hSay } : {}),
-    ...(typeof fmNobet === "number" ? { fmNobet } : {}), ...(typeof fmHaz === "number" ? { fmHaz } : {}),
+  const saatHatasi = $derived(fmNobet === null || (g.tatil && fmHaz === null));
+  /** günün yeni düzeni: nöbetçi sayısı ve nöbet fazla mesaisi her gün; hazırlama sayısı ve saati yalnız tatil gününde */
+  const duzen = $derived<GunDuzeni | null>(!saatHatasi ? {
+    ...(nSay !== 2 ? { nobetSay: nSay } : {}), ...(typeof fmNobet === "number" ? { fmNobet } : {}),
+    ...(g.tatil && hSay !== 2 ? { hazSay: hSay } : {}), ...(g.tatil && typeof fmHaz === "number" ? { fmHaz } : {}),
   } : null);
   const gosterFm = $derived(typeof fmNobet === "number" ? fmNobet : otoFm);
   const denetim = $derived(acik && !ayniKisi && !saatHatasi ? (gunuDenetle(veriAnlik(), duzKopya(c) as never, gun, nb, pr, duzen) as { sev: "hata" | "uyari" | "bilgi"; t: string }[]) : []);
@@ -80,7 +80,7 @@
   {#if onayli}<p class="not bilgi">Bu ay onaylı; günler değiştirilemez. Değiştirmek için önce onayı kaldırın.</p>{/if}
   <fieldset disabled={onayli}>
     <legend class="bas"><span>Nöbetçiler</span>
-      {#if g.tatil}<label class="sayi"><span>Sayı</span><select class="girdi" bind:value={nSay} aria-label="Nöbetçi sayısı">{#each SAYILAR_N as n}<option value={n}>{n}</option>{/each}</select></label>{/if}
+      <label class="sayi"><span>Sayı</span><select class="girdi" bind:value={nSay} aria-label="Nöbetçi sayısı">{#each SAYILAR_N as n}<option value={n}>{n}</option>{/each}</select></label>
     </legend>
     <div class="iki">
       {#each ns as _, i (i)}
@@ -103,15 +103,15 @@
         </div>
       {:else}<p class="kucuk-not">Bu gün hazırlama yok.</p>{/if}
     </fieldset>
-    <fieldset disabled={onayli}>
-      <legend>Fazla mesai (bu gün)</legend>
-      <div class="iki">
-        <label class="alan"><span>Nöbet fazla mesaisi (saat)</span><input class="girdi" inputmode="decimal" bind:value={fmN} placeholder="{otoFm} (takvimden)" aria-invalid={fmNobet === null} /></label>
-        <label class="alan"><span>Hazırlama saati</span><input class="girdi" inputmode="decimal" bind:value={fmH} placeholder="{OTO_HAZ} (varsayılan)" aria-invalid={fmHaz === null} /></label>
-      </div>
-      <p class="kucuk-not">Boş bırakılırsa takvimden hesaplanır. Yazılan saat bu günün her nöbetçisine / hazırlamacısına yazılır; puantaja, raporlara ve eşitlik hesabına bu saat girer.</p>
-    </fieldset>
   {/if}
+  <fieldset disabled={onayli}>
+    <legend>Fazla mesai (bu gün)</legend>
+    <div class="iki">
+      <label class="alan"><span>Nöbet fazla mesaisi (saat)</span><input class="girdi" inputmode="decimal" bind:value={fmN} placeholder="{otoFm} (takvimden)" aria-invalid={fmNobet === null} /></label>
+      {#if g.tatil}<label class="alan"><span>Hazırlama saati</span><input class="girdi" inputmode="decimal" bind:value={fmH} placeholder="{OTO_HAZ} (varsayılan)" aria-invalid={fmHaz === null} /></label>{/if}
+    </div>
+    <p class="kucuk-not">Boş bırakılırsa takvimden hesaplanır. Yazılan saat bu günün her nöbetçisine{g.tatil ? " / hazırlamacısına" : ""} yazılır; puantaja, raporlara ve eşitlik hesabına bu saat girer (puantajda o günün nöbet saati buna göre ayarlanır, ertesi günün nöbet izni yine düşülür).</p>
+  </fieldset>
 
   {#if ayniKisi}<p class="not hata" role="alert">Aynı kişi iki kez seçilemez.</p>{/if}
   {#if saatHatasi}<p class="not hata" role="alert">Saat 0 ile 48 arasında bir sayı olmalı (boş: takvimden).</p>{/if}

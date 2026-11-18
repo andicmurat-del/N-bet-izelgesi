@@ -36,8 +36,8 @@ export interface Gun {
   prep: Gorevli[];
   /** elle düzenlendi: yeniden oluşturmada korunur */
   locked: boolean;
-  /** tatil gününde elle belirlenen nöbetçi / hazırlama sayısı (yoksa 2 / 2) ve fazla mesai saatleri (yoksa takvimden:
-   *  nöbet 24 − o günün ve ertesi günün mesaisi, hazırlama 8 saat). Yalnız elle düzenlenen (kilitli) günde bulunur. */
+  /** elle belirlenen nöbetçi sayısı ve nöbet fazla mesaisi (her gün), hazırlama sayısı ve saati (tatil günü); yoksa 2 / 2
+   *  ve takvimden (nöbet 24 − o günün ve ertesi günün mesaisi, hazırlama 8 saat). Yalnız elle düzenlenen (kilitli) günde. */
   nobetSay?: number; hazSay?: number; fmNobet?: number; fmHaz?: number;
 }
 /** günün elle belirlenen düzeni (tatil günü) */
