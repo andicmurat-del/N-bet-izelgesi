@@ -6,7 +6,8 @@ import kalin from "./yazitipi/CizelgeSans-SemiBold.ttf?inline";
 const base64 = (dataUrl: string) => dataUrl.slice(dataUrl.indexOf(",") + 1);
 
 /** son çizilen tablonun (jspdf-autotable) alt kenarı; tablo yoksa yedek değer */
-export const sonTabloY = (doc: jsPDF, yedek: number): number => (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? yedek;
+export const sonTabloY = (doc: jsPDF, yedek: number): number =>
+  (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? yedek;
 
 /** boyut: A4 yerine mm cinsinden [en, boy] sayfa (ör. yalnız bir tablonun sığdığı sayfa) */
 export function yeniPdf(yon: "landscape" | "portrait" = "landscape", boyut?: [number, number]): jsPDF {

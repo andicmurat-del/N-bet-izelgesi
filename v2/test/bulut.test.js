@@ -12,15 +12,20 @@ function doluVeri() {
   for (const m of [0, 1]) {
     const r = cizelgeOlustur(v, 2026, m, hizli());
     v.schedules[`2026-${m}`] = { year: 2026, month: m, days: r.days, uyarilar: r.warnings, olusturma: 1 };
-    v.acil[`2026-${m}`] = Object.fromEntries(acilHesapla(v, 2026, m).gunler.filter(g => g.ids.length).map(g => [g.gun, g.ids]));
+    v.acil[`2026-${m}`] = Object.fromEntries(
+      acilHesapla(v, 2026, m)
+        .gunler.filter(g => g.ids.length)
+        .map(g => [g.gun, g.ids]),
+    );
     v.oglen[`2026-${m}`] = Object.fromEntries(oglenHesapla(v, 2026, m).gunler.map(g => [g.gun, { e: g.e, t: g.t }]));
   }
-  v.kurum.ad = "Şehir Hastanesi \"Eczane\"";
+  v.kurum.ad = 'Şehir Hastanesi "Eczane"';
   return veriyiDogrula(JSON.parse(JSON.stringify(v)));
 }
 
 describe("sunucu belgeleri", () => {
-  const v = doluVeri(), p = parcala(v);
+  const v = doluVeri(),
+    p = parcala(v);
   test("veri ortak bölüm ve ay belgelerine bölünür, geri kurulunca aynıdır", () => {
     expect(Object.keys(p.aylar).sort()).toEqual(["2025-11", "2026-0", "2026-1"].filter(k => k in p.aylar).sort());
     expect(Object.keys(p.aylar)).toContain("2026-0");
@@ -36,7 +41,15 @@ describe("sunucu belgeleri", () => {
     expect(bosMu(v)).toBe(false);
   });
   test("ay anahtarı olmayan ya da bozuk belge veriyi bozmaz", () => {
-    const k = { ana: p.ana, aylar: { ...p.aylar, "x": "{\"schedules\":1}", "2026-5": "[1,2]", "2026-6": "{\"__proto__\":{\"kirli\":1},\"puantaj\":{\"__proto__\":{\"kirli\":\"M\"}}}" } };
+    const k = {
+      ana: p.ana,
+      aylar: {
+        ...p.aylar,
+        x: '{"schedules":1}',
+        "2026-5": "[1,2]",
+        "2026-6": '{"__proto__":{"kirli":1},"puantaj":{"__proto__":{"kirli":"M"}}}',
+      },
+    };
     expect(veriyiDogrula(birlestir(k, guvenliJson)).schedules).toEqual(v.schedules);
     expect({}.kirli).toBeUndefined();
   });
@@ -44,7 +57,8 @@ describe("sunucu belgeleri", () => {
     const ters = { ana: p.ana, aylar: Object.fromEntries(Object.entries(p.aylar).reverse()) };
     expect(ozet(ters)).toBe(ozet(p));
     expect(parcalarAyni(ters, p)).toBe(true);
-    const v2 = JSON.parse(JSON.stringify(v)); v2.kurum.ad = "B";
+    const v2 = JSON.parse(JSON.stringify(v));
+    v2.kurum.ad = "B";
     expect(ozet(parcala(v2))).not.toBe(ozet(p));
     expect(parcalarAyni(parcala(v2), p)).toBe(false);
   });

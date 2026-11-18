@@ -3,24 +3,54 @@
 import { describe, test, expect } from "vitest";
 import { veriyiDogrula } from "../src/veri/depo.svelte.ts";
 import {
-  cizelgeOlustur, puantajHesapla, oglenHesapla, acilHesapla, onayHaftasiHesapla, yillikRaporHesapla, calismaListesiHesapla,
-  acilOglenRaporuHesapla, yerineAdaylarHesapla, acilYerineAdaylarHesapla, oglenYillikHesapla, acilSorunluGunler,
+  cizelgeOlustur,
+  puantajHesapla,
+  oglenHesapla,
+  acilHesapla,
+  onayHaftasiHesapla,
+  yillikRaporHesapla,
+  calismaListesiHesapla,
+  acilOglenRaporuHesapla,
+  yerineAdaylarHesapla,
+  acilYerineAdaylarHesapla,
+  oglenYillikHesapla,
+  acilSorunluGunler,
 } from "../src/motor";
 import { veriKur } from "./altin/senaryo.js";
 
-const Y = 2026, M = 0;
+const Y = 2026,
+  M = 0;
 function tabanVeri() {
   const v = veriKur();
   v.schedules[`${Y}-${M}`] = { year: Y, month: M, days: cizelgeOlustur(v, Y, M, { saat: () => 0 }).days };
   v.oglen = { [`${Y}-${M}`]: Object.fromEntries(oglenHesapla(v, Y, M).gunler.map(g => [g.gun, { e: g.e, t: g.t }])) };
   const ecz = v.staff.filter(s => s.role === "eczaci");
   v.onayMasa = { elle: { "2026-01-05": Object.fromEntries(ecz.slice(0, 6).map((s, i) => [s.id, String(i + 1)])) } };
-  v.degisimler = [{ id: 1, zaman: 1, y: Y, m: M, gun: 3, cik: 1, yer: 2, cikAd: "a", yerAd: "b", cikOnce: null, yerOnce: null, cikYeni: "M", yerYeni: "N", gorev: "N" }];
+  v.degisimler = [
+    {
+      id: 1,
+      zaman: 1,
+      y: Y,
+      m: M,
+      gun: 3,
+      cik: 1,
+      yer: 2,
+      cikAd: "a",
+      yerAd: "b",
+      cikOnce: null,
+      yerOnce: null,
+      cikYeni: "M",
+      yerYeni: "N",
+      gorev: "N",
+    },
+  ];
   return v;
 }
 
 // sabit tohumlu sayı üreteci
-function uretec(t) { return () => ((t = (t * 48271) % 2147483647) / 2147483647); }
+function uretec(t) {
+  return () => (t = (t * 48271) % 2147483647) / 2147483647;
+}
 const COP = [null, undefined, "", "x", -1, 0, 1e9, 3.5, NaN, true, false, [], {}, [1, "a", null], { a: 1 }, "2026-13-45", "__proto__"];
 
 /** nesnenin rastgele bir yerini bozar (silme, türünü değiştirme, dizi/nesne yerine çöp) */
@@ -32,7 +62,8 @@ function boz(o, r, adim) {
       if (!anahtarlar.length) break;
       const a = anahtarlar[Math.floor(r() * anahtarlar.length)];
       if (r() < 0.35 || typeof hedef[a] !== "object" || hedef[a] === null) {
-        if (r() < 0.25) delete hedef[a]; else hedef[a] = COP[Math.floor(r() * COP.length)];
+        if (r() < 0.25) delete hedef[a];
+        else hedef[a] = COP[Math.floor(r() * COP.length)];
         break;
       }
       hedef = hedef[a];
@@ -73,8 +104,10 @@ describe("dayanıklılık: bozuk yedek", () => {
   });
 
   test("çizelgede eksik (silinmiş) gün boş gün olarak kurulur", () => {
-    const o = JSON.parse(tabanJson); delete o.schedules[`${Y}-${M}`].days[9];
-    const v = veriyiDogrula(o), g = v.schedules[`${Y}-${M}`].days[9];
+    const o = JSON.parse(tabanJson);
+    delete o.schedules[`${Y}-${M}`].days[9];
+    const v = veriyiDogrula(o),
+      g = v.schedules[`${Y}-${M}`].days[9];
     expect(g).toMatchObject({ day: 10, assigned: [], prep: [] });
     expect(veriyiDogrula(JSON.parse(JSON.stringify(v)))).toEqual(v);
   });
@@ -97,7 +130,9 @@ describe("dayanıklılık: bozuk yedek", () => {
         // doğrulanmış veri JSON'a dönüp yeniden doğrulanınca değişmez (kararlı)
         expect(veriyiDogrula(JSON.parse(JSON.stringify(v)))).toEqual(v);
         hepsiniHesapla(v);
-      } catch (e) { hatalar.push(i + ": " + (e && e.message)); }
+      } catch (e) {
+        hatalar.push(i + ": " + (e && e.message));
+      }
     }
     expect(hatalar).toEqual([]);
   }, 300000);

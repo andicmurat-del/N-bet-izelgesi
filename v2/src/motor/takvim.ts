@@ -5,14 +5,24 @@ export const AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "T
 export const AY_KISA = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
 
 /** Pazartesi'den başlayan gün sırası */
-export const PERSEMBE = 3, CUMA = 4, CUMARTESI = 5, PAZAR = 6;
+export const PERSEMBE = 3,
+  CUMA = 4,
+  CUMARTESI = 5,
+  PAZAR = 6;
 
-export function ayGunSayisi(y: number, m: number): number { return new Date(y, m + 1, 0).getDate(); }
+export function ayGunSayisi(y: number, m: number): number {
+  return new Date(y, m + 1, 0).getDate();
+}
 
 /** 0 = Pazartesi … 6 = Pazar */
-export function haftaGunu(y: number, m: number, d: number): number { return (new Date(y, m, d).getDay() + 6) % 7; }
+export function haftaGunu(y: number, m: number, d: number): number {
+  return (new Date(y, m, d).getDay() + 6) % 7;
+}
 
-export function haftaSonuMu(y: number, m: number, d: number): boolean { const g = haftaGunu(y, m, d); return g === CUMARTESI || g === PAZAR; }
+export function haftaSonuMu(y: number, m: number, d: number): boolean {
+  const g = haftaGunu(y, m, d);
+  return g === CUMARTESI || g === PAZAR;
+}
 
 /** Ay ve yıl sınırını aşarak k gün kaydırır */
 export function gunKaydir(y: number, m: number, d: number, k: number): [number, number, number] {

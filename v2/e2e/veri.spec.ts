@@ -10,11 +10,13 @@ test("yedek al, tümünü sil, önceki verilere dön, yedekten yükle", async ({
   const y = await indir(page, () => bas(page, /^Yedek al$/));
   const yedek = JSON.parse(y.veri.toString());
   expect(yedek.uygulama).toBe("nobet-cizelgesi-v2");
-  await bas(page, "Tüm verileri sil"); await bas(page, "Evet, hepsini sil");
+  await bas(page, "Tüm verileri sil");
+  await bas(page, "Evet, hepsini sil");
   await expect.poll(async () => (await kayit(page)).staff.length).toBe(0);
   await bas(page, "Önceki verilere dön");
   await expect.poll(async () => (await kayit(page)).staff.length).toBe(22);
-  await bas(page, "Tüm verileri sil"); await bas(page, "Evet, hepsini sil");
+  await bas(page, "Tüm verileri sil");
+  await bas(page, "Evet, hepsini sil");
   // dosya yolu ASCII olmalı: Playwright Türkçe harfli yoldaki dosyayı seçimde sessizce boş geçiyor
   const dosya = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "yedek-")), "yedek.json");
   fs.writeFileSync(dosya, y.veri);

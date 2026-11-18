@@ -3,5 +3,9 @@
 export function tasi(node: HTMLElement, hedefKimlik = "sayfa-islemleri") {
   const hedef = document.getElementById(hedefKimlik);
   if (hedef) hedef.appendChild(node);
-  return { destroy() { node.remove(); } };
+  return {
+    destroy() {
+      node.remove();
+    },
+  };
 }

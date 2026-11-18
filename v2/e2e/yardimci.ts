@@ -16,7 +16,9 @@ export const test = temel.extend<{ hatalar: string[]; kur: (k?: Kurulum) => Prom
   hatalar: async ({ page }, use) => {
     const l: string[] = [];
     page.on("pageerror", e => l.push("sayfa hatası: " + e.message));
-    page.on("console", m => { if (m.type() === "error") l.push("konsol: " + m.text()); });
+    page.on("console", m => {
+      if (m.type() === "error") l.push("konsol: " + m.text());
+    });
     await use(l);
     expect(l, "sayfada hata çıkmamalı").toEqual([]);
   },
@@ -25,12 +27,15 @@ export const test = temel.extend<{ hatalar: string[]; kur: (k?: Kurulum) => Prom
     await use(async (k: Kurulum = {}) => {
       // tarih sabit: öğlen onarımı, yedek hatırlatması ve açılış ayı her gün aynı davransın
       await page.clock.setFixedTime(new Date(k.tarih ?? "2026-11-17T09:00:00"));
-      await page.addInitScript(([anahtar, v]) => {
-        if (sessionStorage.getItem("e2e-kuruldu")) return;
-        sessionStorage.setItem("e2e-kuruldu", "1");
-        if (v) localStorage.setItem(anahtar, v);
-        localStorage.setItem(anahtar + "-yedek", JSON.stringify({ son: Date.now() }));   // yedek hatırlatması çıkmasın
-      }, [ANAHTAR, k.veri === null ? "" : JSON.stringify(k.veri ?? DURUM)] as const);
+      await page.addInitScript(
+        ([anahtar, v]) => {
+          if (sessionStorage.getItem("e2e-kuruldu")) return;
+          sessionStorage.setItem("e2e-kuruldu", "1");
+          if (v) localStorage.setItem(anahtar, v);
+          localStorage.setItem(anahtar + "-yedek", JSON.stringify({ son: Date.now() })); // yedek hatırlatması çıkmasın
+        },
+        [ANAHTAR, k.veri === null ? "" : JSON.stringify(k.veri ?? DURUM)] as const,
+      );
       await page.goto("/");
       await expect(page.locator("main")).toBeVisible();
     });
@@ -54,7 +59,7 @@ export async function kayit(page: Page) {
 }
 /** düğmeye basıp indirilen dosyayı alır */
 export async function indir(page: Page, tetik: () => Promise<unknown>): Promise<{ ad: string; veri: Buffer }> {
-  const [d] = await Promise.all([page.waitForEvent("download"), tetik()]) as [Download, unknown];
+  const [d] = (await Promise.all([page.waitForEvent("download"), tetik()])) as [Download, unknown];
   const yol = await d.path();
   return { ad: d.suggestedFilename(), veri: fs.readFileSync(yol!) };
 }
@@ -64,8 +69,14 @@ export async function pdfOku(veri: Buffer): Promise<{ sayfa: number; metin: stri
   const doc = await pdfjs.getDocument({ data: new Uint8Array(veri), useSystemFonts: false, disableFontFace: true }).promise;
   const metin: string[] = [];
   for (let i = 1; i <= doc.numPages; i++) {
-    const s = await doc.getPage(i), t = await s.getTextContent();
-    metin.push(t.items.map(x => ("str" in x ? x.str : "")).join(" ").replace(/\s+/g, " "));
+    const s = await doc.getPage(i),
+      t = await s.getTextContent();
+    metin.push(
+      t.items
+        .map(x => ("str" in x ? x.str : ""))
+        .join(" ")
+        .replace(/\s+/g, " "),
+    );
   }
   return { sayfa: doc.numPages, metin };
 }

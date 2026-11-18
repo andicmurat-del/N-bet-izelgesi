@@ -1,8 +1,22 @@
 // Telefon görünümü (iPhone 13): hiçbir sayfa yatay taşmaz, gün penceresi ekrana sığar.
 import { test, expect, git, bas } from "./yardimci";
 
-const GORUNUMLER = ["gunluk/nobet", "gunluk/liste", "gunluk/oglen", "gunluk/onay", "gunluk/hazirlama", "gunluk/puantaj", "gunluk/izinler", "gunluk/raporlar",
-  "acil/acil", "acil/puantaj", "ayarlar/genel", "ayarlar/personel", "ayarlar/kurallar", "ayarlar/yardim"];
+const GORUNUMLER = [
+  "gunluk/nobet",
+  "gunluk/liste",
+  "gunluk/oglen",
+  "gunluk/onay",
+  "gunluk/hazirlama",
+  "gunluk/puantaj",
+  "gunluk/izinler",
+  "gunluk/raporlar",
+  "acil/acil",
+  "acil/puantaj",
+  "ayarlar/genel",
+  "ayarlar/personel",
+  "ayarlar/kurallar",
+  "ayarlar/yardim",
+];
 
 test("sayfalar yatay taşmaz", async ({ page, kur }) => {
   await kur();

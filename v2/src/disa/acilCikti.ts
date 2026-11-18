@@ -5,7 +5,9 @@ import { xlsxKitap, type Hucre } from "./xlsx";
 import { AYLAR, GUN_UZUN, buyukAd } from "../veri/tarih";
 
 export interface AcilVerisi {
-  y: number; m: number; kurum: string;
+  y: number;
+  m: number;
+  kurum: string;
   gunler: { gun: number; dw: number; tatil: boolean; resmi: boolean; adlar: string[] }[];
   ozet: { ad: string; gunler: number[]; tatil: number }[];
 }
@@ -19,7 +21,15 @@ export function acilKitabi(v: AcilVerisi): Blob {
     [{ v: baslik(v), s: "kalin" }],
     [],
     ["Tarih", "Gün", "Gün türü", "1. nöbetçi", "2. nöbetçi"].map(x => ({ v: x, s: "baslik" as const })),
-    ...v.gunler.map(g => [`${iki(g.gun)}.${iki(v.m + 1)}.${v.y}`, GUN_UZUN[g.dw], g.resmi ? "Resmi tatil" : g.tatil ? "Hafta sonu" : "Mesai", buyukAd(g.adlar[0] ?? ""), buyukAd(g.adlar[1] ?? "")].map(h => t(h, g.tatil))),
+    ...v.gunler.map(g =>
+      [
+        `${iki(g.gun)}.${iki(v.m + 1)}.${v.y}`,
+        GUN_UZUN[g.dw],
+        g.resmi ? "Resmi tatil" : g.tatil ? "Hafta sonu" : "Mesai",
+        buyukAd(g.adlar[0] ?? ""),
+        buyukAd(g.adlar[1] ?? ""),
+      ].map(h => t(h, g.tatil)),
+    ),
   ];
   const ozet: Hucre[][] = [
     [{ v: baslik(v) + " · kişi özeti", s: "kalin" }],
@@ -35,20 +45,34 @@ export function acilKitabi(v: AcilVerisi): Blob {
 
 export function acilPdf(v: AcilVerisi): Blob {
   const doc = yeniPdf();
-  const W = 297, K = 10;
+  const W = 297,
+    K = 10;
   doc.setProperties({ title: `${AYLAR[v.m]} ${v.y} acil eczane nöbet listesi`, creator: "Nöbet Çizelgesi" });
-  doc.setFont("CizelgeSans", "bold"); doc.setFontSize(14); doc.setTextColor(19, 33, 44);
+  doc.setFont("CizelgeSans", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(19, 33, 44);
   doc.text(baslik(v), K, 14);
   // takvim: haftalar satır, günler sütun
-  const ilk = v.gunler[0]?.dw ?? 0, hucreler: (AcilVerisi["gunler"][number] | null)[] = [...Array(ilk).fill(null), ...v.gunler];
+  const ilk = v.gunler[0]?.dw ?? 0,
+    hucreler: (AcilVerisi["gunler"][number] | null)[] = [...Array(ilk).fill(null), ...v.gunler];
   while (hucreler.length % 7) hucreler.push(null);
   const haftalar = Array.from({ length: hucreler.length / 7 }, (_, i) => hucreler.slice(i * 7, i * 7 + 7));
   autoTable(doc, {
-    startY: 19, margin: { left: K, right: K },
+    startY: 19,
+    margin: { left: K, right: K },
     head: [GUN_UZUN],
     body: haftalar.map(h => h.map(g => (g ? `${g.gun}${g.resmi ? "  Resmi tatil" : ""}\n${g.adlar.map(buyukAd).join("\n") || " "}` : ""))),
     theme: "grid",
-    styles: { font: "CizelgeSans", fontSize: 9, cellPadding: 2.2, valign: "top", textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.15, minCellHeight: 24 },
+    styles: {
+      font: "CizelgeSans",
+      fontSize: 9,
+      cellPadding: 2.2,
+      valign: "top",
+      textColor: [21, 38, 43],
+      lineColor: [150, 160, 170],
+      lineWidth: 0.15,
+      minCellHeight: 24,
+    },
     headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [208, 230, 235], halign: "center", minCellHeight: 0 },
     didParseCell: h => {
       if (h.section !== "body") return;
@@ -60,7 +84,9 @@ export function acilPdf(v: AcilVerisi): Blob {
   const sonY = sonTabloY(doc, 150);
   if (v.ozet.length) {
     autoTable(doc, {
-      startY: sonY + 8, margin: { left: K, right: K, bottom: 22 }, pageBreak: "avoid",
+      startY: sonY + 8,
+      margin: { left: K, right: K, bottom: 22 },
+      pageBreak: "avoid",
       head: [["Ad soyad", "Nöbet", "Hafta sonu / tatil", "Nöbet günleri"]],
       body: v.ozet.map(o => [buyukAd(o.ad), String(o.gunler.length), String(o.tatil), o.gunler.join(", ")]),
       theme: "grid",
@@ -69,8 +95,13 @@ export function acilPdf(v: AcilVerisi): Blob {
       columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 20, halign: "center" }, 2: { cellWidth: 34, halign: "center" } },
     });
   }
-  doc.setFontSize(8); doc.setTextColor(88, 105, 120);
-  doc.text("Gölgeli günler: hafta sonu ve resmi tatil. Acil eczane nöbeti puantajda 24 saat sayılır; ertesi gün mesai günüyse nöbet izni.", K, 200);
+  doc.setFontSize(8);
+  doc.setTextColor(88, 105, 120);
+  doc.text(
+    "Gölgeli günler: hafta sonu ve resmi tatil. Acil eczane nöbeti puantajda 24 saat sayılır; ertesi gün mesai günüyse nöbet izni.",
+    K,
+    200,
+  );
   doc.setTextColor(19, 33, 44);
   doc.text("Düzenleyen: ________________________          Onaylayan: ________________________", W - K, 205, { align: "right" });
   return doc.output("blob");

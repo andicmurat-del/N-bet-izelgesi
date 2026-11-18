@@ -8,20 +8,36 @@ import { build, type Plugin } from "vite";
 // bu yarım MB'lık kodu ne çözümler ne de ana betiğin içinde dizgi olarak taşır. Geliştirme sunucusunda metin olarak
 // içe aktarılır.
 function ciktiPaketi(): Plugin {
-  const ID = "virtual:cikti-paketi", RID = "\0" + ID;
-  let derleme = false, kod = "";
+  const ID = "virtual:cikti-paketi",
+    RID = "\0" + ID;
+  let derleme = false,
+    kod = "";
   return {
     name: "cikti-paketi",
-    configResolved: c => { derleme = c.command === "build"; },
+    configResolved: c => {
+      derleme = c.command === "build";
+    },
     resolveId: id => (id === ID ? RID : null),
     async load(id) {
       if (id !== RID) return null;
       const r = await build({
-        configFile: false, logLevel: "warn",
+        configFile: false,
+        logLevel: "warn",
         build: {
-          write: false, target: "es2022", assetsInlineLimit: 100_000_000, minify: true,
-          lib: { entry: new URL("./src/disa/paket.ts", import.meta.url).pathname, formats: ["iife"], name: "__ciktiPaketi", fileName: () => "cikti.js" },
-          rollupOptions: { external: ["html2canvas", "dompurify", "canvg"], output: { globals: { html2canvas: "html2canvas", dompurify: "DOMPurify", canvg: "canvg" } } },
+          write: false,
+          target: "es2022",
+          assetsInlineLimit: 100_000_000,
+          minify: true,
+          lib: {
+            entry: new URL("./src/disa/paket.ts", import.meta.url).pathname,
+            formats: ["iife"],
+            name: "__ciktiPaketi",
+            fileName: () => "cikti.js",
+          },
+          rollupOptions: {
+            external: ["html2canvas", "dompurify", "canvg"],
+            output: { globals: { html2canvas: "html2canvas", dompurify: "DOMPurify", canvg: "canvg" } },
+          },
         },
       });
       const cikti = (Array.isArray(r) ? r[0] : r) as { output: { type: string; code?: string }[] };
@@ -31,7 +47,8 @@ function ciktiPaketi(): Plugin {
     },
     transformIndexHtml: {
       order: "post",
-      handler: html => (derleme && kod ? html.replace("</body>", () => `<script type="text/plain" id="cikti-paketi">${kod}</script></body>`) : html),
+      handler: html =>
+        derleme && kod ? html.replace("</body>", () => `<script type="text/plain" id="cikti-paketi">${kod}</script></body>`) : html,
     },
   };
 }
@@ -47,12 +64,17 @@ export default defineConfig({
     rollupOptions: { external: ["html2canvas", "dompurify", "canvg"] },
   },
   test: {
-    include: ["test/**/*.test.{js,ts}"], testTimeout: 600_000, pool: "threads",
+    include: ["test/**/*.test.{js,ts}"],
+    testTimeout: 600_000,
+    pool: "threads",
     // kapsam ölçümü (npm run test:kapsam): motor ve veri kodu. Ekranlar, PDF / Excel çıktıları ve arka plan işçisi
     // tarayıcıda çalışır; onları ekran testleri (npm run e2e) denetler.
     coverage: {
-      provider: "v8", include: ["src/motor/**/*.ts", "src/veri/**/*.ts"], exclude: ["src/motor/isci.ts", "src/motor/istemci.ts"],
-      reporter: ["text-summary", "text", "html"], reportsDirectory: "coverage",
+      provider: "v8",
+      include: ["src/motor/**/*.ts", "src/veri/**/*.ts"],
+      exclude: ["src/motor/isci.ts", "src/motor/istemci.ts"],
+      reporter: ["text-summary", "text", "html"],
+      reportsDirectory: "coverage",
     },
   },
 });

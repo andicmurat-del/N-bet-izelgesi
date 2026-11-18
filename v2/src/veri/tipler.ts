@@ -21,11 +21,25 @@ export type Tercih = "izinli" | "want" | "avoid" | "esVar" | "esYok";
 
 /** öğlen nöbetinde elle belirlenen yerler: e / t elle yazılan eczacı ve teknikerler, be / bt elle boş bırakılan yer sayısı.
  *  Yeniden oluşturma ve otomatik onarım yalnız bu yerlere dokunmaz; günün geri kalanı yeniden yazılır. */
-export interface OglenSabit { e: number[]; t: number[]; be?: number; bt?: number }
+export interface OglenSabit {
+  e: number[];
+  t: number[];
+  be?: number;
+  bt?: number;
+}
 /** bir günün öğlen nöbetçileri; sabit: elle belirlenen yerler; elle: günün tamamı elle (eski kayıtlar), hiç değişmez */
-export interface OglenGunu { e: number[]; t: number[]; elle?: true; sabit?: OglenSabit }
+export interface OglenGunu {
+  e: number[];
+  t: number[];
+  elle?: true;
+  sabit?: OglenSabit;
+}
 
-export interface Gorevli { id: number; name: string; role: Rol }
+export interface Gorevli {
+  id: number;
+  name: string;
+  role: Rol;
+}
 
 export interface Gun {
   day: number;
@@ -38,12 +52,18 @@ export interface Gun {
   locked: boolean;
   /** elle belirlenen nöbetçi sayısı ve nöbet fazla mesaisi (her gün), hazırlama sayısı ve saati (tatil günü); yoksa 2 / 2
    *  ve takvimden (nöbet 24 − o günün ve ertesi günün mesaisi, hazırlama 8 saat). Yalnız elle düzenlenen (kilitli) günde. */
-  nobetSay?: number; hazSay?: number; fmNobet?: number; fmHaz?: number;
+  nobetSay?: number;
+  hazSay?: number;
+  fmNobet?: number;
+  fmHaz?: number;
 }
 /** günün elle belirlenen düzeni (tatil günü) */
 export type GunDuzeni = Pick<Gun, "nobetSay" | "hazSay" | "fmNobet" | "fmHaz">;
 
-export interface Onay { zaman: number; kim: string }
+export interface Onay {
+  zaman: number;
+  kim: string;
+}
 
 export interface AyCizelgesi {
   year: number;
@@ -66,11 +86,15 @@ export interface Ayarlar {
   arifeSaat: number;
   // ---- gelişmiş kurallar (Ayarlar > Gelişmiş kurallar; anlamları motor/sabitler.ts AYAR_VARSAYILAN'da) ----
   /** nöbet süresi, günlük normal mesai, hazırlama süresi (saat) */
-  nobetSuresi: number; mesai: number; hazSaat: number;
+  nobetSuresi: number;
+  mesai: number;
+  hazSaat: number;
   /** kişiye ayda en fazla Perşembe nöbeti (99: sınırsız) ve Cumartesi + Pazar nöbeti */
-  maxThu: number; hsUst: number;
+  maxThu: number;
+  hsUst: number;
   /** Perşembe nöbetçisi aynı hafta sonu görev almaz; hafta sonu nöbeti olana aynı ay Cuma da yazılır */
-  thuHaftaSonu: boolean; cumaEsles: boolean;
+  thuHaftaSonu: boolean;
+  cumaEsles: boolean;
   /** elle düzenlemede kişinin fazla mesaisi ortalamadan bu kadar saat saparsa uyarı */
   fmHedef: number;
   /** nöbet izni önce 08–20 (1) ya da 20–08 (2) diliminden düşülür */
@@ -78,7 +102,10 @@ export interface Ayarlar {
   /** acil kadrosu yetmezse art arda acil nöbeti yazılır (kapalıysa gün eksik kalır) */
   acilArdArda: boolean;
   /** öğlen nöbeti: Pazartesi–Perşembe ve Cuma eczacı / tekniker sayısı */
-  oglenHE: number; oglenHT: number; oglenCE: number; oglenCT: number;
+  oglenHE: number;
+  oglenHT: number;
+  oglenCE: number;
+  oglenCT: number;
   /** resmi tatiller ve arifeler her yıl ilk açılışta kendiliğinden işaretlenir (veri/resmiTatiller.ts) */
   tatilOtomatik: boolean;
 }
@@ -128,13 +155,19 @@ export interface Veri {
 export interface Degisim {
   id: number;
   zaman: number;
-  y: number; m: number; gun: number;
+  y: number;
+  m: number;
+  gun: number;
   /** görevden çıkan ve yerine giren */
-  cik: number; yer: number;
-  cikAd: string; yerAd: string;
+  cik: number;
+  yer: number;
+  cikAd: string;
+  yerAd: string;
   /** değişimden önce puantajda elle yazılı kod (yoksa null): geri almada geri yazılır */
-  cikOnce: PuantajKodu | null; yerOnce: PuantajKodu | null;
-  cikYeni: PuantajKodu; yerYeni: "N" | "H";
+  cikOnce: PuantajKodu | null;
+  yerOnce: PuantajKodu | null;
+  cikYeni: PuantajKodu;
+  yerYeni: "N" | "H";
   gorev: "N" | "H";
   /** karşılıklı takasın iki yarısı aynı grupta */
   grup?: string;
@@ -150,9 +183,17 @@ export interface ServisAyar {
 }
 /** Bir günün servis dağıtımı: k çalışan teknikerler, n çok günlük servis gün sayısı, a servis → kişi */
 export interface ServisGunKaydi {
-  k: number[]; n: number; i: string; a: Record<string, number>;
-  w: Record<string, number>; l: Record<string, number>; yb: Record<string, number>;
-  t: { w: number; l: number; y: number }; z: number; sk?: number; bayat?: number;
+  k: number[];
+  n: number;
+  i: string;
+  a: Record<string, number>;
+  w: Record<string, number>;
+  l: Record<string, number>;
+  yb: Record<string, number>;
+  t: { w: number; l: number; y: number };
+  z: number;
+  sk?: number;
+  bayat?: number;
 }
 export interface ServisAyKaydi {
   gun: Record<string, ServisGunKaydi>;
@@ -179,8 +220,10 @@ export const ROL_ACIKLAMA: Record<Rol, string> = {
   eczaci: "Nöbet ve hazırlama tutar; her gün en az bir eczacı nöbetçidir.",
   teknisyen: "Nöbet ve hazırlama tutar.",
   destek: "Nöbet tutmaz; tatil günlerinde ikinci hazırlama görevini alır.",
-  nobetci: "Hafta içi mesai ve öğlen nöbeti yoktur; nöbetini günlük eczanede ya da acil eczanede tutar (Düzenle > Nöbet tuttuğu yer). Günlük eczanede eczacı yerine sayılır.",
-  servis: "Günlük eczanede nöbet, hazırlama ve öğlen nöbeti tutmaz; nöbetleri Acil Eczane Nöbet Listesi'ne yazılır. Hafta içi normal mesai yapar.",
+  nobetci:
+    "Hafta içi mesai ve öğlen nöbeti yoktur; nöbetini günlük eczanede ya da acil eczanede tutar (Düzenle > Nöbet tuttuğu yer). Günlük eczanede eczacı yerine sayılır.",
+  servis:
+    "Günlük eczanede nöbet, hazırlama ve öğlen nöbeti tutmaz; nöbetleri Acil Eczane Nöbet Listesi'ne yazılır. Hafta içi normal mesai yapar.",
 };
 
 export const TERCIH_AD: Record<Tercih, string> = {

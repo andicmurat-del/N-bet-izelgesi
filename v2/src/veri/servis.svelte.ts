@@ -12,7 +12,21 @@ export type ServisIslemi =
   | { tur: "oto"; gun: number; sn: string }
   | { tur: "olustur"; gun?: number };
 
-export interface ServisBilgisi { id: number; name: string; z: number; h: number; multi: boolean; on: boolean; z0: number; h0: number; multi0: boolean; ekstra: boolean; yb: boolean; zor: boolean; grup: boolean }
+export interface ServisBilgisi {
+  id: number;
+  name: string;
+  z: number;
+  h: number;
+  multi: boolean;
+  on: boolean;
+  z0: number;
+  h0: number;
+  multi0: boolean;
+  ekstra: boolean;
+  yb: boolean;
+  zor: boolean;
+  grup: boolean;
+}
 
 const anahtar = (y: number, m: number) => `${y}-${m}`;
 // motor girdiyi kopyalayarak çalışır: uzun hesaplara paylaşılan anlık kopya (veriAnlik) doğrudan verilir
@@ -41,9 +55,18 @@ function parcaParca<T>(g: Generator<void, T>, dilimMs = 30): Promise<T> {
     const adim = () => {
       try {
         const t0 = performance.now();
-        for (;;) { const r = g.next(); if (r.done) { coz(r.value); return; } if (performance.now() - t0 > dilimMs) break; }
+        for (;;) {
+          const r = g.next();
+          if (r.done) {
+            coz(r.value);
+            return;
+          }
+          if (performance.now() - t0 > dilimMs) break;
+        }
         setTimeout(adim, 0);
-      } catch (e) { reddet(e); }
+      } catch (e) {
+        reddet(e);
+      }
     };
     setTimeout(adim, 0);
   });
@@ -74,19 +97,41 @@ export function servisEkle(ad: string, z: number, h: number, multi: boolean): st
   const name = ad.trim().toLocaleUpperCase("tr").slice(0, 40);
   if (!name) return "Servis adını yazın.";
   if (servisler().some(s => s.name.toLocaleUpperCase("tr") === name)) return "Bu adda servis zaten var.";
-  depo.veri.servisAyar.ekstra.push({ name, z: Math.max(1, Math.min(10, Math.round(z) || 1)), h: Math.max(0, Math.min(999, Math.round(h) || 0)), multi });
+  depo.veri.servisAyar.ekstra.push({
+    name,
+    z: Math.max(1, Math.min(10, Math.round(z) || 1)),
+    h: Math.max(0, Math.min(999, Math.round(h) || 0)),
+    multi,
+  });
   return null;
 }
 export function servisSil(name: string) {
   depo.veri.servisAyar.ekstra = depo.veri.servisAyar.ekstra.filter(e => e.name !== name);
   delete depo.veri.servisAyar.svc[name];
 }
-export function servisAyarlariniSifirla() { depo.veri.servisAyar.svc = {}; }
+export function servisAyarlariniSifirla() {
+  depo.veri.servisAyar.svc = {};
+}
 
 export interface ServisYilRaporu {
-  kayitli: number; bosAy: boolean[];
-  kisi: { id: number; ad: string; ay: ({ gun: number; w: number; l: number } | null)[]; gun: number; l: number; fl: number; w: number; y: number; adet: number; sapma: number }[];
-  matris: { servisler: { sn: string; grup: "yb" | "cok" | "tek"; say: Record<string, number>; pay: Record<string, number> }[]; gun: Record<string, number> };
+  kayitli: number;
+  bosAy: boolean[];
+  kisi: {
+    id: number;
+    ad: string;
+    ay: ({ gun: number; w: number; l: number } | null)[];
+    gun: number;
+    l: number;
+    fl: number;
+    w: number;
+    y: number;
+    adet: number;
+    sapma: number;
+  }[];
+  matris: {
+    servisler: { sn: string; grup: "yb" | "cok" | "tek"; say: Record<string, number>; pay: Record<string, number> }[];
+    gun: Record<string, number>;
+  };
 }
 // yıllık rapor da aynı veri ve yıl için bir kez hesaplanır (sekmeye yeniden girince bekletmez)
 let sonYil: { v: object; yil: number; r: ServisYilRaporu } | null = null;
@@ -94,15 +139,22 @@ export function servisYilRaporuOnbellekte(yil: number): ServisYilRaporu | null {
   return sonYil && sonYil.v === veriAnlik() && sonYil.yil === yil ? sonYil.r : null;
 }
 function yilSonucunuIsle(yil: number, r: ServisYilRaporu & { kayitlar: Record<string, ServisAyKaydi | null> }): ServisYilRaporu {
-  for (const [k, v] of Object.entries(r.kayitlar)) { if (v) depo.veri.servisKayit[k] = v; else delete depo.veri.servisKayit[k]; }
+  for (const [k, v] of Object.entries(r.kayitlar)) {
+    if (v) depo.veri.servisKayit[k] = v;
+    else delete depo.veri.servisKayit[k];
+  }
   sonYil = { v: veriAnlik(), yil, r };
   return r;
 }
 /** Yılın raporu (ekranı dondurmadan): çizelgesi olan ayların dağıtımı güncellenir ve kaydedilir */
 export async function servisYilRaporuArkada(yil: number): Promise<ServisYilRaporu> {
   for (;;) {
-    const v = veriAnlik(), hazir = servisYilRaporuOnbellekte(yil); if (hazir) return hazir;
-    const r = await parcaParca(servisYillikAdim(v, yil) as Generator<void, ServisYilRaporu & { kayitlar: Record<string, ServisAyKaydi | null> }>);
+    const v = veriAnlik(),
+      hazir = servisYilRaporuOnbellekte(yil);
+    if (hazir) return hazir;
+    const r = await parcaParca(
+      servisYillikAdim(v, yil) as Generator<void, ServisYilRaporu & { kayitlar: Record<string, ServisAyKaydi | null> }>,
+    );
     if (veriAnlik() === v) return yilSonucunuIsle(yil, r);
   }
 }

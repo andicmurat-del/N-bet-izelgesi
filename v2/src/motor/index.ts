@@ -22,7 +22,15 @@ import { acilDegisimDenetle as acilDegisimDenetimi, acilYerineAdaylar } from "./
 import { oglenGerek, oglenOlustur, oglenOnarimlari, oglenYillik, type OglenGunSonucu } from "./oglen";
 import { onayHaftasi, pazartesi } from "./onayMasa";
 import { puantajIzgarasi } from "./puantaj";
-import { acilAdaylari, acilDenetle as acilDenetimi, acilOglenRaporu, aylikRapor, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
+import {
+  acilAdaylari,
+  acilDenetle as acilDenetimi,
+  acilOglenRaporu,
+  aylikRapor,
+  calismaListesi,
+  uyariSiniflandir,
+  yillikRapor,
+} from "./raporlar";
 import { ServisMotoru, sonaKadar, type AyKaydi, type HesapSecenegi } from "./servis/ay";
 import { ybMi, zorMu } from "./servis/liste";
 import { tarihNo } from "./takvim";
@@ -32,7 +40,9 @@ export { PUANTAJ_KODLARI } from "./puantaj";
 export { uyariSiniflandir } from "./raporlar";
 export { OGLEN_GEREK, oglenGrubu } from "./oglen";
 /** öğlen nöbetinde gereken kişi sayıları (Ayarlar) */
-export function oglenGerekHesapla(veri: unknown) { return oglenGerek(new Baglam(veri)); }
+export function oglenGerekHesapla(veri: unknown) {
+  return oglenGerek(new Baglam(veri));
+}
 export { acilKadrosunda } from "./acil";
 export { ONAY_YERLERI, type OnayYeri, type OnayHaftasi, type OnayGunu, type OnayHucre } from "./onayMasa";
 export { ZOR_ESIK as SERVIS_ZOR_ESIK } from "./servis/liste";
@@ -56,20 +66,39 @@ export function cizelgeOlustur(veri: unknown, yil: number, ay: number, secenek: 
 /** Tek bir arama denemesi: 0 asıl arama, 1..EK_DENEME farklı başlangıçlı ek aramalar. Denemeler birbirinden bağımsızdır;
  *  arayüz bunları ayrı işçilerde aynı anda çalıştırır (istemci.ts), cizelgeOlustur sırayla. */
 export function cizelgeDenemesi(veri: unknown, yil: number, ay: number, deneme: number, secenek: AramaSecenegi = {}): CizelgeSonucu {
-  const v = secenek.varyasyon || 0, il = secenek.ilerleme;
-  return cizelgeUret(new Baglam(veri), yil, ay, deneme ? EK_TOHUM + v * (EK_DENEME + 1) + deneme : v, il ? oran => il(deneme, oran) : undefined, secenek.turSiniri);
+  const v = secenek.varyasyon || 0,
+    il = secenek.ilerleme;
+  return cizelgeUret(
+    new Baglam(veri),
+    yil,
+    ay,
+    deneme ? EK_TOHUM + v * (EK_DENEME + 1) + deneme : v,
+    il ? oran => il(deneme, oran) : undefined,
+    secenek.turSiniri,
+  );
 }
 /** varyasyon: "farklı dağılım" numarası; ilerleme: (deneme no, 0–1 oran); turSiniri: yinelemeli aramanın en çok tur
  *  sayısı (yalnız testlerdeki hızlı tarama için; 0: yinelemeli arama yok) */
-export interface AramaSecenegi { varyasyon?: number; ilerleme?: (deneme: number, oran: number) => void; turSiniri?: number }
+export interface AramaSecenegi {
+  varyasyon?: number;
+  ilerleme?: (deneme: number, oran: number) => void;
+  turSiniri?: number;
+}
 /** ilk denemenin sonucuna göre ek deneme yapılır mı: uyarı kaldıysa ve neden kadro yetersizliği değilse */
 export function ekDenemeGerekli(ilk: CizelgeSonucu): boolean {
   return !ilk.warnings.some(w => /matematiksel olarak mümkün değil/.test(w)) && !uyarisiz(ilk);
 }
 /** deneme sırasıyla verilen sonuçlardan en az uyarılı olan (eşitse önceki) */
 export function enIyiDeneme(denemeler: CizelgeSonucu[]): CizelgeSonucu {
-  let en = denemeler[0], enP = uyariPuani(en);
-  for (const r of denemeler.slice(1)) { const p = uyariPuani(r); if (puanKucuk(p, enP)) { en = r; enP = p; } }
+  let en = denemeler[0],
+    enP = uyariPuani(en);
+  for (const r of denemeler.slice(1)) {
+    const p = uyariPuani(r);
+    if (puanKucuk(p, enP)) {
+      en = r;
+      enP = p;
+    }
+  }
   return en;
 }
 /** hata, uyarı ve kırmızı gün kalmadı mı */
@@ -79,8 +108,13 @@ export const EK_DENEME = 3;
 /** ek denemelerin "farklı dağılım" numaralarıyla çakışmaması için */
 const EK_TOHUM = 1000000;
 function uyariPuani(r: CizelgeSonucu): number[] {
-  let hata = 0, uyari = 0;
-  r.warnings.forEach(w => { const s = uyariSiniflandir(w).seviye; if (s === "hata") hata++; else if (s === "uyari") uyari++; });
+  let hata = 0,
+    uyari = 0;
+  r.warnings.forEach(w => {
+    const s = uyariSiniflandir(w).seviye;
+    if (s === "hata") hata++;
+    else if (s === "uyari") uyari++;
+  });
   return [hata, uyari, (r.days || []).filter(g => g.conflict).length];
 }
 function puanKucuk(a: number[], b: number[]): boolean {
@@ -93,15 +127,26 @@ function puanKucuk(a: number[], b: number[]): boolean {
 export function canliDenetimHesapla(veri: unknown, sch: MotorCizelgesi) {
   return cizelgeCanliDenetim(new Baglam(veri), sch.year, sch.month, sch.days);
 }
-export function gunuDenetle(veri: unknown, sch: MotorCizelgesi, gun: number, nobetciler: Gorevli[], hazirlama: Gorevli[], duzen?: GunDuzeniGirdisi | null) {
+export function gunuDenetle(
+  veri: unknown,
+  sch: MotorCizelgesi,
+  gun: number,
+  nobetciler: Gorevli[],
+  hazirlama: Gorevli[],
+  duzen?: GunDuzeniGirdisi | null,
+) {
   return gunDenetimi(new Baglam(veri), sch, gun, nobetciler, hazirlama, duzen);
 }
 
 /** Ayın puantaj cetveli: kişi başı gün gün kod ve saat, toplamlar, fazla mesai ve gündüz / gece dilimleri */
-export function puantajHesapla(veri: unknown, yil: number, ay: number) { return puantajIzgarasi(new Baglam(veri), yil, ay); }
+export function puantajHesapla(veri: unknown, yil: number, ay: number) {
+  return puantajIzgarasi(new Baglam(veri), yil, ay);
+}
 
 /** Değişim yapılırsa ne olur → {engel, uyari, bilgi} */
-export function degisimDenetle(veri: unknown, d: Degisiklik) { return degisimDenetimi(new Baglam(veri), d); }
+export function degisimDenetle(veri: unknown, d: Degisiklik) {
+  return degisimDenetimi(new Baglam(veri), d);
+}
 /** Görevden düşen kişinin (cik) yerine geçebilecekler: kurallara uyanlar önce, sonra yıl içinde en az görev alan
  *  (sirayla: izin/rapor nedeniyle yerine tutma herkese sırayla gelir) */
 export function yerineAdaylarHesapla(veri: unknown, y: number, m: number, gun: number, cik: number, gorev: "N" | "H", sirayla = false) {
@@ -109,46 +154,87 @@ export function yerineAdaylarHesapla(veri: unknown, y: number, m: number, gun: n
 }
 
 /** Acil eczane nöbet değişimi (yerine tutma): cik'in d. gündeki acil nöbetini yer tutarsa → {engel, uyari, bilgi} */
-export function acilDegisimDenetle(veri: unknown, y: number, m: number, d: number, cik: number, yer: number) { return acilDegisimDenetimi(new Baglam(veri), y, m, d, cik, yer); }
+export function acilDegisimDenetle(veri: unknown, y: number, m: number, d: number, cik: number, yer: number) {
+  return acilDegisimDenetimi(new Baglam(veri), y, m, d, cik, yer);
+}
 /** Acil nöbetini yerine tutabilecek acil kadrosu: kurallara uyanlar önce, sonra yıl içinde en az acil nöbeti tutan */
-export function acilYerineAdaylarHesapla(veri: unknown, y: number, m: number, d: number, cik: number) { return acilYerineAdaylar(new Baglam(veri), y, m, d, cik); }
+export function acilYerineAdaylarHesapla(veri: unknown, y: number, m: number, d: number, cik: number) {
+  return acilYerineAdaylar(new Baglam(veri), y, m, d, cik);
+}
 
 /** Onay listesi: günün haftasının (Pazartesi–Cuma) masa ve joker dağıtımı ve o haftanın yerleşimi */
-export function onayHaftasiHesapla(veri: unknown, y: number, m: number, d: number) { const B = new Baglam(veri); return onayHaftasi(B, ...pazartesi(y, m, d)); }
+export function onayHaftasiHesapla(veri: unknown, y: number, m: number, d: number) {
+  const B = new Baglam(veri);
+  return onayHaftasi(B, ...pazartesi(y, m, d));
+}
 
 /** Acil servis nöbeti denetimi: aynı kişi iki kez, izin/eş durumu, art arda iki gün, aynı gün eczane nöbeti */
-export function acilDenetle(veri: unknown, y: number, m: number, g: number, ids: number[]) { return acilDenetimi(new Baglam(veri), y, m, g, ids); }
+export function acilDenetle(veri: unknown, y: number, m: number, g: number, ids: number[]) {
+  return acilDenetimi(new Baglam(veri), y, m, g, ids);
+}
 /** Acil nöbeti gününe yerine yazılabilecekler, uygunluk ve yıllık eşitliğe göre sıralı */
-export function acilAdaylariHesapla(veri: unknown, y: number, m: number, g: number, ids: number[], cik: number | null) { return acilAdaylari(new Baglam(veri), y, m, g, ids, cik); }
+export function acilAdaylariHesapla(veri: unknown, y: number, m: number, g: number, ids: number[], cik: number | null) {
+  return acilAdaylari(new Baglam(veri), y, m, g, ids, cik);
+}
 /** Acil listesinin sorunlu günleri: kayıtlı nöbetçisi o gün yazılamaz hâle gelen (sonradan izin / rapor vb.; ids) ve
  *  önceki gün de acil nöbeti olan (art arda; artArda) kişiler */
 export function acilSorunluGunler(veri: unknown, y: number, m: number) {
-  const B = new Baglam(veri), ay = B.acil[y + "-" + m] || {}, out: { gun: number; ids: number[]; artArda?: number[] }[] = [];
+  const B = new Baglam(veri),
+    ay = B.acil[y + "-" + m] || {},
+    out: { gun: number; ids: number[]; artArda?: number[] }[] = [];
   for (const [g, l] of Object.entries(ay)) {
-    const d = Number(g), ids = l.filter(i => B.kesinYasak(i, y, m, d)), once = ay[d - 1] || [];
+    const d = Number(g),
+      ids = l.filter(i => B.kesinYasak(i, y, m, d)),
+      once = ay[d - 1] || [];
     const artArda = l.filter(i => once.includes(i));
     if (ids.length || artArda.length) out.push({ gun: d, ids, ...(artArda.length ? { artArda } : {}) });
   }
   return out.sort((a, b) => a.gun - b.gun);
 }
 /** Yılın acil eczane ve öğlen nöbeti dağılımı (Raporlar) */
-export function acilOglenRaporuHesapla(veri: unknown, yil: number) { return acilOglenRaporu(new Baglam(veri), yil); }
+export function acilOglenRaporuHesapla(veri: unknown, yil: number) {
+  return acilOglenRaporu(new Baglam(veri), yil);
+}
 /** Yönetime aylık rapor: kişi başı nöbet, acil, hazırlama, öğlen, izin ve fazla mesai (puantaja göre) */
-export function aylikRaporHesapla(veri: unknown, y: number, m: number) { return aylikRapor(new Baglam(veri), y, m); }
+export function aylikRaporHesapla(veri: unknown, y: number, m: number) {
+  return aylikRapor(new Baglam(veri), y, m);
+}
 export type { AylikRaporSatiri } from "./raporlar";
 /** Günlük çalışma listesi: her gün kim onayda, kim hazırlamada, kim yok (izin/rapor) */
-export function calismaListesiHesapla(veri: unknown, y: number, m: number) { return calismaListesi(new Baglam(veri), y, m); }
+export function calismaListesiHesapla(veri: unknown, y: number, m: number) {
+  return calismaListesi(new Baglam(veri), y, m);
+}
 /** Yılın raporu: ay ay kişi başı puantaj özeti ve yıllık denge (çizelgeye göre) */
-export function yillikRaporHesapla(veri: unknown, yil: number) { return yillikRapor(new Baglam(veri), yil); }
+export function yillikRaporHesapla(veri: unknown, yil: number) {
+  return yillikRapor(new Baglam(veri), yil);
+}
 
 // ---- servis hazırlama: her çağrı verinin kopyasıyla çalışır; değişen ay kaydı (servisKayit["yıl-ay"]) sonuç olarak döner,
 // ekran onu kaydeder. bugun: YYYYAAGG (öncesi geçmiş sayılır, kendiliğinden değişmez). ----
-const bugunSayisi = () => { const n = new Date(); return tarihNo(n.getFullYear(), n.getMonth(), n.getDate()); };
-const servisMotoru = (veri: unknown, bugun?: number) => new ServisMotoru(new Baglam(veri), ((veri || {}) as { servisAyar?: unknown }).servisAyar, bugun || bugunSayisi());
+const bugunSayisi = () => {
+  const n = new Date();
+  return tarihNo(n.getFullYear(), n.getMonth(), n.getDate());
+};
+const servisMotoru = (veri: unknown, bugun?: number) =>
+  new ServisMotoru(new Baglam(veri), ((veri || {}) as { servisAyar?: unknown }).servisAyar, bugun || bugunSayisi());
 
 /** Servisler ekranı için servis listesi: kayıtlı ayarlar uygulanmış; varsayılanlar z0, h0, multi0 alanlarında */
 export function servisListesi(veri: unknown) {
-  return servisMotoru(veri).servisler.map(s => ({ id: s.id, name: s.name, z: s.z, h: s.h, multi: s.multi, on: s.on, z0: s.z0, h0: s.h0, multi0: s.multi0, ekstra: !!s.ekstra, yb: ybMi(s.name), zor: !!zorMu(s), grup: s.grps.length > 0 }));
+  return servisMotoru(veri).servisler.map(s => ({
+    id: s.id,
+    name: s.name,
+    z: s.z,
+    h: s.h,
+    multi: s.multi,
+    on: s.on,
+    z0: s.z0,
+    h0: s.h0,
+    multi0: s.multi0,
+    ekstra: !!s.ekstra,
+    yb: ybMi(s.name),
+    zor: !!zorMu(s),
+    grup: s.grps.length > 0,
+  }));
 }
 
 /** Ayın dağıtımını günceller → {cizelgeVar, kayit (ayın kaydı ya da null), degisti, sil (çizelgesi silinen ayın kaydı silinmeli)} */
@@ -156,11 +242,18 @@ export function servisAyHesapla(veri: unknown, y: number, m: number, opts: Hesap
   return sonaKadar(servisAyHesaplaAdim(veri, y, m, opts, bugun));
 }
 /** servisAyHesapla'nın adım adım hâli (her dağıtılan günden sonra durur; ekran donmadan parça parça çalıştırılır) */
-export function* servisAyHesaplaAdim(veri: unknown, y: number, m: number, opts: HesapSecenegi | null | undefined, bugun?: number): Generator<void, { cizelgeVar: boolean; kayit: AyKaydi | null; degisti: boolean; sil?: boolean }> {
+export function* servisAyHesaplaAdim(
+  veri: unknown,
+  y: number,
+  m: number,
+  opts: HesapSecenegi | null | undefined,
+  bugun?: number,
+): Generator<void, { cizelgeVar: boolean; kayit: AyKaydi | null; degisti: boolean; sil?: boolean }> {
   const S = servisMotoru(veri, bugun);
-  yield;   // verinin kopyası alındı; ekran bir kare çizilebilir
+  yield; // verinin kopyası alındı; ekran bir kare çizilebilir
   opts = opts || {};
-  if (!S.cizelgeVar(y, m)) return { cizelgeVar: false, kayit: null, degisti: false, sil: !!S.B.servisKayit[y + "-" + m] && !S.gecmisAy(y, m) };
+  if (!S.cizelgeVar(y, m))
+    return { cizelgeVar: false, kayit: null, degisti: false, sil: !!S.B.servisKayit[y + "-" + m] && !S.gecmisAy(y, m) };
   if (!opts.zorla && !S.otoHesaplanir(y, m)) return { cizelgeVar: true, kayit: S.kayitKopyasi(y, m), degisti: false };
   const degisti = yield* S.ayHesaplaAdim(y, m, opts);
   return { cizelgeVar: true, kayit: S.kayitKopyasi(y, m), degisti };
@@ -169,49 +262,81 @@ export function* servisAyHesaplaAdim(veri: unknown, y: number, m: number, opts: 
 /** Bir günün ekranı: kişiler (puantajdan, elle açılıp kapatılanlarla), dağıtım, çok günlük servis gün sayısı */
 export function servisGunu(veri: unknown, y: number, m: number, d: number, bugun?: number) {
   const S = servisMotoru(veri, bugun);
-  const V = S.ayVerisi(y, m), oto = S.otoGun(y, m, d), sonuc = S.gunSonucu(V, d), tatil = S.B.tatilMi(y, m, d);
+  const V = S.ayVerisi(y, m),
+    oto = S.otoGun(y, m, d),
+    sonuc = S.gunSonucu(V, d),
+    tatil = S.B.tatilMi(y, m, d);
   return {
-    tatil, gecmis: tarihNo(y, m, d) < S.bugun, teknikerVar: V.satir.length > 0,
-    kisiler: tatil ? [] : S.gunKisileri(V.G, V.R, d), oto, n: V.R.gunElle[d] || oto,
-    ata: (V.R.ata && V.R.ata[d]) || {}, bayat: !!(sonuc && sonuc.rec.bayat),
+    tatil,
+    gecmis: tarihNo(y, m, d) < S.bugun,
+    teknikerVar: V.satir.length > 0,
+    kisiler: tatil ? [] : S.gunKisileri(V.G, V.R, d),
+    oto,
+    n: V.R.gunElle[d] || oto,
+    ata: (V.R.ata && V.R.ata[d]) || {},
+    bayat: !!(sonuc && sonuc.rec.bayat),
     sonuc: sonuc ? { kisi: sonuc.kisi, svcs: sonuc.svcs, n: sonuc.rec.n } : null,
   };
 }
 
 export type ServisIslemi =
-  | { tur: "kisi"; gun: number; id: number }        // kişiyi o gün dağıtıma kat / çıkar
-  | { tur: "karistir"; gun: number }                // günü yeniden karıştır
-  | { tur: "ngun"; gun: number; n: number }         // çok günlük servis gün sayısı
-  | { tur: "yeniden"; gun: number }                 // bu günden itibaren yeniden dağıt
-  | { tur: "ata"; gun: number; sn: string; hedef: number; karsilik: string | null }   // servisi elle başka teknikere ver
-  | { tur: "oto"; gun: number; sn: string }         // elle atamayı kaldır
-  | { tur: "ataSifirla"; gun: number }              // günün tüm elle atamalarını kaldır
-  | { tur: "olustur"; gun?: number };               // geçmiş ay için dağıtım oluştur
+  | { tur: "kisi"; gun: number; id: number } // kişiyi o gün dağıtıma kat / çıkar
+  | { tur: "karistir"; gun: number } // günü yeniden karıştır
+  | { tur: "ngun"; gun: number; n: number } // çok günlük servis gün sayısı
+  | { tur: "yeniden"; gun: number } // bu günden itibaren yeniden dağıt
+  | { tur: "ata"; gun: number; sn: string; hedef: number; karsilik: string | null } // servisi elle başka teknikere ver
+  | { tur: "oto"; gun: number; sn: string } // elle atamayı kaldır
+  | { tur: "ataSifirla"; gun: number } // günün tüm elle atamalarını kaldır
+  | { tur: "olustur"; gun?: number }; // geçmiş ay için dağıtım oluştur
 /** Ay kaydında bir işlem yapar ve dağıtımı buna göre yeniler; ayın yeni kaydını döndürür */
 export function servisIslem(veri: unknown, y: number, m: number, islem: ServisIslemi, bugun?: number) {
   const S = servisMotoru(veri, bugun);
-  const R = S.kayit(y, m, true), d = islem.gun as number;
+  const R = S.kayit(y, m, true),
+    d = islem.gun as number;
   let opts: HesapSecenegi = {};
   if (islem.tur === "kisi") {
-    const V = S.ayVerisi(y, m), k = S.gunKisileri(V.G, R, d).find(x => x.id === islem.id);
+    const V = S.ayVerisi(y, m),
+      k = S.gunKisileri(V.G, R, d).find(x => x.id === islem.id);
     if (!k) return S.kayitKopyasi(y, m);
     const el = R.elle[d] || (R.elle[d] = {});
-    if (!k.on === k.oto) delete el[k.id]; else el[k.id] = !k.on;
+    if (!k.on === k.oto) delete el[k.id];
+    else el[k.id] = !k.on;
     if (!Object.keys(el).length) delete R.elle[d];
     opts = { from: d };
-  } else if (islem.tur === "karistir") { R.sk[d] = (R.sk[d] || 0) + 1; opts = { from: d }; }
-  else if (islem.tur === "ngun") { if (islem.n === S.otoGun(y, m, d)) delete R.gunElle[d]; else R.gunElle[d] = islem.n; opts = { from: d }; }
-  else if (islem.tur === "yeniden") { opts = { from: d }; }
-  else if (islem.tur === "ataSifirla") { delete R.ata[d]; opts = { zorlaGun: d, from: d + 1, gecmisKoru: true }; }
-  else if (islem.tur === "oto") { const ata = R.ata[d] || {}; delete ata[islem.sn]; if (!Object.keys(ata).length) delete R.ata[d]; opts = { zorlaGun: d, from: d + 1, gecmisKoru: true }; }
-  else if (islem.tur === "ata") {
-    const rec = R.gun[d]; if (!rec || rec.a[islem.sn] === undefined) return S.kayitKopyasi(y, m);
-    const kaynak = rec.a[islem.sn], A = R.ata[d] || (R.ata[d] = {});
-    rec.a[islem.sn] = islem.hedef; A[islem.sn] = islem.hedef;
-    if (islem.karsilik) { rec.a[islem.karsilik] = kaynak; A[islem.karsilik] = kaynak; }
-    S.kayitTopla(rec); rec.z = Date.now();
+  } else if (islem.tur === "karistir") {
+    R.sk[d] = (R.sk[d] || 0) + 1;
+    opts = { from: d };
+  } else if (islem.tur === "ngun") {
+    if (islem.n === S.otoGun(y, m, d)) delete R.gunElle[d];
+    else R.gunElle[d] = islem.n;
+    opts = { from: d };
+  } else if (islem.tur === "yeniden") {
+    opts = { from: d };
+  } else if (islem.tur === "ataSifirla") {
+    delete R.ata[d];
+    opts = { zorlaGun: d, from: d + 1, gecmisKoru: true };
+  } else if (islem.tur === "oto") {
+    const ata = R.ata[d] || {};
+    delete ata[islem.sn];
+    if (!Object.keys(ata).length) delete R.ata[d];
+    opts = { zorlaGun: d, from: d + 1, gecmisKoru: true };
+  } else if (islem.tur === "ata") {
+    const rec = R.gun[d];
+    if (!rec || rec.a[islem.sn] === undefined) return S.kayitKopyasi(y, m);
+    const kaynak = rec.a[islem.sn],
+      A = R.ata[d] || (R.ata[d] = {});
+    rec.a[islem.sn] = islem.hedef;
+    A[islem.sn] = islem.hedef;
+    if (islem.karsilik) {
+      rec.a[islem.karsilik] = kaynak;
+      A[islem.karsilik] = kaynak;
+    }
+    S.kayitTopla(rec);
+    rec.z = Date.now();
     opts = { imzaTazele: d, from: d + 1, gecmisKoru: true };
-  } else if (islem.tur === "olustur") { opts = { zorla: true }; }
+  } else if (islem.tur === "olustur") {
+    opts = { zorla: true };
+  }
   if (S.cizelgeVar(y, m)) S.ayHesapla(y, m, opts);
   return S.kayitKopyasi(y, m);
 }
@@ -219,77 +344,145 @@ export function servisIslem(veri: unknown, y: number, m: number, islem: ServisIs
 /** Bir servisi başka teknikere verme seçenekleri: gerekirse karşılığında geri verilecek servis ve uyarılar */
 export function servisAtamaAdaylari(veri: unknown, y: number, m: number, d: number, sn: string, bugun?: number) {
   const S = servisMotoru(veri, bugun);
-  const R = S.kayit(y, m, false), rec = R && R.gun[d];
+  const R = S.kayit(y, m, false),
+    rec = R && R.gun[d];
   if (!R || !rec || rec.a[sn] === undefined) return null;
-  const V = S.ayVerisi(y, m), kaynak = rec.a[sn], ata = R.ata[d] || {};
-  const adaylar = rec.k.filter(id => id !== kaynak).map(id => {
-    const pl = S.degisimPlani(rec, R, d, sn, id), L = S.kisiServisleri(rec, id);
-    return { id, ad: V.ad(id), karsilik: pl.karsilik, uyari: pl.uyari, servis: L.length, yb: L.filter(ybMi).length, yuk: L.reduce((t, x) => t + S.yuk(x, rec.n), 0) };
-  }).sort((a, b) => (a.uyari.length - b.uyari.length) || a.ad.localeCompare(b.ad, "tr"));
+  const V = S.ayVerisi(y, m),
+    kaynak = rec.a[sn],
+    ata = R.ata[d] || {};
+  const adaylar = rec.k
+    .filter(id => id !== kaynak)
+    .map(id => {
+      const pl = S.degisimPlani(rec, R, d, sn, id),
+        L = S.kisiServisleri(rec, id);
+      return {
+        id,
+        ad: V.ad(id),
+        karsilik: pl.karsilik,
+        uyari: pl.uyari,
+        servis: L.length,
+        yb: L.filter(ybMi).length,
+        yuk: L.reduce((t, x) => t + S.yuk(x, rec.n), 0),
+      };
+    })
+    .sort((a, b) => a.uyari.length - b.uyari.length || a.ad.localeCompare(b.ad, "tr"));
   return { kaynak, kaynakAd: V.ad(kaynak), elle: ata[sn] === kaynak, elleVar: ata[sn] !== undefined, adaylar };
 }
 
 /** Yılın servis raporu. Önce çizelgesi olan ayların dağıtımı güncellenir; dönüşte güncellenen kayıtlar (kayitlar) ve
  *  rapor verisi: kişi başı aylık yük, servis × kişi dağılımı. */
-export function servisYillik(veri: unknown, yil: number, bugun?: number) { return sonaKadar(servisYillikAdim(veri, yil, bugun)); }
+export function servisYillik(veri: unknown, yil: number, bugun?: number) {
+  return sonaKadar(servisYillikAdim(veri, yil, bugun));
+}
 /** servisYillik'in adım adım hâli */
 export function* servisYillikAdim(veri: unknown, yil: number, bugun?: number) {
   const S = servisMotoru(veri, bugun);
   const kayitlar: Record<string, unknown> = {};
   for (let mm = 0; mm < 12; mm++) {
     const k = yil + "-" + mm;
-    if (!S.cizelgeVar(yil, mm)) { if (S.B.servisKayit[k] && !S.gecmisAy(yil, mm)) { delete S.B.servisKayit[k]; kayitlar[k] = null; } continue; }
+    if (!S.cizelgeVar(yil, mm)) {
+      if (S.B.servisKayit[k] && !S.gecmisAy(yil, mm)) {
+        delete S.B.servisKayit[k];
+        kayitlar[k] = null;
+      }
+      continue;
+    }
     if (!S.otoHesaplanir(yil, mm)) continue;
     if (yield* S.ayHesaplaAdim(yil, mm, {})) kayitlar[k] = S.kayitKopyasi(yil, mm);
   }
-  const Y = S.yillikVeri(yil), adlar: Record<number, string> = {};
-  Y.ids.forEach(id => { adlar[id] = Y.ad(id); });
+  const Y = S.yillikVeri(yil),
+    adlar: Record<number, string> = {};
+  Y.ids.forEach(id => {
+    adlar[id] = Y.ad(id);
+  });
   // servis × kişi: kaç kez ve çalıştığı günlere göre payı
-  const recs = Y.aylar.flat(), say: Record<string, Record<number, number>> = {}, pay: Record<string, Record<number, number>> = {}, gun: Record<number, number> = {};
+  const recs = Y.aylar.flat(),
+    say: Record<string, Record<number, number>> = {},
+    pay: Record<string, Record<number, number>> = {},
+    gun: Record<number, number> = {};
   for (const rec of recs) {
     const P = rec.k.length;
-    rec.k.forEach(id => { gun[id] = (gun[id] || 0) + 1; });
+    rec.k.forEach(id => {
+      gun[id] = (gun[id] || 0) + 1;
+    });
     Object.keys(rec.a).forEach(sn => {
-      const id = rec.a[sn]; (say[sn] = say[sn] || {})[id] = (say[sn][id] || 0) + 1;
-      const ps = pay[sn] || (pay[sn] = {}); rec.k.forEach(k => { ps[k] = (ps[k] || 0) + 1 / P; });
+      const id = rec.a[sn];
+      (say[sn] = say[sn] || {})[id] = (say[sn][id] || 0) + 1;
+      const ps = pay[sn] || (pay[sn] = {});
+      rec.k.forEach(k => {
+        ps[k] = (ps[k] || 0) + 1 / P;
+      });
     });
   }
-  const grupOf = (sn: string) => { if (ybMi(sn)) return "yb"; const s = S.servis(sn); return s && s.multi ? "cok" : "tek"; };
-  const servisler = Object.keys(say).sort((a, b) => a.localeCompare(b, "tr")).map(sn => ({ sn, grup: grupOf(sn), say: say[sn], pay: pay[sn] || {} }));
+  const grupOf = (sn: string) => {
+    if (ybMi(sn)) return "yb";
+    const s = S.servis(sn);
+    return s && s.multi ? "cok" : "tek";
+  };
+  const servisler = Object.keys(say)
+    .sort((a, b) => a.localeCompare(b, "tr"))
+    .map(sn => ({ sn, grup: grupOf(sn), say: say[sn], pay: pay[sn] || {} }));
   // yük sapması: kişinin gün başı yükünün ekip ortalamasından farkı (oran)
-  const yukSapma = (k: { gun: number; l: number; fl: number }) => { if (!k.gun || !k.fl) return 0; const o = k.l / k.gun, e = k.fl / k.gun; return (o - e) / e; };
-  const kisi = Y.ids.map(id => { const k = Y.kisi[id]; return { id, ad: adlar[id], ay: k.ay, gun: k.gun, l: k.l, fl: k.fl, w: k.w, y: k.y, adet: k.adet, sapma: yukSapma(k) }; });
+  const yukSapma = (k: { gun: number; l: number; fl: number }) => {
+    if (!k.gun || !k.fl) return 0;
+    const o = k.l / k.gun,
+      e = k.fl / k.gun;
+    return (o - e) / e;
+  };
+  const kisi = Y.ids.map(id => {
+    const k = Y.kisi[id];
+    return { id, ad: adlar[id], ay: k.ay, gun: k.gun, l: k.l, fl: k.fl, w: k.w, y: k.y, adet: k.adet, sapma: yukSapma(k) };
+  });
   return { kayitlar, kayitli: Y.kayitli, bosAy: Y.aylar.map(r => !r.length), kisi, matris: { servisler, gun } };
 }
 
 /** Ayın öğlen nöbeti çizelgesi: hafta içi mesaide çalışanlardan, yıl boyu eşit (Cuma ayrıca); elle düzenlenen günler korunur */
-export function oglenHesapla(veri: unknown, y: number, m: number) { const B = new Baglam(veri); return oglenOlustur(B, y, m, B.oglen[y + "-" + m] || {}); }
+export function oglenHesapla(veri: unknown, y: number, m: number) {
+  const B = new Baglam(veri);
+  return oglenOlustur(B, y, m, B.oglen[y + "-" + m] || {});
+}
 /** Bir haftanın öğlen nöbeti (Pazartesi py-pm-pd'den Cuma'ya; ay sınırını aşan hafta iki parça, sırayla: ikinci parça
  *  birincinin sonucunu görür). Öteki haftaların kayıtları değişmez; elle düzenlenen günler korunur. */
 export function oglenHaftaHesapla(veri: unknown, py: number, pm: number, pd: number) {
   const parcalar: { y: number; m: number; bas: number; bit: number; gunler: OglenGunSonucu[] }[] = [];
   for (let i = 0; i < 5; i++) {
-    const t = new Date(py, pm, pd + i), y = t.getFullYear(), m = t.getMonth(), d = t.getDate(), son = parcalar[parcalar.length - 1];
-    if (son && son.y === y && son.m === m) son.bit = d; else parcalar.push({ y, m, bas: d, bit: d, gunler: [] });
+    const t = new Date(py, pm, pd + i),
+      y = t.getFullYear(),
+      m = t.getMonth(),
+      d = t.getDate(),
+      son = parcalar[parcalar.length - 1];
+    if (son && son.y === y && son.m === m) son.bit = d;
+    else parcalar.push({ y, m, bas: d, bit: d, gunler: [] });
   }
   let v = (veri && typeof veri === "object" ? veri : {}) as { oglen?: Record<string, Record<string, unknown>> };
   const uyarilar: string[] = [];
   for (const p of parcalar) {
-    const B = new Baglam(v), k = p.y + "-" + p.m;
+    const B = new Baglam(v),
+      k = p.y + "-" + p.m;
     const r = oglenOlustur(B, p.y, p.m, B.oglen[k] || {}, undefined, { bas: p.bas, bit: p.bit });
     p.gunler = r.gunler.filter(g => g.gun >= p.bas && g.gun <= p.bit);
     uyarilar.push(...r.uyarilar);
     const ay: Record<string, unknown> = { ...(v.oglen?.[k] || {}) };
     for (let d = p.bas; d <= p.bit; d++) delete ay[d];
-    p.gunler.forEach(g => { if (g.e.length || g.t.length || g.elle || g.sabit) ay[g.gun] = { e: g.e, t: g.t, ...(g.elle ? { elle: true } : {}), ...(g.sabit ? { sabit: g.sabit } : {}) }; });
+    p.gunler.forEach(g => {
+      if (g.e.length || g.t.length || g.elle || g.sabit)
+        ay[g.gun] = { e: g.e, t: g.t, ...(g.elle ? { elle: true } : {}), ...(g.sabit ? { sabit: g.sabit } : {}) };
+    });
     v = { ...v, oglen: { ...(v.oglen || {}), [k]: ay } };
   }
   return { parcalar, uyarilar: [...new Set(uyarilar)] };
 }
 /** sonradan bozulan öğlen nöbeti aylarının onarılmış hâli (bugun: YYYYAAGG) */
-export function oglenOnarimlariHesapla(veri: unknown, bugun: number) { return oglenOnarimlari(new Baglam(veri), bugun); }
+export function oglenOnarimlariHesapla(veri: unknown, bugun: number) {
+  return oglenOnarimlari(new Baglam(veri), bugun);
+}
 /** yıl başından bu aya kişi başı öğlen nöbeti sayıları (toplam, Cuma; bu ay) */
-export function oglenYillikHesapla(veri: unknown, y: number, m: number) { return oglenYillik(new Baglam(veri), y, m); }
+export function oglenYillikHesapla(veri: unknown, y: number, m: number) {
+  return oglenYillik(new Baglam(veri), y, m);
+}
 
 /** Ayın acil eczane nöbet listesi: acil kadrosundan günde 2 kişi, eczane çizelgesiyle çakışmadan; elle günler korunur */
-export function acilHesapla(veri: unknown, y: number, m: number) { const B = new Baglam(veri); return acilOlustur(B, y, m, B.acilElle[y + "-" + m] || {}); }
+export function acilHesapla(veri: unknown, y: number, m: number) {
+  const B = new Baglam(veri);
+  return acilOlustur(B, y, m, B.acilElle[y + "-" + m] || {});
+}

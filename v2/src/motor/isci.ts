@@ -7,7 +7,10 @@ self.onmessage = (e: MessageEvent) => {
   // ilerleme ayrı iletiyle bildirilir (ekrandaki ilerleme çubuğu)
   const ilerleme = (_: number, oran: number) => self.postMessage({ ilerleme: oran });
   try {
-    const r = deneme === undefined ? cizelgeOlustur(veri, yil, ay, { varyasyon, ilerleme }) : cizelgeDenemesi(veri, yil, ay, deneme, { varyasyon, ilerleme });
+    const r =
+      deneme === undefined
+        ? cizelgeOlustur(veri, yil, ay, { varyasyon, ilerleme })
+        : cizelgeDenemesi(veri, yil, ay, deneme, { varyasyon, ilerleme });
     self.postMessage({ tamam: true, sonuc: r });
   } catch (err) {
     self.postMessage({ tamam: false, hata: String((err as Error)?.message || err) });

@@ -10,12 +10,28 @@ import type { Izgara } from "../disa/puantajTipleri";
 
 export type Gorev = "N" | "H";
 export type IzinTuru = "R" | "YI" | "NI" | "DI";
-export const IZIN_AD: Record<IzinTuru, string> = { R: "Rapor", YI: "Yıllık izin", NI: "Nöbet izni (fazla mesai karşılığı)", DI: "Diğer izin" };
+export const IZIN_AD: Record<IzinTuru, string> = {
+  R: "Rapor",
+  YI: "Yıllık izin",
+  NI: "Nöbet izni (fazla mesai karşılığı)",
+  DI: "Diğer izin",
+};
 export const IZIN_KISA: Record<IzinTuru, string> = { R: "R", YI: "Yİ", NI: "Nİ", DI: "Dİ" };
 const IZIN_KODLARI: PuantajKodu[] = ["YI", "R", "NI", "DI"];
 
 /** Değişim isteği: tur "devir" yerine tutma; "takas" karşılıklı (gun2'deki görevi yer → cik alır) */
-export interface DegisimIstegi { y: number; m: number; gorev: Gorev; tur: "devir" | "takas"; gun: number; cik: number; yer: number; gun2?: number; gorev2?: Gorev; not?: string }
+export interface DegisimIstegi {
+  y: number;
+  m: number;
+  gorev: Gorev;
+  tur: "devir" | "takas";
+  gun: number;
+  cik: number;
+  yer: number;
+  gun2?: number;
+  gorev2?: Gorev;
+  not?: string;
+}
 
 // Ayın puantajı birçok sekmede gerekir; veri değişmedikçe (paylaşılan anlık kopya aynı kaldıkça) bir kez hesaplanır.
 // Sonuç salt okunur kullanılır.
@@ -25,14 +41,20 @@ export function puantajIzgarasi(y: number, m: number): Izgara {
   if (puantajOnbellek?.v !== v) puantajOnbellek = { v, s: new Map() };
   const k = y + "-" + m;
   let G = puantajOnbellek.s.get(k);
-  if (!G) { G = puantajHesapla(v, y, m); puantajOnbellek.s.set(k, G); }
+  if (!G) {
+    G = puantajHesapla(v, y, m);
+    puantajOnbellek.s.set(k, G);
+  }
   return G;
 }
 const kisiAdi = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş)";
 const ayKodlari = (y: number, m: number) => alan(depo.veri.puantaj, ayAnahtari(y, m), () => ({}));
 function kodYaz(y: number, m: number, id: number, gun: number, kod: PuantajKodu | null) {
   const ayK = ayAnahtari(y, m);
-  if (kod) { alan(ayKodlari(y, m), id, () => ({}))[gun] = kod; return; }
+  if (kod) {
+    alan(ayKodlari(y, m), id, () => ({}))[gun] = kod;
+    return;
+  }
   const a = depo.veri.puantaj[ayK];
   if (!a?.[id]) return;
   delete a[id][gun];
@@ -44,7 +66,9 @@ function kayitEkle(d: Omit<Degisim, "id" | "zaman">) {
   depo.veri.degisimler.push({ id: yeniId(), zaman: Date.now(), ...d });
   if (depo.veri.degisimler.length > 300) {
     // izin/rapor nedeniyle yerine geçmeler yıl boyunca saklanır: yıllık eşitlik ve yerine tutma sırası bunlara bakar
-    const L = depo.veri.degisimler, yil = new Date().getFullYear(), i = L.findIndex(x => !(x.sebep && x.y >= yil));
+    const L = depo.veri.degisimler,
+      yil = new Date().getFullYear(),
+      i = L.findIndex(x => !(x.sebep && x.y >= yil));
     L.splice(i >= 0 ? i : 0, 1);
   }
 }
@@ -57,7 +81,9 @@ function cikYeniKod(y: number, m: number, gun: number, id: number): PuantajKodu 
 
 function tekDegisim(y: number, m: number, gun: number, cik: number, yer: number, kod: Gorev, ek: Partial<Degisim>) {
   const a = depo.veri.puantaj[ayAnahtari(y, m)] ?? {};
-  const cikOnce = a[cik]?.[gun] ?? null, yerOnce = a[yer]?.[gun] ?? null, cikYeni = cikYeniKod(y, m, gun, cik);
+  const cikOnce = a[cik]?.[gun] ?? null,
+    yerOnce = a[yer]?.[gun] ?? null,
+    cikYeni = cikYeniKod(y, m, gun, cik);
   kodYaz(y, m, cik, gun, cikYeni);
   kodYaz(y, m, yer, gun, kod);
   kayitEkle({ y, m, gun, cik, yer, cikAd: kisiAdi(cik), yerAd: kisiAdi(yer), cikOnce, yerOnce, cikYeni, yerYeni: kod, gorev: kod, ...ek });
@@ -76,12 +102,17 @@ export function degisimUygula(d: DegisimIstegi) {
  * Değişimden sonra o hücreler elle değiştirildiyse `zorla` olmadan onay ister.
  */
 export function degisimGeriAl(id: number, zorla = false): { tamam: true } | { tamam: false; hata?: string; onay?: string } {
-  const L = depo.veri.degisimler, x = L.find(z => z.id === id);
+  const L = depo.veri.degisimler,
+    x = L.find(z => z.id === id);
   if (!x) return { tamam: false, hata: "Değişim bulunamadı." };
   const grup = x.grup ? L.filter(z => z.grup === x.grup) : [x];
   const enSon = Math.max(...grup.map(z => L.indexOf(z)));
   const sonraki = L.filter((z, i) => i > enSon && z.y === x.y && z.m === x.m && grup.some(g => g.gun === z.gun) && !grup.includes(z));
-  if (sonraki.length) return { tamam: false, hata: `Bu günde sonradan yapılmış başka bir değişim var (${sonraki.map(z => `${z.gun}. gün: ${z.cikAd} yerine ${z.yerAd}`).join("; ")}). Önce onu geri alın.` };
+  if (sonraki.length)
+    return {
+      tamam: false,
+      hata: `Bu günde sonradan yapılmış başka bir değişim var (${sonraki.map(z => `${z.gun}. gün: ${z.cikAd} yerine ${z.yerAd}`).join("; ")}). Önce onu geri alın.`,
+    };
   const a = depo.veri.puantaj[ayAnahtari(x.y, x.m)] ?? {};
   const elle = grup.some(z => (a[z.cik]?.[z.gun] ?? null) !== z.cikYeni || (a[z.yer]?.[z.gun] ?? null) !== z.yerYeni);
   if (elle && !zorla) return { tamam: false, onay: "Bu günler değişimden sonra elle yeniden düzenlenmiş. Yine de geri alınsın mı?" };
@@ -91,10 +122,14 @@ export function degisimGeriAl(id: number, zorla = false): { tamam: true } | { ta
     const g = depo.veri.schedules[ayAnahtari(z.y, z.m)]?.days[z.gun - 1];
     const k = depo.veri.staff.find(s => s.id === z.cik);
     if (!g || !k) continue;
-    const liste = z.yerYeni === "H" ? g.prep : g.assigned, i = liste.findIndex(p => p.id === z.yer);
+    const liste = z.yerYeni === "H" ? g.prep : g.assigned,
+      i = liste.findIndex(p => p.id === z.yer);
     if (i >= 0 && !liste.some(p => p.id === z.cik)) liste[i] = { id: k.id, name: k.name, role: k.role };
   }
-  for (const z of [...grup].reverse()) { kodYaz(z.y, z.m, z.cik, z.gun, z.cikOnce); kodYaz(z.y, z.m, z.yer, z.gun, z.yerOnce); }
+  for (const z of [...grup].reverse()) {
+    kodYaz(z.y, z.m, z.cik, z.gun, z.cikOnce);
+    kodYaz(z.y, z.m, z.yer, z.gun, z.yerOnce);
+  }
   depo.veri.degisimler = L.filter(z => !grup.includes(z));
   return { tamam: true };
 }
@@ -108,16 +143,36 @@ function zorunluDegisim(y: number, m: number, gun: number, cik: number, yer: num
   const k = depo.veri.staff.find(s => s.id === yer);
   if (!k) return;
   const g = depo.veri.schedules[ayAnahtari(y, m)]?.days[gun - 1];
-  const liste = g ? (gorev === "H" ? g.prep : g.assigned) : [], i = liste.findIndex(p => p.id === cik);
+  const liste = g ? (gorev === "H" ? g.prep : g.assigned) : [],
+    i = liste.findIndex(p => p.id === cik);
   const cizelgede = !!g && i >= 0;
-  if (cizelgede) { liste[i] = { id: k.id, name: k.name, role: k.role }; g.locked = true; }
+  if (cizelgede) {
+    liste[i] = { id: k.id, name: k.name, role: k.role };
+    g.locked = true;
+  }
   const a = depo.veri.puantaj[ayAnahtari(y, m)] ?? {};
-  const cikOnce = a[cik]?.[gun] ?? null, yerOnce = a[yer]?.[gun] ?? null;
+  const cikOnce = a[cik]?.[gun] ?? null,
+    yerOnce = a[yer]?.[gun] ?? null;
   kodYaz(y, m, yer, gun, gorev);
   // çıkan kişinin günü izinUygula'da izin koduyla yazılır; izin dışı nedende (eş durumu vb.) o günün olağan kodu
   const cikYeni: PuantajKodu = sebep ?? cikYeniKod(y, m, gun, cik);
   if (!sebep) kodYaz(y, m, cik, gun, cikYeni);
-  kayitEkle({ y, m, gun, cik, yer, cikAd: kisiAdi(cik), yerAd: k.name, cikOnce, yerOnce, cikYeni, yerYeni: gorev, gorev, ...(cizelgede ? { zorunlu: true as const } : {}), ...(sebep ? { sebep } : {}) });
+  kayitEkle({
+    y,
+    m,
+    gun,
+    cik,
+    yer,
+    cikAd: kisiAdi(cik),
+    yerAd: k.name,
+    cikOnce,
+    yerOnce,
+    cikYeni,
+    yerYeni: gorev,
+    gorev,
+    ...(cizelgede ? { zorunlu: true as const } : {}),
+    ...(sebep ? { sebep } : {}),
+  });
 }
 
 /**
@@ -128,36 +183,59 @@ function zorunluDegisim(y: number, m: number, gun: number, cik: number, yer: num
  */
 export function goreviYerineYaz(y: number, m: number, gun: number, cik: number, yer: number, gorev: Gorev) {
   const elle = depo.veri.puantaj[ayAnahtari(y, m)]?.[cik]?.[gun];
-  if (elle && IZIN_KODLARI.includes(elle)) { zorunluDegisim(y, m, gun, cik, yer, gorev, elle as IzinTuru); return; }
-  if (tercihAl(cik, y, m, gun) === "izinli") { izinUygula(y, m, cik, "YI", gun, gun, [{ gun, gorev, yer }]); return; }
-  const k = depo.veri.staff.find(s => s.id === cik), iso = `${y}-${String(m + 1).padStart(2, "0")}-${String(gun).padStart(2, "0")}`;
+  if (elle && IZIN_KODLARI.includes(elle)) {
+    zorunluDegisim(y, m, gun, cik, yer, gorev, elle as IzinTuru);
+    return;
+  }
+  if (tercihAl(cik, y, m, gun) === "izinli") {
+    izinUygula(y, m, cik, "YI", gun, gun, [{ gun, gorev, yer }]);
+    return;
+  }
+  const k = depo.veri.staff.find(s => s.id === cik),
+    iso = `${y}-${String(m + 1).padStart(2, "0")}-${String(gun).padStart(2, "0")}`;
   if (k && ((k.baslangic && iso < k.baslangic) || (k.bitis && iso > k.bitis))) {
     // çalışma dönemi dışı: puantajda "çalışmıyor" kalır (kod yazılmaz)
-    const g = depo.veri.schedules[ayAnahtari(y, m)]?.days[gun - 1], yk = depo.veri.staff.find(s => s.id === yer);
+    const g = depo.veri.schedules[ayAnahtari(y, m)]?.days[gun - 1],
+      yk = depo.veri.staff.find(s => s.id === yer);
     if (!g || !yk) return;
-    const l = gorev === "H" ? g.prep : g.assigned, i = l.findIndex(p => p.id === cik);
-    if (i >= 0) { l[i] = { id: yk.id, name: yk.name, role: yk.role }; g.locked = true; }
+    const l = gorev === "H" ? g.prep : g.assigned,
+      i = l.findIndex(p => p.id === cik);
+    if (i >= 0) {
+      l[i] = { id: yk.id, name: yk.name, role: yk.role };
+      g.locked = true;
+    }
     return;
   }
   zorunluDegisim(y, m, gun, cik, yer, gorev);
 }
 
-export interface YerineSecim { gun: number; gorev: Gorev; yer: number }
+export interface YerineSecim {
+  gun: number;
+  gorev: Gorev;
+  yer: number;
+}
 /**
  * Kişinin bas..bit günlerine izin/rapor yazar. Görevli olduğu günler için `secim` ile yerine geçenler çizelgeye ve
  * puantaja işlenir (yer 0: boş bırakılır). Mesai dışı günler (tatil; nöbetçi/destek için her gün) yalnız görev varsa yazılır.
  */
 export function izinUygula(y: number, m: number, kisi: number, tur: IzinTuru, bas: number, bit: number, secim: YerineSecim[]) {
-  const G0 = puantajIzgarasi(y, m), r0 = G0.satirlar.find(x => x.s.id === kisi);
+  const G0 = puantajIzgarasi(y, m),
+    r0 = G0.satirlar.find(x => x.s.id === kisi);
   if (!r0) return;
   const sadece = r0.s.role === "nobetci" || r0.s.role === "destek";
   for (const s of secim) if (s.yer) zorunluDegisim(y, m, s.gun, kisi, s.yer, s.gorev, tur);
   // devredilen görevlerden sonraki hâl: devredilen nöbetin ertesi günü artık nöbet izni (NI) değildir
-  const G = puantajIzgarasi(y, m), r = G.satirlar.find(x => x.s.id === kisi)!;
+  const G = puantajIzgarasi(y, m),
+    r = G.satirlar.find(x => x.s.id === kisi)!;
   for (let g = bas; g <= bit; g++) {
-    const c = r.cells[g - 1], gg = G.gunler[g - 1], gorevli = c.kod === "N" || c.kod === "H";
+    const c = r.cells[g - 1],
+      gg = G.gunler[g - 1],
+      gorevli = c.kod === "N" || c.kod === "H";
     // yıllık izin, İzin ve tercihler takviminde de "İzinli" görünsün (eş durumu işaretleri korunur)
-    if (tur === "YI") { const t = tercihAl(kisi, y, m, g); if (t !== "esVar" && t !== "esYok") depo.veri.prefs[tercihAnahtari(kisi, y, m, g)] = "izinli"; }
+    if (tur === "YI") {
+      const t = tercihAl(kisi, y, m, g);
+      if (t !== "esVar" && t !== "esYok") depo.veri.prefs[tercihAnahtari(kisi, y, m, g)] = "izinli";
+    }
     if (c.kod === "NI" && !c.ov) continue; // nöbet ertesi izin olduğu gibi kalır
     if (gorevli || (!gg.tatil && !sadece)) kodYaz(y, m, kisi, g, tur);
   }
@@ -166,7 +244,11 @@ export function izinUygula(y: number, m: number, kisi: number, tur: IzinTuru, ba
 /** Kişinin bas..bit günlerindeki izin kodlarını (ve yıllık izinse İzinli işaretlerini) siler; puantaj yeniden çizelgeden gelir */
 export function izinSil(y: number, m: number, kisi: number, bas: number, bit: number, kod: IzinTuru) {
   for (let g = bas; g <= bit; g++) if (depo.veri.puantaj[ayAnahtari(y, m)]?.[kisi]?.[g] === kod) kodYaz(y, m, kisi, g, null);
-  if (kod === "YI") for (let g = bas; g <= bit; g++) { const k = tercihAnahtari(kisi, y, m, g); if (depo.veri.prefs[k] === "izinli") delete depo.veri.prefs[k]; }
+  if (kod === "YI")
+    for (let g = bas; g <= bit; g++) {
+      const k = tercihAnahtari(kisi, y, m, g);
+      if (depo.veri.prefs[k] === "izinli") delete depo.veri.prefs[k];
+    }
 }
 
 /** kişinin o günkü izin türü: puantaj kaydı ya da İzinli işareti (yıllık izin) */
@@ -175,22 +257,42 @@ function izinKoduGun(id: number, y: number, m: number, d: number): IzinTuru | nu
   if (k && IZIN_KODLARI.includes(k)) return k as IzinTuru;
   return tercihAl(id, y, m, d) === "izinli" ? "YI" : null;
 }
-export interface IzinKaydi { id: number; kod: IzinTuru; bas: number; bit: number; gunler: number[] }
+export interface IzinKaydi {
+  id: number;
+  kod: IzinTuru;
+  bas: number;
+  bit: number;
+  gunler: number[];
+}
 /** Ayın izin/rapor kayıtları: kişi ve tür başına ardışık günler (arada yalnız tatil varsa da) tek kayıt */
 export function ayIzinleri(y: number, m: number): IzinKaydi[] {
-  const out: IzinKaydi[] = [], dim = gunSayisi(y, m);
+  const out: IzinKaydi[] = [],
+    dim = gunSayisi(y, m);
   const kisiler = new Set<number>(Object.keys(depo.veri.puantaj[ayAnahtari(y, m)] ?? {}).map(Number));
   const re = new RegExp(`^(\\d+)-${y}-${m}-(\\d+)$`);
-  for (const [k, t] of Object.entries(depo.veri.prefs)) { const e = k.match(re); if (e && t === "izinli") kisiler.add(Number(e[1])); }
+  for (const [k, t] of Object.entries(depo.veri.prefs)) {
+    const e = k.match(re);
+    if (e && t === "izinli") kisiler.add(Number(e[1]));
+  }
   for (const id of kisiler) {
     let cur: IzinKaydi | null = null;
     for (let g = 1; g <= dim; g++) {
       const k = izinKoduGun(id, y, m, g);
       if (!k) continue;
       let bitisik = !!cur && cur.kod === k;
-      if (cur && bitisik) for (let x = cur.bit + 1; x < g; x++) if (!tatilMi(y, m, x)) { bitisik = false; break; }
-      if (cur && bitisik) { cur.bit = g; cur.gunler.push(g); }
-      else { cur = { id, kod: k, bas: g, bit: g, gunler: [g] }; out.push(cur); }
+      if (cur && bitisik)
+        for (let x = cur.bit + 1; x < g; x++)
+          if (!tatilMi(y, m, x)) {
+            bitisik = false;
+            break;
+          }
+      if (cur && bitisik) {
+        cur.bit = g;
+        cur.gunler.push(g);
+      } else {
+        cur = { id, kod: k, bas: g, bit: g, gunler: [g] };
+        out.push(cur);
+      }
     }
   }
   return out.sort((a, b) => a.bas - b.bas || a.id - b.id);

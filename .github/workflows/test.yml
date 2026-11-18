@@ -23,7 +23,8 @@ jobs:
           cache: npm
           cache-dependency-path: v2/package-lock.json
       - run: npm ci
-      - run: npm run lint --if-present
+      - run: npm run lint
+      - run: npm run format:denetle
       - run: npm run check
       - run: npm test
       - run: npm run artifact

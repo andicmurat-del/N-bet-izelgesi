@@ -6,19 +6,27 @@ import { gunKaydir, isoNo, oncekiAy, sonrakiAy, tarihNo, ayGunSayisi } from "../
 export interface AySiniri {
   /** k gün önceki (önceki ayın son 4 günü) gerçek nöbetçiler: 5 gün içinde 3 nöbet kuralı ay sınırında da geçerli */
   oncekiSonGunler: Record<number, number[]>;
-  oncekiSonN: number[]; oncekiSonH: number[];
-  sonrakiIlkN: number[]; sonrakiIlkH: number[];
+  oncekiSonN: number[];
+  oncekiSonH: number[];
+  sonrakiIlkN: number[];
+  sonrakiIlkH: number[];
 }
 
 /** ay sınırı dinlenme kuralları gerçekte çalışılana göre (puantajdaki nöbet değişimleri dahil) */
 export function aySiniri(B: Baglam, y: number, m: number): AySiniri {
-  const o = oncekiAy(y, m), s = sonrakiAy(y, m);
-  const oS = B.cizelge(o.y, o.m), sS = B.cizelge(s.y, s.m);
+  const o = oncekiAy(y, m),
+    s = sonrakiAy(y, m);
+  const oS = B.cizelge(o.y, o.m),
+    sS = B.cizelge(s.y, s.m);
   const oSon = oS && oS.days && oS.days.length ? oS.days[oS.days.length - 1] : null;
   const sIlk = sS && sS.days && sS.days.length ? sS.days[0] : null;
   const oncekiSonGunler: Record<number, number[]> = {};
-  for (let k = 1; k <= 4; k++) { const [a, b, c] = gunKaydir(y, m, 1, -k); oncekiSonGunler[k] = B.gercekGorev(a, b, c).N; }
-  const oG = oSon ? B.gercekGorev(o.y, o.m, oSon.day) : { N: [], H: [] }, sG = sIlk ? B.gercekGorev(s.y, s.m, 1) : { N: [], H: [] };
+  for (let k = 1; k <= 4; k++) {
+    const [a, b, c] = gunKaydir(y, m, 1, -k);
+    oncekiSonGunler[k] = B.gercekGorev(a, b, c).N;
+  }
+  const oG = oSon ? B.gercekGorev(o.y, o.m, oSon.day) : { N: [], H: [] },
+    sG = sIlk ? B.gercekGorev(s.y, s.m, 1) : { N: [], H: [] };
   return { oncekiSonGunler, oncekiSonN: oG.N, oncekiSonH: oG.H, sonrakiIlkN: sG.N, sonrakiIlkH: sG.H };
 }
 
@@ -34,13 +42,15 @@ function nobetVarIdx(days: MotorGunu[], sinir: AySiniri, id: number, j: number):
 }
 /** aynı kişiye 5 gün içinde 3 nöbet yazılmaz (ör. Pazartesi–Çarşamba–Cuma); 2 gün arayla tek bir tekrar olabilir */
 export function ucluSikisik(days: MotorGunu[], sinir: AySiniri, id: number, idx: number): boolean {
-  const g2 = nobetVarIdx(days, sinir, id, idx - 2), i2 = nobetVarIdx(days, sinir, id, idx + 2);
+  const g2 = nobetVarIdx(days, sinir, id, idx - 2),
+    i2 = nobetVarIdx(days, sinir, id, idx + 2);
   return (g2 && nobetVarIdx(days, sinir, id, idx - 4)) || (g2 && i2) || (i2 && nobetVarIdx(days, sinir, id, idx + 4));
 }
 
 /** Ayrılan personelin son çalışma günü: ertesi gün mesai günüyse nöbet izni kullanamaz, nöbet yazılmaz */
 export function sonGunEngeli(B: Baglam, y: number, m: number): (id: number, d: number) => boolean {
-  const dim = ayGunSayisi(y, m), engel: Record<string, true> = {};
+  const dim = ayGunSayisi(y, m),
+    engel: Record<string, true> = {};
   B.staff.forEach(s => {
     if (!s.bitis) return;
     const b = isoNo(s.bitis);

@@ -19,24 +19,48 @@
 
   // kimler: cetvelde ve izin/rapor kaydında görünen kişiler (o bölümün kadrosu); acil: Acil Eczane puantajı
   // (nöbet değişimi acil nöbetleri ve acil kadrosuyla)
-  let { git, kimler = () => true, acil = false }: {
-    git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; kimler?: (k: Kisi) => boolean; acil?: boolean;
+  let {
+    git,
+    kimler = () => true,
+    acil = false,
+  }: {
+    git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void;
+    kimler?: (k: Kisi) => boolean;
+    acil?: boolean;
   } = $props();
 
-  const TUM_GORUNUMLER = [{ ad: "cetvel", baslik: "Cetvel", ikon: "tablo" }, { ad: "izin", baslik: "İzin ve rapor", kisa: "İzin", ikon: "izin" }, { ad: "degisim", baslik: "Nöbet değişimi", kisa: "Değişim", ikon: "karisik" }] as const;
+  const TUM_GORUNUMLER = [
+    { ad: "cetvel", baslik: "Cetvel", ikon: "tablo" },
+    { ad: "izin", baslik: "İzin ve rapor", kisa: "İzin", ikon: "izin" },
+    { ad: "degisim", baslik: "Nöbet değişimi", kisa: "Değişim", ikon: "karisik" },
+  ] as const;
   const GORUNUMLER = TUM_GORUNUMLER;
   let gorunum = $state<(typeof TUM_GORUNUMLER)[number]["ad"]>("cetvel");
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
-  const G = $derived.by(() => { const t = puantajIzgarasi(depo.yil, depo.ay); return { ...t, satirlar: t.satirlar.filter(r => kimler(r.s)) }; });
-  const elleSayisi = $derived(Object.values(depo.veri.puantaj[`${depo.yil}-${depo.ay}`] ?? {}).reduce((t, a) => t + Object.keys(a).length, 0));
+  const G = $derived.by(() => {
+    const t = puantajIzgarasi(depo.yil, depo.ay);
+    return { ...t, satirlar: t.satirlar.filter(r => kimler(r.s)) };
+  });
+  const elleSayisi = $derived(
+    Object.values(depo.veri.puantaj[`${depo.yil}-${depo.ay}`] ?? {}).reduce((t, a) => t + Object.keys(a).length, 0),
+  );
 
   // özet şerit: fazla mesai aralığı (eczacı / tekniker ya da acil servis), toplam nöbet
-  const aralik = (f: (r: PuantajSatiri) => boolean) => { const v = G.satirlar.filter(f).map(r => r.fm); return v.length ? (Math.min(...v) === Math.max(...v) ? `${v[0]} sa` : `${Math.min(...v)}–${Math.max(...v)} sa`) : "—"; };
+  const aralik = (f: (r: PuantajSatiri) => boolean) => {
+    const v = G.satirlar.filter(f).map(r => r.fm);
+    return v.length ? (Math.min(...v) === Math.max(...v) ? `${v[0]} sa` : `${Math.min(...v)}–${Math.max(...v)} sa`) : "—";
+  };
   const fmEcz = $derived(aralik(r => r.s.role === "eczaci" || r.s.role === "nobetci"));
   const fmTek = $derived(aralik(r => (acil ? r.s.role === "servis" : r.s.role === "teknisyen")));
   const toplamNobet = $derived(G.satirlar.reduce((t, r) => t + r.n, 0));
-  const grupAd: Record<string, string> = { eczaci: "Eczacılar", nobetci: "Kemoterapi eczacıları", teknisyen: "Teknikerler", destek: "Destek personeli", servis: "Acil servis personeli" };
+  const grupAd: Record<string, string> = {
+    eczaci: "Eczacılar",
+    nobetci: "Kemoterapi eczacıları",
+    teknisyen: "Teknikerler",
+    destek: "Destek personeli",
+    servis: "Acil servis personeli",
+  };
 
   // sağ panel: seçili kişinin ay dökümü (ada dokununca değişir)
   let kisiId = $state<number | null>(null);
@@ -46,25 +70,37 @@
   const aralikAd: Record<string, string> = { YI: "yıllık izin", R: "rapor", DI: "diğer izin" };
   const kisiOlaylar = $derived.by(() => {
     if (!ks) return [] as string[];
-    const out: string[] = []; let bas = -1;
+    const out: string[] = [];
+    let bas = -1;
     ks.cells.forEach((h, i) => {
-      const k = h.kod, son = i === ks.cells.length - 1 || ks.cells[i + 1].kod !== k;
+      const k = h.kod,
+        son = i === ks.cells.length - 1 || ks.cells[i + 1].kod !== k;
       if (!aralikAd[k]) return;
       if (bas < 0) bas = i;
-      if (son) { const n = i - bas + 1; out.push(`${bas + 1}${n > 1 ? "–" + (i + 1) : ""} ${AYLAR[depo.ay]} ${aralikAd[k]}${n > 1 ? ` (${n} gün)` : ""}`); bas = -1; }
+      if (son) {
+        const n = i - bas + 1;
+        out.push(`${bas + 1}${n > 1 ? "–" + (i + 1) : ""} ${AYLAR[depo.ay]} ${aralikAd[k]}${n > 1 ? ` (${n} gün)` : ""}`);
+        bas = -1;
+      }
     });
     const elle = ks.cells.filter(h => h.ov).length;
     out.push(elle ? `${elle} hücre elle değiştirildi` : "Elle değiştirilen hücre yok");
     return out;
   });
-  const grupAralik = (r: PuantajSatiri) => (r.s.role === "eczaci" || r.s.role === "nobetci" ? `Eczacılar ${fmEcz}` : r.s.role === "teknisyen" || r.s.role === "servis" ? `${acil ? "Acil servis" : "Teknikerler"} ${fmTek}` : "");
+  const grupAralik = (r: PuantajSatiri) =>
+    r.s.role === "eczaci" || r.s.role === "nobetci"
+      ? `Eczacılar ${fmEcz}`
+      : r.s.role === "teknisyen" || r.s.role === "servis"
+        ? `${acil ? "Acil servis" : "Teknikerler"} ${fmTek}`
+        : "";
 
   // hücre düzenleme
   let acik = $state(false);
   let secili = $state<{ id: number; ad: string; gun: number; otomatik: string; simdiki: string } | null>(null);
   let yeniKod = $state<PuantajKodu | "">("");
   function hucreAc(r: PuantajSatiri, i: number) {
-    const gun = i + 1, elle = puantajElleKodu(depo.yil, depo.ay, r.s.id, gun);
+    const gun = i + 1,
+      elle = puantajElleKodu(depo.yil, depo.ay, r.s.id, gun);
     // elle kod kaldırılınca çıkacak kod: kayıt geçici kaldırılıp hesaplanır
     const v = duzKopya(depo.veri);
     if (elle) delete v.puantaj[`${depo.yil}-${depo.ay}`][r.s.id][gun];
@@ -87,7 +123,8 @@
   function izneGit() {
     if (!secili) return;
     izinOn = { kisi: secili.id, gun: secili.gun, tur: yeniKod as "YI" | "R" | "DI" };
-    acik = false; gorunum = "izin";
+    acik = false;
+    gorunum = "izin";
   }
 
   let durum = $state("");
@@ -96,19 +133,35 @@
     try {
       const m = await ciktiPaketi();
       const ad = `${acil ? "acil-" : ""}puantaj-${depo.yil}-${String(depo.ay + 1).padStart(2, "0")}.${tur}`;
-      const blob = tur === "xlsx" ? m.puantajKitabi(G, depo.yil, depo.ay, depo.veri.kurum.ad, acil) : m.puantajPdf(G, depo.yil, depo.ay, depo.veri.kurum.ad, (acil ? listeOnayi("acil", depo.yil, depo.ay) : c?.onay) ?? null);
-      durum = (await dosyaKaydet(ad, blob, blob.type || "application/pdf")) ? (tur === "pdf" ? "PDF" : "Excel dosyası") + " kaydedildi." : "";
-    } catch (e) { durum = hataMetni(e, "Dosya oluşturulamadı."); }
+      const blob =
+        tur === "xlsx"
+          ? m.puantajKitabi(G, depo.yil, depo.ay, depo.veri.kurum.ad, acil)
+          : m.puantajPdf(G, depo.yil, depo.ay, depo.veri.kurum.ad, (acil ? listeOnayi("acil", depo.yil, depo.ay) : c?.onay) ?? null);
+      durum = (await dosyaKaydet(ad, blob, blob.type || "application/pdf"))
+        ? (tur === "pdf" ? "PDF" : "Excel dosyası") + " kaydedildi."
+        : "";
+    } catch (e) {
+      durum = hataMetni(e, "Dosya oluşturulamadı.");
+    }
   }
 </script>
 
-
 {#if !G.satirlar.length}
-  <div class="kart bos"><h2>Bu ayda çalışan personel yok</h2><button class="dugme ana" onclick={() => git("kisiler")}>Personel ekle</button></div>
+  <div class="kart bos">
+    <h2>Bu ayda çalışan personel yok</h2>
+    <button class="dugme ana" onclick={() => git("kisiler")}>Personel ekle</button>
+  </div>
 {:else}
   <IslemAlani>
     <div class="secim" role="tablist" aria-label="Puantaj görünümü">
-      {#each GORUNUMLER as g}<button role="tab" aria-selected={gorunum === g.ad} onclick={() => { izinOn = null; gorunum = g.ad; }}>{g.baslik}</button>{/each}
+      {#each GORUNUMLER as g}<button
+          role="tab"
+          aria-selected={gorunum === g.ad}
+          onclick={() => {
+            izinOn = null;
+            gorunum = g.ad;
+          }}>{g.baslik}</button
+        >{/each}
     </div>
     <button class="dugme" onclick={() => disaAktar("pdf")}><Ikon ad="indir" />PDF</button>
     <button class="dugme" onclick={() => disaAktar("xlsx")}><Ikon ad="indir" />Excel</button>
@@ -117,98 +170,160 @@
   {#if gorunum === "izin"}<IzinRapor {kimler} on={izinOn} />
   {:else if gorunum === "degisim"}<NobetDegisimi {acil} />
   {:else}
-  <div class="ozet-serit">
-    <div><small>Aylık normal mesai</small><b>{G.mesaiToplam} sa</b><span>Çalışma günleri × günlük mesai</span></div>
-    <div><small>Fazla mesai · eczacı</small><b>{fmEcz}</b><span>Kişiler arası aralık</span></div>
-    <div><small>Fazla mesai · {acil ? "acil servis" : "tekniker"}</small><b>{fmTek}</b><span>Kişiler arası aralık</span></div>
-    <div><small>Toplam nöbet</small><b>{toplamNobet}</b><span>{elleSayisi ? elleSayisi + " hücre elle değiştirildi" : "Elle değiştirilen hücre yok"}</span></div>
-  </div>
-  {#if !c}<p class="kutu dikkat uyari-satir">Bu ayın çizelgesi yok: nöbetler boş görünür.</p>{/if}
-
-  <div class="cetvel-duzen">
-  <section class="panel cetvel-panel">
-    <div class="panel-bas"><h2>Puantaj cetveli</h2>
-      <p class="lejant">
-        <span><i class="k"><i class="nokta"></i></i>Mesai ({saatYaz(ayar.mesai)} sa)</span><span><i class="k k-N">{saatYaz(ayar.nobetSuresi)}</i>Nöbet</span><span><i class="k k-N acil">{saatYaz(ayar.nobetSuresi)}</i>Acil nöbet</span><span><i class="k k-H">{saatYaz(ayar.hazSaat)}</i>Hazırlama</span>
-        <span><i class="k k-NI">Nİ</i>Nöbet izni</span><span><i class="k k-YI">Yİ</i>Yıllık izin</span><span><i class="k k-R">R</i>Rapor</span>
-        <span><i class="k k-P">–</i>Dönem dışı</span><span><i class="k hs-ornek"></i>Hafta sonu</span><span><i class="k ov-ornek"></i>Elle</span>
-      </p>
-    </div>
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
-
-  <div class="tablo-kap" tabindex="0" role="region" aria-label="Puantaj cetveli">
-    <table class="cetvel">
-      <thead>
-        <tr>
-          <th class="ad" scope="col">Ad soyad</th>
-          {#each G.gunler as g}<th scope="col" class:tatil={g.tatil} class:arife={g.arife} title={gunMetni(depo.yil, depo.ay, g.gun)}><span class="rakam">{g.gun}</span><small>{GUN_KISA[g.dw]}</small></th>{/each}
-          <th class="ozet ilk fm" scope="col">Fazla<br />mesai</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each G.satirlar as r, si (r.s.id)}
-          {#if si === 0 || G.satirlar[si - 1].s.role !== r.s.role}
-            <tr class="grup"><th class="ad" scope="rowgroup">{grupAd[r.s.role]}</th><td colspan={G.gunler.length + 1}></td></tr>
-          {/if}
-          <tr class:secili-kisi={ks?.s.id === r.s.id}>
-            <th class="ad" scope="row"><button class="ad-dugme" aria-pressed={ks?.s.id === r.s.id} onclick={() => (kisiId = r.s.id)}><span class="isaret {r.s.role}"></span>{r.s.name}</button></th>
-            {#each r.cells as h, i}
-              {@const g = G.gunler[i]}
-              <td class="k-{h.kod}" class:tatil={g.tatil} class:ov={h.ov} class:acil={h.acil}>
-                <button onclick={() => hucreAc(r, i)} aria-label="{h.kod === "M" && !g.arife ? "" : kodMetni(h.kod, h.saat) + " · "}{r.s.name}, {gunMetni(depo.yil, depo.ay, g.gun)}: {h.acil ? 'Acil eczane nöbeti' : (KOD_AD[h.kod] ?? h.kod)}{h.ov ? ' (elle)' : ''}">{#if h.kod === "M" && !g.arife}<i class="nokta" aria-hidden="true"></i>{:else}{kodMetni(h.kod, h.saat)}{/if}</button>
-              </td>
-            {/each}
-            <td class="ozet ilk fm rakam">{r.fm}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  </div>
-  <div class="imzalar">
-    {#each ["Düzenleyen", "Kontrol eden", "Onaylayan"] as unvan}
-      <div class="imza"><b>{unvan}</b><span>Adı soyadı: ..............................</span><span>İmza:</span></div>
-    {/each}
-  </div>
-  </section>
-  {#if ks}
-    <aside class="panel kisi-panel" aria-label="Kişi dökümü">
-      <div class="panel-bas"><h2>{ks.s.name} · {ROL_AD[ks.s.role]}</h2></div>
-      <div class="panel-ic">
-        <div class="buyuk"><small>Fazla mesai</small><b class="rakam">{ks.fm} sa</b><span class="cubuk" aria-hidden="true"><i style="width:{Math.max(0, ks.fm) / fmMax * 100}%"></i></span><span class="soluk">{grupAralik(ks)}</span></div>
-        <dl>
-          <dt>Toplam çalışma</dt><dd class="rakam">{ks.toplam} sa</dd>
-          <dt>Aylık normal</dt><dd class="rakam">{ks.aylik ?? "–"}{ks.aylik !== null ? " sa" : ""}</dd>
-          <dt>08–20 / 20–08</dt><dd class="rakam">{ks.fmGunduz} / {ks.fmGece} sa</dd>
-        </dl>
-        <div class="sayilar">{#each [["Nöbet", ks.n], ["Hazırlama", ks.h], ["Nöbet izni", ks.ni], ["Yıllık izin", ks.yi], ["Rapor", ks.rd]] as [a, b]}<div><b class="rakam">{b}</b>{a}</div>{/each}</div>
-        <h3>Ay içinde</h3>
-        <ul class="olaylar">{#each kisiOlaylar as o}<li>{o}</li>{/each}</ul>
-        <p class="not">Başka bir kişinin dökümü için cetvelde adına dokunun; günün kodunu değiştirmek için hücreye dokunun.</p>
+    <div class="ozet-serit">
+      <div><small>Aylık normal mesai</small><b>{G.mesaiToplam} sa</b><span>Çalışma günleri × günlük mesai</span></div>
+      <div><small>Fazla mesai · eczacı</small><b>{fmEcz}</b><span>Kişiler arası aralık</span></div>
+      <div><small>Fazla mesai · {acil ? "acil servis" : "tekniker"}</small><b>{fmTek}</b><span>Kişiler arası aralık</span></div>
+      <div>
+        <small>Toplam nöbet</small><b>{toplamNobet}</b><span
+          >{elleSayisi ? elleSayisi + " hücre elle değiştirildi" : "Elle değiştirilen hücre yok"}</span
+        >
       </div>
-    </aside>
-  {/if}
-  </div>
+    </div>
+    {#if !c}<p class="kutu dikkat uyari-satir">Bu ayın çizelgesi yok: nöbetler boş görünür.</p>{/if}
 
-  <section class="aylik-kap">
-    <AylikOzet satirlar={G.satirlar} hazirlama={!acil} />
-    <p class="dipnot">Fazla mesai = toplam çalışma (yıllık izin ve rapor günleri o günün mesaisi kadar sayılır) − aylık normal mesai. Ayın son günü tutulan nöbetin ertesi gün izni bu aydan düşülür. Nöbet ertesi izin (Nİ) önce o günün 08:00-20:00 diliminden düşülür; bu dilim yetmezse kalanı 20:00-08:00 diliminden düşülür. Kemoterapi eczacısında nöbet günü ve ertesi günün mesaisi düşülür; destek personelinde hazırlama saatleri aynen yazılır.</p>
-  </section>
+    <div class="cetvel-duzen">
+      <section class="panel cetvel-panel">
+        <div class="panel-bas">
+          <h2>Puantaj cetveli</h2>
+          <p class="lejant">
+            <span><i class="k"><i class="nokta"></i></i>Mesai ({saatYaz(ayar.mesai)} sa)</span><span
+              ><i class="k k-N">{saatYaz(ayar.nobetSuresi)}</i>Nöbet</span
+            ><span><i class="k k-N acil">{saatYaz(ayar.nobetSuresi)}</i>Acil nöbet</span><span
+              ><i class="k k-H">{saatYaz(ayar.hazSaat)}</i>Hazırlama</span
+            >
+            <span><i class="k k-NI">Nİ</i>Nöbet izni</span><span><i class="k k-YI">Yİ</i>Yıllık izin</span><span
+              ><i class="k k-R">R</i>Rapor</span
+            >
+            <span><i class="k k-P">–</i>Dönem dışı</span><span><i class="k hs-ornek"></i>Hafta sonu</span><span
+              ><i class="k ov-ornek"></i>Elle</span
+            >
+          </p>
+        </div>
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
+
+        <div class="tablo-kap" tabindex="0" role="region" aria-label="Puantaj cetveli">
+          <table class="cetvel">
+            <thead>
+              <tr>
+                <th class="ad" scope="col">Ad soyad</th>
+                {#each G.gunler as g}<th scope="col" class:tatil={g.tatil} class:arife={g.arife} title={gunMetni(depo.yil, depo.ay, g.gun)}
+                    ><span class="rakam">{g.gun}</span><small>{GUN_KISA[g.dw]}</small></th
+                  >{/each}
+                <th class="ozet ilk fm" scope="col">Fazla<br />mesai</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each G.satirlar as r, si (r.s.id)}
+                {#if si === 0 || G.satirlar[si - 1].s.role !== r.s.role}
+                  <tr class="grup"><th class="ad" scope="rowgroup">{grupAd[r.s.role]}</th><td colspan={G.gunler.length + 1}></td></tr>
+                {/if}
+                <tr class:secili-kisi={ks?.s.id === r.s.id}>
+                  <th class="ad" scope="row"
+                    ><button class="ad-dugme" aria-pressed={ks?.s.id === r.s.id} onclick={() => (kisiId = r.s.id)}
+                      ><span class="isaret {r.s.role}"></span>{r.s.name}</button
+                    ></th
+                  >
+                  {#each r.cells as h, i}
+                    {@const g = G.gunler[i]}
+                    <td class="k-{h.kod}" class:tatil={g.tatil} class:ov={h.ov} class:acil={h.acil}>
+                      <button
+                        onclick={() => hucreAc(r, i)}
+                        aria-label="{h.kod === 'M' && !g.arife ? '' : kodMetni(h.kod, h.saat) + ' · '}{r.s.name}, {gunMetni(
+                          depo.yil,
+                          depo.ay,
+                          g.gun,
+                        )}: {h.acil ? 'Acil eczane nöbeti' : (KOD_AD[h.kod] ?? h.kod)}{h.ov ? ' (elle)' : ''}"
+                        >{#if h.kod === "M" && !g.arife}<i class="nokta" aria-hidden="true"></i>{:else}{kodMetni(
+                            h.kod,
+                            h.saat,
+                          )}{/if}</button
+                      >
+                    </td>
+                  {/each}
+                  <td class="ozet ilk fm rakam">{r.fm}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+        <div class="imzalar">
+          {#each ["Düzenleyen", "Kontrol eden", "Onaylayan"] as unvan}
+            <div class="imza"><b>{unvan}</b><span>Adı soyadı: ..............................</span><span>İmza:</span></div>
+          {/each}
+        </div>
+      </section>
+      {#if ks}
+        <aside class="panel kisi-panel" aria-label="Kişi dökümü">
+          <div class="panel-bas"><h2>{ks.s.name} · {ROL_AD[ks.s.role]}</h2></div>
+          <div class="panel-ic">
+            <div class="buyuk">
+              <small>Fazla mesai</small><b class="rakam">{ks.fm} sa</b><span class="cubuk" aria-hidden="true"
+                ><i style="width:{(Math.max(0, ks.fm) / fmMax) * 100}%"></i></span
+              ><span class="soluk">{grupAralik(ks)}</span>
+            </div>
+            <dl>
+              <dt>Toplam çalışma</dt>
+              <dd class="rakam">{ks.toplam} sa</dd>
+              <dt>Aylık normal</dt>
+              <dd class="rakam">{ks.aylik ?? "–"}{ks.aylik !== null ? " sa" : ""}</dd>
+              <dt>08–20 / 20–08</dt>
+              <dd class="rakam">{ks.fmGunduz} / {ks.fmGece} sa</dd>
+            </dl>
+            <div class="sayilar">
+              {#each [["Nöbet", ks.n], ["Hazırlama", ks.h], ["Nöbet izni", ks.ni], ["Yıllık izin", ks.yi], ["Rapor", ks.rd]] as [a, b]}<div>
+                  <b class="rakam">{b}</b>{a}
+                </div>{/each}
+            </div>
+            <h3>Ay içinde</h3>
+            <ul class="olaylar">
+              {#each kisiOlaylar as o}<li>{o}</li>{/each}
+            </ul>
+            <p class="not">Başka bir kişinin dökümü için cetvelde adına dokunun; günün kodunu değiştirmek için hücreye dokunun.</p>
+          </div>
+        </aside>
+      {/if}
+    </div>
+
+    <section class="aylik-kap">
+      <AylikOzet satirlar={G.satirlar} hazirlama={!acil} />
+      <p class="dipnot">
+        Fazla mesai = toplam çalışma (yıllık izin ve rapor günleri o günün mesaisi kadar sayılır) − aylık normal mesai. Ayın son günü
+        tutulan nöbetin ertesi gün izni bu aydan düşülür. Nöbet ertesi izin (Nİ) önce o günün 08:00-20:00 diliminden düşülür; bu dilim
+        yetmezse kalanı 20:00-08:00 diliminden düşülür. Kemoterapi eczacısında nöbet günü ve ertesi günün mesaisi düşülür; destek
+        personelinde hazırlama saatleri aynen yazılır.
+      </p>
+    </section>
   {/if}
 {/if}
 
 {#if secili}
-  <Pencere bind:acik baslik={secili.ad} altBaslik="{gunMetni(depo.yil, depo.ay, secili.gun)} · şu an: {KOD_AD[secili.simdiki] ?? secili.simdiki}">
+  <Pencere
+    bind:acik
+    baslik={secili.ad}
+    altBaslik="{gunMetni(depo.yil, depo.ay, secili.gun)} · şu an: {KOD_AD[secili.simdiki] ?? secili.simdiki}"
+  >
     <fieldset class="secenekler">
       <legend>Bu günün kodu</legend>
-      <label class="secenek"><input type="radio" name="kod" value="" bind:group={yeniKod} /><span><b>Otomatik</b><small>Çizelgeye göre: {KOD_AD[secili.otomatik] ?? "boş"}</small></span></label>
+      <label class="secenek"
+        ><input type="radio" name="kod" value="" bind:group={yeniKod} /><span
+          ><b>Otomatik</b><small>Çizelgeye göre: {KOD_AD[secili.otomatik] ?? "boş"}</small></span
+        ></label
+      >
       {#each SECENEKLER as k}
         <label class="secenek"><input type="radio" name="kod" value={k} bind:group={yeniKod} /><span><b>{KOD_AD[k]}</b></span></label>
       {/each}
     </fieldset>
     {#if goreveIzin}
-      <p class="kutu dikkat" role="alert">Bu gün {secili.simdiki === "N" ? "nöbet" : "hazırlama"} günü. Yalnız puantaja yazılırsa görev boş kalır; yerine geçecek kişiyi seçmek için İzin ve rapor ekranından girin.</p>
+      <p class="kutu dikkat" role="alert">
+        Bu gün {secili.simdiki === "N" ? "nöbet" : "hazırlama"} günü. Yalnız puantaja yazılırsa görev boş kalır; yerine geçecek kişiyi seçmek
+        için İzin ve rapor ekranından girin.
+      </p>
     {:else}
-      <p class="not">Puantaj gerçekleşeni gösterir; çizelge değişmez. Yıllık izin, rapor ve diğer izin girilen günlere, çizelge yeniden oluşturulursa görev yazılmaz.</p>
+      <p class="not">
+        Puantaj gerçekleşeni gösterir; çizelge değişmez. Yıllık izin, rapor ve diğer izin girilen günlere, çizelge yeniden oluşturulursa
+        görev yazılmaz.
+      </p>
     {/if}
     {#snippet altlik()}
       <button class="dugme" onclick={() => (acik = false)}>Vazgeç</button>
@@ -221,87 +336,454 @@
 {/if}
 
 <style>
-  .bos { padding: var(--b5); display: grid; gap: var(--b3); justify-items: start; }
-  .bant { padding: var(--b2) var(--b4); border: 1px solid var(--cizgi); border-radius: var(--r); margin-bottom: var(--b3); font-size: var(--f-sm); font-weight: 600; background: var(--vurgu-zemin); color: var(--vurgu); }
-  .uyari-satir { margin-top: var(--b3); font-weight: 600; }
-  .cetvel-duzen { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--b4); align-items: start; margin-top: var(--b4); }
-  .cetvel-panel { min-width: 0; }
-  .nokta { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--soluk); vertical-align: middle; }
-  .ad-dugme { display: flex; align-items: center; width: 100%; height: 30px; border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: inherit; text-align: left; cursor: pointer; }
-  .ad-dugme:hover { text-decoration: underline; }
-  .ad-dugme:focus-visible { outline: 2px solid var(--odak); outline-offset: -2px; }
-  .cetvel tr.secili-kisi > * { box-shadow: inset 0 2px 0 var(--altin), inset 0 -2px 0 var(--altin); }
-  .cetvel tr.secili-kisi .ad { background: color-mix(in srgb, var(--altin) 16%, var(--yuzey)) !important; }
-  .kisi-panel .panel-ic { display: grid; gap: var(--b3); }
-  .buyuk { display: grid; gap: 4px; }
-  .buyuk small { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--yazi-2); }
-  .buyuk b { font-size: 28px; color: var(--lacivert); line-height: 1.1; }
-  .buyuk .soluk { font-size: var(--f-xs); }
-  .cubuk { display: block; height: 8px; background: var(--yuzey-2); }
-  .cubuk i { display: block; height: 100%; background: var(--vurgu); }
-  .kisi-panel dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; margin: 0; font-size: var(--f-sm); }
-  .kisi-panel dt { color: var(--yazi-2); }
-  .kisi-panel dd { margin: 0; font-weight: 700; color: var(--lacivert); text-align: right; }
-  .sayilar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--cizgi-acik); }
-  .sayilar div { display: grid; padding: 6px 2px; text-align: center; font-size: 11px; color: var(--yazi-2); border-right: 1px solid var(--cizgi-acik); }
-  .sayilar div:last-child { border-right: 0; }
-  .sayilar b { font-size: 16px; color: var(--lacivert); }
-  .kisi-panel h3 { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--yazi-2); margin: 0; }
-  .olaylar { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: var(--f-sm); }
-  .kisi-panel .not { font-size: var(--f-xs); }
-  @media (max-width: 1100px) { .cetvel-duzen { grid-template-columns: 1fr; } }
-  .lejant { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: var(--f-xs); color: var(--yazi-2); }
-  .lejant span { display: inline-flex; align-items: center; gap: 5px; }
-  .k { display: inline-grid; place-items: center; min-width: 24px; height: 18px; padding: 0 3px; border-radius: 2px; font-style: normal; font-weight: 700; font-size: 11px; border: 1px solid var(--cizgi); background: var(--yuzey); color: var(--yazi-2); }
-  .hs-ornek { background: var(--hs-zemin); }
-  .ov-ornek { position: relative; }
-  .ov-ornek::after { content: ""; position: absolute; top: 0; right: 0; border-top: 7px solid var(--altin); border-left: 7px solid transparent; }
-  .tablo-kap { overflow-x: auto; }
-  table { border-collapse: separate; border-spacing: 0; font-size: var(--f-sm); }
-  .cetvel th, .cetvel td { border-right: 1px solid var(--cizgi-acik); border-bottom: 1px solid var(--cizgi-acik); padding: 0; text-align: center; white-space: nowrap; }
-  .cetvel thead th { position: sticky; top: 0; z-index: 2; background: var(--tablo-bas); color: var(--lacivert); font-weight: 700; font-size: var(--f-xs); padding: 4px 0; min-width: 22px; }
-  .cetvel thead th small { display: block; font-size: 11px; font-weight: 600; color: var(--yazi-2); }
-  .cetvel thead th.tatil { background: color-mix(in srgb, var(--acik-mavi) 28%, var(--yuzey)); }
-  .cetvel thead th.arife { background: var(--arife-zemin); }
-  .cetvel .ad { position: sticky; left: 0; z-index: 1; background: var(--yuzey); text-align: left; padding: 0 var(--b3); font-weight: 600; min-width: 130px; }
-  .cetvel tbody tr:nth-child(even) .ad { background: var(--yuzey-2); }
-  .cetvel thead .ad { z-index: 3; background: var(--tablo-bas); }
-  .cetvel .ad .isaret { margin-right: 8px; }
-  .cetvel tr.grup .ad, .cetvel tr.grup td { background: var(--panel-bas); font-size: 11px; color: var(--lacivert); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding-block: 4px; }
-  .cetvel td.tatil { background: var(--hs-zemin); }
-  .cetvel td { position: relative; }
-  .cetvel td button { width: 100%; min-width: 22px; height: 30px; border: 0; background: transparent; cursor: pointer; font-variant-numeric: tabular-nums; color: inherit; font-weight: inherit; }
+  .bos {
+    padding: var(--b5);
+    display: grid;
+    gap: var(--b3);
+    justify-items: start;
+  }
+  .bant {
+    padding: var(--b2) var(--b4);
+    border: 1px solid var(--cizgi);
+    border-radius: var(--r);
+    margin-bottom: var(--b3);
+    font-size: var(--f-sm);
+    font-weight: 600;
+    background: var(--vurgu-zemin);
+    color: var(--vurgu);
+  }
+  .uyari-satir {
+    margin-top: var(--b3);
+    font-weight: 600;
+  }
+  .cetvel-duzen {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: var(--b4);
+    align-items: start;
+    margin-top: var(--b4);
+  }
+  .cetvel-panel {
+    min-width: 0;
+  }
+  .nokta {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--soluk);
+    vertical-align: middle;
+  }
+  .ad-dugme {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 30px;
+    border: 0;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .ad-dugme:hover {
+    text-decoration: underline;
+  }
+  .ad-dugme:focus-visible {
+    outline: 2px solid var(--odak);
+    outline-offset: -2px;
+  }
+  .cetvel tr.secili-kisi > * {
+    box-shadow:
+      inset 0 2px 0 var(--altin),
+      inset 0 -2px 0 var(--altin);
+  }
+  .cetvel tr.secili-kisi .ad {
+    background: color-mix(in srgb, var(--altin) 16%, var(--yuzey)) !important;
+  }
+  .kisi-panel .panel-ic {
+    display: grid;
+    gap: var(--b3);
+  }
+  .buyuk {
+    display: grid;
+    gap: 4px;
+  }
+  .buyuk small {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--yazi-2);
+  }
+  .buyuk b {
+    font-size: 28px;
+    color: var(--lacivert);
+    line-height: 1.1;
+  }
+  .buyuk .soluk {
+    font-size: var(--f-xs);
+  }
+  .cubuk {
+    display: block;
+    height: 8px;
+    background: var(--yuzey-2);
+  }
+  .cubuk i {
+    display: block;
+    height: 100%;
+    background: var(--vurgu);
+  }
+  .kisi-panel dl {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 8px;
+    margin: 0;
+    font-size: var(--f-sm);
+  }
+  .kisi-panel dt {
+    color: var(--yazi-2);
+  }
+  .kisi-panel dd {
+    margin: 0;
+    font-weight: 700;
+    color: var(--lacivert);
+    text-align: right;
+  }
+  .sayilar {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    border: 1px solid var(--cizgi-acik);
+  }
+  .sayilar div {
+    display: grid;
+    padding: 6px 2px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--yazi-2);
+    border-right: 1px solid var(--cizgi-acik);
+  }
+  .sayilar div:last-child {
+    border-right: 0;
+  }
+  .sayilar b {
+    font-size: 16px;
+    color: var(--lacivert);
+  }
+  .kisi-panel h3 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--yazi-2);
+    margin: 0;
+  }
+  .olaylar {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+    font-size: var(--f-sm);
+  }
+  .kisi-panel .not {
+    font-size: var(--f-xs);
+  }
+  @media (max-width: 1100px) {
+    .cetvel-duzen {
+      grid-template-columns: 1fr;
+    }
+  }
+  .lejant {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    font-size: var(--f-xs);
+    color: var(--yazi-2);
+  }
+  .lejant span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .k {
+    display: inline-grid;
+    place-items: center;
+    min-width: 24px;
+    height: 18px;
+    padding: 0 3px;
+    border-radius: 2px;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 11px;
+    border: 1px solid var(--cizgi);
+    background: var(--yuzey);
+    color: var(--yazi-2);
+  }
+  .hs-ornek {
+    background: var(--hs-zemin);
+  }
+  .ov-ornek {
+    position: relative;
+  }
+  .ov-ornek::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    border-top: 7px solid var(--altin);
+    border-left: 7px solid transparent;
+  }
+  .tablo-kap {
+    overflow-x: auto;
+  }
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: var(--f-sm);
+  }
+  .cetvel th,
+  .cetvel td {
+    border-right: 1px solid var(--cizgi-acik);
+    border-bottom: 1px solid var(--cizgi-acik);
+    padding: 0;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .cetvel thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--tablo-bas);
+    color: var(--lacivert);
+    font-weight: 700;
+    font-size: var(--f-xs);
+    padding: 4px 0;
+    min-width: 22px;
+  }
+  .cetvel thead th small {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--yazi-2);
+  }
+  .cetvel thead th.tatil {
+    background: color-mix(in srgb, var(--acik-mavi) 28%, var(--yuzey));
+  }
+  .cetvel thead th.arife {
+    background: var(--arife-zemin);
+  }
+  .cetvel .ad {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--yuzey);
+    text-align: left;
+    padding: 0 var(--b3);
+    font-weight: 600;
+    min-width: 130px;
+  }
+  .cetvel tbody tr:nth-child(even) .ad {
+    background: var(--yuzey-2);
+  }
+  .cetvel thead .ad {
+    z-index: 3;
+    background: var(--tablo-bas);
+  }
+  .cetvel .ad .isaret {
+    margin-right: 8px;
+  }
+  .cetvel tr.grup .ad,
+  .cetvel tr.grup td {
+    background: var(--panel-bas);
+    font-size: 11px;
+    color: var(--lacivert);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-block: 4px;
+  }
+  .cetvel td.tatil {
+    background: var(--hs-zemin);
+  }
+  .cetvel td {
+    position: relative;
+  }
+  .cetvel td button {
+    width: 100%;
+    min-width: 22px;
+    height: 30px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    color: inherit;
+    font-weight: inherit;
+  }
   /* telefonda dokunma hedefi en az 28 px */
-  @media (max-width: 720px) { .cetvel td button, .cetvel thead th:not(.ad) { min-width: 28px; } }
-  .cetvel td button:hover { outline: 2px solid var(--altin); outline-offset: -2px; }
-  .cetvel td.ov::after { content: ""; position: absolute; top: 0; right: 0; border-top: 7px solid var(--altin); border-left: 7px solid transparent; pointer-events: none; }
-  .k-N { background: var(--nobet-hucre) !important; color: #FFFFFF; font-weight: 700; }
-  .k-N.acil { background: var(--acil) !important; color: #FFFFFF; }
-  .k-H { background: var(--haz-zemin) !important; color: var(--haz); font-weight: 700; }
-  .k-NI { background: var(--izin-zemin) !important; color: var(--izin); font-weight: 700; }
-  .k-YI { background: var(--tek-zemin) !important; color: var(--tek); font-weight: 700; }
-  .k-R, .k-DI { background: var(--hata-zemin) !important; color: var(--hata); font-weight: 700; }
-  .k-P { color: var(--soluk); }
-  .ozet { padding: 0 var(--b1) !important; min-width: 46px; text-align: right !important; font-weight: 600; }
-  .ozet.ilk { border-left: 2px solid var(--cizgi); }
-  thead .ozet { background: var(--tablo-bas); }
-  .ozet.fm { font-weight: 700; color: var(--lacivert); background: var(--vurgu-zemin); text-align: center !important; line-height: 1.15; }
-  thead .ozet.fm { background: color-mix(in srgb, var(--acik-mavi) 35%, var(--yuzey)); }
-  .soluk { color: var(--yazi-2); }
-  .imzalar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--cizgi); }
-  .imza { display: grid; gap: 10px; padding: var(--b4) var(--b4) var(--b5); border-left: 1px solid var(--cizgi-acik); font-size: var(--f-sm); color: var(--yazi-2); }
-  .imza:first-child { border-left: 0; }
-  .imza b { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--lacivert); }
-  .aylik-kap { margin-top: var(--b5); display: grid; gap: var(--b2); }
-  .dipnot { font-size: var(--f-xs); color: var(--yazi-2); max-width: 100ch; }
-  @media (max-width: 720px) { .imzalar { grid-template-columns: 1fr; } .imza { border-left: 0; border-top: 1px solid var(--cizgi-acik); } }
-  .secenekler { border: 0; padding: 0; margin: 0; display: grid; gap: 4px; }
-  legend { font-weight: 600; font-size: var(--f-sm); margin-bottom: var(--b2); }
-  .secenek { display: flex; gap: var(--b3); align-items: center; padding: 8px 10px; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); cursor: pointer; }
-  .secenek:has(input:checked) { border-color: var(--vurgu); background: var(--vurgu-zemin); }
-  .secenek input { width: 18px; height: 18px; accent-color: var(--vurgu); flex: none; }
-  .secenek span { display: grid; }
-  .secenek b { font-weight: 500; }
-  .secenek small { font-size: var(--f-xs); color: var(--soluk); }
-  .not { font-size: var(--f-sm); color: var(--soluk); }
+  @media (max-width: 720px) {
+    .cetvel td button,
+    .cetvel thead th:not(.ad) {
+      min-width: 28px;
+    }
+  }
+  .cetvel td button:hover {
+    outline: 2px solid var(--altin);
+    outline-offset: -2px;
+  }
+  .cetvel td.ov::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    border-top: 7px solid var(--altin);
+    border-left: 7px solid transparent;
+    pointer-events: none;
+  }
+  .k-N {
+    background: var(--nobet-hucre) !important;
+    color: #ffffff;
+    font-weight: 700;
+  }
+  .k-N.acil {
+    background: var(--acil) !important;
+    color: #ffffff;
+  }
+  .k-H {
+    background: var(--haz-zemin) !important;
+    color: var(--haz);
+    font-weight: 700;
+  }
+  .k-NI {
+    background: var(--izin-zemin) !important;
+    color: var(--izin);
+    font-weight: 700;
+  }
+  .k-YI {
+    background: var(--tek-zemin) !important;
+    color: var(--tek);
+    font-weight: 700;
+  }
+  .k-R,
+  .k-DI {
+    background: var(--hata-zemin) !important;
+    color: var(--hata);
+    font-weight: 700;
+  }
+  .k-P {
+    color: var(--soluk);
+  }
+  .ozet {
+    padding: 0 var(--b1) !important;
+    min-width: 46px;
+    text-align: right !important;
+    font-weight: 600;
+  }
+  .ozet.ilk {
+    border-left: 2px solid var(--cizgi);
+  }
+  thead .ozet {
+    background: var(--tablo-bas);
+  }
+  .ozet.fm {
+    font-weight: 700;
+    color: var(--lacivert);
+    background: var(--vurgu-zemin);
+    text-align: center !important;
+    line-height: 1.15;
+  }
+  thead .ozet.fm {
+    background: color-mix(in srgb, var(--acik-mavi) 35%, var(--yuzey));
+  }
+  .soluk {
+    color: var(--yazi-2);
+  }
+  .imzalar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--cizgi);
+  }
+  .imza {
+    display: grid;
+    gap: 10px;
+    padding: var(--b4) var(--b4) var(--b5);
+    border-left: 1px solid var(--cizgi-acik);
+    font-size: var(--f-sm);
+    color: var(--yazi-2);
+  }
+  .imza:first-child {
+    border-left: 0;
+  }
+  .imza b {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--lacivert);
+  }
+  .aylik-kap {
+    margin-top: var(--b5);
+    display: grid;
+    gap: var(--b2);
+  }
+  .dipnot {
+    font-size: var(--f-xs);
+    color: var(--yazi-2);
+    max-width: 100ch;
+  }
+  @media (max-width: 720px) {
+    .imzalar {
+      grid-template-columns: 1fr;
+    }
+    .imza {
+      border-left: 0;
+      border-top: 1px solid var(--cizgi-acik);
+    }
+  }
+  .secenekler {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 4px;
+  }
+  legend {
+    font-weight: 600;
+    font-size: var(--f-sm);
+    margin-bottom: var(--b2);
+  }
+  .secenek {
+    display: flex;
+    gap: var(--b3);
+    align-items: center;
+    padding: 8px 10px;
+    border: 1px solid var(--cizgi);
+    border-radius: var(--r-kucuk);
+    cursor: pointer;
+  }
+  .secenek:has(input:checked) {
+    border-color: var(--vurgu);
+    background: var(--vurgu-zemin);
+  }
+  .secenek input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--vurgu);
+    flex: none;
+  }
+  .secenek span {
+    display: grid;
+  }
+  .secenek b {
+    font-weight: 500;
+  }
+  .secenek small {
+    font-size: var(--f-xs);
+    color: var(--soluk);
+  }
+  .not {
+    font-size: var(--f-sm);
+    color: var(--soluk);
+  }
 </style>

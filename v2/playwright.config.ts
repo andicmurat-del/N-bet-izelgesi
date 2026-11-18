@@ -15,5 +15,10 @@ export default defineConfig({
     { name: "masaustu", testIgnore: /mobil\.spec/ },
     { name: "telefon", testMatch: /mobil\.spec/, use: { ...devices["iPhone 13"], browserName: "chromium" } },
   ],
-  webServer: { command: "npx vite build && npx vite preview --port 4173 --strictPort", port: 4173, reuseExistingServer: !process.env.CI, timeout: 180_000 },
+  webServer: {
+    command: "npx vite build && npx vite preview --port 4173 --strictPort",
+    port: 4173,
+    reuseExistingServer: !process.env.CI,
+    timeout: 180_000,
+  },
 });

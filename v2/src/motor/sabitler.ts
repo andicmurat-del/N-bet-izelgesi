@@ -9,8 +9,27 @@
  *  yazılır (kapalıysa gün eksik kalır); oglenHE/HT, oglenCE/CT: öğlen nöbetinde Pazartesi–Perşembe ve Cuma eczacı /
  *  tekniker sayısı; tatilOtomatik: resmi tatiller her yıl kendiliğinden işaretlenir (veri/resmiTatiller.ts).
  *  Kayıtlı verinin varsayılan ayarları da buradan gelir (veri/dogrulama.ts): değerler tek yerde. */
-export const AYAR_VARSAYILAN = { nobetSuresi: 24, mesai: 8, arifeSaat: 3, hazSaat: 8, fmHedef: 8, minAra: 3, acilMinAra: 3, maxThu: 1, hsUst: 2, cumaEsles: true, thuHaftaSonu: true, destekAylik: 2, niDusum: 1,
-  acilArdArda: true, oglenHE: 2, oglenHT: 1, oglenCE: 3, oglenCT: 2, tatilOtomatik: true };
+export const AYAR_VARSAYILAN = {
+  nobetSuresi: 24,
+  mesai: 8,
+  arifeSaat: 3,
+  hazSaat: 8,
+  fmHedef: 8,
+  minAra: 3,
+  acilMinAra: 3,
+  maxThu: 1,
+  hsUst: 2,
+  cumaEsles: true,
+  thuHaftaSonu: true,
+  destekAylik: 2,
+  niDusum: 1,
+  acilArdArda: true,
+  oglenHE: 2,
+  oglenHT: 1,
+  oglenCE: 3,
+  oglenCT: 2,
+  tatilOtomatik: true,
+};
 export type AyarAdi = keyof typeof AYAR_VARSAYILAN;
 
 // KESİN KURALLAR (çizelge oluşturma, elle düzenleme ve uyarılarda ortak)
@@ -27,10 +46,21 @@ export const HAFIF_IHLAL = 0.5;
 export const IZIN_HAFTA_GUN = 5;
 /** puantajda elle girilen ve o gün görev yazılmasını engelleyen kodlar */
 export const DURUM_KOD = ["YI", "R", "NI", "DI"];
-export const DURUM_AD: Record<string, string> = { YI: "Yıllık izin", R: "Rapor", NI: "Nöbet izni (fazla mesai karşılığı)", DI: "Diğer izin" };
+export const DURUM_AD: Record<string, string> = {
+  YI: "Yıllık izin",
+  R: "Rapor",
+  NI: "Nöbet izni (fazla mesai karşılığı)",
+  DI: "Diğer izin",
+};
 
 /** Yıl içinde eşit paylaşılan gün türleri (herkes birini almadan kimse ikincisini almasın) */
-export const YIL_GUN_TIP = [["pe", "Perşembe"], ["cu", "Cuma"], ["cmt", "Cumartesi"], ["paz", "Pazar"], ["rt", "Resmi tatil"]] as const;
+export const YIL_GUN_TIP = [
+  ["pe", "Perşembe"],
+  ["cu", "Cuma"],
+  ["cmt", "Cumartesi"],
+  ["paz", "Pazar"],
+  ["rt", "Resmi tatil"],
+] as const;
 export type YilGunTipi = (typeof YIL_GUN_TIP)[number][0];
 
 // ÇİZELGE OLUŞTURMA AĞIRLIKLARI (öncelik sırasıyla)
@@ -43,56 +73,57 @@ export type YilGunTipi = (typeof YIL_GUN_TIP)[number][0];
 //  5. Aylık denge ve ince ayar (onlar, birler): eşitlik bozulmadan karşılanan tercihler.
 // Günlük tercihler (thuHs, cuPaz, istiyor, araGun) gunTercihCarpani (3) ile çarpılır; etkin değerleri yanlarında yazılı.
 // Bir değeri değiştirmeden önce: testler (npm test) senaryolarda hata sayısının artmadığını denetler.
-const KESIN_AGIRLIK = 2e6, GUNYIL_AGIRLIK = 1.5e6;
+const KESIN_AGIRLIK = 2e6,
+  GUNYIL_AGIRLIK = 1.5e6;
 export const AGIRLIK = Object.freeze({
   // 1. uyarı
   UYARI: 1e11,
-  IHLAL: 2e11,                             // kesin kural ihlali (izinli nöbet, art arda nöbet, boş hazırlama yeri…): 2 uyarı sayılır
-  tekOnceUyari: 1.5e11,                    // hazırlama sırası (önce teknikerler) bozulursa: fazla mesai 8 saat kuralından (1 uyarı) önce
+  IHLAL: 2e11, // kesin kural ihlali (izinli nöbet, art arda nöbet, boş hazırlama yeri…): 2 uyarı sayılır
+  tekOnceUyari: 1.5e11, // hazırlama sırası (önce teknikerler) bozulursa: fazla mesai 8 saat kuralından (1 uyarı) önce
   // 2. kesin kurallar
-  KESIN: KESIN_AGIRLIK,                    // genel kesin kural birimi: aylık nöbet sayısı farkı 2'yi aşan her nöbet; fazla mesai farkı 8 saati aşan her saat
-  fmBant: KESIN_AGIRLIK * 0.25,            // fazla mesai: herkesi 8 saatlik tek aralığa sokmak için gereken toplam saat (arama düzlükte takılmasın)
-  hzFark: KESIN_AGIRLIK * 200,            // hazırlama farkı 1'i aşınca (fazla mesai 8 saat kuralından önce gelir)
-  destekSayi: KESIN_AGIRLIK * 40,          // destek personeli ayda tam ayardaki sayı kadar hazırlama alır (her fark için)
-  tekOnce: KESIN_AGIRLIK * 10,             // hazırlama önce teknikerlere: eczacının (yıllık) hazırlaması teknikerinkini geçmez
-  resmiYilToplam: 2 * GUNYIL_AGIRLIK,      // yıllık resmi tatil görevi (nöbet + hazırlama) farkı 1'i aşınca
-  gunYil: GUNYIL_AGIRLIK,                  // yıllık Perşembe / Cuma / Cumartesi / Pazar / resmi tatil nöbeti farkı 1'i aşınca
-  hsKural: 500000,                         // ayda en fazla 1 Cumartesi, 1 Pazar
-  istemiyor: KESIN_AGIRLIK * 2.5,          // "istemiyor" işaretli güne nöbet / hazırlama (uyarı düzeyindeki eşitlik kuralları önce gelir)
+  KESIN: KESIN_AGIRLIK, // genel kesin kural birimi: aylık nöbet sayısı farkı 2'yi aşan her nöbet; fazla mesai farkı 8 saati aşan her saat
+  fmBant: KESIN_AGIRLIK * 0.25, // fazla mesai: herkesi 8 saatlik tek aralığa sokmak için gereken toplam saat (arama düzlükte takılmasın)
+  hzFark: KESIN_AGIRLIK * 200, // hazırlama farkı 1'i aşınca (fazla mesai 8 saat kuralından önce gelir)
+  destekSayi: KESIN_AGIRLIK * 40, // destek personeli ayda tam ayardaki sayı kadar hazırlama alır (her fark için)
+  tekOnce: KESIN_AGIRLIK * 10, // hazırlama önce teknikerlere: eczacının (yıllık) hazırlaması teknikerinkini geçmez
+  resmiYilToplam: 2 * GUNYIL_AGIRLIK, // yıllık resmi tatil görevi (nöbet + hazırlama) farkı 1'i aşınca
+  gunYil: GUNYIL_AGIRLIK, // yıllık Perşembe / Cuma / Cumartesi / Pazar / resmi tatil nöbeti farkı 1'i aşınca
+  hsKural: 500000, // ayda en fazla 1 Cumartesi, 1 Pazar
+  istemiyor: KESIN_AGIRLIK * 2.5, // "istemiyor" işaretli güne nöbet / hazırlama (uyarı düzeyindeki eşitlik kuralları önce gelir)
   // 3. güçlü tercihler
-  cuCmtPaz: 50000,                         // Cuma + Cumartesi + Pazar aynı ay aynı kişide (yıllık Cuma eşitliği bundan önce gelir)
-  ucluSonHaz: 200000,                      // Cuma + Cumartesi + Pazar nöbeti olan kendi grubunda (eczacı / tekniker) hazırlamayı en son alır
-  prepUst: 400000,                         // eczacı / tekniker ayda en fazla 2 hazırlama
-  grupHazFark: 300000,                     // eczacılar kendi arasında, teknikerler kendi arasında aylık hazırlama farkı 1'i aşınca
-  hsEnAz1: 150000,                         // ayda en az 1 Cumartesi/Pazar nöbeti (uygun gün varsa)
-  nobetFark: 100000,                       // aylık nöbet sayısı farkı 1'i aşınca
-  hsUst: 80000,                            // ayda Cumartesi/Pazar nöbeti ayardaki üst sınırı aşınca
-  thuHs: 20000,                            // Perşembe nöbeti tutana aynı hafta sonu nöbet (etkin: ×3 = 60000)
+  cuCmtPaz: 50000, // Cuma + Cumartesi + Pazar aynı ay aynı kişide (yıllık Cuma eşitliği bundan önce gelir)
+  ucluSonHaz: 200000, // Cuma + Cumartesi + Pazar nöbeti olan kendi grubunda (eczacı / tekniker) hazırlamayı en son alır
+  prepUst: 400000, // eczacı / tekniker ayda en fazla 2 hazırlama
+  grupHazFark: 300000, // eczacılar kendi arasında, teknikerler kendi arasında aylık hazırlama farkı 1'i aşınca
+  hsEnAz1: 150000, // ayda en az 1 Cumartesi/Pazar nöbeti (uygun gün varsa)
+  nobetFark: 100000, // aylık nöbet sayısı farkı 1'i aşınca
+  hsUst: 80000, // ayda Cumartesi/Pazar nöbeti ayardaki üst sınırı aşınca
+  thuHs: 20000, // Perşembe nöbeti tutana aynı hafta sonu nöbet (etkin: ×3 = 60000)
   // 4. yıllık eşitlik ve aylık düzen
-  thuFazla: 4000,                          // ayda Perşembe nöbeti ayardaki sınırı aşınca
-  hsYil: 2500,                             // yıllık Cumartesi/Pazar nöbeti dengesi (kare sapma)
-  nYil: 2000,                              // yıllık nöbet sayısı dengesi (kare sapma)
-  prpYil: 2000,                            // yıllık hazırlama dengesi, herkes birlikte (kare sapma)
-  prpGrup: 2000,                           // yıllık hazırlama dengesi, eczacılar ve teknikerler kendi içinde (kare sapma)
-  prp2: 1500,                              // ayda 1 hazırlama hedefi: 2. hazırlama
-  cuYil: 1500,                             // yıllık Cuma nöbeti dengesi (kare sapma)
-  peYil: 1200,                             // yıllık Perşembe nöbeti dengesi (kare sapma)
-  cpYil: 800,                              // yıllık Cumartesi ve Pazar dengesi, ayrı ayrı (kare sapma)
-  resmi: 800,                              // resmi tatil nöbeti ve hazırlaması dengesi (kare sapma)
-  cumaEslesmeYok: 600,                     // hafta sonu nöbeti var, Cuma nöbeti yok (Cuma eşleşmesi açıksa)
-  devirPazar: 500,                         // önceki ay Pazar tutana bu ay yine Pazar
-  devirPersembe: 400,                      // Perşembe: önceki ay ile bu ay ikisi de 0 ya da ikisi de var
-  cumaFazla: 300,                          // ayda 2. Cuma nöbeti
-  devirCumartesi: 250,                     // önceki ay Cumartesi tutana bu ay yine Cumartesi
-  cumaTek: 200,                            // Cuma nöbeti var, hafta sonu nöbeti yok (Cuma eşleşmesi açıksa)
+  thuFazla: 4000, // ayda Perşembe nöbeti ayardaki sınırı aşınca
+  hsYil: 2500, // yıllık Cumartesi/Pazar nöbeti dengesi (kare sapma)
+  nYil: 2000, // yıllık nöbet sayısı dengesi (kare sapma)
+  prpYil: 2000, // yıllık hazırlama dengesi, herkes birlikte (kare sapma)
+  prpGrup: 2000, // yıllık hazırlama dengesi, eczacılar ve teknikerler kendi içinde (kare sapma)
+  prp2: 1500, // ayda 1 hazırlama hedefi: 2. hazırlama
+  cuYil: 1500, // yıllık Cuma nöbeti dengesi (kare sapma)
+  peYil: 1200, // yıllık Perşembe nöbeti dengesi (kare sapma)
+  cpYil: 800, // yıllık Cumartesi ve Pazar dengesi, ayrı ayrı (kare sapma)
+  resmi: 800, // resmi tatil nöbeti ve hazırlaması dengesi (kare sapma)
+  cumaEslesmeYok: 600, // hafta sonu nöbeti var, Cuma nöbeti yok (Cuma eşleşmesi açıksa)
+  devirPazar: 500, // önceki ay Pazar tutana bu ay yine Pazar
+  devirPersembe: 400, // Perşembe: önceki ay ile bu ay ikisi de 0 ya da ikisi de var
+  cumaFazla: 300, // ayda 2. Cuma nöbeti
+  devirCumartesi: 250, // önceki ay Cumartesi tutana bu ay yine Cumartesi
+  cumaTek: 200, // Cuma nöbeti var, hafta sonu nöbeti yok (Cuma eşleşmesi açıksa)
   // 5. aylık denge ve ince ayar
-  fmYil: 80,                               // yıllık fazla mesai saati dengesi (kare sapma)
-  nobetAy: 60,                             // aylık nöbet sayısı dengesi (kare sapma)
-  destekYil: 25,                           // destek personeli yıllık hazırlama dengesi (kare sapma)
-  haftaSonuIs: 20,                         // aylık hafta sonu nöbeti + hazırlama sayısı dengesi (kare sapma)
-  istiyor: 5,                              // "istiyor" işaretli güne nöbet (ödül; etkin: ×3 = 15)
-  cuPaz: 2,                                // Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması (etkin: ×3 = 6); yalnız eşitliği
-                                           // bozmuyorsa kaçınılır (art arda gün kuralı zaten var)
-  araGun: 1,                               // iki nöbet arası ayardaki en az günden kısa (etkin: ×3 = 3)
-  gunTercihCarpani: 3,                     // günlük tercih toplamının (thuHs, cuPaz, istiyor, araGun) çarpanı
+  fmYil: 80, // yıllık fazla mesai saati dengesi (kare sapma)
+  nobetAy: 60, // aylık nöbet sayısı dengesi (kare sapma)
+  destekYil: 25, // destek personeli yıllık hazırlama dengesi (kare sapma)
+  haftaSonuIs: 20, // aylık hafta sonu nöbeti + hazırlama sayısı dengesi (kare sapma)
+  istiyor: 5, // "istiyor" işaretli güne nöbet (ödül; etkin: ×3 = 15)
+  cuPaz: 2, // Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması (etkin: ×3 = 6); yalnız eşitliği
+  // bozmuyorsa kaçınılır (art arda gün kuralı zaten var)
+  araGun: 1, // iki nöbet arası ayardaki en az günden kısa (etkin: ×3 = 3)
+  gunTercihCarpani: 3, // günlük tercih toplamının (thuHs, cuPaz, istiyor, araGun) çarpanı
 });

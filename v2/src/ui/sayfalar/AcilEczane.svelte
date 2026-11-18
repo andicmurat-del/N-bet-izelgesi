@@ -9,12 +9,30 @@
   import Raporlar from "./Raporlar.svelte";
   import type { AcilGorunum } from "./sayfaTipleri";
 
-  let { git, gorunum = $bindable("acil") }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; gorunum?: AcilGorunum } = $props();
+  let {
+    git,
+    gorunum = $bindable("acil"),
+  }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void; gorunum?: AcilGorunum } = $props();
   const GORUNUMLER = [
-    { ad: "acil", baslik: "Nöbet Listesi", uzun: "Acil Eczane Nöbet Listesi", aciklama: "Her gün 2 nöbetçi; acil kadrosu arasında eşit dağıtılır, günlük eczane nöbetiyle çakışmaz." },
-    { ad: "puantaj", baslik: "Puantaj", uzun: "Acil Eczane Puantajı", aciklama: "Acil kadrosunun gerçekleşen çalışması ve fazla mesai hesabı." },
+    {
+      ad: "acil",
+      baslik: "Nöbet Listesi",
+      uzun: "Acil Eczane Nöbet Listesi",
+      aciklama: "Her gün 2 nöbetçi; acil kadrosu arasında eşit dağıtılır, günlük eczane nöbetiyle çakışmaz.",
+    },
+    {
+      ad: "puantaj",
+      baslik: "Puantaj",
+      uzun: "Acil Eczane Puantajı",
+      aciklama: "Acil kadrosunun gerçekleşen çalışması ve fazla mesai hesabı.",
+    },
     { ad: "izinler", baslik: "İzinler", uzun: "İzinler ve Tercihler", aciklama: "Acil kadrosunun izinli günleri ve nöbet tercihleri." },
-    { ad: "raporlar", baslik: "Raporlar", uzun: "Acil Eczane Raporları", aciklama: "Acil kadrosunun yıllık fazla mesai, görev ve acil nöbet dağılımı." },
+    {
+      ad: "raporlar",
+      baslik: "Raporlar",
+      uzun: "Acil Eczane Raporları",
+      aciklama: "Acil kadrosunun yıllık fazla mesai, görev ve acil nöbet dağılımı.",
+    },
   ] as const;
   const aktif = $derived(GORUNUMLER.find(g => g.ad === gorunum) ?? GORUNUMLER[0]);
 </script>
@@ -32,4 +50,3 @@
 {:else}
   <AcilServis git={() => git("kisiler")} />
 {/if}
-

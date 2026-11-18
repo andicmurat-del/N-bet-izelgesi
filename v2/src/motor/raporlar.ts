@@ -9,13 +9,19 @@ import { ayAnahtari, ayGunSayisi, AY_KISA, AYLAR, CUMA, CUMARTESI, gunKaydir, ha
 // ---- günlük çalışma listesi: puantaja göre her gün kim onayda, kim hazırlamada, kim yok (izin/rapor) ----
 type ListeKisisi = { s: PuantajIzgarasi["satirlar"][number]["s"]; kod: string; saat: number; acil: boolean };
 function gunlukListe(G: PuantajIzgarasi, d: number) {
-  const var_: ListeKisisi[] = [], yok: { s: ListeKisisi["s"]; neden: string }[] = [], tatil = !!G.gunler[d - 1].tatil;
+  const var_: ListeKisisi[] = [],
+    yok: { s: ListeKisisi["s"]; neden: string }[] = [],
+    tatil = !!G.gunler[d - 1].tatil;
   G.satirlar.forEach(r => {
     // acil servis personeli günlük eczane çalışma listesinde görünmez (acil eczane kadrosu)
     if (r.s.role === "servis") return;
-    const c = r.cells[d - 1], kod = c.kod;
+    const c = r.cells[d - 1],
+      kod = c.kod;
     const calisiyor = kod === "M" || kod === "N" || kod === "H" || (kod && kod.indexOf("S:") === 0 && c.saat > 0);
-    if (calisiyor) { var_.push({ s: r.s, kod, saat: c.saat, acil: !!c.acil }); return; }
+    if (calisiyor) {
+      var_.push({ s: r.s, kod, saat: c.saat, acil: !!c.acil });
+      return;
+    }
     const neden = ({ NI: "Nöbet ertesi izni", YI: "Yıllık izin", R: "Raporlu", DI: "Diğer izin" } as Record<string, string>)[kod];
     if (neden) yok.push({ s: r.s, neden });
   });
@@ -34,7 +40,8 @@ function gunlukListe(G: PuantajIzgarasi, d: number) {
     // nöbet/hazırlama dışında kalan diğer çalışanlar rolüne göre yerleşir
     var_.forEach(x => {
       if (acilMi(x) || onayMi(x) || hazMi(x) || x.s.role === "nobetci") return;
-      if (x.s.role === "eczaci") onay.push(x); else haz.push(x);
+      if (x.s.role === "eczaci") onay.push(x);
+      else haz.push(x);
     });
   } else {
     onay = var_.filter(x => x.s.role === "eczaci");
@@ -43,7 +50,17 @@ function gunlukListe(G: PuantajIzgarasi, d: number) {
   }
   const azSira = (a: { s: { name: string } }, b: { s: { name: string } }) => a.s.name.localeCompare(b.s.name, "tr");
   [onay, haz, dst, gel, yok].forEach(l => l.sort(azSira));
-  return { tatil, onay, haz, dst, gel, yok, toplam: var_.length, nobetci: var_.filter(x => x.kod === "N" && !x.acil).length, acilN: var_.filter(x => x.acil).length };
+  return {
+    tatil,
+    onay,
+    haz,
+    dst,
+    gel,
+    yok,
+    toplam: var_.length,
+    nobetci: var_.filter(x => x.kod === "N" && !x.acil).length,
+    acilN: var_.filter(x => x.acil).length,
+  };
 }
 export function calismaListesi(B: Baglam, y: number, m: number) {
   const G = puantajIzgarasi(B, y, m);
@@ -52,21 +69,38 @@ export function calismaListesi(B: Baglam, y: number, m: number) {
 
 // ---- acil servis nöbeti denetimi: aynı kişi iki kez, izin/eş durumu, art arda iki gün, aynı gün eczane nöbeti ----
 export function acilDenetle(B: Baglam, y: number, m: number, g: number, ids: number[]) {
-  const ay = B.acil[ayAnahtari(y, m)] || {}, out: { sev: "hata" | "uyari"; t: string }[] = [];
+  const ay = B.acil[ayAnahtari(y, m)] || {},
+    out: { sev: "hata" | "uyari"; t: string }[] = [];
   if (ids.length === 2 && ids[0] === ids[1]) out.push({ sev: "hata", t: "Aynı kişi iki kez seçilemez." });
   const sch = B.cizelge(y, m);
   [...new Set(ids)].forEach(id => {
-    const s = B.kisi(id); if (!s) return;
+    const s = B.kisi(id);
+    if (!s) return;
     if (!acilKadrosunda(s)) out.push({ sev: "hata", t: s.name + " acil eczane kadrosunda değil." });
-    if (B.kesinYasak(id, y, m, g)) out.push({ sev: "uyari", t: s.name + " bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında." });
+    if (B.kesinYasak(id, y, m, g))
+      out.push({ sev: "uyari", t: s.name + " bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında." });
     // komşu günler ay sınırını da aşar (önceki ayın son günleri, sonraki ayın ilk günleri)
-    const var_ = (k: number) => { const [a2, b2, c2] = gunKaydir(y, m, g, k); return ((a2 === y && b2 === m ? ay : B.acil[ayAnahtari(a2, b2)] || {})[c2] || []).indexOf(id) >= 0; };
-    const gunAdi = (k: number) => { const [a2, b2, c2] = gunKaydir(y, m, g, k); return a2 === y && b2 === m ? c2 + ". gün" : c2 + " " + AYLAR[b2] + " günü"; };
-    [-1, 1].forEach(k => { if (var_(k)) out.push({ sev: "uyari", t: s.name + ", " + gunAdi(k) + " de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir)." }); });
-    if ((var_(-2) && var_(-4)) || (var_(-2) && var_(2)) || (var_(2) && var_(4))) out.push({ sev: "uyari", t: s.name + " 5 gün içinde 3 acil nöbeti tutmuş olur." });
+    const var_ = (k: number) => {
+      const [a2, b2, c2] = gunKaydir(y, m, g, k);
+      return ((a2 === y && b2 === m ? ay : B.acil[ayAnahtari(a2, b2)] || {})[c2] || []).indexOf(id) >= 0;
+    };
+    const gunAdi = (k: number) => {
+      const [a2, b2, c2] = gunKaydir(y, m, g, k);
+      return a2 === y && b2 === m ? c2 + ". gün" : c2 + " " + AYLAR[b2] + " günü";
+    };
+    [-1, 1].forEach(k => {
+      if (var_(k)) out.push({ sev: "uyari", t: s.name + ", " + gunAdi(k) + " de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir)." });
+    });
+    if ((var_(-2) && var_(-4)) || (var_(-2) && var_(2)) || (var_(2) && var_(4)))
+      out.push({ sev: "uyari", t: s.name + " 5 gün içinde 3 acil nöbeti tutmuş olur." });
     const ara = B.sayi("acilMinAra") || 3;
-    for (let k = 2; k < ara; k++) [-k, k].forEach(kk => { if (var_(kk)) out.push({ sev: "uyari", t: s.name + ", " + gunAdi(kk) + " de acil eczanede nöbetçi (en az " + ara + " gün ara önerilir)." }); });
-    if (sch && sch.days[g - 1] && sch.days[g - 1].assigned.some(p => p.id === id)) out.push({ sev: "uyari", t: s.name + " aynı gün eczane nöbetçisi." });
+    for (let k = 2; k < ara; k++)
+      [-k, k].forEach(kk => {
+        if (var_(kk))
+          out.push({ sev: "uyari", t: s.name + ", " + gunAdi(kk) + " de acil eczanede nöbetçi (en az " + ara + " gün ara önerilir)." });
+      });
+    if (sch && sch.days[g - 1] && sch.days[g - 1].assigned.some(p => p.id === id))
+      out.push({ sev: "uyari", t: s.name + " aynı gün eczane nöbetçisi." });
     else if (eczaneGoreviYakin(B, id, y, m, g)) out.push({ sev: "uyari", t: s.name + " komşu günde eczane nöbeti ya da hazırlaması var." });
     const t = B.tercih(id, y, m, g);
     if (t === "avoid") out.push({ sev: "uyari", t: s.name + " bu gün nöbet istemiyor olarak işaretli." });
@@ -81,36 +115,79 @@ export function acilDenetle(B: Baglam, y: number, m: number, g: number, ids: num
 export function acilAdaylari(B: Baglam, y: number, m: number, g: number, ids: number[], cik: number | null) {
   const kalan = ids.filter(i => i !== cik);
   const yil: Record<number, number> = {};
-  for (let mm = 0; mm < 12; mm++) for (const l of Object.values(B.acil[ayAnahtari(y, mm)] || {})) l.forEach(i => { yil[i] = (yil[i] || 0) + 1; });
+  for (let mm = 0; mm < 12; mm++)
+    for (const l of Object.values(B.acil[ayAnahtari(y, mm)] || {}))
+      l.forEach(i => {
+        yil[i] = (yil[i] || 0) + 1;
+      });
   // günün nöbetçilerinden o gün yazılamayacak olanlar (sonradan izin / rapor, eş durumu yok, dönem dışı)
   const sorunlu = ids.filter(i => B.kesinYasak(i, y, m, g));
   const adaylar = B.staff
     .filter(s => acilKadrosunda(s) && aktifGunMu(s, y, m, g) && !ids.includes(s.id))
     .map(s => {
       const bulgu = acilDenetle(B, y, m, g, [...kalan, s.id]).filter(x => x.t.startsWith(s.name));
-      return { id: s.id, ad: s.name, rol: s.role, engel: B.kesinYasak(s.id, y, m, g), uyarilar: bulgu.map(x => x.t.slice(s.name.length).replace(/^[,\s]+/, "")), yil: yil[s.id] || 0 };
+      return {
+        id: s.id,
+        ad: s.name,
+        rol: s.role,
+        engel: B.kesinYasak(s.id, y, m, g),
+        uyarilar: bulgu.map(x => x.t.slice(s.name.length).replace(/^[,\s]+/, "")),
+        yil: yil[s.id] || 0,
+      };
     })
-    .sort((a, b) => Number(a.engel) - Number(b.engel) || a.uyarilar.length - b.uyarilar.length || a.yil - b.yil || a.ad.localeCompare(b.ad, "tr"));
+    .sort(
+      (a, b) =>
+        Number(a.engel) - Number(b.engel) || a.uyarilar.length - b.uyarilar.length || a.yil - b.yil || a.ad.localeCompare(b.ad, "tr"),
+    );
   return { sorunlu, adaylar };
 }
 
 /** Yılın acil eczane ve öğlen nöbeti dağılımı: kişi başı ay ay sayılar, yıl toplamı; acilde hafta sonu / tatil,
  *  öğlende Cuma ayrıca. Kayıt olan ya da yıl içinde o kadroda çalışan herkes listelenir. */
 export function acilOglenRaporu(B: Baglam, yil: number) {
-  const acil = new Map<number, { aylar: number[]; tatil: number; pe: number; cu: number; cmt: number; paz: number; resmi: number }>(), oglen = new Map<number, { aylar: number[]; cuma: number }>();
-  const ac = (id: number) => { if (!acil.has(id)) acil.set(id, { aylar: Array(12).fill(0), tatil: 0, pe: 0, cu: 0, cmt: 0, paz: 0, resmi: 0 }); return acil.get(id)!; };
-  const og = (id: number) => { if (!oglen.has(id)) oglen.set(id, { aylar: Array(12).fill(0), cuma: 0 }); return oglen.get(id)!; };
+  const acil = new Map<number, { aylar: number[]; tatil: number; pe: number; cu: number; cmt: number; paz: number; resmi: number }>(),
+    oglen = new Map<number, { aylar: number[]; cuma: number }>();
+  const ac = (id: number) => {
+    if (!acil.has(id)) acil.set(id, { aylar: Array(12).fill(0), tatil: 0, pe: 0, cu: 0, cmt: 0, paz: 0, resmi: 0 });
+    return acil.get(id)!;
+  };
+  const og = (id: number) => {
+    if (!oglen.has(id)) oglen.set(id, { aylar: Array(12).fill(0), cuma: 0 });
+    return oglen.get(id)!;
+  };
   for (let m = 0; m < 12; m++) {
-    B.staff.forEach(s => { if (!aktifAydaMi(s, yil, m)) return; if (acilKadrosunda(s)) ac(s.id); if (s.role === "eczaci" || s.role === "teknisyen") og(s.id); });
-    for (const [gun, l] of Object.entries(B.acil[ayAnahtari(yil, m)] || {})) l.forEach(id => {
-      const r = ac(id), d = Number(gun), dw = haftaGunu(yil, m, d), resmi = B.resmiTatilMi(yil, m, d);
-      r.aylar[m]++; if (B.tatilMi(yil, m, d)) r.tatil++;
-      if (dw === PERSEMBE && !resmi) r.pe++; if (dw === CUMA && !resmi) r.cu++; if (dw === CUMARTESI) r.cmt++; if (dw === PAZAR) r.paz++; if (resmi) r.resmi++;
+    B.staff.forEach(s => {
+      if (!aktifAydaMi(s, yil, m)) return;
+      if (acilKadrosunda(s)) ac(s.id);
+      if (s.role === "eczaci" || s.role === "teknisyen") og(s.id);
     });
-    for (const [gun, k] of Object.entries(B.oglen[ayAnahtari(yil, m)] || {})) [...k.e, ...k.t].forEach(id => { const r = og(id); r.aylar[m]++; if (haftaGunu(yil, m, Number(gun)) === CUMA) r.cuma++; });
+    for (const [gun, l] of Object.entries(B.acil[ayAnahtari(yil, m)] || {}))
+      l.forEach(id => {
+        const r = ac(id),
+          d = Number(gun),
+          dw = haftaGunu(yil, m, d),
+          resmi = B.resmiTatilMi(yil, m, d);
+        r.aylar[m]++;
+        if (B.tatilMi(yil, m, d)) r.tatil++;
+        if (dw === PERSEMBE && !resmi) r.pe++;
+        if (dw === CUMA && !resmi) r.cu++;
+        if (dw === CUMARTESI) r.cmt++;
+        if (dw === PAZAR) r.paz++;
+        if (resmi) r.resmi++;
+      });
+    for (const [gun, k] of Object.entries(B.oglen[ayAnahtari(yil, m)] || {}))
+      [...k.e, ...k.t].forEach(id => {
+        const r = og(id);
+        r.aylar[m]++;
+        if (haftaGunu(yil, m, Number(gun)) === CUMA) r.cuma++;
+      });
   }
-  const satir = <T extends { aylar: number[] }>(id: number, r: T) => { const s = B.kisi(id); return { id, ad: s?.name ?? "(silinmiş kişi)", rol: s?.role ?? "", ...r, top: r.aylar.reduce((t, x) => t + x, 0) }; };
-  const sira = (a: { rol: string; ad: string }, b: { rol: string; ad: string }) => (ROL_SIRA[a.rol] ?? 9) - (ROL_SIRA[b.rol] ?? 9) || a.ad.localeCompare(b.ad, "tr");
+  const satir = <T extends { aylar: number[] }>(id: number, r: T) => {
+    const s = B.kisi(id);
+    return { id, ad: s?.name ?? "(silinmiş kişi)", rol: s?.role ?? "", ...r, top: r.aylar.reduce((t, x) => t + x, 0) };
+  };
+  const sira = (a: { rol: string; ad: string }, b: { rol: string; ad: string }) =>
+    (ROL_SIRA[a.rol] ?? 9) - (ROL_SIRA[b.rol] ?? 9) || a.ad.localeCompare(b.ad, "tr");
   return {
     acil: [...acil].map(([id, r]) => satir(id, r)).sort(sira),
     oglen: [...oglen].map(([id, r]) => satir(id, r)).sort(sira),
@@ -120,29 +197,82 @@ export function acilOglenRaporu(B: Baglam, yil: number) {
 }
 
 // ---- yılın raporu ----
-interface AyDetay { fm: number; nobet: number; hi: number; cu: number; cmt: number; paz: number; thu: number; prep: number; ni: number; yi: number; rd: number; rt: number; gunler: { gun: number; dw: number; tip: string }[] }
-const bosDetay = (): AyDetay => ({ fm: 0, nobet: 0, hi: 0, cu: 0, cmt: 0, paz: 0, thu: 0, prep: 0, ni: 0, yi: 0, rd: 0, rt: 0, gunler: [] });
+interface AyDetay {
+  fm: number;
+  nobet: number;
+  hi: number;
+  cu: number;
+  cmt: number;
+  paz: number;
+  thu: number;
+  prep: number;
+  ni: number;
+  yi: number;
+  rd: number;
+  rt: number;
+  gunler: { gun: number; dw: number; tip: string }[];
+}
+const bosDetay = (): AyDetay => ({
+  fm: 0,
+  nobet: 0,
+  hi: 0,
+  cu: 0,
+  cmt: 0,
+  paz: 0,
+  thu: 0,
+  prep: 0,
+  ni: 0,
+  yi: 0,
+  rd: 0,
+  rt: 0,
+  gunler: [],
+});
 
 /** ayın kişi başı özeti (puantajdan; listeden çıkarılmış kişilerin eski çizelge verisi dahil) */
 function ayDetayi(B: Baglam, y: number, m: number): Record<number, AyDetay> {
-  const G = puantajIzgarasi(B, y, m), r: Record<number, AyDetay> = {};
-  G.satirlar.forEach(x => { r[x.s.id] = { fm: x.fm, nobet: x.n, hi: x.hi, cu: x.cu, cmt: x.cmt, paz: x.paz, thu: x.thu, prep: x.h, ni: x.ni, yi: x.yi, rd: x.rd, rt: x.rt || 0, gunler: x.gunlerN }; });
+  const G = puantajIzgarasi(B, y, m),
+    r: Record<number, AyDetay> = {};
+  G.satirlar.forEach(x => {
+    r[x.s.id] = {
+      fm: x.fm,
+      nobet: x.n,
+      hi: x.hi,
+      cu: x.cu,
+      cmt: x.cmt,
+      paz: x.paz,
+      thu: x.thu,
+      prep: x.h,
+      ni: x.ni,
+      yi: x.yi,
+      rd: x.rd,
+      rt: x.rt || 0,
+      gunler: x.gunlerN,
+    };
+  });
   const sch = B.cizelge(y, m);
   if (sch) {
     const dimS = ayGunSayisi(y, m);
     const silinmis = (p: { id: number }) => !B.staff.some(s => s.id === p.id);
     sch.days.forEach(d => {
-      const dw = haftaGunu(y, m, d.day), fm = gunNobetFm(B, y, m, d, dimS), hz = gunHazSaat(B, d);
+      const dw = haftaGunu(y, m, d.day),
+        fm = gunNobetFm(B, y, m, d, dimS),
+        hz = gunHazSaat(B, d);
       d.assigned.filter(silinmis).forEach(p => {
         const x = r[p.id] || (r[p.id] = bosDetay());
-        x.fm += fm; x.nobet++;
-        if (dw === CUMARTESI) x.cmt++; else if (dw === PAZAR) x.paz++; else if (dw === CUMA) x.cu++; else x.hi++;
+        x.fm += fm;
+        x.nobet++;
+        if (dw === CUMARTESI) x.cmt++;
+        else if (dw === PAZAR) x.paz++;
+        else if (dw === CUMA) x.cu++;
+        else x.hi++;
         if (dw === PERSEMBE) x.thu++;
         x.gunler.push({ gun: d.day, dw, tip: "N" });
       });
       (d.prep || []).filter(silinmis).forEach(p => {
         const x = r[p.id] || (r[p.id] = bosDetay());
-        x.fm += hz; x.prep++; x.gunler.push({ gun: d.day, dw, tip: "H" });
+        x.fm += hz;
+        x.prep++;
+        x.gunler.push({ gun: d.day, dw, tip: "H" });
       });
     });
   }
@@ -153,15 +283,30 @@ function yilVerisi(B: Baglam, yil: number) {
   const aylar: ({ m: number; sch: unknown; det: Record<number, AyDetay> } | null)[] = [];
   for (let m = 0; m < 12; m++) {
     const sch = B.cizelge(yil, m);
-    const veri = (sch && ayVeriVarMi(sch)) || Object.keys(B.puantaj[ayAnahtari(yil, m)] || {}).length > 0 || Object.keys(B.acil[ayAnahtari(yil, m)] || {}).length > 0;
+    const veri =
+      (sch && ayVeriVarMi(sch)) ||
+      Object.keys(B.puantaj[ayAnahtari(yil, m)] || {}).length > 0 ||
+      Object.keys(B.acil[ayAnahtari(yil, m)] || {}).length > 0;
     aylar.push(veri ? { m, sch: sch || null, det: ayDetayi(B, yil, m) } : null);
   }
-  const kisiler: { id: number; name: string; role: string; aktif: boolean; ayrildi?: boolean }[] = [], goruldu: Record<number, true> = {};
-  B.staff.forEach(s => { kisiler.push({ id: s.id, name: s.name, role: s.role, aktif: true, ayrildi: !!s.bitis && ayrildiMi(s) }); goruldu[s.id] = true; });
+  const kisiler: { id: number; name: string; role: string; aktif: boolean; ayrildi?: boolean }[] = [],
+    goruldu: Record<number, true> = {};
+  B.staff.forEach(s => {
+    kisiler.push({ id: s.id, name: s.name, role: s.role, aktif: true, ayrildi: !!s.bitis && ayrildiMi(s) });
+    goruldu[s.id] = true;
+  });
   aylar.forEach(a => {
     if (!a || !a.sch) return;
-    (a.sch as { days: { assigned: { id: number; name: string; role: string }[]; prep?: { id: number; name: string; role: string }[] }[] }).days
-      .forEach(d => d.assigned.concat(d.prep || []).forEach(p => { if (!goruldu[p.id]) { goruldu[p.id] = true; kisiler.push({ id: p.id, name: p.name, role: p.role, aktif: false }); } }));
+    (
+      a.sch as { days: { assigned: { id: number; name: string; role: string }[]; prep?: { id: number; name: string; role: string }[] }[] }
+    ).days.forEach(d =>
+      d.assigned.concat(d.prep || []).forEach(p => {
+        if (!goruldu[p.id]) {
+          goruldu[p.id] = true;
+          kisiler.push({ id: p.id, name: p.name, role: p.role, aktif: false });
+        }
+      }),
+    );
   });
   kisiler.sort((a, b) => ROL_SIRA[a.role] - ROL_SIRA[b.role] || a.id - b.id);
   return { yil, aylar, kisiler, kayitli: aylar.filter(Boolean).length };
@@ -171,8 +316,12 @@ type YilVerisi = ReturnType<typeof yilVerisi>;
 function kisiYillik(V: YilVerisi, id: number) {
   const t = { fm: 0, nobet: 0, hi: 0, cu: 0, cmt: 0, paz: 0, thu: 0, prep: 0, ni: 0, yi: 0, rd: 0, rt: 0 };
   V.aylar.forEach(a => {
-    if (!a) return; const d = a.det[id]; if (!d) return;
-    (Object.keys(t) as (keyof typeof t)[]).forEach(k => { t[k] += d[k] || 0; });
+    if (!a) return;
+    const d = a.det[id];
+    if (!d) return;
+    (Object.keys(t) as (keyof typeof t)[]).forEach(k => {
+      t[k] += d[k] || 0;
+    });
   });
   return t;
 }
@@ -180,8 +329,14 @@ function kisiYillik(V: YilVerisi, id: number) {
 type DengeAnahtari = "nobet" | "pe" | "cu" | "cmt" | "paz" | "prep" | "rt" | "fm";
 /** yıllık denge sütunları */
 const DENGE_KOL: { k: DengeAnahtari; t: string; saat?: boolean }[] = [
-  { k: "nobet", t: "Nöbet sayısı" }, { k: "pe", t: "Perşembe" }, { k: "cu", t: "Cuma" }, { k: "cmt", t: "Cumartesi" }, { k: "paz", t: "Pazar" },
-  { k: "prep", t: "Hazırlama" }, { k: "rt", t: "Resmi tatil" }, { k: "fm", t: "Fazla mesai", saat: true },
+  { k: "nobet", t: "Nöbet sayısı" },
+  { k: "pe", t: "Perşembe" },
+  { k: "cu", t: "Cuma" },
+  { k: "cmt", t: "Cumartesi" },
+  { k: "paz", t: "Pazar" },
+  { k: "prep", t: "Hazırlama" },
+  { k: "rt", t: "Resmi tatil" },
+  { k: "fm", t: "Fazla mesai", saat: true },
 ];
 type DengeSayilari = Record<DengeAnahtari, number> & { aylar?: number[] };
 
@@ -189,24 +344,44 @@ type DengeSayilari = Record<DengeAnahtari, number> & { aylar?: number[] };
  *  izin/rapor nedeniyle yerine geçmelerde görev raporlu / izinli kişinin sayılır (telafi gerekmez).
  *  Fazla mesai = nöbet + hazırlama saatleri. */
 function cizelgeYillik(B: Baglam, yil: number) {
-  const t: Record<string, DengeSayilari> = {}, aylar: number[] = [];
+  const t: Record<string, DengeSayilari> = {},
+    aylar: number[] = [];
   const bos = (): DengeSayilari => ({ nobet: 0, cu: 0, cmt: 0, paz: 0, pe: 0, rt: 0, prep: 0, fm: 0 });
   for (let mm = 0; mm < 12; mm++) {
-    const sc = B.dengeCizelgesi(yil, mm); if (!sc || !Array.isArray(sc.days) || !ayVeriVarMi(sc)) continue;
+    const sc = B.dengeCizelgesi(yil, mm);
+    if (!sc || !Array.isArray(sc.days) || !ayVeriVarMi(sc)) continue;
     aylar.push(mm);
-    const dim = ayGunSayisi(yil, mm), kisiAy: Record<string, true> = {};
+    const dim = ayGunSayisi(yil, mm),
+      kisiAy: Record<string, true> = {};
     sc.days.forEach(d => {
-      const dw = haftaGunu(yil, mm, d.day), tt = B.tatilMi(yil, mm, d.day), rt = B.resmiTatilMi(yil, mm, d.day), fm = gunNobetFm(B, yil, mm, d, dim), hz = gunHazSaat(B, d);
+      const dw = haftaGunu(yil, mm, d.day),
+        tt = B.tatilMi(yil, mm, d.day),
+        rt = B.resmiTatilMi(yil, mm, d.day),
+        fm = gunNobetFm(B, yil, mm, d, dim),
+        hz = gunHazSaat(B, d);
       (d.assigned || []).forEach(p => {
         const x = t[p.id] || (t[p.id] = bos());
-        x.nobet++; x.fm += fm;
-        if (dw === CUMA && !tt) x.cu++; if (dw === CUMARTESI) x.cmt++; if (dw === PAZAR) x.paz++; if (dw === PERSEMBE) x.pe++; if (rt) x.rt++;
+        x.nobet++;
+        x.fm += fm;
+        if (dw === CUMA && !tt) x.cu++;
+        if (dw === CUMARTESI) x.cmt++;
+        if (dw === PAZAR) x.paz++;
+        if (dw === PERSEMBE) x.pe++;
+        if (rt) x.rt++;
         kisiAy[p.id] = true;
       });
       // nöbet sayısı = nöbetler + hazırlama (raporlarda ortak tanım)
-      (d.prep || []).forEach(p => { const x = t[p.id] || (t[p.id] = bos()); x.prep++; x.nobet++; x.fm += hz; kisiAy[p.id] = true; });
+      (d.prep || []).forEach(p => {
+        const x = t[p.id] || (t[p.id] = bos());
+        x.prep++;
+        x.nobet++;
+        x.fm += hz;
+        kisiAy[p.id] = true;
+      });
     });
-    Object.keys(kisiAy).forEach(id => { (t[id].aylar = t[id].aylar || []).push(mm); });
+    Object.keys(kisiAy).forEach(id => {
+      (t[id].aylar = t[id].aylar || []).push(mm);
+    });
   }
   return { t, aylar, bos };
 }
@@ -215,19 +390,44 @@ function cizelgeYillik(B: Baglam, yil: number) {
 function dengeVerisi(B: Baglam, V: YilVerisi) {
   const CZ = cizelgeYillik(B, V.yil);
   const kayitliAy = CZ.aylar;
-  const kisiler = V.kisiler.filter(k => eczaneNobetcisi(k)).map(k => {
-    const st = B.kisi(k.id), t = CZ.t[k.id] || CZ.bos();
-    const ay = kayitliAy.filter(i => (st ? aktifAydaMi(st, V.yil, i) : (t.aylar || []).indexOf(i) >= 0)).length;
-    return { k, t, ay } as { k: typeof k; t: DengeSayilari; ay: number; fark: Record<string, number>; bek: Record<string, number>; kismi: boolean };
-  }).filter(x => x.ay > 0);
+  const kisiler = V.kisiler
+    .filter(k => eczaneNobetcisi(k))
+    .map(k => {
+      const st = B.kisi(k.id),
+        t = CZ.t[k.id] || CZ.bos();
+      const ay = kayitliAy.filter(i => (st ? aktifAydaMi(st, V.yil, i) : (t.aylar || []).indexOf(i) >= 0)).length;
+      return { k, t, ay } as {
+        k: typeof k;
+        t: DengeSayilari;
+        ay: number;
+        fark: Record<string, number>;
+        bek: Record<string, number>;
+        kismi: boolean;
+      };
+    })
+    .filter(x => x.ay > 0);
   const ayTop = kisiler.reduce((a, x) => a + x.ay, 0);
   const ort: Record<string, number> = {};
-  DENGE_KOL.forEach(c => { ort[c.k] = ayTop ? kisiler.reduce((a, x) => a + x.t[c.k], 0) / ayTop : 0; });   // ay başına ortalama
+  DENGE_KOL.forEach(c => {
+    ort[c.k] = ayTop ? kisiler.reduce((a, x) => a + x.t[c.k], 0) / ayTop : 0;
+  }); // ay başına ortalama
   const tamAy = kayitliAy.length;
-  kisiler.forEach(x => { x.fark = {}; x.bek = {}; DENGE_KOL.forEach(c => { x.bek[c.k] = ort[c.k] * x.ay; x.fark[c.k] = x.t[c.k] - x.bek[c.k]; }); x.kismi = x.ay < tamAy; });
+  kisiler.forEach(x => {
+    x.fark = {};
+    x.bek = {};
+    DENGE_KOL.forEach(c => {
+      x.bek[c.k] = ort[c.k] * x.ay;
+      x.fark[c.k] = x.t[c.k] - x.bek[c.k];
+    });
+    x.kismi = x.ay < tamAy;
+  });
   // yalnız tüm yıl (kayıtlı ayların hepsinde) çalışanlar arasında en çok − en az
-  const tam = kisiler.filter(x => !x.kismi), aralik: Record<string, { min: number; max: number } | null> = {};
-  DENGE_KOL.forEach(c => { const v = tam.map(x => x.t[c.k]); aralik[c.k] = v.length ? { min: Math.min(...v), max: Math.max(...v) } : null; });
+  const tam = kisiler.filter(x => !x.kismi),
+    aralik: Record<string, { min: number; max: number } | null> = {};
+  DENGE_KOL.forEach(c => {
+    const v = tam.map(x => x.t[c.k]);
+    aralik[c.k] = v.length ? { min: Math.min(...v), max: Math.max(...v) } : null;
+  });
   return { kisiler, ort, tamAy, aralik, hedef: B.sayi("fmHedef") };
 }
 
@@ -236,47 +436,113 @@ export function yillikRapor(B: Baglam, yil: number) {
   const V = yilVerisi(B, yil);
   const D = V.kayitli ? dengeVerisi(B, V) : null;
   const toplam: Record<number, ReturnType<typeof kisiYillik>> = {};
-  V.kisiler.forEach(k => { toplam[k.id] = kisiYillik(V, k.id); });
+  V.kisiler.forEach(k => {
+    toplam[k.id] = kisiYillik(V, k.id);
+  });
   return { V, D, toplam, kolonlar: DENGE_KOL, ayKisa: AY_KISA };
 }
 
 // ---- uyarının önemi ve kısa başlığı: hata (kural gevşetildi / eksik), uyarı (sınır aşıldı), bilgi (açıklama) ----
 const UYARI_BASLIK: [RegExp, string][] = [
-  [/matematiksel olarak mümkün değil/i, "Personel kurallara yetmiyor"], [/hazırlamanın ertesi günü nöbet/i, "Hazırlama ertesi nöbet"],
-  [/^Yıllık gün dağılımı/, "Yıllık gün dağılımı"], [/^Hazırlama farkı/, "Hazırlama farkı"], [/^Nöbet sayısı farkı/, "Nöbet sayısı farkı"], [/^Hafta sonu kuralı/, "Hafta sonu kuralı"],
-  [/^KESİN KURAL sağlanamadı: .*fazla mesai/, "Fazla mesai farkı"], [/^Nöbette eczacı yok/, "Eczacısız gün"], [/^Nöbetçi sayısında eksik/, "Eksik nöbetçi"], [/^Nöbet istediği güne/, "Nöbet isteği"], [/^İzinli ya da görev yazılamayan günde/, "İzinli günde görev"], [/KESİN KURAL/i, "Kesin kural"], [/dinlenme kuralı/i, "Zorunlu atama yapılan günler"], [/kural dışı atama/i, "Kural dışı atama"],
-  [/hazırlama (personeli bulunamadı|yeri eksik)/i, "Eksik hazırlama"], [/3 ya da daha fazla Cumartesi/i, "3 ya da daha fazla hafta sonu nöbeti"], [/Hafta sonu .*aşan/i, "Hafta sonu sınırı aşıldı"],
-  [/eş durumu/i, "Eş durumu"], [/Perşembe/i, "Perşembe nöbeti sınırı"], [/destek personeli ayda/i, "Destek personeli yetmiyor"], [/Eczacı sayısı/i, "Eczacı sayısı az"],
-  [/En az 2 eczacı/i, "Eczacı yetersiz"], [/personel sayısı/i, "Personel yetersiz"], [/sonraki ay/i, "Ay geçişi"],
+  [/matematiksel olarak mümkün değil/i, "Personel kurallara yetmiyor"],
+  [/hazırlamanın ertesi günü nöbet/i, "Hazırlama ertesi nöbet"],
+  [/^Yıllık gün dağılımı/, "Yıllık gün dağılımı"],
+  [/^Hazırlama farkı/, "Hazırlama farkı"],
+  [/^Nöbet sayısı farkı/, "Nöbet sayısı farkı"],
+  [/^Hafta sonu kuralı/, "Hafta sonu kuralı"],
+  [/^KESİN KURAL sağlanamadı: .*fazla mesai/, "Fazla mesai farkı"],
+  [/^Nöbette eczacı yok/, "Eczacısız gün"],
+  [/^Nöbetçi sayısında eksik/, "Eksik nöbetçi"],
+  [/^Nöbet istediği güne/, "Nöbet isteği"],
+  [/^İzinli ya da görev yazılamayan günde/, "İzinli günde görev"],
+  [/KESİN KURAL/i, "Kesin kural"],
+  [/dinlenme kuralı/i, "Zorunlu atama yapılan günler"],
+  [/kural dışı atama/i, "Kural dışı atama"],
+  [/hazırlama (personeli bulunamadı|yeri eksik)/i, "Eksik hazırlama"],
+  [/3 ya da daha fazla Cumartesi/i, "3 ya da daha fazla hafta sonu nöbeti"],
+  [/Hafta sonu .*aşan/i, "Hafta sonu sınırı aşıldı"],
+  [/eş durumu/i, "Eş durumu"],
+  [/Perşembe/i, "Perşembe nöbeti sınırı"],
+  [/destek personeli ayda/i, "Destek personeli yetmiyor"],
+  [/Eczacı sayısı/i, "Eczacı sayısı az"],
+  [/En az 2 eczacı/i, "Eczacı yetersiz"],
+  [/personel sayısı/i, "Personel yetersiz"],
+  [/sonraki ay/i, "Ay geçişi"],
 ];
 export function uyariSiniflandir(w: string): { seviye: "hata" | "uyari" | "bilgi"; baslik: string } {
   const t = String(w);
-  const seviye = /(dolduruldu|normaldir)\.?$/.test(t) ? "bilgi"
-    : /(korunamadı|bulunamadı|karşılanamadı|yetersiz\.|gerekiyor|eczacı yok|eksik kişi|eksik tatil|yeri eksik|sağlanamadı|mümkün değil)/i.test(t) ? "hata" : "uyari";
+  const seviye = /(dolduruldu|normaldir)\.?$/.test(t)
+    ? "bilgi"
+    : /(korunamadı|bulunamadı|karşılanamadı|yetersiz\.|gerekiyor|eczacı yok|eksik kişi|eksik tatil|yeri eksik|sağlanamadı|mümkün değil)/i.test(
+          t,
+        )
+      ? "hata"
+      : "uyari";
   const b = UYARI_BASLIK.find(x => x[0].test(t));
-  return { seviye, baslik: b ? b[1] : (seviye === "bilgi" ? "Bilgi" : "Uyarı") };
+  return { seviye, baslik: b ? b[1] : seviye === "bilgi" ? "Bilgi" : "Uyarı" };
 }
 
 // ---- yönetime aylık rapor: kişi başı görevler, izinler ve fazla mesai (puantaja göre, gerçekleşen) ----
 export interface AylikRaporSatiri {
-  id: number; ad: string; rol: string; acilKadro: boolean;
+  id: number;
+  ad: string;
+  rol: string;
+  acilKadro: boolean;
   /** eczane nöbeti (tatil gününe düşenler ayrıca), acil eczane nöbeti, hazırlama, öğlen nöbeti */
-  nobet: number; tatilNobet: number; acil: number; haz: number; oglen: number;
+  nobet: number;
+  tatilNobet: number;
+  acil: number;
+  haz: number;
+  oglen: number;
   /** yıllık izin, rapor, diğer izin ve elle girilen nöbet izni (fazla mesai karşılığı) günleri */
-  yi: number; rapor: number; di: number; ni: number;
+  yi: number;
+  rapor: number;
+  di: number;
+  ni: number;
   /** saatler: toplam çalışma, aylık normal çalışma (nöbetçi eczacı / destek için yok), fazla mesai ve dilimleri */
-  toplam: number; aylik: number | null; fm: number; gunduz: number; gece: number;
+  toplam: number;
+  aylik: number | null;
+  fm: number;
+  gunduz: number;
+  gece: number;
 }
 export function aylikRapor(B: Baglam, y: number, m: number) {
-  const G = puantajIzgarasi(B, y, m), oglen = B.oglen[ayAnahtari(y, m)] || {};
+  const G = puantajIzgarasi(B, y, m),
+    oglen = B.oglen[ayAnahtari(y, m)] || {};
   const og: Record<number, number> = {};
-  for (const k of Object.values(oglen)) [...(k.e || []), ...(k.t || [])].forEach(id => { og[id] = (og[id] || 0) + 1; });
+  for (const k of Object.values(oglen))
+    [...(k.e || []), ...(k.t || [])].forEach(id => {
+      og[id] = (og[id] || 0) + 1;
+    });
   const satirlar: AylikRaporSatiri[] = G.satirlar.map(r => {
-    const x: AylikRaporSatiri = { id: r.s.id, ad: r.s.name, rol: r.s.role, acilKadro: acilKadrosunda(r.s), nobet: 0, tatilNobet: 0, acil: 0, haz: r.h, oglen: og[r.s.id] || 0,
-      yi: 0, rapor: 0, di: 0, ni: 0, toplam: r.toplam, aylik: r.aylik, fm: r.fm, gunduz: r.fmGunduz, gece: r.fmGece };
+    const x: AylikRaporSatiri = {
+      id: r.s.id,
+      ad: r.s.name,
+      rol: r.s.role,
+      acilKadro: acilKadrosunda(r.s),
+      nobet: 0,
+      tatilNobet: 0,
+      acil: 0,
+      haz: r.h,
+      oglen: og[r.s.id] || 0,
+      yi: 0,
+      rapor: 0,
+      di: 0,
+      ni: 0,
+      toplam: r.toplam,
+      aylik: r.aylik,
+      fm: r.fm,
+      gunduz: r.fmGunduz,
+      gece: r.fmGece,
+    };
     r.cells.forEach((c, i) => {
-      if (c.kod === "N") { if (c.acil) x.acil++; else { x.nobet++; if (G.gunler[i].tatil) x.tatilNobet++; } }
-      else if (c.kod === "YI") x.yi++;
+      if (c.kod === "N") {
+        if (c.acil) x.acil++;
+        else {
+          x.nobet++;
+          if (G.gunler[i].tatil) x.tatilNobet++;
+        }
+      } else if (c.kod === "YI") x.yi++;
       else if (c.kod === "R") x.rapor++;
       else if (c.kod === "DI") x.di++;
       else if (c.kod === "NI" && c.ov) x.ni++;

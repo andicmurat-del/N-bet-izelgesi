@@ -11,19 +11,37 @@ import { aktifAydaMi, aktifGunMu, type Baglam } from "./baglam";
 import { ayAnahtari, ayGunSayisi, AYLAR, CUMA, CUMARTESI, gunKaydir, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
 
 /** acil nöbetine yazılabilir mi: acil servis personeli ya da "acilde nöbet tutar" işaretli eczacı / kemoterapi eczacısı */
-export const acilKadrosunda = (s: { role: string; acilTutar?: true }) => s.role === "servis" || ((s.role === "eczaci" || s.role === "nobetci") && !!s.acilTutar);
+export const acilKadrosunda = (s: { role: string; acilTutar?: true }) =>
+  s.role === "servis" || ((s.role === "eczaci" || s.role === "nobetci") && !!s.acilTutar);
 /** günde acil nöbetçi sayısı */
 const ACIL_GUNLUK = 2;
 
 /** amaç ağırlıkları (küçük daha iyi) */
-export const W = { ardArda: 1000, ucBes: 500, eksik: 5000, hsFazla: 60, araIki: 3, toplam: 6, tur: 3, fm: 8, istemiyor: 20, istiyor: 1, esVar: 300, izinOnce: 200 };
+export const W = {
+  ardArda: 1000,
+  ucBes: 500,
+  eksik: 5000,
+  hsFazla: 60,
+  araIki: 3,
+  toplam: 6,
+  tur: 3,
+  fm: 8,
+  istemiyor: 20,
+  istiyor: 1,
+  esVar: 300,
+  izinOnce: 200,
+};
 
-export interface AcilSonucu { gunler: { gun: number; ids: number[]; elle?: true }[]; uyarilar: string[] }
+export interface AcilSonucu {
+  gunler: { gun: number; ids: number[]; elle?: true }[];
+  uyarilar: string[];
+}
 
 /** kişinin o gün ya da komşu günde eczane nöbeti / hazırlaması var mı (gerçekte tutulana göre; ay sınırı dahil) */
 export function eczaneGoreviYakin(B: Baglam, id: number, y: number, m: number, d: number): boolean {
   for (const k of [-1, 0, 1]) {
-    const [a, b, c] = gunKaydir(y, m, d, k), g = B.gercekGorev(a, b, c);
+    const [a, b, c] = gunKaydir(y, m, d, k),
+      g = B.gercekGorev(a, b, c);
     if (g.N.includes(id) || g.H.includes(id)) return true;
   }
   return false;
@@ -31,7 +49,8 @@ export function eczaneGoreviYakin(B: Baglam, id: number, y: number, m: number, d
 /** kişinin o gün ya da komşu günde acil nöbeti var mı (eczane çizelgesi bu günlere yazmaz) */
 export function acilNobetiYakin(B: Baglam, id: number, y: number, m: number, d: number): boolean {
   for (const k of [-1, 0, 1]) {
-    const [a, b, c] = gunKaydir(y, m, d, k), l = B.acil[ayAnahtari(a, b)]?.[c];
+    const [a, b, c] = gunKaydir(y, m, d, k),
+      l = B.acil[ayAnahtari(a, b)]?.[c];
     if (l && l.includes(id)) return true;
   }
   return false;
@@ -47,7 +66,9 @@ const bosTur = (): TurSayi => ({ top: {}, pe: {}, cu: {}, cmt: {}, paz: {}, resm
  *  (24 − o günün mesaisi − ertesi günün mesaisi): Cuma / hafta sonu nöbeti hafta içi nöbetinden fazla yazar; fazla
  *  mesai saati de kişiler arasında eşitlenir (günlük eczanedeki gibi). */
 function gunTurleri(B: Baglam, y: number, m: number, d: number): [Tur, number][] {
-  const dw = haftaGunu(y, m, d), resmi = B.resmiTatilMi(y, m, d), l: [Tur, number][] = [["top", 1]];
+  const dw = haftaGunu(y, m, d),
+    resmi = B.resmiTatilMi(y, m, d),
+    l: [Tur, number][] = [["top", 1]];
   if (dw === PERSEMBE && !resmi) l.push(["pe", 1]);
   if (dw === CUMA && !resmi) l.push(["cu", 1]);
   if (dw === CUMARTESI) l.push(["cmt", 1]);
@@ -61,13 +82,18 @@ function gunTurleri(B: Baglam, y: number, m: number, d: number): [Tur, number][]
  *  raporlu, eş durumu yok, çalışma dönemi dışı günler kişiden düşülür; bu günler için sonradan telafi istenmez
  *  (her türde oranların toplamı 1; o türden müsait günü olmayanın payı 0). */
 function acilPaylari(B: Baglam, y: number, m: number, havuz: Kisi[]): TurSayi {
-  const mus = bosTur(), top: Record<string, number> = {}, pay = bosTur();
+  const mus = bosTur(),
+    top: Record<string, number> = {},
+    pay = bosTur();
   for (const s of havuz) for (const t of TURLER) mus[t][s.id] = 0;
   for (let d = 1; d <= ayGunSayisi(y, m); d++) {
     const tl = gunTurleri(B, y, m, d);
     for (const s of havuz) {
       if (!aktifGunMu(s, y, m, d) || B.kesinYasak(s.id, y, m, d)) continue;
-      for (const [t, a] of tl) { mus[t][s.id] += a; top[t] = (top[t] || 0) + a; }
+      for (const [t, a] of tl) {
+        mus[t][s.id] += a;
+        top[t] = (top[t] || 0) + a;
+      }
     }
   }
   for (const t of TURLER) for (const s of havuz) pay[t][s.id] = top[t] ? mus[t][s.id] / top[t] : 0;
@@ -79,40 +105,76 @@ function acilPaylari(B: Baglam, y: number, m: number, havuz: Kisi[]): TurSayi {
 function acilDevir(B: Baglam, y: number, m: number): TurSayi {
   const off = bosTur();
   for (let mm = 0; mm < m; mm++) {
-    const kayit = B.acil[ayAnahtari(y, mm)]; if (!kayit) continue;
-    const havuz = B.staff.filter(s => acilKadrosunda(s) && aktifAydaMi(s, y, mm)); if (!havuz.length) continue;
-    const c = bosTur(), T: Record<string, number> = {};
-    for (const t of TURLER) havuz.forEach(s => { c[t][s.id] = 0; });
+    const kayit = B.acil[ayAnahtari(y, mm)];
+    if (!kayit) continue;
+    const havuz = B.staff.filter(s => acilKadrosunda(s) && aktifAydaMi(s, y, mm));
+    if (!havuz.length) continue;
+    const c = bosTur(),
+      T: Record<string, number> = {};
+    for (const t of TURLER)
+      havuz.forEach(s => {
+        c[t][s.id] = 0;
+      });
     for (const [gun, l] of Object.entries(kayit)) {
       const tl = gunTurleri(B, y, mm, Number(gun));
-      l.forEach(id => { if (c.top[id] === undefined) return; for (const [t, a] of tl) { c[t][id] += a; T[t] = (T[t] || 0) + a; } });
+      l.forEach(id => {
+        if (c.top[id] === undefined) return;
+        for (const [t, a] of tl) {
+          c[t][id] += a;
+          T[t] = (T[t] || 0) + a;
+        }
+      });
     }
     const pay = acilPaylari(B, y, mm, havuz);
-    for (const t of TURLER) havuz.forEach(s => { off[t][s.id] = (off[t][s.id] || 0) + c[t][s.id] - (T[t] || 0) * pay[t][s.id]; });
+    for (const t of TURLER)
+      havuz.forEach(s => {
+        off[t][s.id] = (off[t][s.id] || 0) + c[t][s.id] - (T[t] || 0) * pay[t][s.id];
+      });
   }
   return off;
 }
 
 /** Ayın acil nöbet listesini oluşturur (aynı veriyle her zaman aynı sonuç). elle: elle düzenlenen günler (korunur). */
 export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string, true> = {}): AcilSonucu {
-  const dim = ayGunSayisi(y, m), uyarilar: string[] = [], kayit = B.acil[ayAnahtari(y, m)] || {};
+  const dim = ayGunSayisi(y, m),
+    uyarilar: string[] = [],
+    kayit = B.acil[ayAnahtari(y, m)] || {};
   const havuz = B.staff.filter(s => acilKadrosunda(s) && aktifAydaMi(s, y, m));
-  const devir = acilDevir(B, y, m), pay = acilPaylari(B, y, m, havuz);
+  const devir = acilDevir(B, y, m),
+    pay = acilPaylari(B, y, m, havuz);
   // ay sınırı: önceki ayın son 6 günü ve sonraki ayın ilk 6 günündeki acil nöbetleri (art arda / 5 günde 3 için)
   const disGun: Record<number, number[]> = {};
   for (const k of [-5, -4, -3, -2, -1, 0, dim + 1, dim + 2, dim + 3, dim + 4, dim + 5, dim + 6]) {
     const [a, b, c] = gunKaydir(y, m, 1, k - 1);
     disGun[k] = B.acil[ayAnahtari(a, b)]?.[c] || [];
   }
-  const aday: number[][] = [], sabit: boolean[] = [], sec: number[][] = [];
+  const aday: number[][] = [],
+    sabit: boolean[] = [],
+    sec: number[][] = [];
   for (let d = 1; d <= dim; d++) {
     const ca = havuz.filter(s => !B.kesinYasak(s.id, y, m, d) && !eczaneGoreviYakin(B, s.id, y, m, d)).map(s => s.id);
     aday.push(ca);
-    if (elle[d]) { sabit.push(true); sec.push((kayit[d] || []).slice()); continue; }
-    sabit.push(false); sec.push([]);
-    if (ca.length < ACIL_GUNLUK) uyarilar.push(d + " " + AYLAR[m] + ": acil nöbeti için " + ACIL_GUNLUK + " kişi gerekli, yazılabilen " + ca.length + " kişi var (izin ya da aynı / komşu günde eczane nöbeti).");
+    if (elle[d]) {
+      sabit.push(true);
+      sec.push((kayit[d] || []).slice());
+      continue;
+    }
+    sabit.push(false);
+    sec.push([]);
+    if (ca.length < ACIL_GUNLUK)
+      uyarilar.push(
+        d +
+          " " +
+          AYLAR[m] +
+          ": acil nöbeti için " +
+          ACIL_GUNLUK +
+          " kişi gerekli, yazılabilen " +
+          ca.length +
+          " kişi var (izin ya da aynı / komşu günde eczane nöbeti).",
+      );
   }
-  const dw = Array.from({ length: dim }, (_, i) => haftaGunu(y, m, i + 1)), turler = Array.from({ length: dim }, (_, i) => gunTurleri(B, y, m, i + 1));
+  const dw = Array.from({ length: dim }, (_, i) => haftaGunu(y, m, i + 1)),
+    turler = Array.from({ length: dim }, (_, i) => gunTurleri(B, y, m, i + 1));
   // tercihler bir kez okunur (amaç işlevi her denemede yeniden hesaplanır)
   const tercihler = Array.from({ length: dim }, (_, i) => new Map(havuz.map(s => [s.id, B.tercih(s.id, y, m, i + 1)])));
   const tercih = (id: number, i: number) => tercihler[i].get(id) ?? B.tercih(id, y, m, i + 1);
@@ -124,21 +186,47 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
   const ara = Math.max(2, Math.min(6, B.sayi("acilMinAra") || 3));
   // Ayarlar: kadro yetmezse art arda acil nöbeti yazılsın mı. Kapalıysa art arda nöbet, boş kalan yerden daha ağır
   // cezalıdır ve hiç yazılmaz: gün eksik kalır, kullanıcıya söylenir
-  const ardArdaSerbest = B.ayar("acilArdArda") !== false, W_ARDARDA = ardArdaSerbest ? W.ardArda : 3 * W.eksik;
+  const ardArdaSerbest = B.ayar("acilArdArda") !== false,
+    W_ARDARDA = ardArdaSerbest ? W.ardArda : 3 * W.eksik;
   // kişi sırası (havuz) ve gün türleri dizi indisine çevrilir: amaç işlevi her denemede baştan hesaplanır, nesne yerine dizi
-  const H = havuz.length, sira = new Map(havuz.map((s, k) => [s.id, k])), TN = TURLER.length;
+  const H = havuz.length,
+    sira = new Map(havuz.map((s, k) => [s.id, k])),
+    TN = TURLER.length;
   const turIdx = turler.map(l => l.map(([t, a]) => [TURLER.indexOf(t), a] as [number, number]));
-  const payDz = new Float64Array(TN * H), devirDz = new Float64Array(TN * H), wDz = TURLER.map(t => (t === "top" ? W.toplam : t === "fm" ? W.fm : W.tur));
-  TURLER.forEach((t, ti) => havuz.forEach((s, k) => { payDz[ti * H + k] = pay[t][s.id]; devirDz[ti * H + k] = t === "fm" ? 0 : devir[t][s.id] || 0; }));
-  const say = new Float64Array(TN * H), cmt = new Int32Array(H), paz = new Int32Array(H);
+  const payDz = new Float64Array(TN * H),
+    devirDz = new Float64Array(TN * H),
+    wDz = TURLER.map(t => (t === "top" ? W.toplam : t === "fm" ? W.fm : W.tur));
+  TURLER.forEach((t, ti) =>
+    havuz.forEach((s, k) => {
+      payDz[ti * H + k] = pay[t][s.id];
+      devirDz[ti * H + k] = t === "fm" ? 0 : devir[t][s.id] || 0;
+    }),
+  );
+  const say = new Float64Array(TN * H),
+    cmt = new Int32Array(H),
+    paz = new Int32Array(H);
   // nöbet var mı tablosu (kişi × gün; ay dışındaki komşu günler sabit): var_ yerine dizi okuması
-  const KAY = 6, L = dim + 2 * KAY + 1, dolu0 = new Uint8Array(H * L), dolu = new Uint8Array(H * L);
-  for (const [d, l] of Object.entries(disGun)) for (const id of l) { const k = sira.get(id); if (k !== undefined) dolu0[k * L + Number(d) + KAY] = 1; }
+  const KAY = 6,
+    L = dim + 2 * KAY + 1,
+    dolu0 = new Uint8Array(H * L),
+    dolu = new Uint8Array(H * L);
+  for (const [d, l] of Object.entries(disGun))
+    for (const id of l) {
+      const k = sira.get(id);
+      if (k !== undefined) dolu0[k * L + Number(d) + KAY] = 1;
+    }
   const varK = (id: number, k: number | undefined, d: number) => (k === undefined ? var_(id, d) : dolu[k * L + d + KAY] === 1);
   const J = (): number => {
     let j = 0;
-    say.fill(0); cmt.fill(0); paz.fill(0); dolu.set(dolu0);
-    for (let i = 0; i < dim; i++) for (const id of sec[i]) { const k = sira.get(id); if (k !== undefined) dolu[k * L + i + 1 + KAY] = 1; }
+    say.fill(0);
+    cmt.fill(0);
+    paz.fill(0);
+    dolu.set(dolu0);
+    for (let i = 0; i < dim; i++)
+      for (const id of sec[i]) {
+        const k = sira.get(id);
+        if (k !== undefined) dolu[k * L + i + 1 + KAY] = 1;
+      }
     for (let i = 0; i < dim; i++) {
       if (!sabit[i]) j += W.eksik * Math.max(0, Math.min(ACIL_GUNLUK, aday[i].length) - sec[i].length);
       const d = i + 1;
@@ -159,7 +247,8 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
         if (d <= 4 && v(d - 2) && v(d - 4)) j += W.ucBes;
         if (d <= 2 && v(d - 2) && v(d + 2)) j += W.ucBes;
         const t = tercih(id, i);
-        if (t === "avoid") j += W.istemiyor; else if (t === "want") j -= W.istiyor;
+        if (t === "avoid") j += W.istemiyor;
+        else if (t === "want") j -= W.istiyor;
         if (izinOnce[i].has(id)) j += W.izinOnce;
       }
       for (const id of esVarlar[i]) if (!sec[i].includes(id)) j += W.esVar;
@@ -169,7 +258,10 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
     for (let ti = 0; ti < TN; ti++) {
       let N = 0;
       for (let k = 0; k < H; k++) N += say[ti * H + k];
-      for (let k = 0; k < H; k++) { const a = say[ti * H + k] - N * payDz[ti * H + k] + devirDz[ti * H + k]; j += wDz[ti] * a * a; }
+      for (let k = 0; k < H; k++) {
+        const a = say[ti * H + k] - N * payDz[ti * H + k] + devirDz[ti * H + k];
+        j += wDz[ti] * a * a;
+      }
     }
     for (let k = 0; k < H; k++) {
       if (cmt[k] > 1) j += W.hsFazla * (cmt[k] - 1);
@@ -181,11 +273,18 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
   for (let i = 0; i < dim; i++) {
     if (sabit[i]) continue;
     while (sec[i].length < Math.min(ACIL_GUNLUK, aday[i].length)) {
-      let en = -1, enJ = Infinity;
+      let en = -1,
+        enJ = Infinity;
       for (const id of aday[i]) {
         // art arda serbest değilse önceki / sonraki gün nöbeti olan yazılmaz
         if (sec[i].includes(id) || (!ardArdaSerbest && (var_(id, i) || var_(id, i + 2)))) continue;
-        sec[i].push(id); const v = J(); sec[i].pop(); if (v < enJ - 1e-9) { enJ = v; en = id; }
+        sec[i].push(id);
+        const v = J();
+        sec[i].pop();
+        if (v < enJ - 1e-9) {
+          enJ = v;
+          en = id;
+        }
       }
       if (en < 0) break;
       sec[i].push(en);
@@ -199,66 +298,133 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
       if (sabit[i] || sec[i].length >= Math.min(ACIL_GUNLUK, aday[i].length)) continue;
       for (const id of aday[i]) {
         if (sec[i].includes(id) || sec[i].length >= ACIL_GUNLUK) continue;
-        sec[i].push(id); const v = J();
-        if (v < cur - 1e-9) { cur = v; iyi = true; } else sec[i].pop();
+        sec[i].push(id);
+        const v = J();
+        if (v < cur - 1e-9) {
+          cur = v;
+          iyi = true;
+        } else sec[i].pop();
       }
     }
     for (let i = 0; i < dim; i++) {
       if (sabit[i]) continue;
-      for (let q = 0; q < sec[i].length; q++) for (const id of aday[i]) {
-        if (sec[i].includes(id)) continue;
-        const eski = sec[i][q]; sec[i][q] = id; const v = J();
-        if (v < cur - 1e-9) { cur = v; iyi = true; } else sec[i][q] = eski;
-      }
+      for (let q = 0; q < sec[i].length; q++)
+        for (const id of aday[i]) {
+          if (sec[i].includes(id)) continue;
+          const eski = sec[i][q];
+          sec[i][q] = id;
+          const v = J();
+          if (v < cur - 1e-9) {
+            cur = v;
+            iyi = true;
+          } else sec[i][q] = eski;
+        }
     }
-    for (let i = 0; i < dim; i++) for (let k = i + 1; k < dim; k++) {
-      if (sabit[i] || sabit[k]) continue;
-      for (let a = 0; a < sec[i].length; a++) for (let b = 0; b < sec[k].length; b++) {
-        const p = sec[i][a], r = sec[k][b];
-        if (p === r || sec[k].includes(p) || sec[i].includes(r) || !aday[k].includes(p) || !aday[i].includes(r)) continue;
-        sec[i][a] = r; sec[k][b] = p; const v = J();
-        if (v < cur - 1e-9) { cur = v; iyi = true; } else { sec[i][a] = p; sec[k][b] = r; }
+    for (let i = 0; i < dim; i++)
+      for (let k = i + 1; k < dim; k++) {
+        if (sabit[i] || sabit[k]) continue;
+        for (let a = 0; a < sec[i].length; a++)
+          for (let b = 0; b < sec[k].length; b++) {
+            const p = sec[i][a],
+              r = sec[k][b];
+            if (p === r || sec[k].includes(p) || sec[i].includes(r) || !aday[k].includes(p) || !aday[i].includes(r)) continue;
+            sec[i][a] = r;
+            sec[k][b] = p;
+            const v = J();
+            if (v < cur - 1e-9) {
+              cur = v;
+              iyi = true;
+            } else {
+              sec[i][a] = p;
+              sec[k][b] = r;
+            }
+          }
       }
-    }
     // kuyruk takası: iki kişinin d gününden sonraki tüm nöbetleri yer değiştirir (aralar korunur; sıkışık dönüşümde
     // tek yer değişikliği hep art arda nöbet doğurduğu için eşitlik ancak böyle düzelir)
-    for (let a = 0; a < havuz.length; a++) for (let b = a + 1; b < havuz.length; b++) {
-      const p = havuz[a].id, r = havuz[b].id;
-      for (let d0 = 0; d0 < dim; d0++) {
-        const degisen: number[] = [];
-        let olur = true;
-        for (let i = d0; i < dim && olur; i++) {
-          if (sabit[i]) continue;
-          const vp = sec[i].includes(p), vr = sec[i].includes(r);
-          if (vp === vr) continue;
-          if ((vp && !aday[i].includes(r)) || (vr && !aday[i].includes(p))) olur = false; else degisen.push(i);
+    for (let a = 0; a < havuz.length; a++)
+      for (let b = a + 1; b < havuz.length; b++) {
+        const p = havuz[a].id,
+          r = havuz[b].id;
+        for (let d0 = 0; d0 < dim; d0++) {
+          const degisen: number[] = [];
+          let olur = true;
+          for (let i = d0; i < dim && olur; i++) {
+            if (sabit[i]) continue;
+            const vp = sec[i].includes(p),
+              vr = sec[i].includes(r);
+            if (vp === vr) continue;
+            if ((vp && !aday[i].includes(r)) || (vr && !aday[i].includes(p))) olur = false;
+            else degisen.push(i);
+          }
+          if (!olur || !degisen.length) continue;
+          const takas = () =>
+            degisen.forEach(i => {
+              sec[i] = sec[i].map(x => (x === p ? r : x === r ? p : x));
+            });
+          takas();
+          const v = J();
+          if (v < cur - 1e-9) {
+            cur = v;
+            iyi = true;
+          } else takas();
         }
-        if (!olur || !degisen.length) continue;
-        const takas = () => degisen.forEach(i => { sec[i] = sec[i].map(x => (x === p ? r : x === r ? p : x)); });
-        takas(); const v = J();
-        if (v < cur - 1e-9) { cur = v; iyi = true; } else takas();
       }
-    }
     if (!iyi) break;
   }
   // personel yetmediği için kalan art arda nöbetler ve karşılanamayan eş durumu / istemiyor bildirilir
   const ad = (id: number) => B.kisi(id)?.name ?? "";
   for (let i = 0; i < dim; i++) {
     if (sabit[i]) continue;
-    for (const id of aday[i]) if (tercih(id, i) === "esVar" && !sec[i].includes(id)) uyarilar.push((i + 1) + " " + AYLAR[m] + ": " + ad(id) + " için eş durumu isteği acil listesinde karşılanamadı.");
-    for (const id of sec[i]) if (tercih(id, i) === "avoid") uyarilar.push((i + 1) + " " + AYLAR[m] + ": " + ad(id) + " nöbet istemiyordu, başka uygun kişi olmadığı için yazıldı.");
+    for (const id of aday[i])
+      if (tercih(id, i) === "esVar" && !sec[i].includes(id))
+        uyarilar.push(i + 1 + " " + AYLAR[m] + ": " + ad(id) + " için eş durumu isteği acil listesinde karşılanamadı.");
+    for (const id of sec[i])
+      if (tercih(id, i) === "avoid")
+        uyarilar.push(i + 1 + " " + AYLAR[m] + ": " + ad(id) + " nöbet istemiyordu, başka uygun kişi olmadığı için yazıldı.");
   }
   const artArda: string[] = [];
-  for (let i = 0; i < dim; i++) for (const id of sec[i]) {
-    if (var_(id, i + 2)) artArda.push(ad(id) + ": " + (i + 1) + " ve " + (i + 2) + " " + AYLAR[m] + " art arda acil nöbeti (personel yetmiyor).");
-  }
+  for (let i = 0; i < dim; i++)
+    for (const id of sec[i]) {
+      if (var_(id, i + 2))
+        artArda.push(ad(id) + ": " + (i + 1) + " ve " + (i + 2) + " " + AYLAR[m] + " art arda acil nöbeti (personel yetmiyor).");
+    }
   // art arda serbest değilken boş kalan yerler
   if (!ardArdaSerbest) {
-    const eksik = sec.map((l, i) => (!sabit[i] && l.length < ACIL_GUNLUK && aday[i].length >= ACIL_GUNLUK ? i + 1 + " " + AYLAR[m] + " (" + l.length + "/" + ACIL_GUNLUK + ")" : "")).filter(Boolean);
-    if (eksik.length) uyarilar.push(AYLAR[m] + ": art arda nöbet yazılmadığı için (Ayarlar) şu günlerde acil nöbeti eksik kaldı: " + eksik.join(", ") + ". Acil kadrosu yetmiyor; günleri elle doldurun ya da kadroyu artırın.");
+    const eksik = sec
+      .map((l, i) =>
+        !sabit[i] && l.length < ACIL_GUNLUK && aday[i].length >= ACIL_GUNLUK
+          ? i + 1 + " " + AYLAR[m] + " (" + l.length + "/" + ACIL_GUNLUK + ")"
+          : "",
+      )
+      .filter(Boolean);
+    if (eksik.length)
+      uyarilar.push(
+        AYLAR[m] +
+          ": art arda nöbet yazılmadığı için (Ayarlar) şu günlerde acil nöbeti eksik kaldı: " +
+          eksik.join(", ") +
+          ". Acil kadrosu yetmiyor; günleri elle doldurun ya da kadroyu artırın.",
+      );
   }
   // çok sayıda art arda nöbet kadronun yetmediğini gösterir: tek tek yerine tek satır
-  if (artArda.length > 5) uyarilar.push(AYLAR[m] + ": acil kadrosu yetmiyor; " + artArda.length + " kez art arda acil nöbeti yazıldı (günde " + ACIL_GUNLUK + " kişi için art arda gün ve 5 günde 3 nöbet olmadan en az " + Math.ceil(5 * ACIL_GUNLUK / 2) + " kişi gerekir).");
+  if (artArda.length > 5)
+    uyarilar.push(
+      AYLAR[m] +
+        ": acil kadrosu yetmiyor; " +
+        artArda.length +
+        " kez art arda acil nöbeti yazıldı (günde " +
+        ACIL_GUNLUK +
+        " kişi için art arda gün ve 5 günde 3 nöbet olmadan en az " +
+        Math.ceil((5 * ACIL_GUNLUK) / 2) +
+        " kişi gerekir).",
+    );
   else uyarilar.push(...artArda);
-  return { gunler: sec.map((ids, i) => ({ gun: i + 1, ids: sabit[i] ? ids : ids.slice().sort((a, b) => a - b), ...(sabit[i] ? { elle: true as const } : {}) })), uyarilar };
+  return {
+    gunler: sec.map((ids, i) => ({
+      gun: i + 1,
+      ids: sabit[i] ? ids : ids.slice().sort((a, b) => a - b),
+      ...(sabit[i] ? { elle: true as const } : {}),
+    })),
+    uyarilar,
+  };
 }

@@ -23,7 +23,7 @@ export const NOBET_AGIRLIK_ACIKLAMA: Record<keyof typeof AGIRLIK, string> = {
   resmiYilToplam: "Yıllık resmi tatil görevi (nöbet + hazırlama) farkı 1'i aşınca.",
   gunYil: "Yıllık Perşembe / Cuma / Cumartesi / Pazar / resmi tatil nöbeti farkı 1'i aşınca.",
   hsKural: "Ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti.",
-  istemiyor: "\"İstemiyor\" işaretli güne nöbet ya da hazırlama.",
+  istemiyor: '"İstemiyor" işaretli güne nöbet ya da hazırlama.',
   cuCmtPaz: "Cuma + Cumartesi + Pazar nöbeti aynı ay aynı kişide.",
   ucluSonHaz: "Cuma + Cumartesi + Pazar nöbeti olan, kendi grubunda (eczacı / tekniker) hazırlamayı en son alır.",
   prepUst: "Eczacı / tekniker ayda en fazla 2 hazırlama.",
@@ -52,7 +52,7 @@ export const NOBET_AGIRLIK_ACIKLAMA: Record<keyof typeof AGIRLIK, string> = {
   nobetAy: "Aylık nöbet sayısı dengesi (kare sapma).",
   destekYil: "Destek personeli yıllık hazırlama dengesi (kare sapma).",
   haftaSonuIs: "Aylık hafta sonu nöbeti + hazırlama sayısı dengesi (kare sapma).",
-  istiyor: "\"İstiyor\" işaretli güne nöbet (ödül; günlük tercih, ×3).",
+  istiyor: '"İstiyor" işaretli güne nöbet (ödül; günlük tercih, ×3).',
   cuPaz: "Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması (günlük tercih, ×3).",
   araGun: "İki nöbet arası Ayarlar'daki en az günden kısa (günlük tercih, ×3).",
   gunTercihCarpani: "Günlük tercihlerin (thuHs, cuPaz, istiyor, araGun) çarpanı.",
@@ -66,13 +66,14 @@ export const ACIL_AGIRLIK_ACIKLAMA: Record<keyof typeof ACIL_W, string> = {
   toplam: "Yıllık toplam acil nöbeti eşitliği (paya göre kare sapma).",
   tur: "Yıllık Perşembe, Cuma, Cumartesi, Pazar, resmi tatil nöbeti eşitliği (her tür ayrı).",
   fm: "Aylık fazla mesai saati eşitliği.",
-  istemiyor: "\"İstemiyor\" işaretli güne nöbet.",
-  istiyor: "\"İstiyor\" işaretli güne nöbet (ödül).",
-  esVar: "Eş durumu \"nöbetçi olsun\" günü yazılmazsa.",
+  istemiyor: '"İstemiyor" işaretli güne nöbet.',
+  istiyor: '"İstiyor" işaretli güne nöbet (ödül).',
+  esVar: 'Eş durumu "nöbetçi olsun" günü yazılmazsa.',
   izinOnce: "Ertesi gün izne çıkana nöbet.",
 };
 export const OGLEN_AGIRLIK_ACIKLAMA: Record<keyof typeof OGLEN_W, string> = {
-  masaGrubu: "Cuma: onay listesinde Masa 1, Masa 2, Masa 7 ve jokerlerden masada 2'den az eczacı kalırsa (öğlene fazladan yazılan her kişi).",
+  masaGrubu:
+    "Cuma: onay listesinde Masa 1, Masa 2, Masa 7 ve jokerlerden masada 2'den az eczacı kalırsa (öğlene fazladan yazılan her kişi).",
   hafta3: "Aynı kişiye haftada 3. öğlen nöbeti.",
   grupDisi: "Teknikerde Pazartesi–Perşembe Cuma'dan muaf olmayana yazmak (muaf varken).",
   bosKalan: "O hafta yazılabilen biri hiç yazılmamışken başkasına ikinci öğlen.",
@@ -103,7 +104,11 @@ export const SERVIS_AGIRLIK_ACIKLAMA: Record<keyof typeof SERVIS_W, string> = {
 
 const sayi = (n: number) => (Math.abs(n) >= 1e6 ? n.toExponential().replace("e+", "e") : n.toLocaleString("tr-TR"));
 const tablo = <K extends string>(w: Record<K, number>, ack: Record<K, string>) =>
-  ["| Ad | Ağırlık | Anlamı |", "| --- | ---: | --- |", ...(Object.keys(w) as K[]).map(k => `| \`${k}\` | ${sayi(w[k])} | ${ack[k]} |`)].join("\n");
+  [
+    "| Ad | Ağırlık | Anlamı |",
+    "| --- | ---: | --- |",
+    ...(Object.keys(w) as K[]).map(k => `| \`${k}\` | ${sayi(w[k])} | ${ack[k]} |`),
+  ].join("\n");
 
 /** Kuralların tam metni (Markdown). ayar: kurumun güncel ayarları (başta yazılır). */
 export function kurallarMetni(ayar: Partial<Ayarlar> = {}): string {

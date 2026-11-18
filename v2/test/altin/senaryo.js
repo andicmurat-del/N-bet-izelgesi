@@ -14,8 +14,8 @@ function kadroKur() {
   ekle("Mert Destek", "destek");
   ekle("Nur Destek", "destek");
   ekle("Oya Acil", "servis");
-  ekle("Pelin Tek", "teknisyen", { baslangic: "2026-02-10" });   // ay ortasında başlayan
-  ekle("Rıza Ecz", "eczaci", { bitis: "2026-03-17" });          // ay ortasında ayrılan
+  ekle("Pelin Tek", "teknisyen", { baslangic: "2026-02-10" }); // ay ortasında başlayan
+  ekle("Rıza Ecz", "eczaci", { bitis: "2026-03-17" }); // ay ortasında ayrılan
   return staff;
 }
 
@@ -23,7 +23,10 @@ function veriKur() {
   const staff = kadroKur();
   const id = ad => staff.find(s => s.name.startsWith(ad)).id;
   const prefs = {};
-  const isaret = (ad, y, m, gunler, v) => gunler.forEach(d => { prefs[anahtar(id(ad), y, m, d)] = v; });
+  const isaret = (ad, y, m, gunler, v) =>
+    gunler.forEach(d => {
+      prefs[anahtar(id(ad), y, m, d)] = v;
+    });
   // Aralık 2025
   isaret("Bora", 2025, 11, [8, 9, 10], "izinli");
   isaret("Gül", 2025, 11, [24, 25], "avoid");
@@ -34,7 +37,7 @@ function veriKur() {
   isaret("Hakan", 2026, 0, [5, 6, 19, 20], "avoid");
   isaret("Irmak", 2026, 0, [9, 23, 30], "want");
   isaret("Jale", 2026, 0, [16], "izinli");
-  isaret("Jale", 2026, 0, [19], "izinli");                    // arada kalan hafta sonu da izin sayılır
+  isaret("Jale", 2026, 0, [19], "izinli"); // arada kalan hafta sonu da izin sayılır
   // Şubat 2026
   isaret("Ayşe", 2026, 1, [2, 3, 4, 5, 6, 9, 10], "izinli");
   isaret("Kaan", 2026, 1, [14, 15], "avoid");
@@ -65,7 +68,12 @@ const AYARLAR = {
 };
 
 // sırayla oluşturulan aylar (önceki ayın çizelgesi sonrakinin girdisi olur)
-const AYLAR = [[2025, 11], [2026, 0], [2026, 1], [2026, 2]];
+const AYLAR = [
+  [2025, 11],
+  [2026, 0],
+  [2026, 1],
+  [2026, 2],
+];
 
 // küçük kadro: kurallar tutmaz, arama uyarılı çizelge arar (en az uyarılı çizelge seçimi)
 function darVeri() {

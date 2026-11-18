@@ -2,7 +2,10 @@ import Isci from "./isci.ts?worker&inline";
 import { EK_DENEME, cizelgeOlustur, ekDenemeGerekli, enIyiDeneme, uyarisiz, type CizelgeSonucu } from "./index";
 import type { Gun, Veri } from "../veri/tipler";
 
-export interface OlusturmaSonucu { days: Gun[] | null; warnings: string[] }
+export interface OlusturmaSonucu {
+  days: Gun[] | null;
+  warnings: string[];
+}
 
 // Bazı gömülü sayfalar (claude.ai artifact görünümü gibi) arka plan işçisini engeller; bir kez engellenince bir daha denenmez.
 let isciEngelli = false;
@@ -21,26 +24,60 @@ function esZamanli(): number {
  * aramadaki seçimle aynı kural). İşçi açılamazsa (engelli sayfa) hesap sayfada, sırayla yapılır.
  */
 /** Aramanın ekranda gösterilecek ilerlemesi: oran 0–1; ek: asıl arama uyarılı bitti, farklı başlangıçlarla aranıyor */
-export interface Ilerleme { oran: number; ek: boolean }
-export function arkaPlandaOlustur(veri: Veri, yil: number, ay: number, varyasyon = 0, ilerleme?: (i: Ilerleme) => void): Promise<OlusturmaSonucu> {
+export interface Ilerleme {
+  oran: number;
+  ek: boolean;
+}
+export function arkaPlandaOlustur(
+  veri: Veri,
+  yil: number,
+  ay: number,
+  varyasyon = 0,
+  ilerleme?: (i: Ilerleme) => void,
+): Promise<OlusturmaSonucu> {
   // sayfada (işçi yoksa) hesap ekranı dondurur; ilerleme yalnız başta ve sonda bildirilir
-  const sayfada = () => new Promise<OlusturmaSonucu>((coz, reddet) => setTimeout(() => { try { coz(cizelgeOlustur(veri, yil, ay, { varyasyon })); } catch (e) { reddet(e); } }, 30));
+  const sayfada = () =>
+    new Promise<OlusturmaSonucu>((coz, reddet) =>
+      setTimeout(() => {
+        try {
+          coz(cizelgeOlustur(veri, yil, ay, { varyasyon }));
+        } catch (e) {
+          reddet(e);
+        }
+      }, 30),
+    );
   if (isciEngelli) return sayfada();
   return new Promise<OlusturmaSonucu>((coz, reddet) => {
-    const N = EK_DENEME + 1, es = esZamanli();
+    const N = EK_DENEME + 1,
+      es = esZamanli();
     const sonuc: (CizelgeSonucu | undefined)[] = new Array(N).fill(undefined);
     // denemelerin ilerlemesi: asıl arama sürerken onun oranı; uyarılı bitince ek denemelerin ortalaması
     const oranlar: number[] = new Array(N).fill(0);
     const bildir = () => {
       if (!ilerleme || bitti) return;
       if (!sonuc[0]) ilerleme({ oran: oranlar[0], ek: false });
-      else { const ek = oranlar.slice(1).map((o, i) => (sonuc[i + 1] ? 1 : o)); ilerleme({ oran: ek.reduce((t, x) => t + x, 0) / Math.max(1, ek.length), ek: true }); }
+      else {
+        const ek = oranlar.slice(1).map((o, i) => (sonuc[i + 1] ? 1 : o));
+        ilerleme({ oran: ek.reduce((t, x) => t + x, 0) / Math.max(1, ek.length), ek: true });
+      }
     };
     const isciler = new Set<Worker>();
-    let siradaki = 0, bitti = false, ekGerekli: boolean | null = null;
-    const bitir = (f: () => void) => { if (bitti) return; bitti = true; isciler.forEach(i => i.terminate()); isciler.clear(); f(); };
+    let siradaki = 0,
+      bitti = false,
+      ekGerekli: boolean | null = null;
+    const bitir = (f: () => void) => {
+      if (bitti) return;
+      bitti = true;
+      isciler.forEach(i => i.terminate());
+      isciler.clear();
+      f();
+    };
     // işçi yanıt vermeden hata verdiyse açılamamıştır (motor hataları mesajla gelir): hesap sayfada yapılır
-    const engelli = () => bitir(() => { isciEngelli = true; sayfada().then(coz, reddet); });
+    const engelli = () =>
+      bitir(() => {
+        isciEngelli = true;
+        sayfada().then(coz, reddet);
+      });
     const ilerle = () => {
       if (bitti) return;
       const ilk = sonuc[0];
@@ -54,16 +91,34 @@ export function arkaPlandaOlustur(veri: Veri, yil: number, ay: number, varyasyon
     };
     const baslat = (deneme: number) => {
       let isci: Worker;
-      try { isci = new Isci(); } catch { engelli(); return; }
+      try {
+        isci = new Isci();
+      } catch {
+        engelli();
+        return;
+      }
       isciler.add(isci);
       isci.onmessage = (e: MessageEvent) => {
-        if (typeof e.data.ilerleme === "number") { oranlar[deneme] = e.data.ilerleme; bildir(); return; }
-        isci.terminate(); isciler.delete(isci);
-        if (!e.data.tamam) { bitir(() => reddet(new Error(e.data.hata))); return; }
-        sonuc[deneme] = e.data.sonuc; oranlar[deneme] = 1;
-        ilerle(); bildir();
+        if (typeof e.data.ilerleme === "number") {
+          oranlar[deneme] = e.data.ilerleme;
+          bildir();
+          return;
+        }
+        isci.terminate();
+        isciler.delete(isci);
+        if (!e.data.tamam) {
+          bitir(() => reddet(new Error(e.data.hata)));
+          return;
+        }
+        sonuc[deneme] = e.data.sonuc;
+        oranlar[deneme] = 1;
+        ilerle();
+        bildir();
       };
-      isci.onerror = e => { e.preventDefault(); engelli(); };
+      isci.onerror = e => {
+        e.preventDefault();
+        engelli();
+      };
       isci.postMessage({ veri, yil, ay, varyasyon, deneme });
     };
     ilerle();

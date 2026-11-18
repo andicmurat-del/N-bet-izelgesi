@@ -9,13 +9,19 @@ export const haftaSonuMu = (y: number, m: number, d: number) => haftaGunu(y, m, 
 export const gunAnahtari = (y: number, m: number, d: number) => `${y}-${m}-${d}`;
 export const ayAnahtari = (y: number, m: number) => `${y}-${m}`;
 export const tercihAnahtari = (id: number, y: number, m: number, d: number) => `${id}-${y}-${m}-${d}`;
-export const ayEkle = (y: number, m: number, k: number) => { const t = new Date(y, m + k, 1); return { y: t.getFullYear(), m: t.getMonth() }; };
+export const ayEkle = (y: number, m: number, k: number) => {
+  const t = new Date(y, m + k, 1);
+  return { y: t.getFullYear(), m: t.getMonth() };
+};
 export const ayAdi = (y: number, m: number) => `${AYLAR[m]} ${y}`;
 export const isoTarih = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 /** günün haftasının Pazartesi'den Cuma'ya günleri (ay / yıl sınırını aşabilir) */
 export const haftaIciGunleri = (y: number, m: number, d: number): [number, number, number][] => {
   const p = d - haftaGunu(y, m, d);
-  return [0, 1, 2, 3, 4].map(i => { const t = new Date(y, m, p + i); return [t.getFullYear(), t.getMonth(), t.getDate()]; });
+  return [0, 1, 2, 3, 4].map(i => {
+    const t = new Date(y, m, p + i);
+    return [t.getFullYear(), t.getMonth(), t.getDate()];
+  });
 };
 /** haftalık listelerin anahtarı: haftanın Pazartesi'si "YYYY-AA-GG" */
 export const haftaAnahtari = (y: number, m: number, d: number) => isoTarih(...haftaIciGunleri(y, m, d)[0]);
@@ -25,20 +31,44 @@ export const gunMetni = (y: number, m: number, d: number) => `${d} ${AYLAR[m]} $
 
 /** Ekranda "Zeynep Demir" biçimi; yazılış ne olursa olsun Türkçe büyük/küçük harf kuralıyla. */
 export function gorunenAd(ad: string): string {
-  return String(ad || "").trim().replace(/\s+/g, " ").split(/([\s\-'’.]+)/)
-    .map(w => /[AEIİOÖUÜaeıioöuü]/.test(w) ? w.charAt(0).toLocaleUpperCase("tr-TR") + w.slice(1).toLocaleLowerCase("tr-TR") : w)
+  return String(ad || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(/([\s\-'’.]+)/)
+    .map(w => (/[AEIİOÖUÜaeıioöuü]/.test(w) ? w.charAt(0).toLocaleUpperCase("tr-TR") + w.slice(1).toLocaleLowerCase("tr-TR") : w))
     .join("");
 }
 /** Dar takvim hücresi için kısa ad: ad; aynı adı taşıyan başka kişi varsa soyadının baş harfi de ("Ayşe Y.") */
 export function kisaAd(ad: string, tumAdlar: string[]): string {
-  const p = String(ad || "").trim().split(/\s+/), ilk = p[0] || "";
-  const ayni = tumAdlar.filter(x => String(x || "").trim().split(/\s+/)[0] === ilk).length > 1;
+  const p = String(ad || "")
+      .trim()
+      .split(/\s+/),
+    ilk = p[0] || "";
+  const ayni =
+    tumAdlar.filter(
+      x =>
+        String(x || "")
+          .trim()
+          .split(/\s+/)[0] === ilk,
+    ).length > 1;
   return ayni && p.length > 1 ? `${ilk} ${p[p.length - 1].charAt(0)}.` : ilk;
 }
-export const buyukAd = (ad: string) => String(ad || "").trim().replace(/\s+/g, " ").toLocaleUpperCase("tr-TR");
+export const buyukAd = (ad: string) =>
+  String(ad || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLocaleUpperCase("tr-TR");
 /** aynı ad denetimi için: boşluklar sadeleşir, Türkçe büyük/küçük harf farkı yok sayılır */
-export const adAnahtari = (ad: string) => String(ad || "").trim().replace(/\s+/g, " ").toLocaleLowerCase("tr-TR");
+export const adAnahtari = (ad: string) =>
+  String(ad || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase("tr-TR");
 /** arama için: Türkçe harfler sadeleşir ("sahin" "Şahin"i, "isik" "Işık"ı bulur) */
-export const aramaAnahtari = (t: string) => adAnahtari(t).replace(/[şğıöüçâîû]/g, h => ({ ş: "s", ğ: "g", ı: "i", ö: "o", ü: "u", ç: "c", â: "a", î: "i", û: "u" })[h] ?? h).normalize("NFD").replace(/[̀-ͯ]/g, "");
+export const aramaAnahtari = (t: string) =>
+  adAnahtari(t)
+    .replace(/[şğıöüçâîû]/g, h => ({ ş: "s", ğ: "g", ı: "i", ö: "o", ü: "u", ç: "c", â: "a", î: "i", û: "u" })[h] ?? h)
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
 /** ad, aranan metni içeriyor mu (Türkçe harfler sadeleşmiş) */
 export const adIcerir = (ad: string, aranan: string) => aramaAnahtari(ad).includes(aramaAnahtari(aranan));

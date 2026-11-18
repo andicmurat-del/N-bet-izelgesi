@@ -37,7 +37,14 @@
     <rect x="222" y="62" width="34" height="14" rx="4" fill="var(--lacivert)" />
     {#each [0, 1, 2, 3] as i}
       <circle cx="214" cy={102 + i * 24} r="7" fill={i < 3 ? "var(--lacivert)" : "none"} stroke="var(--lacivert)" stroke-width="2" />
-      {#if i < 3}<path d={`m210.5 ${102 + i * 24} 2.4 2.6 4.6-5.2`} fill="none" stroke="var(--yuzey)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />{/if}
+      {#if i < 3}<path
+          d={`m210.5 ${102 + i * 24} 2.4 2.6 4.6-5.2`}
+          fill="none"
+          stroke="var(--yuzey)"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />{/if}
       <rect x="228" y={99 + i * 24} width={i === 1 ? 34 : 42} height="6" rx="3" fill="var(--tablo-bas)" />
     {/each}
   </g>
@@ -65,5 +72,9 @@
 </svg>
 
 <style>
-  svg { display: block; width: 100%; height: auto; }
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
 </style>

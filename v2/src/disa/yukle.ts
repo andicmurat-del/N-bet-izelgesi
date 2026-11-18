@@ -14,8 +14,12 @@ export function ciktiPaketi(): Promise<Paket> {
       document.head.appendChild(s);
       s.remove();
       const p = (globalThis as unknown as { __ciktiPaketi?: Paket }).__ciktiPaketi;
-      if (p) tamam(p); else throw new Error("Çıktı modülü yüklenemedi.");
-    } catch (e) { yukleniyor = null; hata(e); }
+      if (p) tamam(p);
+      else throw new Error("Çıktı modülü yüklenemedi.");
+    } catch (e) {
+      yukleniyor = null;
+      hata(e);
+    }
   });
   return yukleniyor;
 }

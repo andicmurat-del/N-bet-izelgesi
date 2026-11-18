@@ -1,5 +1,16 @@
 // Bir ayın çizelgesinden sayımlar: kişi başı fazla mesai, gün türleri, hafta sonu kuralı, yıllık gün türü sayıları.
-import { eczaciMi, eczaneNobetcisi, gunHazSaat, gunNobetFm, eczaneYillikEsit, aktifAydaMi, aktifGunMu, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
+import {
+  eczaciMi,
+  eczaneNobetcisi,
+  gunHazSaat,
+  gunNobetFm,
+  eczaneYillikEsit,
+  aktifAydaMi,
+  aktifGunMu,
+  type Baglam,
+  type MotorCizelgesi,
+  type MotorGunu,
+} from "./baglam";
 import { FM_MAX_FARK, type YilGunTipi } from "./sabitler";
 import { ayGunSayisi, CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
 
@@ -13,17 +24,26 @@ function ayFmTablosu(B: Baglam, days: MotorGunu[]): Record<number, number> {
   const t: Record<number, number> = {};
   days.forEach(g => {
     const hz = gunHazSaat(B, g);
-    (g.assigned || []).forEach(p => { t[p.id] = (t[p.id] || 0) + (g.fazlaMesai || 0); });
-    (g.prep || []).forEach(p => { t[p.id] = (t[p.id] || 0) + hz; });
+    (g.assigned || []).forEach(p => {
+      t[p.id] = (t[p.id] || 0) + (g.fazlaMesai || 0);
+    });
+    (g.prep || []).forEach(p => {
+      t[p.id] = (t[p.id] || 0) + hz;
+    });
   });
   return t;
 }
 
 export function fmFarkBilgisi(B: Baglam, y: number, m: number, days: MotorGunu[]) {
-  const t = ayFmTablosu(B, days), k = fmKuralKisileri(B, y, m);
+  const t = ayFmTablosu(B, days),
+    k = fmKuralKisileri(B, y, m);
   if (k.length < 2) return { fark: 0, kisiler: k, t };
-  let enAz = k[0], enCok = k[0];
-  k.forEach(s => { if ((t[s.id] || 0) < (t[enAz.id] || 0)) enAz = s; if ((t[s.id] || 0) > (t[enCok.id] || 0)) enCok = s; });
+  let enAz = k[0],
+    enCok = k[0];
+  k.forEach(s => {
+    if ((t[s.id] || 0) < (t[enAz.id] || 0)) enAz = s;
+    if ((t[s.id] || 0) > (t[enCok.id] || 0)) enCok = s;
+  });
   return { fark: (t[enCok.id] || 0) - (t[enAz.id] || 0), enAz, enCok, t, kisiler: k };
 }
 
@@ -35,7 +55,9 @@ export function fmFarkiYapisal(B: Baglam, y: number, m: number, t: Record<number
   const kadro = B.staff.filter(s => eczaneNobetcisi(s) && aktifAydaMi(s, y, m));
   const nE = kadro.filter(s => eczaciMi(s.role)).length;
   if (!nE || nE >= kadro.length - nE) return false;
-  const kk = fmKuralKisileri(B, y, m), E = kk.filter(s => eczaciMi(s.role)).map(s => t[s.id] || 0), T = kk.filter(s => !eczaciMi(s.role)).map(s => t[s.id] || 0);
+  const kk = fmKuralKisileri(B, y, m),
+    E = kk.filter(s => eczaciMi(s.role)).map(s => t[s.id] || 0),
+    T = kk.filter(s => !eczaciMi(s.role)).map(s => t[s.id] || 0);
   if (!E.length || !T.length) return false;
   const aralik = (l: number[]) => Math.max(...l) - Math.min(...l);
   return aralik(E) <= sinir && aralik(T) <= sinir && Math.max(...E) >= Math.max(...T) && Math.min(...T) <= Math.min(...E);
@@ -47,7 +69,9 @@ export function hsSayilari(y: number, m: number, days: { day: number; assigned: 
   days.forEach(g => {
     if (!(g.assigned || []).some(p => p.id === id)) return;
     const w = haftaGunu(y, m, g.day);
-    if (w === CUMA) r.cu++; else if (w === CUMARTESI) r.cmt++; else if (w === PAZAR) r.paz++;
+    if (w === CUMA) r.cu++;
+    else if (w === CUMARTESI) r.cmt++;
+    else if (w === PAZAR) r.paz++;
   });
   return r;
 }
@@ -60,30 +84,48 @@ export function hsKuralIhlali(r: { cu: number; cmt: number; paz: number }): stri
 }
 /** Cuma + Cumartesi + Pazar aynı ay aynı kişide: kaçınılır ama gerekirse olur (ör. 5 Cuma, 5 Cumartesi, 5 Pazar olan ayda
  *  7 eczacıya 15 yer düşer; yıllık Cuma eşitliği bozulmasın diye biri üçünü birden alır) */
-export function cumaHaftaSonuUclu(r: { cu: number; cmt: number; paz: number }): boolean { return r.cu > 0 && r.cmt > 0 && r.paz > 0; }
+export function cumaHaftaSonuUclu(r: { cu: number; cmt: number; paz: number }): boolean {
+  return r.cu > 0 && r.cmt > 0 && r.paz > 0;
+}
 
-export interface AyIstatistigi { fm: number; thu: number; sat: number; sun: number; cum: number; nobet: number; prep: number }
+export interface AyIstatistigi {
+  fm: number;
+  thu: number;
+  sat: number;
+  sun: number;
+  cum: number;
+  nobet: number;
+  prep: number;
+}
 /** ayın çizelgesinden kişi başı fazla mesai, nöbet, hazırlama ve gün türü sayıları */
 export function ayIstatistik(B: Baglam, sch: MotorCizelgesi): Record<number, AyIstatistigi> {
   const r: Record<number, AyIstatistigi> = {};
   const dim = ayGunSayisi(sch.year, sch.month);
   const yeni = (): AyIstatistigi => ({ fm: 0, thu: 0, sat: 0, sun: 0, cum: 0, nobet: 0, prep: 0 });
   sch.days.forEach(d => {
-    const fmGun = gunNobetFm(B, sch.year, sch.month, d, dim), hz = gunHazSaat(B, d);
+    const fmGun = gunNobetFm(B, sch.year, sch.month, d, dim),
+      hz = gunHazSaat(B, d);
     const dw = haftaGunu(sch.year, sch.month, d.day);
     d.assigned.forEach(p => {
       const x = r[p.id] || (r[p.id] = yeni());
-      x.fm += fmGun; x.nobet++;
-      if (dw === PERSEMBE) x.thu++; if (dw === CUMA) x.cum++; if (dw === CUMARTESI) x.sat++; if (dw === PAZAR) x.sun++;
+      x.fm += fmGun;
+      x.nobet++;
+      if (dw === PERSEMBE) x.thu++;
+      if (dw === CUMA) x.cum++;
+      if (dw === CUMARTESI) x.sat++;
+      if (dw === PAZAR) x.sun++;
     });
     (d.prep || []).forEach(pp => {
       const x = r[pp.id] || (r[pp.id] = yeni());
-      x.fm += hz; x.prep++;
+      x.fm += hz;
+      x.prep++;
     });
   });
   return r;
 }
-export function ayVeriVarMi(sch: { days: { assigned: unknown[] }[] }): boolean { return sch.days.some(d => d.assigned.length > 0); }
+export function ayVeriVarMi(sch: { days: { assigned: unknown[] }[] }): boolean {
+  return sch.days.some(d => d.assigned.length > 0);
+}
 
 type GunTipiSayilari = Record<YilGunTipi, number>;
 /** Yıl içinde kişi başı Perşembe / Cuma / Cumartesi / Pazar / resmi tatil NÖBET sayıları (Ocak'tan m. aya kadar; curDays
@@ -96,23 +138,39 @@ export function yilGunSayilari(B: Baglam, y: number, m: number, curDays: MotorGu
   const sifir = (): GunTipiSayilari => ({ pe: 0, cu: 0, cmt: 0, paz: 0, rt: 0 });
   const kayit = (id: number) => r[id] || (r[id] = { ...sifir(), ham: sifir() });
   const ay = (mm: number, gunler: MotorGunu[]) => {
-    const hv = B.staff.filter(s => eczaneYillikEsit(s) && aktifAydaMi(s, y, mm)); if (!hv.length) return;
-    const c: Record<number, GunTipiSayilari> = {}; hv.forEach(s => { c[s.id] = sifir(); });
+    const hv = B.staff.filter(s => eczaneYillikEsit(s) && aktifAydaMi(s, y, mm));
+    if (!hv.length) return;
+    const c: Record<number, GunTipiSayilari> = {};
+    hv.forEach(s => {
+      c[s.id] = sifir();
+    });
     gunler.forEach(d => {
       if (!d) return;
-      const dw = haftaGunu(y, mm, d.day), rt = B.resmiTatilMi(y, mm, d.day);
+      const dw = haftaGunu(y, mm, d.day),
+        rt = B.resmiTatilMi(y, mm, d.day);
       (d.assigned || []).forEach(p => {
-        const o = c[p.id]; if (!o) return;
-        if (dw === PERSEMBE) o.pe++; else if (dw === CUMA) o.cu++; else if (dw === CUMARTESI) o.cmt++; else if (dw === PAZAR) o.paz++;
+        const o = c[p.id];
+        if (!o) return;
+        if (dw === PERSEMBE) o.pe++;
+        else if (dw === CUMA) o.cu++;
+        else if (dw === CUMARTESI) o.cmt++;
+        else if (dw === PAZAR) o.paz++;
         if (rt) o.rt++;
       });
     });
     T.forEach(t => {
       const ort = hv.reduce((a, s) => a + c[s.id][t], 0) / hv.length;
-      hv.forEach(s => { const o = kayit(s.id); o[t] += c[s.id][t] - ort; o.ham[t] += c[s.id][t]; });
+      hv.forEach(s => {
+        const o = kayit(s.id);
+        o[t] += c[s.id][t] - ort;
+        o.ham[t] += c[s.id][t];
+      });
     });
   };
-  for (let mm = 0; mm < m; mm++) { const sc = B.cizelge(y, mm); if (sc && Array.isArray(sc.days)) ay(mm, sc.days); }
+  for (let mm = 0; mm < m; mm++) {
+    const sc = B.cizelge(y, mm);
+    if (sc && Array.isArray(sc.days)) ay(mm, sc.days);
+  }
   if (curDays) ay(m, curDays);
   return r;
 }

@@ -9,6 +9,13 @@
 <div class="kap"><div class="islem-alani" use:tasi>{@render children()}</div></div>
 
 <style>
-  .kap { display: none; }
-  .islem-alani { display: flex; flex-wrap: wrap; gap: var(--b2); align-items: center; }
+  .kap {
+    display: none;
+  }
+  .islem-alani {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--b2);
+    align-items: center;
+  }
 </style>

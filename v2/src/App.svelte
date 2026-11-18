@@ -1,6 +1,16 @@
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import { depo, gecmis, geriAl, yinele, yedekVerisi, yedekAlindi, yedekErtele, yedekHatirlatma, tatilleriKendiligindenIsaretle } from "./veri/depo.svelte";
+  import {
+    depo,
+    gecmis,
+    geriAl,
+    yinele,
+    yedekVerisi,
+    yedekAlindi,
+    yedekErtele,
+    yedekHatirlatma,
+    tatilleriKendiligindenIsaretle,
+  } from "./veri/depo.svelte";
   import { bulut, bulutuBaslat, bulutYenidenDene, cakismayiCoz } from "./veri/bulut.svelte";
   import { dosyaKaydet, hataMetni } from "./disa/indir";
   import { ayAdi } from "./veri/tarih";
@@ -24,13 +34,27 @@
   // eski bölüm adları (önceki sürümlerin bağlantıları ve sayfa içi düğmeler): Günlük Eczane'nin alt sekmelerine gider;
   // personel (kisiler) Ayarlar > Personel'e
   type Hedef = SayfaAdi | "cizelge" | "puantaj" | "hazirlama" | "izinler" | "raporlar" | "kisiler";
-  const ESKI: Record<string, GunlukGorunum> = { cizelge: "nobet", puantaj: "puantaj", hazirlama: "hazirlama", izinler: "izinler", raporlar: "raporlar" };
-  let gunlukAlt = $state<GunlukGorunum>("nobet"), acilAlt = $state<AcilGorunum>("acil"), ayarAlt = $state<AyarGorunum>("genel");
+  const ESKI: Record<string, GunlukGorunum> = {
+    cizelge: "nobet",
+    puantaj: "puantaj",
+    hazirlama: "hazirlama",
+    izinler: "izinler",
+    raporlar: "raporlar",
+  };
+  let gunlukAlt = $state<GunlukGorunum>("nobet"),
+    acilAlt = $state<AcilGorunum>("acil"),
+    ayarAlt = $state<AyarGorunum>("genel");
   const GUNLUK_ALT: GunlukGorunum[] = ["nobet", "liste", "oglen", "onay", "hazirlama", "puantaj", "izinler", "raporlar"];
   const hashOku = (): SayfaAdi => {
     const [h, alt] = location.hash.slice(1).split("/");
-    if (ESKI[h]) { gunlukAlt = ESKI[h]; return "gunluk"; }
-    if (h === "kisiler") { ayarAlt = "personel"; return "ayarlar"; }
+    if (ESKI[h]) {
+      gunlukAlt = ESKI[h];
+      return "gunluk";
+    }
+    if (h === "kisiler") {
+      ayarAlt = "personel";
+      return "ayarlar";
+    }
     if (h === "gunluk" && GUNLUK_ALT.includes(alt as GunlukGorunum)) gunlukAlt = alt as GunlukGorunum;
     if (h === "acil" && (alt === "acil" || alt === "puantaj" || alt === "izinler" || alt === "raporlar")) acilAlt = alt;
     if (h === "ayarlar" && (alt === "genel" || alt === "personel" || alt === "kurallar" || alt === "yardim")) ayarAlt = alt;
@@ -39,14 +63,20 @@
   let sayfa = $state<SayfaAdi>(hashOku());
   // verilerin durduğu yer: sunucuya eşitleniyorsa söylenir, yoksa yalnız bu bilgisayar
   const SAKLAMA: Record<typeof bulut.durum, string> = {
-    bekliyor: "Veriler bu bilgisayarda saklanır", kapali: "Veriler bu bilgisayarda saklanır", esit: "Veriler sunucuya kaydedildi",
-    gonderiliyor: "Sunucuya kaydediliyor…", hata: "Sunucuya kaydedilemedi (veriler bu bilgisayarda)", cakisma: "Sunucuyla eşitleme bekliyor",
+    bekliyor: "Veriler bu bilgisayarda saklanır",
+    kapali: "Veriler bu bilgisayarda saklanır",
+    esit: "Veriler sunucuya kaydedildi",
+    gonderiliyor: "Sunucuya kaydediliyor…",
+    hata: "Sunucuya kaydedilemedi (veriler bu bilgisayarda)",
+    cakisma: "Sunucuyla eşitleme bekliyor",
   };
   // resmi tatiller: seçilen yıl ilk kez açılınca kendiliğinden işaretlenir. Sunucuyla eşitleme belli olduktan sonra
   // (sunucudaki veri gelmeden yerel veri değişip iki cihaz arasında gereksiz çakışma çıkmasın)
   $effect(() => {
-    const y = depo.yil, d = bulut.durum;
-    depo.veri.tatilYillari; depo.veri.settings.tatilOtomatik;
+    const y = depo.yil,
+      d = bulut.durum;
+    depo.veri.tatilYillari;
+    depo.veri.settings.tatilOtomatik;
     if (d === "bekliyor" || d === "cakisma" || d === "gonderiliyor") return;
     untrack(() => tatilleriKendiligindenIsaretle(y));
   });
@@ -57,8 +87,13 @@
     return () => removeEventListener("hashchange", dinle);
   });
   // geri al / yinele: düğmeler ve Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z); yazı alanındayken tarayıcının kendi geri alması çalışır
-  let geriDurum = $state(""), geriZaman: ReturnType<typeof setTimeout> | undefined;
-  function bildir(t: string) { geriDurum = t; clearTimeout(geriZaman); geriZaman = setTimeout(() => (geriDurum = ""), 2200); }
+  let geriDurum = $state(""),
+    geriZaman: ReturnType<typeof setTimeout> | undefined;
+  function bildir(t: string) {
+    geriDurum = t;
+    clearTimeout(geriZaman);
+    geriZaman = setTimeout(() => (geriDurum = ""), 2200);
+  }
   const geri = () => bildir(geriAl() ? "Son değişiklik geri alındı." : "Geri alınacak değişiklik yok.");
   const ileri = () => bildir(yinele() ? "Değişiklik yinelendi." : "Yinelenecek değişiklik yok.");
   function tus(e: KeyboardEvent) {
@@ -66,16 +101,28 @@
     const h = e.target as HTMLElement | null;
     if (h && (h.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(h.tagName))) return;
     const k = e.key.toLocaleLowerCase("en");
-    if (k === "z" && !e.shiftKey) { e.preventDefault(); geri(); }
-    else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); ileri(); }
+    if (k === "z" && !e.shiftKey) {
+      e.preventDefault();
+      geri();
+    } else if (k === "y" || (k === "z" && e.shiftKey)) {
+      e.preventDefault();
+      ileri();
+    }
   }
 
   // üst şeritteki "Yedek al": Ayarlar'daki yedekle aynı dosya
   async function yedekAl() {
-    const t = new Date(), iki = (n: number) => String(n).padStart(2, "0");
+    const t = new Date(),
+      iki = (n: number) => String(n).padStart(2, "0");
     const ad = `nobet-cizelgesi-yedek-${t.getFullYear()}-${iki(t.getMonth() + 1)}-${iki(t.getDate())}.json`;
-    try { if (await dosyaKaydet(ad, yedekVerisi(), "application/json")) { yedekAlindi(); bildir("Yedek kaydedildi: " + ad); } }
-    catch (e) { bildir(hataMetni(e, "Yedek kaydedilemedi.")); }
+    try {
+      if (await dosyaKaydet(ad, yedekVerisi(), "application/json")) {
+        yedekAlindi();
+        bildir("Yedek kaydedildi: " + ad);
+      }
+    } catch (e) {
+      bildir(hataMetni(e, "Yedek kaydedilemedi."));
+    }
   }
   // yedek hatırlatması: 7 gündür (ya da hiç) yedek alınmadıysa
   const yedekGun = $derived(yedekHatirlatma());
@@ -84,7 +131,11 @@
     if (ESKI[hedef]) gunlukAlt = ESKI[hedef];
     if (hedef === "kisiler") ayarAlt = "personel";
     sayfa = ad;
-    try { history.replaceState(null, "", "#" + ad); } catch { /* çerçeve izin vermezse yalnız durum değişir */ }
+    try {
+      history.replaceState(null, "", "#" + ad);
+    } catch {
+      /* çerçeve izin vermezse yalnız durum değişir */
+    }
     document.getElementById("icerik")?.focus({ preventScroll: true });
     scrollTo({ top: 0 });
   }
@@ -96,7 +147,16 @@
   <div class="ust-serit" role="complementary" aria-label="Uygulama bilgisi">
     <div class="genislik">
       <span>Hastane Eczanesi · Nöbet ve Puantaj Sistemi</span>
-      <span class="sag"><span role="status">{SAKLAMA[bulut.durum]}</span> · <button class="serit-baglanti" onclick={yedekAl}>Yedek al</button> · <button class="serit-baglanti" onclick={() => { ayarAlt = "yardim"; git("ayarlar"); }}>Yardım</button></span>
+      <span class="sag"
+        ><span role="status">{SAKLAMA[bulut.durum]}</span> · <button class="serit-baglanti" onclick={yedekAl}>Yedek al</button> ·
+        <button
+          class="serit-baglanti"
+          onclick={() => {
+            ayarAlt = "yardim";
+            git("ayarlar");
+          }}>Yardım</button
+        ></span
+      >
     </div>
   </div>
   <header class="baslik-bandi">
@@ -115,24 +175,39 @@
     <div class="genislik">
       <ul>
         {#each SAYFALAR as s}
-          <li><button class:secili={sayfa === s.ad} aria-current={sayfa === s.ad ? "page" : undefined} onclick={() => git(s.ad)}>{s.baslik}</button></li>
+          <li>
+            <button class:secili={sayfa === s.ad} aria-current={sayfa === s.ad ? "page" : undefined} onclick={() => git(s.ad)}
+              >{s.baslik}</button
+            >
+          </li>
         {/each}
       </ul>
       <div class="geri-al" role="group" aria-label="Geri al ve yinele">
-        <button onclick={geri} disabled={!gecmis.geri.length} title="Son değişikliği geri al (Ctrl+Z)" aria-label="Son değişikliği geri al"><Ikon ad="geri" /></button>
-        <button onclick={ileri} disabled={!gecmis.ileri.length} title="Geri alınanı yinele (Ctrl+Y)" aria-label="Geri alınanı yinele"><Ikon ad="ileri" /></button>
+        <button onclick={geri} disabled={!gecmis.geri.length} title="Son değişikliği geri al (Ctrl+Z)" aria-label="Son değişikliği geri al"
+          ><Ikon ad="geri" /></button
+        >
+        <button onclick={ileri} disabled={!gecmis.ileri.length} title="Geri alınanı yinele (Ctrl+Y)" aria-label="Geri alınanı yinele"
+          ><Ikon ad="ileri" /></button
+        >
       </div>
     </div>
   </nav>
 
   <main id="icerik" tabindex="-1">
-    {#if depo.kayitSorunu}<div class="kayit-sorunu kutu hata" role="alert"><Ikon ad="uyari" />{depo.kayitSorunu}{#if depo.baskaPencere}<button class="dugme" onclick={() => location.reload()}><Ikon ad="yenile" />Yenile</button>{/if}</div>{/if}
+    {#if depo.kayitSorunu}<div class="kayit-sorunu kutu hata" role="alert">
+        <Ikon ad="uyari" />{depo.kayitSorunu}{#if depo.baskaPencere}<button class="dugme" onclick={() => location.reload()}
+            ><Ikon ad="yenile" />Yenile</button
+          >{/if}
+      </div>{/if}
     {#if bulut.durum === "cakisma"}
       <div class="kayit-sorunu esitleme kutu hata" role="alert">
         <Ikon ad="uyari" />
         <div>
           <b>Bu cihazdaki veriler ile sunucudaki veriler farklı.</b>
-          <p>İkisinde de ayrı değişiklik yapılmış (ör. başka bir bilgisayarda ya da telefonda çalışıldı). Hangisiyle devam edilsin? Seçilmeyen taraf silinir; emin değilseniz önce "Yedek al" ile bu cihazdakini dosyaya kaydedin.</p>
+          <p>
+            İkisinde de ayrı değişiklik yapılmış (ör. başka bir bilgisayarda ya da telefonda çalışıldı). Hangisiyle devam edilsin?
+            Seçilmeyen taraf silinir; emin değilseniz önce "Yedek al" ile bu cihazdakini dosyaya kaydedin.
+          </p>
           <div class="dugmeler">
             <button class="dugme" onclick={() => cakismayiCoz("sunucu")}>Sunucudakini al</button>
             <button class="dugme" onclick={() => cakismayiCoz("cihaz")}>Bu cihazdakini sunucuya yaz</button>
@@ -141,12 +216,17 @@
         </div>
       </div>
     {:else if bulut.durum === "hata"}
-      <div class="kayit-sorunu kutu hata" role="alert"><Ikon ad="uyari" />{bulut.mesaj}<button class="dugme" onclick={bulutYenidenDene}><Ikon ad="yenile" />Yeniden dene</button></div>
+      <div class="kayit-sorunu kutu hata" role="alert">
+        <Ikon ad="uyari" />{bulut.mesaj}<button class="dugme" onclick={bulutYenidenDene}><Ikon ad="yenile" />Yeniden dene</button>
+      </div>
     {/if}
     {#if yedekGun !== null && bulut.durum !== "cakisma"}
       <div class="kayit-sorunu yedek-hatirlatma kutu bilgi" role="status">
         <Ikon ad="indir" />
-        <span>{yedekGun < 0 ? "Henüz yedek alınmadı." : `Son yedek ${yedekGun} gün önce alındı.`} Yedek dosyası, verilerinizin elinizdeki bağımsız kopyasıdır.</span>
+        <span
+          >{yedekGun < 0 ? "Henüz yedek alınmadı." : `Son yedek ${yedekGun} gün önce alındı.`} Yedek dosyası, verilerinizin elinizdeki bağımsız
+          kopyasıdır.</span
+        >
         <button class="dugme" onclick={yedekAl}>Yedek al</button>
         <button class="dugme sade" onclick={() => yedekErtele()}>Yarın hatırlat</button>
       </div>
@@ -167,59 +247,295 @@
 </div>
 
 <style>
-  .atla { position: absolute; left: -999px; top: 8px; z-index: 50; background: var(--yuzey); padding: var(--b2) var(--b3); border-radius: var(--r-kucuk); }
-  .atla:focus { left: 8px; }
-  .kabuk { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+  .atla {
+    position: absolute;
+    left: -999px;
+    top: 8px;
+    z-index: 50;
+    background: var(--yuzey);
+    padding: var(--b2) var(--b3);
+    border-radius: var(--r-kucuk);
+  }
+  .atla:focus {
+    left: 8px;
+  }
+  .kabuk {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
   /* ortak genişlik: en fazla 1360 px, ortalı; yan boşluk telefonda 16 px */
-  .genislik { max-width: 1360px; margin: 0 auto; width: 100%; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .genislik {
+    max-width: 1360px;
+    margin: 0 auto;
+    width: 100%;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
   /* başlık bloğu: üst şerit, kurum bandı ve ana menü tek parça koyu lacivert yüzey; ince açık çizgilerle ayrılır */
-  .ust-serit { background: var(--serit); color: #B5CED3; font-size: var(--f-xs); }
-  .ust-serit .genislik { display: flex; align-items: center; justify-content: space-between; gap: var(--b3); min-height: 32px; }
-  .serit-baglanti { border: 0; background: none; padding: 0; color: #FFFFFF; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-size: inherit; }
-  .baslik-bandi { background: linear-gradient(180deg, var(--blok-ust), var(--menu-zemin)); color: #FFFFFF; }
-  .baslik-bandi .genislik { display: flex; align-items: center; justify-content: space-between; gap: var(--b4); flex-wrap: wrap; min-height: 92px; padding-block: 14px; }
-  .marka { display: flex; align-items: center; gap: 16px; min-width: 0; }
-  .logo { display: block; width: 52px; height: 56px; flex: none; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .35)); }
-  .marka small { display: block; font-size: 12px; font-weight: 700; letter-spacing: .12em; color: #7FD0DA; line-height: 1.3; }
-  .marka b { display: block; font-size: 24px; font-weight: 700; color: #FFFFFF; line-height: 1.2; letter-spacing: -.01em; }
-  .donem { display: flex; align-items: center; gap: var(--b3); }
-  .donem > span { font-size: var(--f-sm); font-weight: 600; color: #A8C9CF; }
-  .menu { background: var(--menu-zemin); border-top: 1px solid rgba(255, 255, 255, .1); box-shadow: 0 6px 16px -10px rgba(3, 24, 30, .7); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; }
-  .menu .genislik { display: flex; align-items: stretch; justify-content: space-between; gap: var(--b3); padding-block: 6px; }
-  .menu ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
-  .menu ul::-webkit-scrollbar { display: none; }
-  .menu li button { height: 40px; padding: 0 18px; border: 0; border-radius: var(--r-kucuk); background: transparent; color: #CFE3E6; font-weight: 600; font-size: var(--f-md); cursor: pointer; white-space: nowrap; transition: background .14s, color .14s; }
-  .menu li button:hover { background: rgba(255, 255, 255, .09); color: #FFFFFF; }
-  .menu li button.secili { background: rgba(108, 196, 207, .2); color: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(108, 196, 207, .5); }
-  .menu li button:focus-visible, .geri-al button:focus-visible { outline: 2px solid var(--acik-mavi); outline-offset: -2px; }
-  .geri-al { display: flex; align-items: center; gap: 4px; flex: none; }
-  .geri-al button { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: var(--r-kucuk); background: transparent; color: #FFFFFF; cursor: pointer; }
-  .geri-al button:hover:not(:disabled) { background: rgba(255, 255, 255, .12); }
-  .geri-al button:disabled { opacity: .35; cursor: not-allowed; }
-  main { flex: 1; width: 100%; max-width: 1360px; margin: 0 auto; min-width: 0; padding-block: var(--b5) var(--b6); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); outline: none; }
-  .kayit-sorunu { display: flex; gap: var(--b2); align-items: center; margin-bottom: var(--b4); font-weight: 600; }
-  .yedek-hatirlatma { font-weight: 400; flex-wrap: wrap; }
-  .yedek-hatirlatma span { flex: 1 1 260px; }
-  .esitleme { align-items: flex-start; }
-  .esitleme p { font-weight: 400; margin: var(--b1) 0 var(--b3); }
-  .esitleme .dugmeler { display: flex; flex-wrap: wrap; gap: var(--b2); }
+  .ust-serit {
+    background: var(--serit);
+    color: #b5ced3;
+    font-size: var(--f-xs);
+  }
+  .ust-serit .genislik {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--b3);
+    min-height: 32px;
+  }
+  .serit-baglanti {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: #ffffff;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    font-size: inherit;
+  }
+  .baslik-bandi {
+    background: linear-gradient(180deg, var(--blok-ust), var(--menu-zemin));
+    color: #ffffff;
+  }
+  .baslik-bandi .genislik {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--b4);
+    flex-wrap: wrap;
+    min-height: 92px;
+    padding-block: 14px;
+  }
+  .marka {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+  }
+  .logo {
+    display: block;
+    width: 52px;
+    height: 56px;
+    flex: none;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+  }
+  .marka small {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #7fd0da;
+    line-height: 1.3;
+  }
+  .marka b {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .donem {
+    display: flex;
+    align-items: center;
+    gap: var(--b3);
+  }
+  .donem > span {
+    font-size: var(--f-sm);
+    font-weight: 600;
+    color: #a8c9cf;
+  }
+  .menu {
+    background: var(--menu-zemin);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 6px 16px -10px rgba(3, 24, 30, 0.7);
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+  }
+  .menu .genislik {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: var(--b3);
+    padding-block: 6px;
+  }
+  .menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-width: 0;
+  }
+  .menu ul::-webkit-scrollbar {
+    display: none;
+  }
+  .menu li button {
+    height: 40px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: var(--r-kucuk);
+    background: transparent;
+    color: #cfe3e6;
+    font-weight: 600;
+    font-size: var(--f-md);
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background 0.14s,
+      color 0.14s;
+  }
+  .menu li button:hover {
+    background: rgba(255, 255, 255, 0.09);
+    color: #ffffff;
+  }
+  .menu li button.secili {
+    background: rgba(108, 196, 207, 0.2);
+    color: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(108, 196, 207, 0.5);
+  }
+  .menu li button:focus-visible,
+  .geri-al button:focus-visible {
+    outline: 2px solid var(--acik-mavi);
+    outline-offset: -2px;
+  }
+  .geri-al {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+  }
+  .geri-al button {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: var(--r-kucuk);
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+  }
+  .geri-al button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .geri-al button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  main {
+    flex: 1;
+    width: 100%;
+    max-width: 1360px;
+    margin: 0 auto;
+    min-width: 0;
+    padding-block: var(--b5) var(--b6);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    outline: none;
+  }
+  .kayit-sorunu {
+    display: flex;
+    gap: var(--b2);
+    align-items: center;
+    margin-bottom: var(--b4);
+    font-weight: 600;
+  }
+  .yedek-hatirlatma {
+    font-weight: 400;
+    flex-wrap: wrap;
+  }
+  .yedek-hatirlatma span {
+    flex: 1 1 260px;
+  }
+  .esitleme {
+    align-items: flex-start;
+  }
+  .esitleme p {
+    font-weight: 400;
+    margin: var(--b1) 0 var(--b3);
+  }
+  .esitleme .dugmeler {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--b2);
+  }
   /* alt bilgi */
-  .alt-bilgi { background: transparent; border-top: 1px solid var(--cizgi); font-size: var(--f-xs); color: var(--yazi-2); }
-  .alt-bilgi .genislik { display: flex; align-items: center; justify-content: space-between; gap: var(--b3); flex-wrap: wrap; min-height: 44px; padding-block: 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
-  .alt-bilgi b { color: var(--lacivert); font-weight: 600; }
-  .alt-bilgi .sag { margin-left: auto; }
-  .geri-durum:empty { display: none; }
-  .geri-durum { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--b5) + env(safe-area-inset-bottom, 0px)); z-index: 40; max-width: min(480px, calc(100vw - 32px)); padding: var(--b2) var(--b4); border-radius: var(--r); background: var(--serit); color: #FFFFFF; font-weight: 600; }
+  .alt-bilgi {
+    background: transparent;
+    border-top: 1px solid var(--cizgi);
+    font-size: var(--f-xs);
+    color: var(--yazi-2);
+  }
+  .alt-bilgi .genislik {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--b3);
+    flex-wrap: wrap;
+    min-height: 44px;
+    padding-block: 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  .alt-bilgi b {
+    color: var(--lacivert);
+    font-weight: 600;
+  }
+  .alt-bilgi .sag {
+    margin-left: auto;
+  }
+  .geri-durum:empty {
+    display: none;
+  }
+  .geri-durum {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(var(--b5) + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    max-width: min(480px, calc(100vw - 32px));
+    padding: var(--b2) var(--b4);
+    border-radius: var(--r);
+    background: var(--serit);
+    color: #ffffff;
+    font-weight: 600;
+  }
 
   @media (max-width: 860px) {
-    .ust-serit .sag { display: none; }
-    .baslik-bandi .genislik { min-height: 0; padding-block: 10px; gap: var(--b2); }
-    .logo { width: 38px; height: 42px; }
-    .marka b { font-size: 17px; }
-    .donem > span { display: none; }
-    .donem { width: 100%; }
-    .menu li button { padding: 0 14px; font-size: var(--f-sm); }
+    .ust-serit .sag {
+      display: none;
+    }
+    .baslik-bandi .genislik {
+      min-height: 0;
+      padding-block: 10px;
+      gap: var(--b2);
+    }
+    .logo {
+      width: 38px;
+      height: 42px;
+    }
+    .marka b {
+      font-size: 17px;
+    }
+    .donem > span {
+      display: none;
+    }
+    .donem {
+      width: 100%;
+    }
+    .menu li button {
+      padding: 0 14px;
+      font-size: var(--f-sm);
+    }
     /* imza yalnız masaüstünde */
-    .imza { display: none; }
+    .imza {
+      display: none;
+    }
   }
 </style>

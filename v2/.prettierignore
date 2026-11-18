@@ -5,7 +5,8 @@ test-results/
 package-lock.json
 test/altin/beklenen*.json
 test/altin/ozet/
-test/eski/
+test/eski/beklenen.json
+test/eski/senaryolar.cjs
 test/servis-beklenen.json
 e2e/veri/
 ikon/

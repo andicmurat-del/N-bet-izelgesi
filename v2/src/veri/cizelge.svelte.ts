@@ -18,8 +18,11 @@ export function eskimeNedenleri(y: number, m: number): string[] {
   const tatilFarki = c.days.filter(g => g.tatil !== tatilMi(y, m, g.day)).map(g => g.day);
   if (tatilFarki.length) n.push(`Tatil günleri değişti (${tatilFarki.join(", ")}).`);
   // arife (ya da komşu günün tatili) sonradan işaretlendiyse nöbetin fazla mesai saati değişir (çizelge eski saati tutar)
-  const B = new Baglam(veriAnlik()), dim = gunSayisi(y, m);
-  const saatFarki = c.days.filter(g => !tatilFarki.includes(g.day) && g.fmNobet === undefined && g.fazlaMesai !== B.fazlaMesai(y, m, g.day, dim)).map(g => g.day);
+  const B = new Baglam(veriAnlik()),
+    dim = gunSayisi(y, m);
+  const saatFarki = c.days
+    .filter(g => !tatilFarki.includes(g.day) && g.fmNobet === undefined && g.fazlaMesai !== B.fazlaMesai(y, m, g.day, dim))
+    .map(g => g.day);
   if (saatFarki.length) n.push(`Arife ya da tatil değişikliği nedeniyle şu günlerin nöbet fazla mesaisi değişti: ${saatFarki.join(", ")}.`);
   const idler = new Set(depo.veri.staff.map(k => k.id));
   const silinen = new Set<string>();
@@ -29,8 +32,14 @@ export function eskimeNedenleri(y: number, m: number): string[] {
   const kisi = new Map(depo.veri.staff.map(k => [k.id, k]));
   const uygunsuz = new Set<string>();
   for (const g of c.days) {
-    for (const p of g.assigned) { const k = kisi.get(p.id); if (k && !eczaneNobetcisi(k)) uygunsuz.add(k.name); }
-    for (const p of g.prep) { const k = kisi.get(p.id); if (k && !eczaneHazirlamacisi(k) && k.role !== "destek") uygunsuz.add(k.name); }
+    for (const p of g.assigned) {
+      const k = kisi.get(p.id);
+      if (k && !eczaneNobetcisi(k)) uygunsuz.add(k.name);
+    }
+    for (const p of g.prep) {
+      const k = kisi.get(p.id);
+      if (k && !eczaneHazirlamacisi(k) && k.role !== "destek") uygunsuz.add(k.name);
+    }
   }
   if (uygunsuz.size) n.push(`Görevi değiştiği için artık eczane nöbeti tutmayan kişiler çizelgede: ${[...uygunsuz].join(", ")}.`);
   return n;
@@ -39,8 +48,11 @@ export function eskimeNedenleri(y: number, m: number): string[] {
 /** Çizelgenin (kopyasının) günlerindeki nöbet fazla mesaisini takvimden yeniden yazar (elle yazılan saat korunur):
  *  çizelge kaydedildikten sonra işaretlenen arife / tatil de çıktılara ve özetlere doğru saatle girsin. c değişir. */
 export function saatleriGuncelle<T extends AyCizelgesi>(c: T): T {
-  const B = new Baglam(veriAnlik()), dim = gunSayisi(c.year, c.month);
-  c.days.forEach(g => { g.fazlaMesai = gunNobetFm(B, c.year, c.month, g, dim); });
+  const B = new Baglam(veriAnlik()),
+    dim = gunSayisi(c.year, c.month);
+  c.days.forEach(g => {
+    g.fazlaMesai = gunNobetFm(B, c.year, c.month, g, dim);
+  });
   return c;
 }
 
@@ -63,7 +75,10 @@ export function gunuGuncelle(y: number, m: number, gun: number, nobetciler: Gore
   g.locked = true;
   if (duzen !== undefined) {
     const d = gunDuzeniDogrula(duzen as Record<string, unknown> | null);
-    for (const k of ["nobetSay", "hazSay", "fmNobet", "fmHaz"] as const) { if (d[k] !== undefined) g[k] = d[k]; else delete g[k]; }
+    for (const k of ["nobetSay", "hazSay", "fmNobet", "fmHaz"] as const) {
+      if (d[k] !== undefined) g[k] = d[k];
+      else delete g[k];
+    }
     g.fazlaMesai = d.fmNobet ?? new Baglam(veriAnlik()).fazlaMesai(y, m, gun, gunSayisi(y, m));
   }
 }
@@ -74,7 +89,10 @@ export function gunKilidiniKaldir(y: number, m: number, gun: number) {
   const g = c.days[gun - 1];
   g.locked = false;
   if (g.nobetSay !== undefined || g.hazSay !== undefined || g.fmNobet !== undefined || g.fmHaz !== undefined) {
-    delete g.nobetSay; delete g.hazSay; delete g.fmNobet; delete g.fmHaz;
+    delete g.nobetSay;
+    delete g.hazSay;
+    delete g.fmNobet;
+    delete g.fmHaz;
     g.fazlaMesai = new Baglam(veriAnlik()).fazlaMesai(y, m, gun, gunSayisi(y, m));
   }
 }
@@ -86,7 +104,7 @@ export function cizelgeSil(y: number, m: number) {
 export function onayla(y: number, m: number) {
   const c = ayCizelgesi(y, m);
   if (c) c.onay = { zaman: Date.now(), kim: depo.veri.kurum.onaylayan };
-  gecmisiSifirla();   // onay bir geri alma noktasıdır
+  gecmisiSifirla(); // onay bir geri alma noktasıdır
 }
 export function onayiKaldir(y: number, m: number) {
   const c = ayCizelgesi(y, m);

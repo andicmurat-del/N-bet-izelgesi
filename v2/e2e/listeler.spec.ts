@@ -37,7 +37,11 @@ test("acil eczane listesi PDF'i ve Excel'i", async ({ page, kur }) => {
 test("hazırlama listesi PDF'leri (tek sayfa, kişi başı, toplu)", async ({ page, kur }) => {
   await kur();
   await git(page, "gunluk/hazirlama");
-  for (const [tur, sayfa] of [["tek", 1], ["toplu", 1], ["kisi", 8]] as const) {
+  for (const [tur, sayfa] of [
+    ["tek", 1],
+    ["toplu", 1],
+    ["kisi", 8],
+  ] as const) {
     await bas(page, /^PDF$/);
     await page.locator(`dialog[open] input[value="${tur}"]`).check();
     const p = await indir(page, () => page.locator("dialog[open] button", { hasText: "PDF oluştur" }).click());

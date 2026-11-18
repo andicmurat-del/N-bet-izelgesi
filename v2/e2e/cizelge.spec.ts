@@ -17,7 +17,8 @@ test("nöbet listesi PDF'i (takvim, gün listesi, kişi özeti) ve Excel", async
 });
 
 test("çizelge oluşturulur (ilerleme çubuğuyla) ve onaylanır", async ({ page, kur }) => {
-  const v = durum(); v.schedules = {};
+  const v = durum();
+  v.schedules = {};
   await kur({ veri: v });
   await git(page, "gunluk/nobet");
   await bas(page, "Çizelgeyi oluştur");
@@ -43,7 +44,9 @@ test("tatil gününde 3 nöbetçi ve elle saat: kaydedilir, puantaja girer", asy
   await d.getByLabel("Nöbet fazla mesaisi (saat)").fill("20");
   await d.locator("button", { hasText: /Kaydet$/ }).click();
   if (await d.locator("button", { hasText: "Yine de kaydet" }).count()) await d.locator("button", { hasText: "Yine de kaydet" }).click();
-  await expect.poll(async () => (await kayit(page)).schedules["2026-10"].days[13]).toMatchObject({ nobetSay: 3, fmNobet: 20, locked: true });
+  await expect
+    .poll(async () => (await kayit(page)).schedules["2026-10"].days[13])
+    .toMatchObject({ nobetSay: 3, fmNobet: 20, locked: true });
   await git(page, "gunluk/puantaj");
   // 14 Kasım Cumartesi: nöbet 24 + (20 − 24) = 20 saat
   await expect(page.getByRole("button", { name: /^20 · Hülya Koç, 14 Kasım/ })).toBeVisible();
@@ -54,7 +57,9 @@ test("paylaş: ayın listesi ve kişinin görevleri metin olarak", async ({ page
   await git(page, "gunluk/nobet");
   await bas(page, /^Paylaş$/);
   const t = page.locator("dialog[open] textarea");
-  await expect(t).toHaveValue(/^\*Kasım 2026 Nöbet Listesi\* · Test Hastanesi \(taslak\)\n1 Paz\*: Bora Kaya, Selin Uçar · Haz\.: Cem Demir, Kaan Polat/);
+  await expect(t).toHaveValue(
+    /^\*Kasım 2026 Nöbet Listesi\* · Test Hastanesi \(taslak\)\n1 Paz\*: Bora Kaya, Selin Uçar · Haz\.: Cem Demir, Kaan Polat/,
+  );
   await page.locator("dialog[open] select").selectOption({ label: "Ayşe Yılmaz · Eczacı" });
   await expect(t).toHaveValue(/• 4 Kasım Çarşamba: nöbet/);
   await expect(t).toHaveValue(/Toplam: 5 nöbet, 1 hazırlama, \d+ öğlen nöbeti$/);
