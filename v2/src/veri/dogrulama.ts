@@ -5,7 +5,7 @@ import { ayAnahtari, gunSayisi, haftaAnahtari, haftaGunu } from "./tarih";
 
 export const AYAR_VARSAYILAN: Ayarlar = { minAra: 3, acilMinAra: 3, destekAylik: 2, arifeSaat: 3,
   nobetSuresi: 24, mesai: 8, hazSaat: 8, maxThu: 1, hsUst: 2, thuHaftaSonu: true, cumaEsles: true, fmHedef: 8, niDusum: 1, acilArdArda: true,
-  oglenHE: 2, oglenHT: 1, oglenCE: 3, oglenCT: 2 };
+  oglenHE: 2, oglenHT: 1, oglenCE: 3, oglenCT: 2, tatilOtomatik: true };
 /** gelişmiş kuralların sınırları (Ayarlar ekranı ve doğrulama ortak): [en az, en çok, adım] */
 export const AYAR_SINIR = {
   nobetSuresi: [12, 24, 1], mesai: [4, 12, 0.5], hazSaat: [1, 12, 0.5], maxThu: [1, 99, 1], hsUst: [1, 4, 1], fmHedef: [2, 24, 1], niDusum: [1, 2, 1],
@@ -31,6 +31,7 @@ export function bosVeri(): Veri {
     servisAyar: { svc: {}, ekstra: [] },
     servisKayit: {},
     onayMasa: { yerlesim: {}, elle: {} },
+    tatilYillari: {},
   };
 }
 
@@ -100,7 +101,7 @@ export function veriyiDogrula(ham: unknown): Veri {
       const v = sayi(s[k], a, b, AYAR_VARSAYILAN[k as keyof typeof AYAR_SINIR]);
       return [k, Math.round(v / adim) * adim];
     })) as Pick<Ayarlar, keyof typeof AYAR_SINIR>),
-    thuHaftaSonu: s.thuHaftaSonu !== false, cumaEsles: s.cumaEsles !== false, acilArdArda: s.acilArdArda !== false,
+    thuHaftaSonu: s.thuHaftaSonu !== false, cumaEsles: s.cumaEsles !== false, acilArdArda: s.acilArdArda !== false, tatilOtomatik: s.tatilOtomatik !== false,
   };
   const kodlar: PuantajKodu[] = ["M", "N", "H", "NI", "YI", "R", "DI", "B"];
   for (const [ayK, kisiler] of Object.entries(nesne(o.puantaj))) {
@@ -211,5 +212,6 @@ export function veriyiDogrula(ham: unknown): Veri {
     for (const [id, yer] of Object.entries(nesne(x))) if (kisiIdleri.has(Number(id)) && typeof yer === "string" && /^([1-7]|J)$/.test(yer)) l[id] = yer;
     if (Object.keys(l).length) v.onayMasa.elle[gun] = l;
   }
+  for (const [yil, x] of Object.entries(nesne(o.tatilYillari))) if (/^\d{4}$/.test(yil) && x === true) v.tatilYillari[yil] = true;
   return v;
 }

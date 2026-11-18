@@ -1,13 +1,14 @@
 <script lang="ts">
   import type { Kisi } from "../../veri/tipler";
-  import { depo, tercihAl, tercihAyarla, resmiTatilMi, arifeMi, resmiTatilAyarla, arifeAyarla, aydaCalisanlar, ayCizelgesi } from "../../veri/depo.svelte";
+  import { depo, tercihAl, tercihAyarla, resmiTatilMi, arifeMi, resmiTatilAyarla, arifeAyarla, aydaCalisanlar, ayCizelgesi, resmiTatilleriIsaretle } from "../../veri/depo.svelte";
   import { TERCIH_ACIKLAMA, TERCIH_AD, ROL_AD, type Tercih } from "../../veri/tipler";
-  import { GUN_KISA, adIcerir, gunMetni, gunSayisi, haftaGunu, haftaSonuMu, isoTarih } from "../../veri/tarih";
+  import { AYLAR, GUN_KISA, adIcerir, gunMetni, gunSayisi, haftaGunu, haftaSonuMu, isoTarih } from "../../veri/tarih";
   import { veriAnlik } from "../../veri/depo.svelte";
   import { Baglam } from "../../motor/baglam";
   import IslemAlani from "../ortak/IslemAlani.svelte";
   import Ikon from "../ortak/Ikon.svelte";
   import IzinliGorevler from "../cizelge/IzinliGorevler.svelte";
+  import { TATIL_TABLO_YILLARI, diniBayramlarVar, tatilAdi, yilinTatilleri } from "../../veri/resmiTatiller";
 
   // kimler: listelenecek kişiler (o kadronun
   // nöbet tutanları); onayKilidi: eczane çizelgesi onaylıysa işaretler kilitlensin mi (acil listesinde onay yok)
@@ -63,6 +64,13 @@
   const GRUP_AD: Record<string, string> = { eczaci: "Eczacılar", nobetci: "Kemoterapi eczacıları", teknisyen: "Teknikerler", destek: "Destek personeli", servis: "Acil servis personeli" };
   const izinliSayisi = (d: number) => kisiler.filter(k => tercihAl(k.id, depo.yil, depo.ay, d) === "izinli").length;
   const izinGun = (id: number) => kisiAyIsaretleri(id).izinli ?? 0;
+  // yılın resmi tatillerini elle işaretleme (çizelgesi olan geçmiş aylar dahil; onaylı aylar hariç)
+  let tatilDurum = $state("");
+  function yiliIsaretle() {
+    const r = resmiTatilleriIsaretle(depo.yil);
+    tatilDurum = (r.isaretlenen ? `${r.isaretlenen} gün işaretlendi.` : "Bütün tatiller zaten işaretli.") + (r.atlananAylar.length ? ` Onaylı aylara dokunulmadı: ${r.atlananAylar.map(m => AYLAR[m]).join(", ")}.` : "");
+  }
+  $effect(() => { depo.yil; tatilDurum = ""; });
   function birak() { suruk = false; }
 
   const kisiAyIsaretleri = (id: number) => {
@@ -144,6 +152,21 @@
     <aside class="panel yan">
       <div class="panel-bas"><h2>Tatil günleri</h2></div>
       <p class="panel-ic yan-not">Hafta sonları zaten tatildir. Burada resmi tatil ve bayram günlerini, yarım gün çalışılan arifeleri işaretleyin; nöbet fazla mesaisi ve hazırlama görevleri buna göre hesaplanır.</p>
+      <div class="panel-ic tatil-liste">
+        <h3>{depo.yil} resmi tatilleri</h3>
+        {#if !diniBayramlarVar(depo.yil)}<p class="yan-not">Dini bayram tarihleri {TATIL_TABLO_YILLARI[0]}–{TATIL_TABLO_YILLARI[1]} için kayıtlı; bu yıl yalnız sabit tatiller listelenir.</p>{/if}
+        <ul>
+          {#each yilinTatilleri(depo.yil) as t}
+            {@const isaretli = t.arife ? arifeMi(t.y, t.m, t.d) : resmiTatilMi(t.y, t.m, t.d)}
+            {@const gecersiz = t.arife && haftaSonuMu(t.y, t.m, t.d)}
+            <li class:ay={t.m === depo.ay}><span class="tarih rakam">{t.d} {AYLAR[t.m].slice(0, 3)}</span><span class="ad">{t.ad}</span><span class="durum" class:var={isaretli} title={gecersiz ? "Arife hafta sonuna denk geliyor (mesai yok)" : isaretli ? "İşaretli" : "İşaretli değil"}>{gecersiz ? "–" : isaretli ? "✓" : "○"}</span></li>
+          {/each}
+        </ul>
+        <label class="secim-satir"><input type="checkbox" bind:checked={depo.veri.settings.tatilOtomatik} /><span>Her yıl kendiliğinden işaretle <small>Yıl ilk açılınca; onaylı aylara ve çizelgesi olan geçmiş aylara dokunmaz. Sonradan kaldırdığınız gün yeniden işaretlenmez.</small></span></label>
+        <button class="dugme" onclick={yiliIsaretle}>{depo.yil} tatillerini şimdi işaretle</button>
+        {#if tatilDurum}<p class="yan-not" role="status">{tatilDurum}</p>{/if}
+        <p class="yan-not kucuk">Dini bayramlar Hicri takvimle (Ümmü'l-Kurâ) hesaplandı; 2019–2026 arasında Diyanet'in ilan ettiği tarihlerle aynıdır. İleriki bir yılda ilan bir gün farklı olursa günü takvimden elle düzeltin.</p>
+      </div>
     </aside>
     <div class="sag-sutun">
       <section class="panel">
@@ -167,7 +190,7 @@
               aria-label="{gunMetni(y, m, d)}{rt ? ', resmi tatil' : ''}{ar ? ', arife' : ''}"
               onpointerdown={e => basla(d, e)} onclick={() => tikla(d)} onpointerenter={() => gez(d)}
               onkeydown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); uygula(d); } }}>
-              <span class="serit"><b class="rakam">{d}</b><span class="gunadi">{GUN_KISA[haftaGunu(y, m, d)]}</span>{#if rt}<span class="etiket">Resmi tatil</span>{:else if ar}<span class="etiket">Arife</span>{/if}</span>
+              <span class="serit"><b class="rakam">{d}</b><span class="gunadi">{GUN_KISA[haftaGunu(y, m, d)]}</span>{#if rt}<span class="etiket" title={tatilAdi(y, m, d) ?? ""}>{tatilAdi(y, m, d) ?? "Resmi tatil"}</span>{:else if ar}<span class="etiket" title={tatilAdi(y, m, d) ?? ""}>Arife</span>{/if}</span>
               <span class="icerik"></span>
             </button>
           {/each}
@@ -266,4 +289,16 @@
     .gunadi, .etiket { display: none; }
     .icerik { padding: 3px 4px; }
   }
+  .tatil-liste { display: grid; gap: var(--b2); border-top: 1px solid var(--cizgi); }
+  .tatil-liste h3 { font-size: var(--f-sm); margin: var(--b2) 0 0; color: var(--lacivert); }
+  .tatil-liste ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: var(--f-xs); }
+  .tatil-liste li { display: grid; grid-template-columns: 52px 1fr 18px; gap: var(--b2); padding: 3px 4px; border-radius: 4px; }
+  .tatil-liste li.ay { background: var(--vurgu-zemin); }
+  .tatil-liste .tarih { color: var(--yazi-2); }
+  .tatil-liste .durum { text-align: center; color: var(--soluk); }
+  .tatil-liste .durum.var { color: var(--vurgu); font-weight: 700; }
+  .secim-satir { display: flex; gap: var(--b2); align-items: flex-start; font-size: var(--f-sm); }
+  .secim-satir input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--vurgu); flex: none; }
+  .secim-satir small { display: block; color: var(--soluk); font-size: var(--f-xs); }
+  .kucuk { font-size: var(--f-xs); }
 </style>

@@ -7,7 +7,7 @@
       "Acil eczanede nöbet tutan eczacıda \"Acil eczane\" anahtarını, Cuma öğlen nöbeti tutmayanda \"Cuma'dan muaf\" anahtarını açın.",
     ] },
     { baslik: "Her ay: günlük eczane nöbet listesi", adimlar: [
-      "Günlük Eczane > İzinler: yıllık izinleri, nöbet isteklerini (+ / −) ve eş durumlarını işaretleyin; Resmi tatil ve arife sekmesinde bayramları işaretleyin.",
+      "Günlük Eczane > İzinler: yıllık izinleri, nöbet isteklerini (+ / −) ve eş durumlarını işaretleyin. Resmi tatiller ve arifeler (2026–2050) yıl ilk açılınca kendiliğinden işaretlenir; Resmi tatil ve arife sekmesinde yılın listesini kontrol edin, idari izin gibi ek günleri elle ekleyin.",
       "Nöbet Listesi > Çizelgeyi oluştur. Çubuk dolana kadar bekleyin; aynı bilgilerle her bilgisayarda aynı çizelge çıkar.",
       "Kural denetimi panelindeki kırmızı (hata) ve sarı (dikkat) satırlara bakın. Bir günü değiştirmek için güne dokunup \"Nöbet değişikliği yap\". Elle değiştirilen gün kilitlenir; yeniden oluşturmada korunur.",
       "Aynı pencereden o günün nöbetçi sayısını ve nöbet fazla mesaisini (tatil gününde hazırlama sayısını ve saatini de) değiştirebilirsiniz.",

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { depo, gecmis, geriAl, yinele, yedekVerisi, yedekAlindi, yedekErtele, yedekHatirlatma } from "./veri/depo.svelte";
+  import { onMount, untrack } from "svelte";
+  import { depo, gecmis, geriAl, yinele, yedekVerisi, yedekAlindi, yedekErtele, yedekHatirlatma, tatilleriKendiligindenIsaretle } from "./veri/depo.svelte";
   import { bulut, bulutuBaslat, bulutYenidenDene, cakismayiCoz } from "./veri/bulut.svelte";
   import { dosyaKaydet, hataMetni } from "./disa/indir";
   import { ayAdi } from "./veri/tarih";
@@ -42,6 +42,14 @@
     bekliyor: "Veriler bu bilgisayarda saklanır", kapali: "Veriler bu bilgisayarda saklanır", esit: "Veriler sunucuya kaydedildi",
     gonderiliyor: "Sunucuya kaydediliyor…", hata: "Sunucuya kaydedilemedi (veriler bu bilgisayarda)", cakisma: "Sunucuyla eşitleme bekliyor",
   };
+  // resmi tatiller: seçilen yıl ilk kez açılınca kendiliğinden işaretlenir. Sunucuyla eşitleme belli olduktan sonra
+  // (sunucudaki veri gelmeden yerel veri değişip iki cihaz arasında gereksiz çakışma çıkmasın)
+  $effect(() => {
+    const y = depo.yil, d = bulut.durum;
+    depo.veri.tatilYillari; depo.veri.settings.tatilOtomatik;
+    if (d === "bekliyor" || d === "cakisma" || d === "gonderiliyor") return;
+    untrack(() => tatilleriKendiligindenIsaretle(y));
+  });
   onMount(() => {
     void bulutuBaslat();
     const dinle = () => (sayfa = hashOku());
