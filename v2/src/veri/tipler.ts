@@ -36,7 +36,12 @@ export interface Gun {
   prep: Gorevli[];
   /** elle düzenlendi: yeniden oluşturmada korunur */
   locked: boolean;
+  /** tatil gününde elle belirlenen nöbetçi / hazırlama sayısı (yoksa 2 / 2) ve fazla mesai saatleri (yoksa takvimden:
+   *  nöbet 24 − o günün ve ertesi günün mesaisi, hazırlama 8 saat). Yalnız elle düzenlenen (kilitli) günde bulunur. */
+  nobetSay?: number; hazSay?: number; fmNobet?: number; fmHaz?: number;
 }
+/** günün elle belirlenen düzeni (tatil günü) */
+export type GunDuzeni = Pick<Gun, "nobetSay" | "hazSay" | "fmNobet" | "fmHaz">;
 
 export interface Onay { zaman: number; kim: string }
 

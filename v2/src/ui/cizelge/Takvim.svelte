@@ -27,7 +27,7 @@
     {@const dw = haftaGunu(c.year, c.month, g.day)}
     {@const rt = resmiTatilMi(c.year, c.month, g.day)}
     {@const ar = arifeMi(c.year, c.month, g.day)}
-    {@const eksik = g.assigned.length < 2 || !g.assigned.some(p => p.role === "eczaci" || p.role === "nobetci")}
+    {@const eksik = g.assigned.length < (g.nobetSay ?? 2) || !g.assigned.some(p => p.role === "eczaci" || p.role === "nobetci")}
     <button class="gun" class:hs={g.tatil} class:rt class:sorun={g.conflict || eksik} class:secili={secili === g.day} class:bugun={bugunMu(g.day)}
       class:vurgu={vurgu !== null && kisiVar(g, vurgu)} class:soluk={vurgu !== null && !kisiVar(g, vurgu)}
       onclick={() => gunAc(g.day)} aria-pressed={secili === g.day}
@@ -39,7 +39,7 @@
         <span class="simgeler">
           {#if g.conflict || eksik}<span class="sorun-simge" title="Bu günde kural esnetildi, kişi eksik ya da eczacı yok"><Ikon ad="uyari" boyut={14} /></span>{/if}
           {#if degisen?.has(g.day)}<span class="degisti" title="Bu günde nöbet değişimi var">değişti</span>{/if}
-          {#if g.locked}<span class="kilit" title="Elle düzenlendi; yeniden oluşturmada korunur"><Ikon ad="kilit" boyut={13} /></span>{/if}
+          {#if g.locked}<span class="kilit" title="Elle düzenlendi; yeniden oluşturmada korunur{g.fmNobet !== undefined ? ` · nöbet fazla mesaisi ${g.fmNobet} saat (elle)` : ''}{g.fmHaz !== undefined ? ` · hazırlama ${g.fmHaz} saat (elle)` : ''}"><Ikon ad="kilit" boyut={13} /></span>{/if}
         </span>
       </span>
       <span class="kisiler">

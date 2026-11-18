@@ -181,3 +181,23 @@ describe("eczacı az olduğunda fazla mesai / nöbet farkı", () => {
     expect(fmFarkiYapisal(kadro(2, 4), 2026, 9, t([48, 48], [72, 64, 64, 64]))).toBe(false);
   });
 });
+
+describe("tatil gününde elle sayı ve fazla mesai", () => {
+  const ilkCumartesi = sch.days.findIndex(g => new Date(Y, M, g.day).getDay() === 6);
+  test("yeniden oluşturmada gün düzeniyle korunur; eşitlik hesabına yazılan saat girer", () => {
+    const g = JSON.parse(JSON.stringify(sch.days[ilkCumartesi]));
+    const ek = staff.find(s => !g.assigned.some(p => p.id === s.id) && !g.prep.some(p => p.id === s.id) && s.role === "teknisyen");
+    Object.assign(g, { locked: true, assigned: [...g.assigned, { id: ek.id, name: ek.name, role: ek.role }], nobetSay: 3, hazSay: 1, prep: g.prep.slice(0, 1), fmNobet: 30, fmHaz: 4, fazlaMesai: 30 });
+    const days = sch.days.map((x, i) => (i === ilkCumartesi ? g : x));
+    const v = { ...veri, schedules: { [`${Y}-${M}`]: { year: Y, month: M, days } } };
+    const r = cizelgeOlustur(v, Y, M, { saat: () => 0 });
+    const k = r.days[ilkCumartesi];
+    expect(k).toMatchObject({ locked: true, nobetSay: 3, hazSay: 1, fmNobet: 30, fmHaz: 4, fazlaMesai: 30 });
+    expect(k.assigned.length).toBe(3);
+    // canlı denetim 3 kişiyi eksik saymaz; elle günün düzeni denetime girer
+    expect(canliDenetimHesapla(v, { year: Y, month: M, days: r.days }).some(t => t.includes(k.day + ". gün ("))).toBe(false);
+    const b = gunuDenetle(v, { year: Y, month: M, days: r.days }, k.day, k.assigned.slice(0, 2), [], { nobetSay: 3, hazSay: 1, fmNobet: 30 });
+    expect(b.some(x => x.t === "Bu gün 3 nöbetçi olmalı; 1 yer boş.")).toBe(true);
+    expect(b.some(x => x.t === "Bu gün 1 hazırlama personeli olmalı; 1 yer boş.")).toBe(true);
+  });
+});

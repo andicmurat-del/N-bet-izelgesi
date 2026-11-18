@@ -1,9 +1,10 @@
 // Veri katmanı: yedek doğrulama, kişi numarası, silme koruması, izin/rapor ve nöbet değişimi (geri alma dahil).
 // .svelte.ts dosyaları vitest'te sunucu kipinde derlenir: $state düz nesnedir, $effect çalışmaz (kayıt yapılmaz).
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import { depo, bosVeri, veriyiDogrula, cizelgeKaydet, yedekAlindi, yedekErtele, yedekHatirlatma, yedekIzi, yedekVerisi, yedektenYukle, kisiEkle, kisiGuncelle, kisiSil, onayliGoreviVar, eskimeNedenleri, arifeAyarla, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenHaftasiniSil, oglenHaftaKaydet, oglenKaydet, haftayiOnayla, haftaOnayiniKaldir, haftaOnayi, onayGunuAyarla } from "../src/veri/depo.svelte.ts";
+import { depo, bosVeri, veriyiDogrula, cizelgeKaydet, yedekAlindi, yedekErtele, yedekHatirlatma, yedekIzi, yedekVerisi, yedektenYukle, kisiEkle, kisiGuncelle, kisiSil, onayliGoreviVar, eskimeNedenleri, arifeAyarla, gunuGuncelle, gunKilidiniKaldir, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenHaftasiniSil, oglenHaftaKaydet, oglenKaydet, haftayiOnayla, haftaOnayiniKaldir, haftaOnayi, onayGunuAyarla } from "../src/veri/depo.svelte.ts";
 import { degisimUygula, degisimGeriAl, izinUygula, puantajIzgarasi } from "../src/veri/degisim.svelte.ts";
 import { adAnahtari, adIcerir } from "../src/veri/tarih.ts";
+import { ayOzeti } from "../src/veri/ozet.ts";
 
 const Y = 2026, M = 9, AY = `${Y}-${M}`;
 const kopya = o => JSON.parse(JSON.stringify(o));
@@ -335,5 +336,42 @@ describe("ad karşılaştırma ve arama", () => {
     expect(adIcerir("Çağla Güneş", "CAGLA")).toBe(true);
     expect(adIcerir("Ayşe", "")).toBe(true);
     expect(adIcerir("Ayşe", "x")).toBe(false);
+  });
+});
+
+describe("tatil gününde elle nöbetçi / hazırlama sayısı ve fazla mesai", () => {
+  // 4 Ekim 2026 Pazar: nöbetçiler K4 ve K8; takvime göre nöbet fazla mesaisi 16 saat (24 − ertesi gün mesaisi 8)
+  const kisi = id => ({ id, name: `K${id}`, role: id <= 4 ? "eczaci" : "teknisyen" });
+  const satir = id => puantajIzgarasi(Y, M).satirlar.find(r => r.s.id === id);
+  test("yazılan saat puantaja girer, ertesi günün nöbet izni yine düşülür; otomatiğe bırakınca kalkar", () => {
+    const fm0 = satir(4).fm, fm8 = satir(8).fm, fm1 = satir(1).fm;
+    gunuGuncelle(Y, M, 4, [kisi(4), kisi(8), kisi(2)], [kisi(1)], { nobetSay: 3, hazSay: 1, fmNobet: 10, fmHaz: 5 });
+    const g = depo.veri.schedules[AY].days[3];
+    expect(g).toMatchObject({ locked: true, nobetSay: 3, hazSay: 1, fmNobet: 10, fmHaz: 5, fazlaMesai: 10 });
+    // nöbet süresi 24 + (10 − 16) = 18 saat; Pazartesi nöbet izni 8 saat düşülür: fazla mesai 6 saat azalır
+    expect(satir(4).cells[3]).toMatchObject({ kod: "N", saat: 18 });
+    expect(satir(4).cells[4].kod).toBe("NI");
+    expect(satir(4).fm).toBe(fm0 - 6);
+    expect(satir(8).fm).toBe(fm8 - 6);
+    expect(satir(1).cells[3]).toMatchObject({ kod: "H", saat: 5 });
+    expect(satir(1).fm).toBe(fm1 + 5);
+    // kişi başı özet (PDF / Excel) de yazılan saatle
+    expect(ayOzeti(depo.veri.schedules[AY])[1].fazlaMesai).toBe(depo.veri.schedules[AY].days.filter(x => x.assigned.some(p => p.id === 1)).reduce((t, x) => t + x.fazlaMesai, 0) + 5);
+    // elle saatli gün "eskimiş" sayılmaz
+    expect(eskimeNedenleri(Y, M).some(t => t.includes(": 4") || t.includes(" 4,") || t.endsWith(" 4."))).toBe(false);
+    gunKilidiniKaldir(Y, M, 4);
+    const h = depo.veri.schedules[AY].days[3];
+    expect(h.locked).toBe(false);
+    expect([h.nobetSay, h.hazSay, h.fmNobet, h.fmHaz]).toEqual([undefined, undefined, undefined, undefined]);
+    expect(h.fazlaMesai).toBe(16);
+  });
+  test("düzen yedekte korunur; sınır dışı değerler atılır", () => {
+    const o = kopya(depo.veri);
+    Object.assign(o.schedules[AY].days[3], { locked: true, nobetSay: 3, hazSay: 0, fmNobet: 12.5, fmHaz: 4 });
+    Object.assign(o.schedules[AY].days[9], { locked: true, nobetSay: 9, hazSay: -1, fmNobet: 99, fmHaz: "x" });
+    const v = veriyiDogrula(o);
+    expect(v.schedules[AY].days[3]).toMatchObject({ nobetSay: 3, hazSay: 0, fmNobet: 12.5, fmHaz: 4 });
+    const d = v.schedules[AY].days[9];
+    expect([d.nobetSay, d.hazSay, d.fmNobet, d.fmHaz]).toEqual([undefined, undefined, undefined, undefined]);
   });
 });

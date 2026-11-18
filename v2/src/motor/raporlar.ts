@@ -1,7 +1,7 @@
 // Raporlar: günlük çalışma listesi, acil servis denetimi, yılın raporu (ay ay puantaj özeti ve yıllık denge),
 // uyarıların önem sınıfı.
 import { acilKadrosunda, eczaneGoreviYakin } from "./acil";
-import { eczaneNobetcisi, aktifAydaMi, aktifGunMu, ayrildiMi, type Baglam } from "./baglam";
+import { eczaneNobetcisi, aktifAydaMi, aktifGunMu, ayrildiMi, gunHazSaat, gunNobetFm, type Baglam } from "./baglam";
 import { ayVeriVarMi } from "./istatistik";
 import { puantajIzgarasi, ROL_SIRA, type PuantajIzgarasi } from "./puantaj";
 import { ayAnahtari, ayGunSayisi, AY_KISA, AYLAR, CUMA, CUMARTESI, gunKaydir, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
@@ -129,10 +129,10 @@ function ayDetayi(B: Baglam, y: number, m: number): Record<number, AyDetay> {
   G.satirlar.forEach(x => { r[x.s.id] = { fm: x.fm, nobet: x.n, hi: x.hi, cu: x.cu, cmt: x.cmt, paz: x.paz, thu: x.thu, prep: x.h, ni: x.ni, yi: x.yi, rd: x.rd, rt: x.rt || 0, gunler: x.gunlerN }; });
   const sch = B.cizelge(y, m);
   if (sch) {
-    const dimS = ayGunSayisi(y, m), hz = B.sayi("hazSaat");
+    const dimS = ayGunSayisi(y, m);
     const silinmis = (p: { id: number }) => !B.staff.some(s => s.id === p.id);
     sch.days.forEach(d => {
-      const dw = haftaGunu(y, m, d.day), fm = B.fazlaMesai(y, m, d.day, dimS);
+      const dw = haftaGunu(y, m, d.day), fm = gunNobetFm(B, y, m, d, dimS), hz = gunHazSaat(B, d);
       d.assigned.filter(silinmis).forEach(p => {
         const x = r[p.id] || (r[p.id] = bosDetay());
         x.fm += fm; x.nobet++;
@@ -189,14 +189,14 @@ type DengeSayilari = Record<DengeAnahtari, number> & { aylar?: number[] };
  *  izin/rapor nedeniyle yerine geçmelerde görev raporlu / izinli kişinin sayılır (telafi gerekmez).
  *  Fazla mesai = nöbet + hazırlama saatleri. */
 function cizelgeYillik(B: Baglam, yil: number) {
-  const t: Record<string, DengeSayilari> = {}, aylar: number[] = [], hz = B.sayi("hazSaat");
+  const t: Record<string, DengeSayilari> = {}, aylar: number[] = [];
   const bos = (): DengeSayilari => ({ nobet: 0, cu: 0, cmt: 0, paz: 0, pe: 0, rt: 0, prep: 0, fm: 0 });
   for (let mm = 0; mm < 12; mm++) {
     const sc = B.dengeCizelgesi(yil, mm); if (!sc || !Array.isArray(sc.days) || !ayVeriVarMi(sc)) continue;
     aylar.push(mm);
     const dim = ayGunSayisi(yil, mm), kisiAy: Record<string, true> = {};
     sc.days.forEach(d => {
-      const dw = haftaGunu(yil, mm, d.day), tt = B.tatilMi(yil, mm, d.day), rt = B.resmiTatilMi(yil, mm, d.day), fm = B.fazlaMesai(yil, mm, d.day, dim);
+      const dw = haftaGunu(yil, mm, d.day), tt = B.tatilMi(yil, mm, d.day), rt = B.resmiTatilMi(yil, mm, d.day), fm = gunNobetFm(B, yil, mm, d, dim), hz = gunHazSaat(B, d);
       (d.assigned || []).forEach(p => {
         const x = t[p.id] || (t[p.id] = bos());
         x.nobet++; x.fm += fm;

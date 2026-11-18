@@ -1,6 +1,6 @@
 // Aramanın sabit girdileri: ilk yerleştirmeden sonra bir kez hesaplanır, arama boyunca değişmez (hız için diziler).
 // Kişiler aramada sıra numarasıyla (hIx) tutulur; sayaçlar Float64Array'dir.
-import { aktifAydaMi, aktifGunMu, eczaciMi, hazirlamaRol, type MotorGunu } from "../baglam";
+import { aktifAydaMi, aktifGunMu, eczaciMi, gunHazSaat, hazirlamaRol, type MotorGunu } from "../baglam";
 import { acilNobetiYakin } from "../acil";
 import { fmKuralKisileri, yilGunSayilari } from "../istatistik";
 import type { Kisi } from "../../veri/tipler";
@@ -29,6 +29,8 @@ export function aramaKur(A: AyBilgisi, days: MotorGunu[]) {
   const GUN_SAY = days.length;
   const gunDow = days.map(dy => haftaGunu(y, m, dy.day));
   const gunFm = days.map(dy => dy.fazlaMesai);
+  // günün hazırlama saati (elle düzenlenen tatil gününde elle yazılan, yoksa ayardaki)
+  const gunHz = days.map(dy => gunHazSaat(B, dy));
   const resmiGunDizi = days.map(dy => B.resmiTatilMi(y, m, dy.day)), resmiGunVar = resmiGunDizi.some(Boolean);
   const cuGunDizi = days.map(dy => B.cumaTipiMi(y, m, dy.day));
   // eş durumu: "istiyor" işaretli güne o kişi kesin nöbetçi yazılır
@@ -90,7 +92,7 @@ export function aramaKur(A: AyBilgisi, days: MotorGunu[]) {
 
   return {
     A, B, y, m, days, staffList, destekler, destekVar, DESTEK_AYLIK, prepAday, tumHavuz, degisimHavuzu, ayniTur,
-    GUN_SAY, gunDow, gunFm, resmiGunDizi, resmiGunVar, cuGunDizi, zorunluGun,
+    GUN_SAY, gunDow, gunFm, gunHz, resmiGunDizi, resmiGunVar, cuGunDizi, zorunluGun,
     NH, hIx, prefGun, yasakGun, izinOnceGun, oncekiAyPersembe, oncekiAyCuma,
     ixStaff, ixPrep, ixDestek, ixEczPrep, ixTekPrep, eczIx, ixFmKural, onceki, pv, hsMusait, HS_SIFIR_IZIN, destekTamUyari,
     HAZ_SAAT: B.sayi("hazSaat"),

@@ -15,7 +15,7 @@
 import type { Gorevli } from "../veri/tipler";
 import { Baglam, type MotorCizelgesi } from "./baglam";
 import { degisimDenetle as degisimDenetimi, yerineAdaylar, type Degisiklik } from "./degisim";
-import { cizelgeCanliDenetim, gunuDenetle as gunDenetimi } from "./denetim";
+import { cizelgeCanliDenetim, gunuDenetle as gunDenetimi, type GunDuzeniGirdisi } from "./denetim";
 import { cizelgeUret, type CizelgeSonucu } from "./nobet/olustur";
 import { acilOlustur } from "./acil";
 import { acilDegisimDenetle as acilDegisimDenetimi, acilYerineAdaylar } from "./acilDegisim";
@@ -89,8 +89,8 @@ function puanKucuk(a: number[], b: number[]): boolean {
 export function canliDenetimHesapla(veri: unknown, sch: MotorCizelgesi) {
   return cizelgeCanliDenetim(new Baglam(veri), sch.year, sch.month, sch.days);
 }
-export function gunuDenetle(veri: unknown, sch: MotorCizelgesi, gun: number, nobetciler: Gorevli[], hazirlama: Gorevli[]) {
-  return gunDenetimi(new Baglam(veri), sch, gun, nobetciler, hazirlama);
+export function gunuDenetle(veri: unknown, sch: MotorCizelgesi, gun: number, nobetciler: Gorevli[], hazirlama: Gorevli[], duzen?: GunDuzeniGirdisi | null) {
+  return gunDenetimi(new Baglam(veri), sch, gun, nobetciler, hazirlama, duzen);
 }
 
 /** Ayın puantaj cetveli: kişi başı gün gün kod ve saat, toplamlar, fazla mesai ve gündüz / gece dilimleri */

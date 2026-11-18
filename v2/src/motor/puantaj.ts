@@ -1,6 +1,6 @@
 // Aylık puantaj cetveli: kişi başı gün gün kod (M, N, H, NI, YI, R, DI, B, P) ve saat, toplamlar, fazla mesai ve
 // 08:00-20:00 / 20:00-08:00 dilimleri. Çizelge + puantajdaki elle değişiklikler + acil servis nöbetleri birlikte okunur.
-import { acildeTutanEczaci, aktifAydaMi, aktifGunMu, type Baglam } from "./baglam";
+import { acildeTutanEczaci, aktifAydaMi, aktifGunMu, gunHazSaat, type Baglam } from "./baglam";
 import { AYLAR, ayAnahtari, ayGunSayisi, CUMA, CUMARTESI, haftaGunu, oncekiAy, PAZAR, PERSEMBE, sonrakiAy } from "./takvim";
 import type { Kisi } from "../veri/tipler";
 
@@ -80,6 +80,11 @@ export function puantajIzgarasi(B: Baglam, y: number, m: number): PuantajIzgaras
         } else kod = "B";
       }
       let saat = kod === "M" && g.arife ? g.ms : kodSaati(B, kod);
+      // elle düzenlenen tatil gününün saatleri: eczane nöbetinde yazılan fazla mesai (nöbet süresi, takvimdeki fazla
+      // mesaiden farkı kadar değişir; ertesi günün nöbet izni yine düşülür), hazırlamada yazılan saat
+      const sg = sch && sch.days[i];
+      if (sg && kod === "N" && !acilFlag && typeof sg.fmNobet === "number") saat = Math.max(0, saat + sg.fmNobet - B.fazlaMesai(y, m, g.gun, dim));
+      else if (sg && kod === "H") saat = gunHazSaat(B, sg);
       // memur: yıllık izin ve raporlu gün, o günün normal mesai saatiyle çalışılmış sayılır
       if (!sadeceNobet && (kod === "YI" || kod === "R" || kod === "DI")) saat = g.ms;
       hucre.push({ kod, saat, ov: !!o, acil: acilFlag });
@@ -116,9 +121,11 @@ export function puantajIzgarasi(B: Baglam, y: number, m: number): PuantajIzgaras
     // (niDusum gizli ayar, hep 1), yetmezse kalanı 20:00-08:00 diliminden. Nöbet dışı tüm farklar (hazırlama, özel
     // saat, eksik gün...) 08:00-20:00'e yazılır.
     {
-      const L = kodSaati(B, "N"), gecePay = Math.min(12, L), gunduzOnce = B.sayi("niDusum") !== 2; let gece = 0;
+      const gunduzOnce = B.sayi("niDusum") !== 2; let gece = 0;
       hucre.forEach((c, i) => {
         if (c.kod !== "N") return;
+        // nöbetin süresi (elle düzenlenen tatil gününde yazılan fazla mesaiye göre farklı olabilir)
+        const L = c.saat, gecePay = Math.min(12, L);
         let gd = Math.max(0, L - gecePay - gunler[i].ms), gc = gecePay;
         const D = i + 1 < hucre.length ? (hucre[i + 1].kod === "NI" ? gunler[i + 1].ms : 0) : ileriNI;
         if (gunduzOnce) { gd -= D; if (gd < 0) { gc += gd; gd = 0; } } else { gc -= D; if (gc < 0) { gd += gc; gc = 0; } }

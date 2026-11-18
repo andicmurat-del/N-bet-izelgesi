@@ -168,6 +168,9 @@ Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Ay
 
 Kadro bir kuralı imkânsız kılıyorsa (ör. tatilde yeterli kişi yok) program bunu nedeniyle birlikte söyler ve kuralı esnettiği
 günü kırmızı işaretler. Elle düzenlenen (kilitli) günler yeniden oluşturmada korunur; ihlalleri uyarı olarak gösterilir.
+Tatil gününde elle düzenlerken nöbetçi sayısı (1–4), hazırlama sayısı (0–4), nöbet fazla mesaisi ve hazırlama saati de
+elle belirlenebilir; yazılan saatler o günün her nöbetçisine / hazırlamacısına yazılır ve puantaja, raporlara, eşitlik
+hesabına bu saatler girer (puantajda nöbet süresi yazılan fazla mesai kadar değişir; ertesi günün nöbet izni yine düşülür).
 
 ### Öncelik sırası
 1. Uyarısız çizelge (her şeyden önce).
@@ -265,7 +268,7 @@ Ayarlar > Yedek al ile alınan dosya şu alanları taşır (aylar 0'dan sayılı
 - \`prefs\`: "kisiId-yil-ay-gun" → izinli / want (istiyor) / avoid (istemiyor) / esVar / esYok.
 - \`manualTatil\`, \`arife\`: "yil-ay-gun" → true.
 - \`settings\`: minAra, acilMinAra, destekAylik, arifeSaat.
-- \`schedules\`: "yil-ay" → { year, month, days: [{ day, tatil, assigned (nöbetçiler), prep (hazırlamacılar), locked (elle), conflict (kural esnedi) }], uyarilar, onay }.
+- \`schedules\`: "yil-ay" → { year, month, days: [{ day, tatil, assigned (nöbetçiler), prep (hazırlamacılar), locked (elle), conflict (kural esnedi), fazlaMesai, elle düzenlenen tatil gününde nobetSay / hazSay / fmNobet / fmHaz }], uyarilar, onay }.
 - \`puantaj\`: "yil-ay" → kişi id → gün → elle yazılan kod (M, N, H, NI, YI, R, DI, B).
 - \`degisimler\`: nöbet değişimi ve izin nedeniyle yerine geçme kayıtları (cik: çıkan, yer: giren, gorev: N ya da H).
 - \`acil\`: "yil-ay" → gün → acil nöbetçi id'leri; \`acilElle\`: elle düzenlenen günler.

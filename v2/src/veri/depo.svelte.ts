@@ -1,5 +1,5 @@
 // Uygulama durumu ve tarayıcıda saklanması. Veriler yalnız bu tarayıcıda durur; taşımak için yedek dosyası kullanılır.
-import type { AyCizelgesi, Ayarlar, Gorevli, Kisi, OglenGunu, OglenSabit, PuantajKodu, Rol, Tercih, Veri } from "./tipler";
+import type { AyCizelgesi, Ayarlar, GunDuzeni, Gorevli, Kisi, OglenGunu, OglenSabit, PuantajKodu, Rol, Tercih, Veri } from "./tipler";
 import { ayAnahtari, gunAnahtari, gunSayisi, haftaAnahtari, haftaGunu, haftaIciGunleri, haftaSonuMu, tercihAnahtari } from "./tarih";
 import { oglenOnarimlariHesapla } from "../motor";
 import { Baglam, eczaneHazirlamacisi, eczaneNobetcisi } from "../motor/baglam";
@@ -42,6 +42,20 @@ function oglenSabitDogrula(x: unknown, e: number[], t: number[]): OglenSabit | u
   const sb: OglenSabit = { e: ic(o.e, e), t: ic(o.t, t) }, be = bos(o.be), bt = bos(o.bt);
   if (be) sb.be = be; if (bt) sb.bt = bt;
   return sb.e.length || sb.t.length || be || bt ? sb : undefined;
+}
+
+/** elle düzenlenen tatil gününün düzeni: nöbetçi sayısı 1–4, hazırlama 0–4, saatler 0–48 (tam ya da yarım saat) */
+export function gunDuzeniDogrula(x: Record<string, unknown> | null | undefined): GunDuzeni {
+  const o: GunDuzeni = {};
+  if (!x) return o;
+  const tam = (v: unknown, a: number, b: number) => (Number.isInteger(v) && (v as number) >= a && (v as number) <= b ? (v as number) : undefined);
+  const saat = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 48 ? Math.round(v * 2) / 2 : undefined);
+  const ns = tam(x.nobetSay, 1, 4), hs = tam(x.hazSay, 0, 4), fn = saat(x.fmNobet), fh = saat(x.fmHaz);
+  if (ns !== undefined && ns !== 2) o.nobetSay = ns;
+  if (hs !== undefined && hs !== 2) o.hazSay = hs;
+  if (fn !== undefined) o.fmNobet = fn;
+  if (fh !== undefined) o.fmHaz = fh;
+  return o;
 }
 
 /** Yedekten ya da tarayıcıdan okunan veriyi güvenli biçime getirir; tanınmayan alanlar atılır. */
@@ -139,7 +153,7 @@ export function veriyiDogrula(ham: unknown): Veri {
       days: Array.from({ length: c.days.length }, (_, i: number) => c.days[i]).map((g: unknown, i: number) => {
         const x = nesne(g);
         return { day: i + 1, tatil: x.tatil === true, conflict: x.conflict === true, fazlaMesai: Number.isFinite(Number(x.fazlaMesai)) ? Number(x.fazlaMesai) : 0,
-          assigned: gorevli(x.assigned), prep: gorevli(x.prep), locked: x.locked === true };
+          assigned: gorevli(x.assigned), prep: gorevli(x.prep), locked: x.locked === true, ...gunDuzeniDogrula(x) };
       }),
       uyarilar: Array.isArray(c.uyarilar) ? c.uyarilar.map(String) : [],
       olusturma: Number(c.olusturma) || 0,
@@ -466,7 +480,7 @@ export function eskimeNedenleri(y: number, m: number): string[] {
   if (tatilFarki.length) n.push(`Tatil günleri değişti (${tatilFarki.join(", ")}).`);
   // arife (ya da komşu günün tatili) sonradan işaretlendiyse nöbetin fazla mesai saati değişir (çizelge eski saati tutar)
   const B = new Baglam(veriAnlik()), dim = gunSayisi(y, m);
-  const saatFarki = c.days.filter(g => !tatilFarki.includes(g.day) && g.fazlaMesai !== B.fazlaMesai(y, m, g.day, dim)).map(g => g.day);
+  const saatFarki = c.days.filter(g => !tatilFarki.includes(g.day) && g.fmNobet === undefined && g.fazlaMesai !== B.fazlaMesai(y, m, g.day, dim)).map(g => g.day);
   if (saatFarki.length) n.push(`Arife ya da tatil değişikliği nedeniyle şu günlerin nöbet fazla mesaisi değişti: ${saatFarki.join(", ")}.`);
   const idler = new Set(depo.veri.staff.map(k => k.id));
   const silinen = new Set<string>();
@@ -491,18 +505,31 @@ export function cizelgeKaydet(y: number, m: number, days: AyCizelgesi["days"], u
   return true;
 }
 
-export function gunuGuncelle(y: number, m: number, gun: number, nobetciler: Gorevli[], hazirlama: Gorevli[]) {
+/** Günü elle düzenler (gün kilitlenir: yeniden oluşturmada korunur). duzen: tatil gününde elle belirlenen nöbetçi /
+ *  hazırlama sayısı ve fazla mesai saatleri (verilmezse günün kayıtlı düzeni kalır; null: düzen kaldırılır) */
+export function gunuGuncelle(y: number, m: number, gun: number, nobetciler: Gorevli[], hazirlama: Gorevli[], duzen?: GunDuzeni | null) {
   const c = ayCizelgesi(y, m);
   if (!c || c.onay) return;
   const g = c.days[gun - 1];
   g.assigned = nobetciler;
   g.prep = hazirlama;
   g.locked = true;
+  if (duzen !== undefined) {
+    const d = gunDuzeniDogrula(duzen as Record<string, unknown> | null);
+    for (const k of ["nobetSay", "hazSay", "fmNobet", "fmHaz"] as const) { if (d[k] !== undefined) g[k] = d[k]; else delete g[k]; }
+    g.fazlaMesai = d.fmNobet ?? new Baglam(veriAnlik()).fazlaMesai(y, m, gun, gunSayisi(y, m));
+  }
 }
+/** Gün otomatiğe döner: kilit ve elle düzen (sayılar, saatler) kalkar; yeniden oluşturmada gün baştan yazılır */
 export function gunKilidiniKaldir(y: number, m: number, gun: number) {
   const c = ayCizelgesi(y, m);
   if (!c || c.onay) return;
-  c.days[gun - 1].locked = false;
+  const g = c.days[gun - 1];
+  g.locked = false;
+  if (g.nobetSay !== undefined || g.hazSay !== undefined || g.fmNobet !== undefined || g.fmHaz !== undefined) {
+    delete g.nobetSay; delete g.hazSay; delete g.fmNobet; delete g.fmHaz;
+    g.fazlaMesai = new Baglam(veriAnlik()).fazlaMesai(y, m, gun, gunSayisi(y, m));
+  }
 }
 export function cizelgeSil(y: number, m: number) {
   const c = ayCizelgesi(y, m);

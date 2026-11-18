@@ -68,9 +68,9 @@ function yilBantTam(v: Float64Array, on: Float64Array): number {
 export type Amac = ReturnType<typeof amacKur>;
 
 export function amacKur(K: AramaKurulumu, kural: Kurallar) {
-  const { A, days, NH, hIx, GUN_SAY, gunDow, gunFm, resmiGunDizi, resmiGunVar, cuGunDizi, prefGun, izinOnceGun, zorunluGun,
+  const { A, days, NH, hIx, GUN_SAY, gunDow, gunFm, gunHz, resmiGunDizi, resmiGunVar, cuGunDizi, prefGun, izinOnceGun, zorunluGun,
     oncekiAyPersembe, oncekiAyCuma, ixStaff, ixPrep, ixDestek, ixEczPrep, ixTekPrep, eczIx, ixFmKural, onceki, pv, hsMusait,
-    HS_SIFIR_IZIN, destekTamUyari, destekVar, DESTEK_AYLIK, HAZ_SAAT, prepAday, ayar } = K;
+    HS_SIFIR_IZIN, destekTamUyari, destekVar, DESTEK_AYLIK, prepAday, ayar } = K;
   const { sinir, devir } = A;
   const { gundeVar, tatilGunu, yasak, ihlalSayisi } = kural;
   // hazırlama eşitliği: bu ay en az bir hazırlama gününde yazılabilen eczacı / tekniker
@@ -105,7 +105,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
       for (let q = 0; q < pl.length; q++) {
         const ix = hIx[pl[q].id];
         if (ix === undefined) continue;
-        hFm[ix] += sg * HAZ_SAAT; hWk[ix] += sg; hPrp[ix] += sg;
+        hFm[ix] += sg * gunHz[i]; hWk[ix] += sg; hPrp[ix] += sg;
         if (resmi) hRcH[ix] += sg;
         if (pg[pl[q].id] === "avoid") hPrAv += sg;
       }

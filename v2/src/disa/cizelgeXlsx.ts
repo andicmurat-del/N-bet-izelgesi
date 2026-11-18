@@ -19,7 +19,7 @@ export function cizelgeKitabi(c: AyCizelgesi, kisiler: Kisi[], kurum: string, re
     const ec = [...g.assigned].sort((a, b) => Number(b.role === "eczaci" || b.role === "nobetci") - Number(a.role === "eczaci" || a.role === "nobetci"));
     gunler.push([
       `${iki(g.day)}.${iki(m + 1)}.${y}`, GUN_UZUN[haftaGunu(y, m, g.day)], tur,
-      buyukAd(ec[0]?.name ?? ""), buyukAd(ec[1]?.name ?? ""), buyukAd(g.prep[0]?.name ?? ""), buyukAd(g.prep[1]?.name ?? ""), g.fazlaMesai,
+      buyukAd(ec[0]?.name ?? ""), ec.slice(1).map(p => buyukAd(p.name)).join(", "), buyukAd(g.prep[0]?.name ?? ""), g.prep.slice(1).map(p => buyukAd(p.name)).join(", "), g.fazlaMesai,
     ].map(v => (s ? { v, s } : v)));
   }
   const o = ayOzeti(c);

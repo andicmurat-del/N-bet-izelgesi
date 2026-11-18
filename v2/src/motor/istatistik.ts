@@ -1,5 +1,5 @@
 // Bir ayın çizelgesinden sayımlar: kişi başı fazla mesai, gün türleri, hafta sonu kuralı, yıllık gün türü sayıları.
-import { eczaciMi, eczaneNobetcisi, eczaneYillikEsit, aktifAydaMi, aktifGunMu, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
+import { eczaciMi, eczaneNobetcisi, gunHazSaat, gunNobetFm, eczaneYillikEsit, aktifAydaMi, aktifGunMu, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
 import { FM_MAX_FARK, type YilGunTipi } from "./sabitler";
 import { ayGunSayisi, CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
 
@@ -10,8 +10,9 @@ export function fmKuralKisileri(B: Baglam, y: number, m: number) {
 }
 /** günlere göre kişi başı aylık fazla mesai (nöbet + hazırlama saatleri) */
 function ayFmTablosu(B: Baglam, days: MotorGunu[]): Record<number, number> {
-  const hz = B.sayi("hazSaat"), t: Record<number, number> = {};
+  const t: Record<number, number> = {};
   days.forEach(g => {
+    const hz = gunHazSaat(B, g);
     (g.assigned || []).forEach(p => { t[p.id] = (t[p.id] || 0) + (g.fazlaMesai || 0); });
     (g.prep || []).forEach(p => { t[p.id] = (t[p.id] || 0) + hz; });
   });
@@ -68,7 +69,7 @@ export function ayIstatistik(B: Baglam, sch: MotorCizelgesi): Record<number, AyI
   const dim = ayGunSayisi(sch.year, sch.month);
   const yeni = (): AyIstatistigi => ({ fm: 0, thu: 0, sat: 0, sun: 0, cum: 0, nobet: 0, prep: 0 });
   sch.days.forEach(d => {
-    const fmGun = B.fazlaMesai(sch.year, sch.month, d.day, dim);
+    const fmGun = gunNobetFm(B, sch.year, sch.month, d, dim), hz = gunHazSaat(B, d);
     const dw = haftaGunu(sch.year, sch.month, d.day);
     d.assigned.forEach(p => {
       const x = r[p.id] || (r[p.id] = yeni());
@@ -77,7 +78,7 @@ export function ayIstatistik(B: Baglam, sch: MotorCizelgesi): Record<number, AyI
     });
     (d.prep || []).forEach(pp => {
       const x = r[pp.id] || (r[pp.id] = yeni());
-      x.fm += B.sayi("hazSaat"); x.prep++;
+      x.fm += hz; x.prep++;
     });
   });
   return r;

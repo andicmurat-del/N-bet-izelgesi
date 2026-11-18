@@ -15,9 +15,9 @@ export function hazirlamaAta(K: AramaKurulumu, kural: Kurallar): void {
   const fmTop: Record<number, number> = {}, prpCnt: Record<number, number> = {}, rhCnt: Record<number, number> = {};
   tumHavuz.forEach(s => { fmTop[s.id] = devir.off[s.id] || 0; prpCnt[s.id] = 0; });
   const prpAg = (id: number) => prpCnt[id] + (devir.prepOff[id] || 0);
-  days.forEach(dy => {
+  days.forEach((dy, i) => {
     dy.assigned.forEach(p => { if (fmTop[p.id] !== undefined) fmTop[p.id] += dy.fazlaMesai; });
-    (dy.prep || []).forEach(pp => { if (fmTop[pp.id] !== undefined) { fmTop[pp.id] += HAZ_SAAT; prpCnt[pp.id]++; } });
+    (dy.prep || []).forEach(pp => { if (fmTop[pp.id] !== undefined) { fmTop[pp.id] += K.gunHz[i]; prpCnt[pp.id]++; } });
   });
 
   // Cuma + Cumartesi + Pazar nöbeti olan kişi kendi grubunda (eczacı / tekniker) hazırlamayı en son alır

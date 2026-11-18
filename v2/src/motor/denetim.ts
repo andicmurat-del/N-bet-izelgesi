@@ -1,7 +1,7 @@
 // Elle gün düzenlemede anlık kural denetimi (gün penceresi): seçilen nöbetçiler ve hazırlama personeli için
 // hata / uyarı / bilgi listesi.
 import type { Gorevli } from "../veri/tipler";
-import { eczaneHazirlamacisi, eczaneNobetcisi, aktifGunMu, eczaciMi, ikiDisaridanSerbestMi, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
+import { eczaneHazirlamacisi, eczaneNobetcisi, aktifGunMu, eczaciMi, gunHazSaat, gunNobetFm, ikiDisaridanSerbestMi, type Baglam, type MotorCizelgesi, type MotorGunu } from "./baglam";
 import { acilNobetiYakin } from "./acil";
 import { cumaHaftaSonuUclu, fmFarkiYapisal, fmKuralKisileri, hsKuralIhlali, hsSayilari } from "./istatistik";
 import { DURUM_AD, FM_MAX_FARK } from "./sabitler";
@@ -10,16 +10,23 @@ import { AYLAR, ayGunSayisi, CUMA, CUMARTESI, haftaGunu, isoNo, oncekiAy, PAZAR,
 export interface Bulgu { sev: "hata" | "uyari" | "bilgi"; t: string }
 type KomsuGun = { day: number | string; assigned: { id: number }[]; prep: { id: number }[] };
 
-/** sch: ayın çizelgesi (düzenlenen gün eski hâliyle); gun 1'den; nb: nöbetçiler; pr: hazırlama personeli */
-export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Gorevli[], pr: Gorevli[]): Bulgu[] {
+/** Günün elle belirlenen düzeni (tatil günü): nöbetçi / hazırlama sayısı, nöbet fazla mesaisi, hazırlama saati */
+export interface GunDuzeniGirdisi { nobetSay?: number; hazSay?: number; fmNobet?: number; fmHaz?: number }
+/** sch: ayın çizelgesi (düzenlenen gün eski hâliyle); gun 1'den; nb: nöbetçiler; pr: hazırlama personeli;
+ *  duzen: günün yeni düzeni (verilmezse kayıtlıdaki) */
+export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Gorevli[], pr: Gorevli[], duzen?: GunDuzeniGirdisi | null): Bulgu[] {
   const sch: MotorCizelgesi = JSON.parse(JSON.stringify(sch0));
   const y = sch.year, m = sch.month, days = sch.days, dimS = ayGunSayisi(y, m);
-  days.forEach(d => { d.fazlaMesai = B.fazlaMesai(y, m, d.day, dimS); });
+  if (duzen !== undefined) {
+    const d0 = days[gun - 1];
+    for (const k of ["nobetSay", "hazSay", "fmNobet", "fmHaz"] as const) { if (duzen && typeof duzen[k] === "number") d0[k] = duzen[k]; else delete d0[k]; }
+  }
+  days.forEach(d => { d.fazlaMesai = gunNobetFm(B, y, m, d, dimS); });
   const day = days[gun - 1], idx = day.day - 1;
   const out: Bulgu[] = [];
   const ekle = (sev: Bulgu["sev"], t: string) => out.push({ sev, t });
   const dw = haftaGunu(y, m, day.day);
-  const hz = B.sayi("hazSaat");
+  const hz = gunHazSaat(B, day), nobetGerek = day.nobetSay ?? 2;
   // ay sınırında komşu gün: önceki ayın son günü / sonraki ayın 1. günü (gerçekte çalışılana göre)
   const pm = oncekiAy(y, m), nmA = sonrakiAy(y, m);
   const oS = B.cizelge(pm.y, pm.m), sS = B.cizelge(nmA.y, nmA.m);
@@ -35,11 +42,12 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
 
   if (nb.length && !nb.some(p => eczaciMi(p.role))) ekle("hata", "Bu günde eczacı yok.");
   if (nb.filter(p => p.role === "nobetci").length > 1 && !ikiDisaridanSerbestMi(y, m, day.day)) ekle("hata", "İki kemoterapi eczacısı aynı güne birlikte nöbetçi yazılmaz (Cuma ve Cumartesi hariç; biri hazırlama olabilir).");
-  if (nb.length < 2) ekle("uyari", "Günde 2 nöbetçi olmalı; ikinci kişi boş.");
+  if (B.tatilMi(y, m, day.day)) { const hazGerek = day.hazSay ?? 2; if (pr.length < hazGerek) ekle("uyari", `Bu gün ${hazGerek} hazırlama personeli olmalı; ${hazGerek - pr.length} yer boş.`); }
+  if (nb.length < nobetGerek) ekle("uyari", nobetGerek === 2 ? "Günde 2 nöbetçi olmalı; ikinci kişi boş." : `Bu gün ${nobetGerek} nöbetçi olmalı; ${nobetGerek - nb.length} yer boş.`);
   // eş durumu: hepsi birlikte yazılamıyorsa (günde 2 nöbetçi, en az 1 eczacı) sığmayanlar için yalnız uyarı
   const esIstek = B.staff.filter(s => eczaneNobetcisi(s) && B.tercih(s.id, y, m, day.day) === "esVar" && aktifGunMu(s, y, m, day.day));
   const esYazilmayan = esIstek.filter(s => !nb.some(q => q.id === s.id));
-  const esSigmaz = Math.max(0, esIstek.length - (esIstek.some(s => eczaciMi(s.role)) ? 2 : 1));
+  const esSigmaz = Math.max(0, esIstek.length - (esIstek.some(s => eczaciMi(s.role)) ? nobetGerek : nobetGerek - 1));
   esYazilmayan.forEach(s => esYazilmayan.length <= esSigmaz
     ? ekle("uyari", s.name + " için eş durumu: bu güne istiyor, ama eş durumu isteyenler birlikte yazılamıyor (günde 2 nöbetçi, en az 1 eczacı).")
     : ekle("hata", s.name + " için eş durumu: bu güne nöbetçi yazılması gerekiyor."));
@@ -132,7 +140,7 @@ export function gunuDenetle(B: Baglam, sch0: MotorCizelgesi, gun: number, nb: Go
   days.forEach((gg, i) => {
     if (i === idx) return;
     gg.assigned.forEach(p => { if (top[p.id] !== undefined) top[p.id] += gg.fazlaMesai; });
-    (gg.prep || []).forEach(p => { if (top[p.id] !== undefined) top[p.id] += hz; });
+    (gg.prep || []).forEach(p => { if (top[p.id] !== undefined) top[p.id] += gunHazSaat(B, gg); });
   });
   nb.forEach(p => { top[p.id] += day.fazlaMesai; }); pr.forEach(p => { top[p.id] += hz; });
   const duty = B.staff.filter(s => eczaneNobetcisi(s));
@@ -161,7 +169,7 @@ export function cizelgeCanliDenetim(B: Baglam, y: number, m: number, days: Motor
   const out: string[] = [];
   const eczsiz = days.filter(g => g.assigned.length > 0 && !g.assigned.some(p => eczaciMi(p.role))).map(g => g.day);
   if (eczsiz.length) out.push("Nöbette eczacı yok: " + eczsiz.map(d => d + ". gün").join(", ") + " (her gün en az bir eczacı nöbetçi olmalı).");
-  const eksik = days.filter(g => g.assigned.length < 2).map(g => g.day + ". gün (" + g.assigned.length + "/2)");
+  const eksik = days.filter(g => g.assigned.length < (g.nobetSay ?? 2)).map(g => g.day + ". gün (" + g.assigned.length + "/" + (g.nobetSay ?? 2) + ")");
   if (eksik.length) out.push("Nöbetçi sayısında eksik kişi: " + eksik.join(", ") + ".");
   // çizelgeden sonra girilen izin, eş durumu (nöbetçi olmasın), puantajdaki izin / rapor ya da ayrılış tarihi: kişi o gün
   // görev tutamaz ama çizelgede görevli duruyor (gün yeniden düzenlenmeli)

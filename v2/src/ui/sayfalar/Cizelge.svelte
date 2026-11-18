@@ -324,11 +324,12 @@
                         <td>{@render adlar(ec)}</td>
                         <td>{@render adlar(tk)}</td>
                         <td>{@render adlar(g.tatil && g.prep[0] ? [g.prep[0]] : [])}</td>
-                        <td>{@render adlar(g.tatil && g.prep[1] ? [g.prep[1]] : [])}</td>
+                        <td>{@render adlar(g.tatil ? g.prep.slice(1) : [])}</td>
                         <td class="durum">
                           {#if degistiMi(g)}<span class="etk degisti">değişti</span>{/if}
-                          {#if g.assigned.length && !g.assigned.some(p => eczaciRol(p.role))}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />eczacı yok</span>{:else if g.conflict || g.assigned.length < 2}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />kural esnetildi</span>{/if}
+                          {#if g.assigned.length && !g.assigned.some(p => eczaciRol(p.role))}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />eczacı yok</span>{:else if g.conflict || g.assigned.length < (g.nobetSay ?? 2)}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />kural esnetildi</span>{/if}
                           {#if g.locked}<span class="etk elle"><Ikon ad="kilit" boyut={12} />elle</span>{/if}
+                          {#if g.fmNobet !== undefined || g.fmHaz !== undefined}<span class="etk elle" title="Fazla mesai elle yazıldı">{g.fmNobet !== undefined ? `nöbet ${g.fmNobet} sa` : ""}{g.fmNobet !== undefined && g.fmHaz !== undefined ? " · " : ""}{g.fmHaz !== undefined ? `haz. ${g.fmHaz} sa` : ""}</span>{/if}
                           {#if rt}<span class="etk hsr">resmi tatil</span>{:else if g.tatil}<span class="etk hsr">hafta sonu</span>{/if}
                         </td>
                       </tr>

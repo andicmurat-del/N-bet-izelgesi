@@ -1,6 +1,6 @@
 // 1. adım: açgözlü ilk yerleştirme. Günler sırayla doldurulur; her güne o ana kadarki yüke göre en uygun eczacı ve
 // ikinci nöbetçi yazılır. Sonraki adımlar (hazırlama, yerel arama) bu çizelgeyi iyileştirir.
-import { eczaciMi, gorevli, ikiDisaridanSerbestMi, type MotorGunu } from "../baglam";
+import { eczaciMi, gorevli, gunDuzeni, gunHazSaat, gunNobetFm, ikiDisaridanSerbestMi, type MotorGunu } from "../baglam";
 import type { Kisi } from "../../veri/tipler";
 import { CUMA, CUMARTESI, haftaGunu, PAZAR, PERSEMBE } from "../takvim";
 import type { AyBilgisi } from "./ay";
@@ -11,7 +11,6 @@ type Sayac = Record<number, number>;
 export function ilkYerlestirme(A: AyBilgisi): MotorGunu[] {
   const { B, y, m, dim, eczacilar, teknisyenler, taslak, devir, sira, resmiDv, hsDv, cuDv, cmtDv, pazDv, sinir, sonGunEngel } = A;
   const gunTuru = (d: number) => haftaGunu(y, m, d);
-  const hazSaat = B.sayi("hazSaat");
 
   // o ana kadarki sayaçlar (adil dağılım için)
   const dutyCount: Sayac = {}, totalFM: Sayac = {}, weekendCount: Sayac = {}, thursdayCount: Sayac = {}, cuCount: Sayac = {}, resmiCount: Sayac = {};
@@ -138,11 +137,11 @@ export function ilkYerlestirme(A: AyBilgisi): MotorGunu[] {
 
     // elle girilip kilitlenmiş gün: dokunma, sadece sayaçları güncelle
     if (kayitli && kayitli.locked) {
-      const ids = kayitli.assigned.map(p => p.id);
-      ids.forEach(id => say(id, d, fazlaMesai));
+      const ids = kayitli.assigned.map(p => p.id), fm = gunNobetFm(B, y, m, kayitli, dim), hz = gunHazSaat(B, kayitli);
+      ids.forEach(id => say(id, d, fm));
       const kilitliPrep = kayitli.prep || [];
-      kilitliPrep.forEach(pp => { totalFM[pp.id] = (totalFM[pp.id] || 0) + hazSaat; });
-      days.push({ day: d, tatil, conflict: kayitli.conflict || false, fazlaMesai, assigned: kayitli.assigned, prep: kilitliPrep, locked: true });
+      kilitliPrep.forEach(pp => { totalFM[pp.id] = (totalFM[pp.id] || 0) + hz; });
+      days.push({ day: d, tatil, conflict: kayitli.conflict || false, fazlaMesai: fm, assigned: kayitli.assigned, prep: kilitliPrep, locked: true, ...gunDuzeni(kayitli) });
       oncekiNobetciler = ids;
       continue;
     }

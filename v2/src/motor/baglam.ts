@@ -14,6 +14,22 @@ export interface MotorGunu {
   assigned: Gorevli[];
   prep: Gorevli[];
   locked: boolean;
+  /** elle düzenlenen tatil gününde: nöbetçi / hazırlama sayısı, nöbet fazla mesaisi ve hazırlama saati (veri/tipler.ts) */
+  nobetSay?: number; hazSay?: number; fmNobet?: number; fmHaz?: number;
+}
+/** günün nöbet fazla mesaisi: elle yazıldıysa o, yoksa takvimden (24 − o günün mesaisi − ertesi günün mesaisi) */
+export function gunNobetFm(B: Baglam, y: number, m: number, g: { day: number; fmNobet?: number }, dim: number): number {
+  return typeof g.fmNobet === "number" ? g.fmNobet : B.fazlaMesai(y, m, g.day, dim);
+}
+/** günün hazırlama saati: elle yazıldıysa o, yoksa ayardaki (8 saat) */
+export function gunHazSaat(B: Baglam, g: { fmHaz?: number } | undefined): number {
+  return g && typeof g.fmHaz === "number" ? g.fmHaz : B.sayi("hazSaat");
+}
+/** elle düzenlenen günün düzen alanları (kopyalarken korunur) */
+export function gunDuzeni(g: { nobetSay?: number; hazSay?: number; fmNobet?: number; fmHaz?: number }) {
+  const o: { nobetSay?: number; hazSay?: number; fmNobet?: number; fmHaz?: number } = {};
+  for (const k of ["nobetSay", "hazSay", "fmNobet", "fmHaz"] as const) if (typeof g[k] === "number") o[k] = g[k];
+  return o;
 }
 export interface MotorCizelgesi { year: number; month: number; days: MotorGunu[]; [k: string]: unknown }
 export type PuantajAyi = Record<string, Record<string, string>>;
