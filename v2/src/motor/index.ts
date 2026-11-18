@@ -1,6 +1,6 @@
 // Çizelge motorunun dışa açık işlevleri. Her çağrı verinin kopyasıyla çalışır (Baglam), girdiyi hiç değiştirmez.
 // Motor eski uygulamanın (depodan kaldırıldı; git geçmişinde index.html) kural ve arama kodunun yeniden düzenlenmiş hâlidir; davranışı aynıdır:
-// test/motor.test.js eski uygulamanın kayıtlı çizelgelerini, test/altin.test.js tüm işlevlerin çıktısını birebir denetler.
+// test/motor.test.js eski uygulamanın kayıtlı çizelgelerini, test/altin*.test.js tüm işlevlerin çıktısını birebir denetler.
 //
 // Dosyalar:
 //   baglam.ts       veri ve ona bağlı sorular (tatil mi, izinli mi, ayar…), roller

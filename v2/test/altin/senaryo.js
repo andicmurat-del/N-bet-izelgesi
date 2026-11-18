@@ -1,6 +1,6 @@
 // Altın kayıt senaryosu: motorun tüm kurallarına dokunan zengin bir veri (iki kadro, ayarlar, izinler, resmi tatil,
 // arife, kilitli günler, puantaj değişimleri, acil servis, servis hazırlama). Yeniden düzenlemelerde motorun
-// çıktısı birebir aynı kalmalı; test/altin.test.js bu verinin üzerinde motoru çalıştırıp kayıtla karşılaştırır.
+// çıktısı birebir aynı kalmalı; test/altin*.test.js bu verinin üzerinde motoru çalıştırıp kayıtla karşılaştırır.
 
 const anahtar = (id, y, m, d) => `${id}-${y}-${m}-${d}`;
 

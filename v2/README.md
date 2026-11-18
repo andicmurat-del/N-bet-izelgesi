@@ -14,16 +14,16 @@ npm ci
 npm run dev        # geliştirme sunucusu
 npm run check      # tip denetimi
 npm run test:hizli # uzun motor / altın / tarama testleri hariç (yaklaşık 1 dakika)
-npm test           # eski uygulamanın senaryoları (sonuç kayıttan kötü değil); altın kayıt (test/altin.test.js); rastgele senaryo taraması; kurallar; değişim denetimi; servis dağıtımı
+npm test           # eski uygulamanın senaryoları (sonuç kayıttan kötü değil); altın kayıt (test/altin*.test.js); rastgele senaryo taraması; kurallar; değişim denetimi; servis dağıtımı
 npm run artifact   # dist/index.html ve artifact sayfası dist/artifact.html
 ```
 
-`npm test` yaklaşık 4 dakika sürer:
+`npm test` 4 çekirdekte yaklaşık 2,5 dakika sürer (uzun testler ayrı dosyalara bölünmüştür, dosyalar paralel koşar: altın kayıt 5 dosya, eski senaryolar 3 dosya; gövdeleri `test/altin/govde.js` ve `test/eski/govde.js`):
 
 - 5 senaryonun 15 ayı eski uygulamanın aynı girdiyle kaydettiği sonuçla karşılaştırılır: hata düzeyinde uyarı sayısı ve nöbet / hazırlama / fazla mesai farkı eski uygulamadan kötü olmamalı (kurallar bilerek değiştirildiği için çizelgeler artık birebir aynı değil; kuralların tam tutmadığı aylarda yalnız hata sayısı karşılaştırılır).
 - Altın kayıt testi, zengin bir senaryoda (izinler, resmi tatil, arife, kilitli günler, destek ve kemoterapi eczacısı, acil eczane, servis hazırlama) motorun tüm işlevlerinin çıktısını kayıtla karşılaştırır. Kodu düzenlerken davranışın değişmediğinin güvencesidir.
 - Rastgele senaryo taraması (`test/tarama.test.js`) 20 rastgele kadro/izin/ayar bileşiminde motorun tüm işlevlerini çalıştırır: çökme yok, girdi değişmez, aynı girdi aynı sonuç, her kesin kural ihlali gün üzerinde işaretli. Daha geniş tarama: `N=200 npx vitest run test/tarama.test.js`. Acil eczane ve öğlen nöbeti için ayrı tarama (`test/tarama-acil.test.js`): rastgele acil kadrosu, acil listesi eczaneden önce ya da sonra; acil yalnız acil kadrosundan, acil kadrosu eczanede görev almaz, acil nöbetinin yanında eczane görevi yok, öğlene yalnız o gün mesaide olan eczacı / tekniker; eşitlik: acilde aylık fazla mesai farkı (6+ kişide en çok 8 saat), öğlende sayı ve Cuma farkı. Gerçek yedekten eşitlik raporu: `YEDEK=yedek.json [YENIDEN=1] [RAPOR=rapor.md] npx vitest run test/yedek-rapor.test.js` (her ay günlük eczane, acil ve öğlen için kişi başı sayılar ve en çok − en az farkları).
-- Kuralı bilerek değiştirdiyseniz kaydı yenileyin: `ALTIN_YAZ=1 npx vitest run test/altin.test.js`. Çizelge, uyarı ve denetim çıktılarının okunur özeti `test/altin/ozet/` altındadır: kayıt tutmazsa hata iletisi değişen satırları gösterir (git diff ile de görülür).
+- Kuralı bilerek değiştirdiyseniz kaydı yenileyin: `ALTIN_YAZ=1 npx vitest run test/altin` (her dosya kendi kaydını yazar: `test/altin/beklenen-*.json`). Çizelge, uyarı ve denetim çıktılarının okunur özeti `test/altin/ozet/` altındadır: kayıt tutmazsa hata iletisi değişen satırları gösterir (git diff ile de görülür).
 
 ## Bölümler
 
