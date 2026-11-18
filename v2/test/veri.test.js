@@ -2,7 +2,7 @@
 // .svelte.ts dosyaları vitest'te sunucu kipinde derlenir: $state düz nesnedir, $effect çalışmaz (kayıt yapılmaz).
 import { describe, test, expect, beforeEach, vi } from "vitest";
 import { depo, bosVeri, veriyiDogrula, cizelgeKaydet, yedekAlindi, yedekErtele, yedekHatirlatma, yedekIzi, yedekVerisi, yedektenYukle, kisiEkle, kisiGuncelle, kisiSil, onayliGoreviVar, eskimeNedenleri, arifeAyarla, gunuGuncelle, gunKilidiniKaldir, gecmis, gecmiseIsle, gecmisiSifirla, geriAl, yinele, onayla, tercihAyarla, listeyiOnayla, listeOnayiniKaldir, acilGunuAyarla, acilKaydet, acilAyiniSil, oglenGunuAyarla, oglenHaftasiniSil, oglenHaftaKaydet, oglenKaydet, haftayiOnayla, haftaOnayiniKaldir, haftaOnayi, onayGunuAyarla } from "../src/veri/depo.svelte.ts";
-import { degisimUygula, degisimGeriAl, izinUygula, puantajIzgarasi } from "../src/veri/degisim.svelte.ts";
+import { degisimUygula, degisimGeriAl, goreviYerineYaz, izinUygula, puantajIzgarasi } from "../src/veri/degisim.svelte.ts";
 import { adAnahtari, adIcerir } from "../src/veri/tarih.ts";
 import { ayOzeti } from "../src/veri/ozet.ts";
 
@@ -157,6 +157,24 @@ describe("nöbet değişimi ve izin", () => {
     expect(depo.veri.schedules[AY].days[0].assigned.map(p => p.id)).toEqual([3, 5]);
     expect([kod(1, 1), kod(3, 1)]).toEqual(["R", "N"]);
     expect(depo.veri.degisimler[0]).toMatchObject({ zorunlu: true, cik: 1, yer: 3, sebep: "R" });
+  });
+  test("çizelgeden sonra izinli işaretlenen kişinin görevi yerine yazılır: çizelge, puantaj (yıllık izin) ve geçmiş", () => {
+    tercihAyarla(1, Y, M, 1, "izinli");
+    goreviYerineYaz(Y, M, 1, 1, 3, "N");
+    expect(depo.veri.schedules[AY].days[0].assigned.map(p => p.id)).toEqual([3, 5]);
+    expect([kod(1, 1), kod(3, 1)]).toEqual(["YI", "N"]);
+    expect(depo.veri.degisimler[0]).toMatchObject({ cik: 1, yer: 3, zorunlu: true, sebep: "YI" });
+  });
+  test("eş durumu (nöbetçi olmasın) nedeniyle yerine yazılan gün izin sayılmaz; geri alınınca eski hâline döner", () => {
+    tercihAyarla(2, Y, M, 2, "esYok");
+    goreviYerineYaz(Y, M, 2, 2, 4, "N");
+    expect(depo.veri.schedules[AY].days[1].assigned.map(p => p.id)).toEqual([4, 6]);
+    expect([kod(2, 2), kod(4, 2)]).toEqual(["M", "N"]);
+    const d = depo.veri.degisimler[0];
+    expect(d.sebep).toBeUndefined();
+    expect(degisimGeriAl(d.id).tamam).toBe(true);
+    expect(depo.veri.schedules[AY].days[1].assigned.map(p => p.id)).toEqual([2, 6]);
+    expect(depo.veri.puantaj[AY]).toBeUndefined();
   });
   test("2 günlük rapor: devredilen nöbetin ertesi günü (nöbet izni değil artık) de rapor olur", () => {
     // 1 Ekim K1 nöbetçi, 2 Ekim nöbet ertesi izin (NI). 1–2 Ekim rapor, 1 Ekim nöbeti K3'e devredildi: 2 Ekim de R olmalı

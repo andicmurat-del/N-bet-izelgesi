@@ -20,8 +20,8 @@ export interface CizelgeSonucu {
   history: Record<number, { haftaici: number; cuma: number; cumartesi: number; pazar: number }> | null;
 }
 
-/** varyasyon: "farklı dağılım" (eşitlerde kişi sırası ve arama tohumu değişir); simdi: aramanın süre sınırı için saat */
-export function cizelgeUret(B: Baglam, y: number, m: number, varyasyon: number, simdi: () => number): CizelgeSonucu {
+/** varyasyon: "farklı dağılım" (eşitlerde kişi sırası ve arama tohumu değişir); ilerleme: aramanın ilerleme oranı (0–1) */
+export function cizelgeUret(B: Baglam, y: number, m: number, varyasyon: number, ilerleme?: (oran: number) => void, turSiniri?: number): CizelgeSonucu {
   const { eczacilar, teknisyenler } = nobetKadrosu(B, y, m);
   if (eczacilar.length + teknisyenler.length < 2) {
     return { days: null, warnings: ["Toplam personel sayısı günde 2 kişi için yetersiz."], history: null };
@@ -31,7 +31,7 @@ export function cizelgeUret(B: Baglam, y: number, m: number, varyasyon: number, 
   const K = aramaKur(A, days);
   const kural = kurallarKur(K);
   hazirlamaAta(K, kural);
-  yerelArama(K, kural, amacKur(K, kural), simdi);
+  yerelArama(K, kural, amacKur(K, kural), ilerleme, turSiniri);
   // aramada aynı kişi nesnesi birden çok günde kullanılır; sonuçta her gün kendi kopyasını taşısın
   days.forEach(d => { if (!d.locked) { d.assigned = d.assigned.map(gorevli); d.prep = d.prep.map(gorevli); } });
   gunleriIsaretle(K, kural);

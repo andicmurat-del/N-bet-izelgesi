@@ -18,11 +18,11 @@ export function puantajKitabi(G: Izgara, y: number, m: number, kurum: string, ha
     [{ v: "Sıra", s: "baslik" }, { v: "Ad soyad", s: "baslik" }, ...gunBas, ...["Toplam çalışma", "Aylık çalışma", "Fazla mesai", "08:00-20:00", "20:00-08:00"].map(v => ({ v, s: "baslik" as const }))],
     ...G.satirlar.map((r, i) => [
       i + 1, ONEK[r.s.role] + buyukAd(r.s.name),
-      ...r.cells.map((h, k) => { const t = kodMetni(h.kod, h.saat, G.gunler[k].arife); const v = /^\d+$/.test(t) ? Number(t) : t; return G.gunler[k].tatil ? { v, s: "tatil" as const } : v; }),
+      ...r.cells.map((h, k) => { const t = kodMetni(h.kod, h.saat, G.gunler[k].arife); const v = h.kod === "M" || h.kod === "N" || h.kod === "H" ? h.saat : t; return G.gunler[k].tatil ? { v, s: "tatil" as const } : v; }),
       r.toplam, r.aylik ?? "–", { v: r.fm, s: "kalin" as const }, r.fmGunduz, r.fmGece,
     ]),
     [],
-    [{ v: "8: normal mesai · 24: nöbet · Nİ: nöbet izni · Yİ: yıllık izin · R: rapor · Dİ: diğer izin · –: çalışma dönemi dışında. Hafta sonu hazırlama 8 saattir.", s: "not" }],
+    [{ v: "Sayılar: o günün çalışma saati (normal mesai, nöbet, hazırlama) · Nİ: nöbet izni · Yİ: yıllık izin · R: rapor · Dİ: diğer izin · –: çalışma dönemi dışında.", s: "not" }],
   ];
   const ozet: Hucre[][] = [
     [{ v: baslik(y, m, kurum) + " · aylık özet", s: "kalin" }],
@@ -61,7 +61,7 @@ export function puantajPdf(G: Izgara, y: number, m: number, kurum: string, onay:
   });
   const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 150;
   doc.setFontSize(7); doc.setTextColor(88, 105, 120);
-  doc.text("8: normal mesai · 24: nöbet · Nİ: nöbet izni · Yİ: yıllık izin · R: rapor · Dİ: diğer izin · –: çalışma dönemi dışında. Gölgeli sütunlar: hafta sonu ve resmi tatil.", K, Math.min(sonY + 5, H - 14));
+  doc.text("Sayılar: o günün çalışma saati (normal mesai, nöbet, hazırlama) · Nİ: nöbet izni · Yİ: yıllık izin · R: rapor · Dİ: diğer izin · –: çalışma dönemi dışında. Gölgeli sütunlar: hafta sonu ve resmi tatil.", K, Math.min(sonY + 5, H - 14));
   doc.setTextColor(19, 33, 44); doc.setFontSize(8);
   doc.text("Düzenleyen: ________________________          Onaylayan: ________________________          İmza: ______________", W - K, H - 8, { align: "right" });
   return doc.output("blob");

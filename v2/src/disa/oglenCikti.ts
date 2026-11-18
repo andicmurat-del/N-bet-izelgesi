@@ -11,18 +11,22 @@ export interface OglenVerisi {
   ozet: { ad: string; rol: string; ay: number; ayCuma: number | null; yil: number; yilCuma: number | null }[];
 }
 
+/** sütun sayısı: günlerdeki en çok eczacı / tekniker (Ayarlar'daki öğlen sayılarına göre değişir; en az 1) */
+const sutunlar = (satirlar: { e: string[]; t: string[] }[]) => ({ e: Math.max(1, ...satirlar.map(g => g.e.length)), t: Math.max(1, ...satirlar.map(g => g.t.length)) });
+const say = (n: number) => Array.from({ length: n }, (_, i) => i);
+
 /** Haftalık öğlen nöbeti: yalnız tablo (başlık satırı yok), adlar ortalı; sayfa tablonun boyunda (A4 değil). */
 function haftalikPdf(v: OglenVerisi): Blob {
-  const satirlar = v.haftalar.flat();
+  const satirlar = v.haftalar.flat(), S = sutunlar(satirlar);
   const EN = 200, K = 4;
   const ciz = (doc: ReturnType<typeof yeniPdf>) => {
     doc.setProperties({ title: `${v.donem} öğlen nöbeti`, creator: "Nöbet Çizelgesi" });
     autoTable(doc, {
       startY: K, margin: { left: K, right: K, top: K, bottom: K },
-      body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, ...[0, 1, 2].map(i => buyukAd(g.e[i] ?? "")), ...[0, 1].map(i => buyukAd(g.t[i] ?? ""))]),
+      body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, ...say(S.e).map(i => buyukAd(g.e[i] ?? "")), ...say(S.t).map(i => buyukAd(g.t[i] ?? ""))]),
       theme: "grid",
       styles: { font: "CizelgeSans", fontSize: 12, cellPadding: 4, halign: "center", valign: "middle", textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.2 },
-      columnStyles: { 0: { cellWidth: 34, fontStyle: "bold" }, 4: { lineWidth: { left: 0.6, right: 0.2, top: 0.2, bottom: 0.2 } } },
+      columnStyles: { 0: { cellWidth: 34, fontStyle: "bold" }, [S.e + 1]: { lineWidth: { left: 0.6, right: 0.2, top: 0.2, bottom: 0.2 } } },
       didParseCell: h => { if (h.section === "body" && satirlar[h.row.index].dw === 4) h.cell.styles.fillColor = [244, 248, 249]; },
     });
     return (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 100;
@@ -45,14 +49,15 @@ export function oglenPdf(v: OglenVerisi): Blob {
   doc.text(baslik, K, 16);
   const satirlar: { gun: number; dw: number; e: string[]; t: string[]; ilk: boolean }[] = [];
   v.haftalar.forEach(h => h.forEach((g, i) => satirlar.push({ ...g, ilk: i === 0 })));
+  const S = sutunlar(satirlar);
   autoTable(doc, {
     startY: 21, margin: { left: K, right: K, bottom: 22 },
-    head: [["Gün", "1. eczacı", "2. eczacı", "3. eczacı", "1. tekniker", "2. tekniker"]],
-    body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, ...[0, 1, 2].map(i => buyukAd(g.e[i] ?? "")), ...[0, 1].map(i => buyukAd(g.t[i] ?? ""))]),
+    head: [["Gün", ...say(S.e).map(i => `${i + 1}. eczacı`), ...say(S.t).map(i => `${i + 1}. tekniker`)]],
+    body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, ...say(S.e).map(i => buyukAd(g.e[i] ?? "")), ...say(S.t).map(i => buyukAd(g.t[i] ?? ""))]),
     theme: "grid",
     styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 1.8, textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.15 },
     headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [208, 230, 235] },
-    columnStyles: { 0: { cellWidth: 26, fontStyle: "bold" }, 4: { lineWidth: { left: 0.6, right: 0.15, top: 0.15, bottom: 0.15 } } },
+    columnStyles: { 0: { cellWidth: 26, fontStyle: "bold" }, [S.e + 1]: { lineWidth: { left: 0.6, right: 0.15, top: 0.15, bottom: 0.15 } } },
     didParseCell: h => {
       if (h.section !== "body") return;
       const g = satirlar[h.row.index];
@@ -74,7 +79,7 @@ export function oglenPdf(v: OglenVerisi): Blob {
   }
   const H = doc.internal.pageSize.getHeight();
   doc.setFontSize(8); doc.setTextColor(88, 105, 120);
-  doc.text("Pazartesi–Perşembe 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker. Gölgeli satırlar: Cuma.", K, H - 14);
+  doc.text("Gölgeli satırlar: Cuma.", K, H - 14);
   doc.setTextColor(19, 33, 44);
   doc.text("Düzenleyen: __________________          Onaylayan: __________________", W - K, H - 8, { align: "right" });
   return doc.output("blob");

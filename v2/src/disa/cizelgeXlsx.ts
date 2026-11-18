@@ -5,7 +5,8 @@ import { xlsxKitap, type Hucre, type Sayfa } from "./xlsx";
 import { ayOzeti } from "../veri/ozet";
 
 /** Ayın çizelgesi: gün gün liste ve kişi başı özet (resmi çıktı: adlar büyük harf) */
-export function cizelgeKitabi(c: AyCizelgesi, kisiler: Kisi[], kurum: string, resmiTatil: (d: number) => boolean): Blob {
+/** hazSaat: hazırlama saati (Ayarlar) */
+export function cizelgeKitabi(c: AyCizelgesi, kisiler: Kisi[], kurum: string, resmiTatil: (d: number) => boolean, hazSaat = 8): Blob {
   const y = c.year, m = c.month, baslik = `${kurum ? kurum + " · " : ""}${AYLAR[m]} ${y} nöbet çizelgesi`;
   const iki = (n: number) => String(n).padStart(2, "0");
   const gunler: Hucre[][] = [
@@ -22,7 +23,7 @@ export function cizelgeKitabi(c: AyCizelgesi, kisiler: Kisi[], kurum: string, re
       buyukAd(ec[0]?.name ?? ""), ec.slice(1).map(p => buyukAd(p.name)).join(", "), buyukAd(g.prep[0]?.name ?? ""), g.prep.slice(1).map(p => buyukAd(p.name)).join(", "), g.fazlaMesai,
     ].map(v => (s ? { v, s } : v)));
   }
-  const o = ayOzeti(c);
+  const o = ayOzeti(c, hazSaat);
   const sayac = (id: number, w: number) => c.days.filter(g => haftaGunu(y, m, g.day) === w && g.assigned.some(p => p.id === id)).length;
   const ozet: Hucre[][] = [
     [{ v: baslik + " · kişi özeti", s: "kalin" }],
@@ -32,7 +33,7 @@ export function cizelgeKitabi(c: AyCizelgesi, kisiler: Kisi[], kurum: string, re
       buyukAd(k.name), ROL_AD[k.role], o[k.id].nobet, sayac(k.id, 3), sayac(k.id, 4), sayac(k.id, 5), sayac(k.id, 6), o[k.id].hazirlama, o[k.id].fazlaMesai,
     ]),
     [],
-    [{ v: "Fazla mesai: nöbet saati eksi o günün ve ertesi günün normal mesaisi; hazırlama 8 saat.", s: "not" }],
+    [{ v: "Fazla mesai: nöbet saati eksi o günün ve ertesi günün normal mesaisi; hazırlama " + String(hazSaat).replace(".", ",") + " saat (elle değiştirilen günde yazılan saat).", s: "not" }],
   ];
   const sayfalar: Sayfa[] = [
     { ad: "Çizelge", satirlar: gunler, genislik: [12, 12, 12, 24, 24, 24, 24, 14], dondur: { satir: 3, sutun: 0 } },

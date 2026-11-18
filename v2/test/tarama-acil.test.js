@@ -8,7 +8,7 @@
 import { test, expect } from "vitest";
 import * as M from "../src/motor";
 import { Baglam } from "../src/motor/baglam";
-import { senaryo, hizliSaat, dimOf, rngOf } from "./tarama/ortak";
+import { senaryo, hizli, dimOf, rngOf } from "./tarama/ortak";
 
 const N = Number(process.env.N || 20), BAS = Number(process.env.BAS || 1);
 
@@ -33,7 +33,7 @@ for (let s = BAS; s < BAS + N; s++) test("acil/öğlen senaryo " + s, () => {
     return ra;
   };
   const eczaneYap = () => {
-    const rc = M.cizelgeOlustur(veri, y, m, { saat: hizliSaat() });
+    const rc = M.cizelgeOlustur(veri, y, m, hizli());
     if (rc.days) veri.schedules[ayK] = { year: y, month: m, days: rc.days, uyarilar: rc.warnings };
     return rc;
   };

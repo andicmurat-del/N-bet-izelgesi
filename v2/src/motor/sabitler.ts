@@ -1,10 +1,16 @@
 // Motorun kuralları ve ağırlıkları: tek yerde, öncelik sırasıyla.
 
-/** Ayarların varsayılan değerleri. Ayarlar ekranında nöbetler arası en az gün, destek personeli aylık hazırlama,
- *  ve arife saati değiştirilebilir; AYAR_GIZLI'dakiler her zaman varsayılan değerinde çalışır. */
-export const AYAR_VARSAYILAN = { nobetSuresi: 24, mesai: 8, arifeSaat: 3, hazSaat: 8, fmHedef: 8, minAra: 3, acilMinAra: 3, maxThu: 1, hsTercih: 1, hsUst: 2, cumaEsles: true, thuHaftaSonu: true, destekAylik: 2, niDusum: 1, kurumAdi: "", onaylayan: "" };
+/** Ayarların varsayılan değerleri; hepsi Ayarlar ekranından değiştirilebilir (gelişmiş olanlar "Gelişmiş kurallar"
+ *  bölümünde). Değerlerin sınırları veri/depo.svelte.ts'deki doğrulamada.
+ *  nobetSuresi / mesai / hazSaat: saat; fmHedef: elle düzenlemede ortalamadan sapma uyarısı (saat); maxThu: kişiye ayda
+ *  en fazla Perşembe nöbeti (99: sınırsız); hsUst: ayda en fazla Cumartesi + Pazar nöbeti; cumaEsles: hafta sonu nöbeti
+ *  olana aynı ay Cuma da (Cuma eşleşmesi); thuHaftaSonu: Perşembe nöbetçisi aynı hafta sonu görev almaz; niDusum: nöbet
+ *  izni önce 08–20 (1) ya da 20–08 (2) diliminden düşülür; acilArdArda: acil kadrosu yetmezse art arda acil nöbeti
+ *  yazılır (kapalıysa gün eksik kalır); oglenHE/HT, oglenCE/CT: öğlen nöbetinde Pazartesi–Perşembe ve Cuma eczacı /
+ *  tekniker sayısı. */
+export const AYAR_VARSAYILAN = { nobetSuresi: 24, mesai: 8, arifeSaat: 3, hazSaat: 8, fmHedef: 8, minAra: 3, acilMinAra: 3, maxThu: 1, hsUst: 2, cumaEsles: true, thuHaftaSonu: true, destekAylik: 2, niDusum: 1,
+  acilArdArda: true, oglenHE: 2, oglenHT: 1, oglenCE: 3, oglenCT: 2, kurumAdi: "", onaylayan: "" };
 export type AyarAdi = keyof typeof AYAR_VARSAYILAN;
-export const AYAR_GIZLI = new Set<AyarAdi>(["niDusum", "nobetSuresi", "mesai", "hazSaat", "fmHedef", "maxThu", "thuHaftaSonu", "hsTercih", "hsUst", "cumaEsles"]);
 
 // KESİN KURALLAR (çizelge oluşturma, elle düzenleme ve uyarılarda ortak)
 //  - Fazla mesai: destek personeli hariç nöbetçi personel arasında aylık fazla mesai farkı en fazla FM_MAX_FARK saat

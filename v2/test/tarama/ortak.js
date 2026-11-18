@@ -36,8 +36,8 @@ export function senaryo(seed, kadro = {}) {
   return { r, y, m0, veri: { staff, prefs, manualTatil, arife, puantaj, acil, settings, schedules: {}, servisAyar: {} } };
 }
 
-// hızlı saat: yinelemeli yerel arama hemen biter (kurallar aramadan bağımsız denetlenir)
-export const hizliSaat = () => { if (process.env.TAM) return () => 0; let t = 0; return () => (t += 100000); };
+// hızlı tarama: yinelemeli yerel arama yapılmaz (kurallar aramadan bağımsız denetlenir); TAM=1 ile tam arama
+export const hizli = () => (process.env.TAM ? {} : { turSiniri: 0 });
 
 export function denetle(veri, y, m, r0, kilitli) {
   const B = new Baglam(veri), dim = dimOf(y, m), hatalar = [];

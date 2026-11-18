@@ -24,7 +24,11 @@ type Hamle =
   | { tip: "nobetHaz"; i: number; a: Gorevli; slot: number; pid: number }             // aynı gün nöbet ↔ hazırlama
   | { tip: "hazNobet"; i: number; k: number; slot: number; aId: number; bId: number }; // hazırlamayı ver, nöbet al
 
-export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi: () => number): void {
+/** yinelemeli aramanın tur sayısı: uyarı kalmadıysa KISA, kaldıysa UZUN tura kadar sürer. Süreyle değil tur sayısıyla
+ *  sınırlıdır: aynı veriyle her bilgisayarda (yavaş telefonda da) aynı çizelge çıkar. */
+export const ARAMA_TUR = { KISA: 60, UZUN: 600 } as const;
+/** ilerleme: arama ilerledikçe 0–1 arası oran (ekrandaki ilerleme çubuğu için) */
+export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, ilerleme?: (oran: number) => void, turSiniri?: number): void {
   const { A, days, staffList, tumHavuz, destekler, destekVar, degisimHavuzu, ayniTur, resmiGunVar, resmiGunDizi, hIx, gunDow } = K;
   const { zorunluMu, gunGecerli, temelUygun, prepUygun, prepUygunGevsek, tatilGunu, yasak, gundeVar, persembeNobetliMi } = kural;
   const { hesaplaJ, tabanKur, jDelta, tabanIhlalli } = amac;
@@ -295,19 +299,21 @@ export function yerelArama(K: AramaKurulumu, kural: Kurallar, amac: Amac, simdi:
   inis();
 
   // yinelemeli yerel arama: küçük rastgele bozmalar + tekrar iyileştirme; daha iyi sonuç bulunursa saklanır
-  // (~2.5 sn; uyarı kalmışsa uyarısız çizelge için en fazla ~8 sn)
+  // (ARAMA_TUR.KISA tur; uyarı kalmışsa uyarısız çizelge için ARAMA_TUR.UZUN tura kadar)
   const kopyala = () => days.map(dy => ({ a: dy.assigned.slice(), p: dy.prep.slice() }));
   const geriYukle = (k: { a: Gorevli[]; p: Gorevli[] }[]) => days.forEach((dy, i) => { dy.assigned = k[i].a.slice(); dy.prep = k[i].p.slice(); });
   let enIyiKopya = kopyala();
   let enIyiToplamJ = J;
   let tohum = 12345 + A.varyasyon * 7919;
   const rnd = () => { tohum = (tohum * 1103515245 + 12345) & 0x7fffffff; return tohum / 0x7fffffff; };
-  const bitis = simdi() + 2500, bitisUzun = simdi() + 8000;
   const acikGunler: number[] = [];
   days.forEach((dy, i) => { if (!dy.locked) acikGunler.push(i); });
   let denemeSayisi = 0;
-  while (acikGunler.length > 2 && ((simdi() < bitis && denemeSayisi < 60) || (enIyiToplamJ >= AGIRLIK.UYARI && simdi() < bitisUzun && denemeSayisi < 600))) {
+  // turSiniri: testlerdeki hızlı tarama için üst sınır (0: yinelemeli arama yapılmaz)
+  const sinir = () => Math.min(turSiniri ?? Infinity, enIyiToplamJ >= AGIRLIK.UYARI ? ARAMA_TUR.UZUN : ARAMA_TUR.KISA);
+  while (acikGunler.length > 2 && denemeSayisi < sinir()) {
     denemeSayisi++;
+    if (ilerleme && denemeSayisi % 10 === 0) ilerleme(Math.min(1, denemeSayisi / sinir()));
     // birkaç nöbetçiyi rastgele değiştir
     const bozulacak = 3 + Math.floor(rnd() * 4);
     for (let z = 0; z < bozulacak; z++) {

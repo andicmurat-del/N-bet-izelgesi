@@ -8,7 +8,8 @@
   import { ROL_AD } from "../../veri/tipler";
   import { AYLAR, GUN_KISA, gunMetni } from "../../veri/tarih";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
-  import { KOD_AD, kodMetni, type Izgara, type PuantajSatiri } from "../../disa/puantajTipleri";
+  import { KOD_AD, kodMetni, saatYaz, type Izgara, type PuantajSatiri } from "../../disa/puantajTipleri";
+  const ayar = $derived(depo.veri.settings);
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
   import IslemAlani from "../ortak/IslemAlani.svelte";
@@ -128,7 +129,7 @@
   <section class="panel cetvel-panel">
     <div class="panel-bas"><h2>Puantaj cetveli</h2>
       <p class="lejant">
-        <span><i class="k"><i class="nokta"></i></i>Mesai (8 sa)</span><span><i class="k k-N">24</i>Nöbet</span><span><i class="k k-N acil">24</i>Acil nöbet</span><span><i class="k k-H">8</i>Hazırlama</span>
+        <span><i class="k"><i class="nokta"></i></i>Mesai ({saatYaz(ayar.mesai)} sa)</span><span><i class="k k-N">{saatYaz(ayar.nobetSuresi)}</i>Nöbet</span><span><i class="k k-N acil">{saatYaz(ayar.nobetSuresi)}</i>Acil nöbet</span><span><i class="k k-H">{saatYaz(ayar.hazSaat)}</i>Hazırlama</span>
         <span><i class="k k-NI">Nİ</i>Nöbet izni</span><span><i class="k k-YI">Yİ</i>Yıllık izin</span><span><i class="k k-R">R</i>Rapor</span>
         <span><i class="k k-P">–</i>Dönem dışı</span><span><i class="k hs-ornek"></i>Hafta sonu</span><span><i class="k ov-ornek"></i>Elle</span>
       </p>
@@ -154,7 +155,7 @@
             {#each r.cells as h, i}
               {@const g = G.gunler[i]}
               <td class="k-{h.kod}" class:tatil={g.tatil} class:ov={h.ov} class:acil={h.acil}>
-                <button onclick={() => hucreAc(r, i)} aria-label="{h.kod === "M" && !g.arife ? "" : kodMetni(h.kod, h.saat, g.arife) + " · "}{r.s.name}, {gunMetni(depo.yil, depo.ay, g.gun)}: {h.acil ? 'Acil eczane nöbeti (24 saat)' : (KOD_AD[h.kod] ?? h.kod)}{h.ov ? ' (elle)' : ''}">{#if h.kod === "M" && !g.arife}<i class="nokta" aria-hidden="true"></i>{:else}{kodMetni(h.kod, h.saat, g.arife)}{/if}</button>
+                <button onclick={() => hucreAc(r, i)} aria-label="{h.kod === "M" && !g.arife ? "" : kodMetni(h.kod, h.saat, g.arife) + " · "}{r.s.name}, {gunMetni(depo.yil, depo.ay, g.gun)}: {h.acil ? 'Acil eczane nöbeti' : (KOD_AD[h.kod] ?? h.kod)}{h.ov ? ' (elle)' : ''}">{#if h.kod === "M" && !g.arife}<i class="nokta" aria-hidden="true"></i>{:else}{kodMetni(h.kod, h.saat, g.arife)}{/if}</button>
               </td>
             {/each}
             <td class="ozet ilk fm rakam">{r.fm}</td>

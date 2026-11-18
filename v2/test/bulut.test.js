@@ -5,12 +5,12 @@ import { parcala, birlestir, parcalarAyni, ozet, bosMu, eslemeKarari, BELGE_SINI
 import { veriyiDogrula, guvenliJson, bosVeri } from "../src/veri/depo.svelte.ts";
 import { cizelgeOlustur, acilHesapla, oglenHesapla } from "../src/motor";
 import { veriKur } from "./altin/senaryo.js";
-import { hizliSaat } from "./tarama/ortak.js";
+import { hizli } from "./tarama/ortak.js";
 
 function doluVeri() {
   const v = veriyiDogrula(veriKur());
   for (const m of [0, 1]) {
-    const r = cizelgeOlustur(v, 2026, m, { saat: hizliSaat() });
+    const r = cizelgeOlustur(v, 2026, m, hizli());
     v.schedules[`2026-${m}`] = { year: 2026, month: m, days: r.days, uyarilar: r.warnings, olusturma: 1 };
     v.acil[`2026-${m}`] = Object.fromEntries(acilHesapla(v, 2026, m).gunler.filter(g => g.ids.length).map(g => [g.gun, g.ids]));
     v.oglen[`2026-${m}`] = Object.fromEntries(oglenHesapla(v, 2026, m).gunler.map(g => [g.gun, { e: g.e, t: g.t }]));

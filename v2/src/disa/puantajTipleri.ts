@@ -17,9 +17,12 @@ export interface Izgara {
 }
 
 export const KOD_AD: Record<string, string> = {
-  M: "Normal mesai", N: "Nöbet (24 saat)", H: "Hazırlama (tatil günü, 8 saat)", NI: "Nöbet izni (nöbet ertesi)",
+  M: "Normal mesai", N: "Nöbet", H: "Hazırlama (tatil günü)", NI: "Nöbet izni (nöbet ertesi)",
   YI: "Yıllık izin", R: "Rapor", DI: "Diğer izin", B: "Çalışmadı / boş", P: "Çalışma dönemi dışında",
 };
-/** cetvelde hücre yazısı (kurum örneğindeki gibi): saat ya da kısaltma */
-export const kodMetni = (kod: string, saat: number, arife: boolean) =>
-  kod === "M" ? String(arife ? saat : 8) : kod === "N" ? "24" : kod === "H" ? "8" : kod === "NI" ? "Nİ" : kod === "YI" ? "Yİ" : kod === "DI" ? "Dİ" : kod === "R" ? "R" : kod === "P" ? "–" : "";
+/** saat yazısı: tam saat olduğu gibi, yarım saat virgülle (7,5) */
+export const saatYaz = (n: number) => (Number.isInteger(n) ? String(n) : String(n).replace(".", ","));
+/** cetvelde hücre yazısı (kurum örneğindeki gibi): mesai, nöbet ve hazırlamada o günün saati (ayardaki süreler, arife,
+ *  elle düzenlenen tatil günü), ötekilerde kısaltma */
+export const kodMetni = (kod: string, saat: number, _arife?: boolean) =>
+  kod === "M" || kod === "N" || kod === "H" ? saatYaz(saat) : kod === "NI" ? "Nİ" : kod === "YI" ? "Yİ" : kod === "DI" ? "Dİ" : kod === "R" ? "R" : kod === "P" ? "–" : "";

@@ -6,7 +6,7 @@
   // O günün çalışma listesinden (puantaj) yazılır; yıl boyunca toplam ve Cuma sayısı eşit tutulur. Haftalık oluşturulur
   // ve onaylanır (ay sınırını aşan hafta tek parça); haftanın onay listesi onaylanmadan oluşturulmaz.
   import { depo, veriAnlik, aydaCalisanlar, ayCizelgesi, oglenHaftaKaydet, oglenHaftasiniSil, oglenGunuAyarla, resmiTatilMi, arifeMi, haftaOnayi, haftayiOnayla, haftaOnayiniKaldir } from "../../veri/depo.svelte";
-  import { OGLEN_GEREK, oglenGrubu, oglenHaftaHesapla, oglenYillikHesapla, onayHaftasiHesapla, type OnayHaftasi } from "../../motor";
+  import { oglenGerekHesapla, oglenGrubu, oglenHaftaHesapla, oglenYillikHesapla, onayHaftasiHesapla, type OnayHaftasi } from "../../motor";
   import { AYLAR, GUN_UZUN, ayAdi, gunMetni, gunSayisi, haftaGunu, haftaIciGunleri, kisaAd } from "../../veri/tarih";
   import type { OglenGunu } from "../../veri/tipler";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
@@ -14,6 +14,8 @@
   import OnaySorusu from "../ortak/OnaySorusu.svelte";
   import type { Rol } from "../../veri/tipler";
   import Ikon from "../ortak/Ikon.svelte";
+  /** günde gereken kişi sayıları (Ayarlar > Gelişmiş kurallar) */
+  const OGLEN_GEREK = $derived(oglenGerekHesapla(veriAnlik()));
 
   let { git }: { git: (ad: "kisiler" | "nobet" | "onay") => void } = $props();
 

@@ -33,7 +33,7 @@
     if (h === "kisiler") { ayarAlt = "personel"; return "ayarlar"; }
     if (h === "gunluk" && GUNLUK_ALT.includes(alt as GunlukGorunum)) gunlukAlt = alt as GunlukGorunum;
     if (h === "acil" && (alt === "acil" || alt === "puantaj" || alt === "izinler" || alt === "raporlar")) acilAlt = alt;
-    if (h === "ayarlar" && (alt === "genel" || alt === "personel" || alt === "kurallar")) ayarAlt = alt;
+    if (h === "ayarlar" && (alt === "genel" || alt === "personel" || alt === "kurallar" || alt === "yardim")) ayarAlt = alt;
     return (SAYFALAR.find(s => s.ad === h)?.ad ?? "gunluk") as SayfaAdi;
   };
   let sayfa = $state<SayfaAdi>(hashOku());
@@ -88,7 +88,7 @@
   <div class="ust-serit" role="complementary" aria-label="Uygulama bilgisi">
     <div class="genislik">
       <span>Hastane Eczanesi · Nöbet ve Puantaj Sistemi</span>
-      <span class="sag"><span role="status">{SAKLAMA[bulut.durum]}</span> · <button class="serit-baglanti" onclick={yedekAl}>Yedek al</button></span>
+      <span class="sag"><span role="status">{SAKLAMA[bulut.durum]}</span> · <button class="serit-baglanti" onclick={yedekAl}>Yedek al</button> · <button class="serit-baglanti" onclick={() => { ayarAlt = "yardim"; git("ayarlar"); }}>Yardım</button></span>
     </div>
   </div>
   <header class="baslik-bandi">

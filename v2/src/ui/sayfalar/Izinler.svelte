@@ -7,6 +7,7 @@
   import { Baglam } from "../../motor/baglam";
   import IslemAlani from "../ortak/IslemAlani.svelte";
   import Ikon from "../ortak/Ikon.svelte";
+  import IzinliGorevler from "../cizelge/IzinliGorevler.svelte";
 
   // kimler: listelenecek kişiler (o kadronun
   // nöbet tutanları); onayKilidi: eczane çizelgesi onaylıysa işaretler kilitlensin mi (acil listesinde onay yok)
@@ -95,8 +96,9 @@
     </div>
   </IslemAlani>
 
-  <p class="kutu bilgi kullanim"><Ikon ad="bilgi" boyut={16} /><span>Bir işaret türü seçip {mod === "kisi" ? "tablodaki hücrelere" : "takvimdeki günlere"} dokunun; bilgisayarda fareyle basılı tutup gezdirerek birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır. Tercihler çizelge oluşturulurken dikkate alınır; çizelge zaten varsa yeniden oluşturun.</span></p>
+  <p class="kutu bilgi kullanim"><Ikon ad="bilgi" boyut={16} /><span>Bir işaret türü seçip {mod === "kisi" ? "tablodaki hücrelere" : "takvimdeki günlere"} dokunun; bilgisayarda fareyle basılı tutup gezdirerek birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır. Tercihler çizelge oluşturulurken dikkate alınır. Çizelge zaten varsa, görevli olduğu güne izin girilen kişinin yerine kimin yazılacağı burada sorulur.</span></p>
   {#if onayli}<p class="kutu dikkat onay-not" role="status">Bu ayın çizelgesi onaylı; işaretler değiştirilemez. Değiştirmek için önce Günlük Eczane Nöbet Listesi'nde onayı kaldırın.</p>{/if}
+  <IzinliGorevler {kimler} />
 
   {#if mod === "kisi"}
     <div class="arac-cubuk" role="radiogroup" aria-label="İşaret">

@@ -1,8 +1,10 @@
 <script lang="ts">
   import { puantajIzgarasi } from "../../veri/degisim.svelte";
   import { ciktiPaketi } from "../../disa/yukle";
-  import { depo, veriAnlik, duzKopya, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
+  import { depo, veriAnlik, duzKopya, saatleriGuncelle, ayCizelgesi, cizelgeKaydet, cizelgeSil, onayla, onayiKaldir, eskimeNedenleri, aydaCalisanlar, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
   import { arkaPlandaOlustur } from "../../motor/istemci";
+  import IzinliGorevler from "../cizelge/IzinliGorevler.svelte";
+  import Paylas from "../cizelge/Paylas.svelte";
   import { acilKadrosunda, canliDenetimHesapla, uyariSiniflandir } from "../../motor";
   import { cizelgeKitabi } from "../../disa/cizelgeXlsx";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
@@ -84,16 +86,18 @@
   const aktif = $derived(GORUNUMLER.find(g => g.ad === gorunum) ?? GORUNUMLER[0]);
 
   let calisiyor = $state(false);
+  /** aramanın ilerlemesi (0–1) ve ek aramalara geçildi mi */
+  let ilerleme = $state<{ oran: number; ek: boolean }>({ oran: 0, ek: false });
   let hata = $state("");
   let vurgu = $state<number | null>(null);
   let silOnayi = $state(false);
   let durum = $state("");
 
   async function olustur(varyasyon = 0) {
-    hata = ""; silOnayi = false; calisiyor = true;
+    hata = ""; silOnayi = false; calisiyor = true; ilerleme = { oran: 0, ek: false };
     const y = depo.yil, m = depo.ay;
     try {
-      const r = await arkaPlandaOlustur(veriAnlik() as any, y, m, varyasyon);
+      const r = await arkaPlandaOlustur(veriAnlik() as any, y, m, varyasyon, i => (ilerleme = i));
       if (!r.days) { hata = r.warnings[0] ?? "Çizelge oluşturulamadı."; return; }
       if (!cizelgeKaydet(y, m, r.days, r.warnings)) hata = "Bu ay onaylandığı için yeni çizelge kaydedilmedi.";
     } catch (e) {
@@ -105,7 +109,7 @@
 
   const sayilar = $derived.by(() => {
     if (!c) return null;
-    const dolu = c.days.filter(g => g.assigned.length >= 2).length;
+    const dolu = c.days.filter(g => g.assigned.length >= (g.nobetSay ?? 2)).length;
     const s = { hata: 0, uyari: 0, bilgi: 0 };
     for (const u of siniflar) s[u.seviye]++;
     const elle = c.days.filter(g => g.locked).length;
@@ -113,6 +117,7 @@
   });
 
   let gunAcik = $state(false);
+  let paylasAcik = $state(false);
   let onaySor = $state(false);
   let acikGun = $state(1);
   // takvimde güne dokunmak günü seçer (sağdaki "Seçili gün" paneli); dar ekranda düzenleme penceresi doğrudan açılır
@@ -174,7 +179,7 @@
     if (!c) return;
     const y = c.year, m = c.month;
     try {
-      const blob = cizelgeKitabi(duzKopya(goster) as any, duzKopya(depo.veri.staff) as any, depo.veri.kurum.ad, d => resmiTatilMi(y, m, d));
+      const blob = cizelgeKitabi(saatleriGuncelle(duzKopya(goster)!) as any, duzKopya(depo.veri.staff) as any, depo.veri.kurum.ad, d => resmiTatilMi(y, m, d), depo.veri.settings.hazSaat);
       const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}${ekAd()}.xlsx`, blob, blob.type);
       durum = ok ? "Excel dosyası kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "Dosya kaydedilemedi."); }
@@ -186,7 +191,7 @@
     pdfHazirlaniyor = true; durum = "";
     try {
       const { cizelgePdf } = await ciktiPaketi();
-      const blob = cizelgePdf(duzKopya(goster) as any, duzKopya(depo.veri.staff) as any, { kurum: depo.veri.kurum.ad, resmiTatil: d => resmiTatilMi(y, m, d), arife: d => arifeMi(y, m, d) });
+      const blob = cizelgePdf(saatleriGuncelle(duzKopya(goster)!) as any, duzKopya(depo.veri.staff) as any, { kurum: depo.veri.kurum.ad, resmiTatil: d => resmiTatilMi(y, m, d), arife: d => arifeMi(y, m, d), nobetSuresi: depo.veri.settings.nobetSuresi, hazSaat: depo.veri.settings.hazSaat });
       const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}${ekAd()}.pdf`, blob, "application/pdf");
       durum = ok ? "PDF kaydedildi." : "";
     } catch (e) { durum = hataMetni(e, "PDF oluşturulamadı."); }
@@ -256,6 +261,7 @@
       {#if c}
         <button class="dugme" onclick={pdf} disabled={calisiyor || pdfHazirlaniyor}><Ikon ad="indir" />{pdfHazirlaniyor ? "Hazırlanıyor…" : "PDF"}</button>
         <button class="dugme" onclick={excel} disabled={calisiyor}><Ikon ad="indir" />Excel</button>
+        <button class="dugme" onclick={() => (paylasAcik = true)} disabled={calisiyor} title="Tüm listeyi ya da bir kişinin nöbetlerini mesaj olarak gönderin">Paylaş</button>
       {/if}
       {#if c && !c.onay}<button class="dugme sade tehlike" onclick={sil} disabled={calisiyor}><Ikon ad="sil" />{silOnayi ? "Evet, sil" : "Sil"}</button>{/if}
     </IslemAlani>
@@ -270,6 +276,7 @@
   {/if}
   {#if degisimVar}<p class="bant bilgi"><Ikon ad="bilgi" boyut={16} />{cizelgeGorunum === "guncel" ? `Güncel liste gösteriliyor: nöbet değişimleri ve puantajdaki değişiklikler işlendi; değişen ${guncel!.degisen.size} gün işaretli. Değişimlerden önceki çizelge "${c?.onay ? "Onaylanan" : "Asıl çizelge"}" görünümünde.` : `${c?.onay ? "Onaylanan" : "Asıl"} çizelge gösteriliyor (değişimlerden önceki hâli). Değişimler "Güncel" görünümünde.`}</p>{/if}
   {#if eskime.length}<p class="bant dikkat"><Ikon ad="uyari" boyut={16} />{eskime.join(" ")} Çizelgeyi yeniden oluşturmanız önerilir.</p>{/if}
+  {#if c && !calisiyor}<IzinliGorevler />{/if}
   {#if nobetci.length < 2}<p class="bant dikkat">Çizelge için {AYLAR[depo.ay]} ayında en az 2 nöbetçi (eczacı ya da tekniker) gerekir. <button class="baglanti" onclick={() => git("kisiler")}>Personel ekleyin</button>.</p>
   {:else if !eczaci.length}<p class="bant dikkat">Her gün en az bir eczacı nöbetçi olmalı; personel listesinde eczacı yok.</p>{/if}
   {#if hata}<p class="bant hata" role="alert">{hata}</p>{/if}
@@ -278,7 +285,8 @@
   {#if calisiyor}
     <div class="kart calisiyor" role="status" aria-live="polite">
       <span class="donen" aria-hidden="true"></span>
-      <div><b>Çizelge hazırlanıyor</b><p>Kurallar ve eşitlik hedefleri için binlerce olasılık deneniyor; birkaç saniye sürer. Uyarısız bir çizelge bulunamazsa farklı başlangıçlarla yeniden aranır ve en az uyarılı olan seçilir; bu durumda yarım dakikaya kadar sürebilir.</p></div>
+      <div class="ilerleme-kutu"><b>Çizelge hazırlanıyor{ilerleme.ek ? " · farklı başlangıçlarla yeniden aranıyor" : ""}</b><p>Kurallar ve eşitlik hedefleri için binlerce olasılık deneniyor. Uyarısız bir çizelge bulunamazsa farklı başlangıçlarla yeniden aranır ve en az uyarılı olan seçilir. Aynı bilgilerle her bilgisayarda aynı çizelge çıkar; yavaş bilgisayarda yalnız biraz daha uzun sürer.</p>
+        <div class="ilerleme" role="progressbar" aria-label="Arama ilerlemesi" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(ilerleme.oran * 100)}><span style="width: {Math.round(ilerleme.oran * 100)}%"></span></div></div>
     </div>
   {/if}
 
@@ -386,6 +394,7 @@
     </div>
     <div class="ozet-kap"><AylikOzet satirlar={ozetSatirlari} bind:vurgu /></div>
     <GunPenceresi bind:acik={gunAcik} {c} gun={acikGun} />
+    {#if goster}<Paylas bind:acik={paylasAcik} c={goster} />{/if}
     <OnaySorusu bind:acik={onaySor} ne="Nöbet çizelgesi" sorunlar={siniflar.filter(u => u.seviye === "hata").map(u => u.t)} onaylayan={depo.veri.kurum.onaylayan} onayla={() => onayla(depo.yil, depo.ay)} />
   {:else if !calisiyor}
     <section class="kart bos-ay">
@@ -488,4 +497,7 @@
     .ara { width: 100%; }
     .ara select, .ara input { flex: 1; min-width: 0; width: auto; }
         }
+  .ilerleme-kutu { flex: 1; min-width: 0; }
+  .ilerleme { height: 6px; border-radius: 3px; background: var(--yuzey-2); overflow: hidden; margin-top: var(--b2); }
+  .ilerleme span { display: block; height: 100%; background: var(--vurgu); transition: width .3s; }
 </style>

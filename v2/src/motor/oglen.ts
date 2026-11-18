@@ -25,6 +25,10 @@ const bosSayisi = (sb: OglenSabit | undefined, g: "e" | "t") => (sb ? (g === "e"
 
 /** günde gereken kişi: Pazartesi–Perşembe, Cuma */
 export const OGLEN_GEREK = { hafta: { e: 2, t: 1 }, cuma: { e: 3, t: 2 } };
+/** öğlen nöbetinde gereken kişi sayıları (Ayarlar > Gelişmiş kurallar; yoksa OGLEN_GEREK) */
+export function oglenGerek(B: Baglam): typeof OGLEN_GEREK {
+  return { hafta: { e: B.sayi("oglenHE"), t: B.sayi("oglenHT") }, cuma: { e: B.sayi("oglenCE"), t: B.sayi("oglenCT") } };
+}
 type Grup = "e" | "t";
 const GRUPLAR: Grup[] = ["e", "t"];
 /** öğlen nöbetinde kişinin grubu: eczacı (acilde nöbet tutan eczacılar dahil: günlük eczanede mesai yaparlar) ya da
@@ -153,6 +157,7 @@ function gunAdaylari(G: ReturnType<typeof puantajIzgarasi>, y: number, m: number
  * hesabına girer, kaydı olmayan öteki günler atlanır.
  */
 export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<string, OglenGunu> = {}, onarim?: { bugun: number }, sadece?: { bas: number; bit: number }): OglenSonucu {
+  const GEREK = oglenGerek(B);
   const G = puantajIzgarasi(B, y, m), dim = ayGunSayisi(y, m), uyarilar: string[] = [];
   const ilkDw = haftaGunu(y, m, 1), hafta = (d: number) => Math.floor((d - 1 + ilkDw) / 7);
   const devir = oglenDevir(B, y, m);
@@ -187,7 +192,7 @@ export function oglenOlustur(B: Baglam, y: number, m: number, onceki: Record<str
     const k = onceki[d], gecmis = !!onarim && tarihNo(y, m, d) < onarim.bugun, disari = !!sadece && (d < sadece.bas || d > sadece.bit);
     if ((disari || onarim) && !k && (disari || !haftadaOglenVar(B, y, m, d))) continue;
     if (!oglenGunuMu(B, y, m, d) && !(k && (k.elle || k.sabit || gecmis || disari))) continue;
-    const dw = haftaGunu(y, m, d), cu = dw === CUMA, ger = cu ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
+    const dw = haftaGunu(y, m, d), cu = dw === CUMA, ger = cu ? GEREK.cuma : GEREK.hafta;
     const { ca, nobetci, mevcut, grupDisi } = gunAdaylari(G, y, m, d);
     const tam = !!k && (!!k.elle || gecmis || disari), sb = k?.sabit;
     gunler.push({ gun: d, dw, e: [], t: [], nobetci, ...(k?.elle ? { elle: true as const } : {}), ...(sb ? { sabit: sb } : {}) });
@@ -345,6 +350,7 @@ export function oglenYillik(B: Baglam, y: number, sonAy: number): Record<number,
  * eksik yer var mı. Varsa ayın onarılmış hâli döner (eksikler doldurulur, geri kalanı yerinde kalır).
  */
 export function oglenOnarimlari(B: Baglam, bugun: number): { y: number; m: number; gunler: OglenGunSonucu[] }[] {
+  const GEREK = oglenGerek(B);
   const out: { y: number; m: number; gunler: OglenGunSonucu[] }[] = [];
   for (const [ayK, kayit] of Object.entries(B.oglen)) {
     const [y, m] = ayK.split("-").map(Number), dim = ayGunSayisi(y, m);
@@ -356,7 +362,7 @@ export function oglenOnarimlari(B: Baglam, bugun: number): { y: number; m: numbe
       const k = kayit[d];
       if (k?.elle || (!k && !haftadaOglenVar(B, y, m, d))) continue;
       if (!oglenGunuMu(B, y, m, d)) { bozuk = !!k && !k.sabit; continue; }
-      const { ca } = gunAdaylari(G, y, m, d), ger = haftaGunu(y, m, d) === CUMA ? OGLEN_GEREK.cuma : OGLEN_GEREK.hafta;
+      const { ca } = gunAdaylari(G, y, m, d), ger = haftaGunu(y, m, d) === CUMA ? GEREK.cuma : GEREK.hafta;
       for (const g of GRUPLAR) {
         // elle yazılan kişiye ve elle boş bırakılan yere dokunulmaz
         const l = k ? k[g] || [] : [], elleKisi = k?.sabit?.[g] || [];

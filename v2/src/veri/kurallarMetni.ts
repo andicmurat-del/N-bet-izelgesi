@@ -4,7 +4,7 @@
 // eklenirse açıklaması da buraya yazılmalıdır (test/kurallar-metni.test.js denetler).
 import { AGIRLIK, AYAR_VARSAYILAN, FM_MAX_FARK, HAZ_SAYISI, HAFIF_IHLAL, IZIN_HAFTA_GUN } from "../motor/sabitler";
 import { W as ACIL_W } from "../motor/acil";
-import { W as OGLEN_W, OGLEN_GEREK } from "../motor/oglen";
+import { W as OGLEN_W } from "../motor/oglen";
 import { AGIR as ONAY_AGIR } from "../motor/onayMasa";
 import { W as SERVIS_W } from "../motor/servis/dagit";
 import { ZOR_ESIK } from "../motor/servis/liste";
@@ -115,7 +115,7 @@ Bu metin, hastane eczanesinin nöbet ve iş listelerini hazırlayan programın k
 dağıtımını ve puantajı (çalışma saatleri, fazla mesai) üretir. Kurallar ikiye ayrılır: kesin kurallar (hiç esnemez ya da
 yalnız kadro yetmediğinde uyarıyla esner) ve tercihler (ağırlıklı ceza; büyük ağırlık önce gelir).
 
-Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Aynı veriyle her zaman aynı sonucu üretir
+Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Aynı veriyle her zaman ve her bilgisayarda aynı sonucu üretir (arama süreyle değil tur sayısıyla sınırlıdır)
 ("farklı şekilde oluştur" eşit durumlardaki sırayı değiştirir).
 
 ## Bu kurumun güncel ayarları
@@ -126,9 +126,18 @@ Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Ay
 | Acil eczane: iki acil nöbeti arasında önerilen en az gün | ${a.acilMinAra} |
 | Destek personeli aylık hazırlama sayısı | ${a.destekAylik} |
 | Arife günü normal mesai (saat) | ${a.arifeSaat} |
-| Nöbet süresi (saat, değiştirilemez) | ${AYAR_VARSAYILAN.nobetSuresi} |
-| Günlük normal mesai (saat, değiştirilemez) | ${AYAR_VARSAYILAN.mesai} |
-| Hazırlama süresi (saat, değiştirilemez) | ${AYAR_VARSAYILAN.hazSaat} |
+| Nöbet süresi (saat) | ${a.nobetSuresi} |
+| Günlük normal mesai (saat) | ${a.mesai} |
+| Hazırlama süresi (saat) | ${a.hazSaat} |
+| Kişiye ayda en fazla Perşembe nöbeti | ${a.maxThu >= 99 ? "sınırsız" : a.maxThu} |
+| Kişiye ayda en fazla hafta sonu (Cumartesi + Pazar) nöbeti | ${a.hsUst} |
+| Perşembe nöbetçisi aynı hafta sonu görev almaz | ${a.thuHaftaSonu ? "evet" : "hayır"} |
+| Cuma ile hafta sonu nöbeti eşleşir | ${a.cumaEsles ? "evet" : "hayır"} |
+| Elle düzenlemede fazla mesai sapma uyarısı (saat) | ${a.fmHedef} |
+| Nöbet izni önce düşülen dilim | ${a.niDusum === 2 ? "20:00–08:00" : "08:00–20:00"} |
+| Acil kadrosu yetmezse art arda acil nöbeti yazılır | ${a.acilArdArda ? "evet" : "hayır (gün eksik kalır)"} |
+| Öğlen nöbeti Pazartesi–Perşembe (eczacı + tekniker) | ${a.oglenHE} + ${a.oglenHT} |
+| Öğlen nöbeti Cuma (eczacı + tekniker) | ${a.oglenCE} + ${a.oglenCT} |
 
 ## Terimler
 
@@ -138,8 +147,8 @@ Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Ay
   - **Kemoterapi eczacısı** (dışarıdan gelen eczacı): hafta içi mesaisi ve öğlen nöbeti yoktur; nöbetini günlük eczanede (eczacı yerine sayılır) ya da acil eczanede tutar.
   - **Destek personeli**: nöbet tutmaz; tatil günlerinde ikinci hazırlama yerini alır.
   - **Acil servis personeli**: günlük eczanede nöbet, hazırlama ve öğlen nöbeti tutmaz; acil eczane nöbet listesine yazılır; hafta içi normal mesai yapar.
-- **Nöbet**: ${AYAR_VARSAYILAN.nobetSuresi} saat (08:00'de başlar). Günlük eczanede günde 2 nöbetçi, en az biri eczacı (ya da kemoterapi eczacısı).
-- **Hazırlama**: tatil günlerinde (Cumartesi, Pazar, resmi tatil) ${HAZ_SAYISI} kişi, ${AYAR_VARSAYILAN.hazSaat} saat. 1. yer eczacı / tekniker, 2. yer önce destek personeli.
+- **Nöbet**: ${a.nobetSuresi} saat (08:00'de başlar). Günlük eczanede günde 2 nöbetçi, en az biri eczacı (ya da kemoterapi eczacısı).
+- **Hazırlama**: tatil günlerinde (Cumartesi, Pazar, resmi tatil) ${HAZ_SAYISI} kişi, ${a.hazSaat} saat. 1. yer eczacı / tekniker, 2. yer önce destek personeli.
 - **Nöbet ertesi izin (Nİ)**: nöbetin ertesi günü mesai günüyse kişi izinlidir.
 - **Tatil günü**: Cumartesi, Pazar ve takvimde işaretlenen resmi tatiller. **Arife**: takvimde işaretlenen hafta içi gün; tatil sayılmaz, normal mesai ${a.arifeSaat} saattir.
 - **Tercihler** (İzinler ekranı, kişi ve gün başına):
@@ -199,10 +208,10 @@ ${tablo(AGIRLIK, NOBET_AGIRLIK_ACIKLAMA)}
 
 ## 2. Acil eczane nöbet listesi (aylık)
 
-- Her gün 2 nöbetçi, ${AYAR_VARSAYILAN.nobetSuresi} saat. Eczane nöbet çizelgesinden bağımsızdır; hazırlama ve "her gün en az bir eczacı" kuralı yoktur.
+- Her gün 2 nöbetçi, ${a.nobetSuresi} saat. Eczane nöbet çizelgesinden bağımsızdır; hazırlama ve "her gün en az bir eczacı" kuralı yoktur.
 - Nöbet tutanlar: acil servis personeli ve "acilde nöbet tutar" işaretli eczacılar / kemoterapi eczacıları.
 - İzinli, eş durumu "olmasın", çalışma dönemi dışı güne yazılmaz. Kişinin aynı gün ya da komşu günde eczane nöbeti / hazırlaması varsa yazılmaz (iki liste çakışmaz).
-- Art arda iki gün ve 5 günde 3 nöbet olmaz; iki nöbet arası en az ${a.acilMinAra} gün önerilir; ayda en fazla 1 Cumartesi ve 1 Pazar.
+- Art arda iki gün ve 5 günde 3 nöbet olmaz (acil kadrosu yetmezse ayara göre: art arda nöbet uyarıyla yazılır ya da gün eksik kalır); iki nöbet arası en az ${a.acilMinAra} gün önerilir; ayda en fazla 1 Cumartesi ve 1 Pazar.
 - Eş durumu "olsun" günü yazılır; "istemiyor" mümkünse yazılmaz; ertesi gün izne çıkana mümkünse yazılmaz.
 - Eşitlik yalnız acil nöbetleri arasında ve yıl boyuncadır: toplam nöbet; Perşembe, Cuma, Cumartesi, Pazar, resmi tatil ayrı ayrı; fazla mesai saati her ay. Pay yazılabildiği gün sayısına göredir.
 - Elle düzenlenen günler korunur. Onaylanan ay elle değiştirilemez, yeniden oluşturulmaz; sonradan izne çıkan kişinin günü uyarılı görünür, yerine geçeni kullanıcı seçer.
@@ -224,7 +233,7 @@ ${tablo(ONAY_AGIR, ONAY_AGIRLIK_ACIKLAMA)}
 
 ## 4. Öğlen nöbeti (haftalık)
 
-- Hafta içi öğle arasında eczanede kalanlar: Pazartesi–Perşembe ${OGLEN_GEREK.hafta.e} eczacı + ${OGLEN_GEREK.hafta.t} tekniker, Cuma ${OGLEN_GEREK.cuma.e} eczacı + ${OGLEN_GEREK.cuma.t} tekniker. Resmi tatil ve arife günü öğlen nöbeti yoktur.
+- Hafta içi öğle arasında eczanede kalanlar: Pazartesi–Perşembe ${a.oglenHE} eczacı + ${a.oglenHT} tekniker, Cuma ${a.oglenCE} eczacı + ${a.oglenCT} tekniker. Resmi tatil ve arife günü öğlen nöbeti yoktur.
 - O gün mesaide çalışanlardan yazılır (izinli, raporlu, nöbet ertesi izinli olan yazılmaz). Eczacı grubuna acilde tutan eczacılar da girer; kemoterapi eczacısı, acil servis personeli ve destek personeli yazılmaz.
 - "Cuma'dan muaf" işaretli kişi Cuma yazılmaz. Teknikerde Pazartesi–Perşembe muaf olanlara, Cuma öbürlerine yazılır (muaflar yetmezse öbürleri de); eşitlik iki grubun kendi içinde aranır.
 - Hedefler (önem sırasıyla): herkese haftada bir (kişi yetmezse iki; haftada iki sırayla verilir); yıl boyu toplam sayı ve Cuma sayısı ayrı ayrı eşit (yazılabildiği günlere göre); mümkünse o günün nöbetçisine yazılmaz; mümkünse aynı kişi art arda iki Cuma yazılmaz ve haftada iki alanın ikisi art arda günlere düşmez (ay geçişi dahil).
@@ -246,7 +255,7 @@ ${tablo(SERVIS_W, SERVIS_AGIRLIK_ACIKLAMA)}
 
 ## 6. Puantaj ve fazla mesai
 
-- Gün kodları: **M** mesai (${AYAR_VARSAYILAN.mesai} saat; arifede ${a.arifeSaat}), **N** nöbet (${AYAR_VARSAYILAN.nobetSuresi} saat), **H** hazırlama (${AYAR_VARSAYILAN.hazSaat} saat), **Nİ** nöbet ertesi izin (0), **Yİ** yıllık izin, **R** rapor, **Dİ** diğer izin, **B** boş (tatil), **P** çalışma dönemi dışı.
+- Gün kodları: **M** mesai (${a.mesai} saat; arifede ${a.arifeSaat}), **N** nöbet (${a.nobetSuresi} saat), **H** hazırlama (${a.hazSaat} saat), **Nİ** nöbet ertesi izin (0), **Yİ** yıllık izin, **R** rapor, **Dİ** diğer izin, **B** boş (tatil), **P** çalışma dönemi dışı.
 - Yıllık izin, rapor ve diğer izin günleri o günün normal mesai saatiyle çalışılmış sayılır.
 - Fazla mesai = toplam çalışma saati − ayın normal mesai saatleri (çalışma dönemi dışı günler düşülür).
 - Ay sınırı: nöbet ertesi izin nöbetin yazıldığı aya sayılır.
@@ -267,7 +276,7 @@ Ayarlar > Yedek al ile alınan dosya şu alanları taşır (aylar 0'dan sayılı
 - \`staff\`: kişiler — \`id\`, \`name\`, \`role\` (eczaci, teknisyen, destek, nobetci = kemoterapi eczacısı, servis = acil servis personeli), \`baslangic\` / \`bitis\` (YYYY-AA-GG), \`cumaMuaf\`, \`acilTutar\`.
 - \`prefs\`: "kisiId-yil-ay-gun" → izinli / want (istiyor) / avoid (istemiyor) / esVar / esYok.
 - \`manualTatil\`, \`arife\`: "yil-ay-gun" → true.
-- \`settings\`: minAra, acilMinAra, destekAylik, arifeSaat.
+- \`settings\`: minAra, acilMinAra, destekAylik, arifeSaat; gelişmiş: nobetSuresi, mesai, hazSaat, maxThu, hsUst, thuHaftaSonu, cumaEsles, fmHedef, niDusum, acilArdArda, oglenHE / oglenHT / oglenCE / oglenCT.
 - \`schedules\`: "yil-ay" → { year, month, days: [{ day, tatil, assigned (nöbetçiler), prep (hazırlamacılar), locked (elle), conflict (kural esnedi), fazlaMesai, elle düzenlenen tatil gününde nobetSay / hazSay / fmNobet / fmHaz }], uyarilar, onay }.
 - \`puantaj\`: "yil-ay" → kişi id → gün → elle yazılan kod (M, N, H, NI, YI, R, DI, B).
 - \`degisimler\`: nöbet değişimi ve izin nedeniyle yerine geçme kayıtları (cik: çıkan, yer: giren, gorev: N ya da H).

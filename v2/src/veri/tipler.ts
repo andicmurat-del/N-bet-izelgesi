@@ -64,6 +64,21 @@ export interface Ayarlar {
   destekAylik: number;
   /** arife günü normal mesai saati */
   arifeSaat: number;
+  // ---- gelişmiş kurallar (Ayarlar > Gelişmiş kurallar; anlamları motor/sabitler.ts AYAR_VARSAYILAN'da) ----
+  /** nöbet süresi, günlük normal mesai, hazırlama süresi (saat) */
+  nobetSuresi: number; mesai: number; hazSaat: number;
+  /** kişiye ayda en fazla Perşembe nöbeti (99: sınırsız) ve Cumartesi + Pazar nöbeti */
+  maxThu: number; hsUst: number;
+  /** Perşembe nöbetçisi aynı hafta sonu görev almaz; hafta sonu nöbeti olana aynı ay Cuma da yazılır */
+  thuHaftaSonu: boolean; cumaEsles: boolean;
+  /** elle düzenlemede kişinin fazla mesaisi ortalamadan bu kadar saat saparsa uyarı */
+  fmHedef: number;
+  /** nöbet izni önce 08–20 (1) ya da 20–08 (2) diliminden düşülür */
+  niDusum: number;
+  /** acil kadrosu yetmezse art arda acil nöbeti yazılır (kapalıysa gün eksik kalır) */
+  acilArdArda: boolean;
+  /** öğlen nöbeti: Pazartesi–Perşembe ve Cuma eczacı / tekniker sayısı */
+  oglenHE: number; oglenHT: number; oglenCE: number; oglenCT: number;
 }
 
 /** Puantajda elle yazılan gün kodu */

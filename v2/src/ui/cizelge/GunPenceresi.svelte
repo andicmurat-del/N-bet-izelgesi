@@ -21,7 +21,7 @@
   const hazAday = $derived(tum);
   /** takvime göre (elle yazılmazsa) nöbet fazla mesaisi ve hazırlama saati */
   const otoFm = $derived(new Baglam(veriAnlik()).fazlaMesai(c.year, c.month, gun, gunSayisi(c.year, c.month)));
-  const OTO_HAZ = 8;
+  const OTO_HAZ = $derived(depo.veri.settings.hazSaat);
   const SAYILAR_N = [1, 2, 3, 4], SAYILAR_H = [0, 1, 2, 3, 4];
 
   // seçimler: nöbetçiler (eczacılar önce) ve hazırlama; tatil gününde sayı ve saatler
@@ -116,10 +116,17 @@
   {#if ayniKisi}<p class="not hata" role="alert">Aynı kişi iki kez seçilemez.</p>{/if}
   {#if saatHatasi}<p class="not hata" role="alert">Saat 0 ile 48 arasında bir sayı olmalı (boş: takvimden).</p>{/if}
   {#if !onayli && (hatalar.length || uyarilar.length || bilgiler.length)}
+    <!-- önemli olan önde: kural dışı durumların hepsi, en çok 3 uyarı; kalan uyarılar ve bilgiler "Ayrıntılar" altında -->
     <div class="denetim" aria-live="polite">
       {#each hatalar as x}<p class="satir hata"><Ikon ad="uyari" boyut={15} /><span><b>Kural dışı:</b> {x.t}</span></p>{/each}
-      {#each uyarilar as x}<p class="satir uyari"><Ikon ad="uyari" boyut={15} /><span>{x.t}</span></p>{/each}
-      {#each bilgiler as x}<p class="satir bilgi"><Ikon ad="tamam" boyut={15} /><span>{x.t}</span></p>{/each}
+      {#each uyarilar.slice(0, 3) as x}<p class="satir uyari"><Ikon ad="uyari" boyut={15} /><span>{x.t}</span></p>{/each}
+      {#if uyarilar.length > 3 || bilgiler.length}
+        <details class="ayrinti">
+          <summary>Ayrıntılar ({uyarilar.length - Math.min(3, uyarilar.length) + bilgiler.length}){uyarilar.length > 3 ? ` · ${uyarilar.length - 3} uyarı daha` : ""}</summary>
+          {#each uyarilar.slice(3) as x}<p class="satir uyari"><Ikon ad="uyari" boyut={15} /><span>{x.t}</span></p>{/each}
+          {#each bilgiler as x}<p class="satir bilgi"><Ikon ad="tamam" boyut={15} /><span>{x.t}</span></p>{/each}
+        </details>
+      {/if}
     </div>
   {:else if !onayli && !ayniKisi && !saatHatasi}
     <p class="not tamam"><Ikon ad="tamam" boyut={15} />Kural sorunu yok.</p>
@@ -143,6 +150,9 @@
   .sayi select { width: auto; min-width: 64px; }
   .iki { display: grid; grid-template-columns: 1fr 1fr; gap: var(--b3); }
   .denetim { display: grid; gap: 6px; }
+  .ayrinti { display: grid; gap: 6px; }
+  .ayrinti summary { cursor: pointer; font-size: var(--f-sm); color: var(--yazi-2); padding: 4px 2px; }
+  .ayrinti[open] summary { margin-bottom: 6px; }
   .satir { display: flex; gap: var(--b2); align-items: flex-start; font-size: var(--f-sm); padding: 6px 10px; border-radius: var(--r-kucuk); }
   .satir :global(svg) { flex: none; margin-top: 2px; }
   .satir.hata { background: var(--hata-zemin); color: var(--yazi); } .satir.hata :global(svg), .satir.hata b { color: var(--hata); }

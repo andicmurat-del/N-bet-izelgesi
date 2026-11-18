@@ -2,7 +2,7 @@
 // sorular (o gün tatil mi, kişi izinli mi, ayarın değeri…). Eskiden her yerden erişilen tek bir ortak değişkendi;
 // artık her hesap kendi Baglam'ıyla çalışır.
 import type { Gorevli, Kisi } from "../veri/tipler";
-import { AYAR_GIZLI, AYAR_VARSAYILAN, DURUM_KOD, IZIN_HAFTA_GUN, type AyarAdi } from "./sabitler";
+import { AYAR_VARSAYILAN, DURUM_KOD, IZIN_HAFTA_GUN, type AyarAdi } from "./sabitler";
 import { ayAnahtari, ayGunSayisi, CUMA, CUMARTESI, gunAnahtari, gunKaydir, haftaGunu, haftaSonuMu, isoNo, sonrakiAy, tarihNo } from "./takvim";
 
 /** Motorun okuduğu çizelge günü (kayıtlı verideki biçim) */
@@ -103,7 +103,6 @@ export class Baglam {
 
   // ---- ayarlar ----
   ayar<K extends AyarAdi>(k: K): (typeof AYAR_VARSAYILAN)[K] {
-    if (AYAR_GIZLI.has(k)) return AYAR_VARSAYILAN[k];
     const v = this.settings[k];
     return (v === undefined || v === null ? AYAR_VARSAYILAN[k] : v) as (typeof AYAR_VARSAYILAN)[K];
   }

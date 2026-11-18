@@ -104,7 +104,7 @@ export function degisimGeriAl(id: number, zorla = false): { tamam: true } | { ta
  * gerçekte tutanı göstersin; yıllık eşitlikte görev yine çıkanın sayılır: motor değişim kaydından geri çevirir).
  * Görev çizelgeden değil bir nöbet değişiminden geldiyse çizelge değişmez.
  */
-function zorunluDegisim(y: number, m: number, gun: number, cik: number, yer: number, gorev: Gorev, sebep: IzinTuru) {
+function zorunluDegisim(y: number, m: number, gun: number, cik: number, yer: number, gorev: Gorev, sebep?: IzinTuru) {
   const k = depo.veri.staff.find(s => s.id === yer);
   if (!k) return;
   const g = depo.veri.schedules[ayAnahtari(y, m)]?.days[gun - 1];
@@ -114,8 +114,32 @@ function zorunluDegisim(y: number, m: number, gun: number, cik: number, yer: num
   const a = depo.veri.puantaj[ayAnahtari(y, m)] ?? {};
   const cikOnce = a[cik]?.[gun] ?? null, yerOnce = a[yer]?.[gun] ?? null;
   kodYaz(y, m, yer, gun, gorev);
-  // çıkan kişinin günü izinUygula'da izin koduyla yazılır
-  kayitEkle({ y, m, gun, cik, yer, cikAd: kisiAdi(cik), yerAd: k.name, cikOnce, yerOnce, cikYeni: sebep, yerYeni: gorev, gorev, ...(cizelgede ? { zorunlu: true as const } : {}), sebep });
+  // çıkan kişinin günü izinUygula'da izin koduyla yazılır; izin dışı nedende (eş durumu vb.) o günün olağan kodu
+  const cikYeni: PuantajKodu = sebep ?? cikYeniKod(y, m, gun, cik);
+  if (!sebep) kodYaz(y, m, cik, gun, cikYeni);
+  kayitEkle({ y, m, gun, cik, yer, cikAd: kisiAdi(cik), yerAd: k.name, cikOnce, yerOnce, cikYeni, yerYeni: gorev, gorev, ...(cizelgede ? { zorunlu: true as const } : {}), ...(sebep ? { sebep } : {}) });
+}
+
+/**
+ * Çizelgede görevli olduğu gün görev yazılamaz hâle gelen kişinin (sonradan izinli işaretlenen, eş durumu "nöbetçi
+ * olmasın", puantajda izin / rapor, izin arası, ayrılış sonrası) görevini yer kişisine verir: çizelgeye ve puantaja
+ * işlenir, değişim geçmişinden geri alınabilir. İzinli işaretli günde yıllık izin olarak yazılır (İzin ve rapor
+ * ekranıyla aynı); puantajda izin / rapor varsa o kalır.
+ */
+export function goreviYerineYaz(y: number, m: number, gun: number, cik: number, yer: number, gorev: Gorev) {
+  const elle = depo.veri.puantaj[ayAnahtari(y, m)]?.[cik]?.[gun];
+  if (elle && IZIN_KODLARI.includes(elle)) { zorunluDegisim(y, m, gun, cik, yer, gorev, elle as IzinTuru); return; }
+  if (tercihAl(cik, y, m, gun) === "izinli") { izinUygula(y, m, cik, "YI", gun, gun, [{ gun, gorev, yer }]); return; }
+  const k = depo.veri.staff.find(s => s.id === cik), iso = `${y}-${String(m + 1).padStart(2, "0")}-${String(gun).padStart(2, "0")}`;
+  if (k && ((k.baslangic && iso < k.baslangic) || (k.bitis && iso > k.bitis))) {
+    // çalışma dönemi dışı: puantajda "çalışmıyor" kalır (kod yazılmaz)
+    const g = depo.veri.schedules[ayAnahtari(y, m)]?.days[gun - 1], yk = depo.veri.staff.find(s => s.id === yer);
+    if (!g || !yk) return;
+    const l = gorev === "H" ? g.prep : g.assigned, i = l.findIndex(p => p.id === cik);
+    if (i >= 0) { l[i] = { id: yk.id, name: yk.name, role: yk.role }; g.locked = true; }
+    return;
+  }
+  zorunluDegisim(y, m, gun, cik, yer, gorev);
 }
 
 export interface YerineSecim { gun: number; gorev: Gorev; yer: number }

@@ -11,7 +11,8 @@ import { ayOzeti } from "../veri/ozet";
 const RENK = { yazi: [21, 38, 43], soluk: [70, 89, 95], cizgi: [202, 214, 218], tatil: [251, 244, 234], baslik: [222, 238, 241], ecz: [14, 74, 88], tek: [12, 127, 141], haz: [143, 82, 12] } as const;
 type Rgb = readonly [number, number, number];
 
-export interface PdfBilgi { kurum: string; resmiTatil: (d: number) => boolean; arife: (d: number) => boolean }
+export /** saat: nöbet süresi ve hazırlama saati (Ayarlar; verilmezse 24 / 8) */
+interface PdfBilgi { kurum: string; resmiTatil: (d: number) => boolean; arife: (d: number) => boolean; nobetSuresi?: number; hazSaat?: number }
 
 export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
   const doc = yeniPdf();
@@ -88,7 +89,7 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
   // lejant ve imza
   const ly = H - 15;
   doc.setFont("CizelgeSans", "normal"); doc.setFontSize(8); renk(RENK.soluk);
-  doc.text("Petrol: eczacı · Mavi: tekniker · H1, H2: hazırlama (8 saat; elle değiştirilen günde yazılan saat) · Gölgeli: hafta sonu ve resmi tatil. Nöbetçi ertesi gün izinlidir.", K, ly);
+  doc.text("Petrol: eczacı · Mavi: tekniker · H1, H2: hazırlama (" + String(b.hazSaat ?? 8).replace(".", ",") + " saat; elle değiştirilen günde yazılan saat) · Gölgeli: hafta sonu ve resmi tatil. Nöbetçi ertesi gün izinlidir.", K, ly);
   renk(RENK.yazi); doc.text("Onaylayan: ______________________________   İmza: ______________", W - K, ly, { align: "right" });
 
   // ---------- 2. sayfa: gün gün liste ----------
@@ -114,7 +115,8 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
   // ---------- 3. sayfa: kişi özeti ----------
   doc.addPage();
   ust("Kişi başı nöbet, hazırlama ve fazla mesai");
-  const o = ayOzeti(c);
+  const NS = b.nobetSuresi ?? 24, HZ = b.hazSaat ?? 8, sy = (n: number) => String(n).replace(".", ",");
+  const o = ayOzeti(c, HZ);
   const say = (id: number, w: number) => c.days.filter(g => haftaGunu(y0, m, g.day) === w && g.assigned.some(p => p.id === id)).length;
   autoTable(doc, {
     startY: 24, margin: { left: K, right: K, bottom: 14 },
@@ -126,7 +128,7 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
   });
   const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 120;
   doc.setFontSize(8); renk(RENK.soluk);
-  doc.text("Fazla mesai: nöbet süresi (24 saat) eksi o günün ve ertesi günün normal mesaisi; hazırlama 8 saat.", K, sonY + 6);
+  doc.text("Fazla mesai: nöbet süresi (" + sy(NS) + " saat) eksi o günün ve ertesi günün normal mesaisi; hazırlama " + sy(HZ) + " saat (elle değiştirilen günde yazılan saat).", K, sonY + 6);
 
   const n = doc.getNumberOfPages();
   for (let i = 1; i <= n; i++) { doc.setPage(i); alt(i, n); }

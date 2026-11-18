@@ -6,7 +6,7 @@
 import { test, expect } from "vitest";
 import * as M from "../src/motor";
 import { Baglam, eczaciMi } from "../src/motor/baglam";
-import { senaryo, denetle, hizliSaat, dimOf } from "./tarama/ortak";
+import { senaryo, denetle, hizli, dimOf } from "./tarama/ortak";
 
 const N = Number(process.env.N || 20), BAS = Number(process.env.BAS || 1);
 
@@ -26,9 +26,9 @@ for (let s = BAS; s < BAS + N; s++) test("senaryo " + s, () => {
     }
     const once = JSON.stringify(veri);
     let r1;
-    try { r1 = M.cizelgeOlustur(veri, y, m, { saat: hizliSaat() }); } catch (e) { bulgu.push(`${y}-${m + 1} ÇÖKTÜ: ${e.stack}`); break; }
+    try { r1 = M.cizelgeOlustur(veri, y, m, hizli()); } catch (e) { bulgu.push(`${y}-${m + 1} ÇÖKTÜ: ${e.stack}`); break; }
     if (JSON.stringify(veri) !== once) bulgu.push("girdi değişti");
-    const r2 = M.cizelgeOlustur(veri, y, m, { saat: hizliSaat() });
+    const r2 = M.cizelgeOlustur(veri, y, m, hizli());
     if (JSON.stringify(r1) !== JSON.stringify(r2)) bulgu.push(`${y}-${m + 1} aynı girdi farklı sonuç`);
     bulgu.push(...denetle(veri, y, m, r1, kilitli && kilitli.map((k, i) => k)));
     // destek personelinin aylık hazırlama sayısı kesin sınırdır (Ayarlar): aşılmamalı (elle kilitlenen günler hariç)

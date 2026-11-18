@@ -20,12 +20,22 @@ function esZamanli(): number {
  * asıl arama uyarısız biterse ötekiler durdurulur; uyarı kaldıysa sonuçların en az uyarılısı seçilir (sırayla
  * aramadaki seçimle aynı kural). İşçi açılamazsa (engelli sayfa) hesap sayfada, sırayla yapılır.
  */
-export function arkaPlandaOlustur(veri: Veri, yil: number, ay: number, varyasyon = 0): Promise<OlusturmaSonucu> {
+/** Aramanın ekranda gösterilecek ilerlemesi: oran 0–1; ek: asıl arama uyarılı bitti, farklı başlangıçlarla aranıyor */
+export interface Ilerleme { oran: number; ek: boolean }
+export function arkaPlandaOlustur(veri: Veri, yil: number, ay: number, varyasyon = 0, ilerleme?: (i: Ilerleme) => void): Promise<OlusturmaSonucu> {
+  // sayfada (işçi yoksa) hesap ekranı dondurur; ilerleme yalnız başta ve sonda bildirilir
   const sayfada = () => new Promise<OlusturmaSonucu>((coz, reddet) => setTimeout(() => { try { coz(cizelgeOlustur(veri, yil, ay, { varyasyon }) as OlusturmaSonucu); } catch (e) { reddet(e); } }, 30));
   if (isciEngelli) return sayfada();
   return new Promise<OlusturmaSonucu>((coz, reddet) => {
     const N = EK_DENEME + 1, es = esZamanli();
     const sonuc: (CizelgeSonucu | undefined)[] = new Array(N).fill(undefined);
+    // denemelerin ilerlemesi: asıl arama sürerken onun oranı; uyarılı bitince ek denemelerin ortalaması
+    const oranlar: number[] = new Array(N).fill(0);
+    const bildir = () => {
+      if (!ilerleme || bitti) return;
+      if (!sonuc[0]) ilerleme({ oran: oranlar[0], ek: false });
+      else { const ek = oranlar.slice(1).map((o, i) => (sonuc[i + 1] ? 1 : o)); ilerleme({ oran: ek.reduce((t, x) => t + x, 0) / Math.max(1, ek.length), ek: true }); }
+    };
     const isciler = new Set<Worker>();
     let siradaki = 0, bitti = false, ekGerekli: boolean | null = null;
     const bitir = (f: () => void) => { if (bitti) return; bitti = true; isciler.forEach(i => i.terminate()); isciler.clear(); f(); };
@@ -47,10 +57,11 @@ export function arkaPlandaOlustur(veri: Veri, yil: number, ay: number, varyasyon
       try { isci = new Isci(); } catch { engelli(); return; }
       isciler.add(isci);
       isci.onmessage = (e: MessageEvent) => {
+        if (typeof e.data.ilerleme === "number") { oranlar[deneme] = e.data.ilerleme; bildir(); return; }
         isci.terminate(); isciler.delete(isci);
         if (!e.data.tamam) { bitir(() => reddet(new Error(e.data.hata))); return; }
-        sonuc[deneme] = e.data.sonuc;
-        ilerle();
+        sonuc[deneme] = e.data.sonuc; oranlar[deneme] = 1;
+        ilerle(); bildir();
       };
       isci.onerror = e => { e.preventDefault(); engelli(); };
       isci.postMessage({ veri, yil, ay, varyasyon, deneme });

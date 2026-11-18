@@ -122,6 +122,9 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
   const var_ = (id: number, d: number) => (d >= 1 && d <= dim ? sec[d - 1].includes(id) : (disGun[d] || []).includes(id));
   // iki acil nöbeti arasında önerilen en az gün (Ayarlar > Acil eczane): daha yakın her nöbet çifti hafif cezalı
   const ara = Math.max(2, Math.min(6, B.sayi("acilMinAra") || 3));
+  // Ayarlar: kadro yetmezse art arda acil nöbeti yazılsın mı. Kapalıysa art arda nöbet, boş kalan yerden daha ağır
+  // cezalıdır ve hiç yazılmaz: gün eksik kalır, kullanıcıya söylenir
+  const ardArdaSerbest = B.ayar("acilArdArda") !== false, W_ARDARDA = ardArdaSerbest ? W.ardArda : 3 * W.eksik;
   // kişi sırası (havuz) ve gün türleri dizi indisine çevrilir: amaç işlevi her denemede baştan hesaplanır, nesne yerine dizi
   const H = havuz.length, sira = new Map(havuz.map((s, k) => [s.id, k])), TN = TURLER.length;
   const turIdx = turler.map(l => l.map(([t, a]) => [TURLER.indexOf(t), a] as [number, number]));
@@ -148,10 +151,10 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
         }
         // ileriye bakan çiftler bir kez sayılır; ay başında önceki ayla olanlar da
         const v = (x: number) => varK(id, k, x);
-        if (v(d + 1)) j += W.ardArda;
+        if (v(d + 1)) j += W_ARDARDA;
         for (let q = 2; q < ara; q++) if (v(d + q)) j += W.araIki;
         if (v(d + 2) && v(d + 4)) j += W.ucBes;
-        if (d === 1 && v(0)) j += W.ardArda;
+        if (d === 1 && v(0)) j += W_ARDARDA;
         for (let q = 2; q < ara; q++) if (d <= q && v(d - q)) j += W.araIki;
         if (d <= 4 && v(d - 2) && v(d - 4)) j += W.ucBes;
         if (d <= 2 && v(d - 2) && v(d + 2)) j += W.ucBes;
@@ -179,7 +182,11 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
     if (sabit[i]) continue;
     while (sec[i].length < Math.min(ACIL_GUNLUK, aday[i].length)) {
       let en = -1, enJ = Infinity;
-      for (const id of aday[i]) { if (sec[i].includes(id)) continue; sec[i].push(id); const v = J(); sec[i].pop(); if (v < enJ - 1e-9) { enJ = v; en = id; } }
+      for (const id of aday[i]) {
+        // art arda serbest değilse önceki / sonraki gün nöbeti olan yazılmaz
+        if (sec[i].includes(id) || (!ardArdaSerbest && (var_(id, i) || var_(id, i + 2)))) continue;
+        sec[i].push(id); const v = J(); sec[i].pop(); if (v < enJ - 1e-9) { enJ = v; en = id; }
+      }
       if (en < 0) break;
       sec[i].push(en);
     }
@@ -187,6 +194,15 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
   let cur = J();
   for (let tur = 0; tur < 60; tur++) {
     let iyi = false;
+    // eksik kalan yerler: yazılınca amaç iyileşiyorsa doldurulur (art arda serbest değilken yerler sonradan açılabilir)
+    for (let i = 0; i < dim; i++) {
+      if (sabit[i] || sec[i].length >= Math.min(ACIL_GUNLUK, aday[i].length)) continue;
+      for (const id of aday[i]) {
+        if (sec[i].includes(id) || sec[i].length >= ACIL_GUNLUK) continue;
+        sec[i].push(id); const v = J();
+        if (v < cur - 1e-9) { cur = v; iyi = true; } else sec[i].pop();
+      }
+    }
     for (let i = 0; i < dim; i++) {
       if (sabit[i]) continue;
       for (let q = 0; q < sec[i].length; q++) for (const id of aday[i]) {
@@ -235,6 +251,11 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
   const artArda: string[] = [];
   for (let i = 0; i < dim; i++) for (const id of sec[i]) {
     if (var_(id, i + 2)) artArda.push(ad(id) + ": " + (i + 1) + " ve " + (i + 2) + " " + AYLAR[m] + " art arda acil nöbeti (personel yetmiyor).");
+  }
+  // art arda serbest değilken boş kalan yerler
+  if (!ardArdaSerbest) {
+    const eksik = sec.map((l, i) => (!sabit[i] && l.length < ACIL_GUNLUK && aday[i].length >= ACIL_GUNLUK ? i + 1 + " " + AYLAR[m] + " (" + l.length + "/" + ACIL_GUNLUK + ")" : "")).filter(Boolean);
+    if (eksik.length) uyarilar.push(AYLAR[m] + ": art arda nöbet yazılmadığı için (Ayarlar) şu günlerde acil nöbeti eksik kaldı: " + eksik.join(", ") + ". Acil kadrosu yetmiyor; günleri elle doldurun ya da kadroyu artırın.");
   }
   // çok sayıda art arda nöbet kadronun yetmediğini gösterir: tek tek yerine tek satır
   if (artArda.length > 5) uyarilar.push(AYLAR[m] + ": acil kadrosu yetmiyor; " + artArda.length + " kez art arda acil nöbeti yazıldı (günde " + ACIL_GUNLUK + " kişi için art arda gün ve 5 günde 3 nöbet olmadan en az " + Math.ceil(5 * ACIL_GUNLUK / 2) + " kişi gerekir).");

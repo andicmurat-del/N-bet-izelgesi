@@ -19,7 +19,7 @@ import { cizelgeCanliDenetim, gunuDenetle as gunDenetimi, type GunDuzeniGirdisi 
 import { cizelgeUret, type CizelgeSonucu } from "./nobet/olustur";
 import { acilOlustur } from "./acil";
 import { acilDegisimDenetle as acilDegisimDenetimi, acilYerineAdaylar } from "./acilDegisim";
-import { oglenOlustur, oglenOnarimlari, oglenYillik, type OglenGunSonucu } from "./oglen";
+import { oglenGerek, oglenOlustur, oglenOnarimlari, oglenYillik, type OglenGunSonucu } from "./oglen";
 import { onayHaftasi, pazartesi } from "./onayMasa";
 import { puantajIzgarasi } from "./puantaj";
 import { acilAdaylari, acilDenetle as acilDenetimi, acilOglenRaporu, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
@@ -31,6 +31,8 @@ export { AGIRLIK, FM_MAX_FARK, AYAR_VARSAYILAN } from "./sabitler";
 export { PUANTAJ_KODLARI } from "./puantaj";
 export { uyariSiniflandir } from "./raporlar";
 export { OGLEN_GEREK, oglenGrubu } from "./oglen";
+/** öğlen nöbetinde gereken kişi sayıları (Ayarlar) */
+export function oglenGerekHesapla(veri: unknown) { return oglenGerek(new Baglam(veri)); }
 export { acilKadrosunda } from "./acil";
 export { ONAY_YERLERI, type OnayYeri, type OnayHaftasi, type OnayGunu, type OnayHucre } from "./onayMasa";
 export { ZOR_ESIK as SERVIS_ZOR_ESIK } from "./servis/liste";
@@ -38,25 +40,28 @@ export type { CizelgeSonucu } from "./nobet/olustur";
 
 /**
  * Bir ayın çizelgesini oluşturur. veri: {staff, prefs, manualTatil, arife, settings, schedules, puantaj}; ay 0 = Ocak.
- * secenek.varyasyon: "farklı dağılım"; secenek.saat: aramanın süre sınırı için saat (testlerde sabit verilir).
+ * secenek.varyasyon: "farklı dağılım"; secenek.ilerleme: arama ilerledikçe (deneme no, 0–1 oran).
+ * Arama süreyle değil tur sayısıyla sınırlıdır: aynı veriyle her bilgisayarda aynı çizelge çıkar.
  */
-export function cizelgeOlustur(veri: unknown, yil: number, ay: number, secenek: { varyasyon?: number; saat?: () => number } = {}) {
-  const saat = secenek.saat || Date.now, bas = saat();
+export function cizelgeOlustur(veri: unknown, yil: number, ay: number, secenek: AramaSecenegi = {}) {
   // uyarısız çizelge bulunamazsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir (önce hata, sonra uyarı,
   // sonra kırmızı gün sayısı; eşitse ilk bulunan). Her deneme verinin kendi kopyasıyla çalışır. Kadro kurallara
   // matematiksel olarak yetmiyorsa ek deneme yapılmaz: uyarı sayısı azalsa da farklar büyüyebiliyor (ör. 3 eczacı +
   // 4 teknikerde bir uyarı eksilirken fazla mesai farkı 32 saatten 64 saate çıkıyordu)
   const denemeler = [cizelgeDenemesi(veri, yil, ay, 0, secenek)];
   if (!ekDenemeGerekli(denemeler[0])) return denemeler[0];
-  for (let k = 1; k <= EK_DENEME && !uyarisiz(enIyiDeneme(denemeler)) && saat() - bas < EK_DENEME_SURE; k++) denemeler.push(cizelgeDenemesi(veri, yil, ay, k, secenek));
+  for (let k = 1; k <= EK_DENEME && !uyarisiz(enIyiDeneme(denemeler)); k++) denemeler.push(cizelgeDenemesi(veri, yil, ay, k, secenek));
   return enIyiDeneme(denemeler);
 }
 /** Tek bir arama denemesi: 0 asıl arama, 1..EK_DENEME farklı başlangıçlı ek aramalar. Denemeler birbirinden bağımsızdır;
  *  arayüz bunları ayrı işçilerde aynı anda çalıştırır (istemci.ts), cizelgeOlustur sırayla. */
-export function cizelgeDenemesi(veri: unknown, yil: number, ay: number, deneme: number, secenek: { varyasyon?: number; saat?: () => number } = {}): CizelgeSonucu {
-  const v = secenek.varyasyon || 0;
-  return cizelgeUret(new Baglam(veri), yil, ay, deneme ? EK_TOHUM + v * (EK_DENEME + 1) + deneme : v, secenek.saat || Date.now);
+export function cizelgeDenemesi(veri: unknown, yil: number, ay: number, deneme: number, secenek: AramaSecenegi = {}): CizelgeSonucu {
+  const v = secenek.varyasyon || 0, il = secenek.ilerleme;
+  return cizelgeUret(new Baglam(veri), yil, ay, deneme ? EK_TOHUM + v * (EK_DENEME + 1) + deneme : v, il ? oran => il(deneme, oran) : undefined, secenek.turSiniri);
 }
+/** varyasyon: "farklı dağılım" numarası; ilerleme: (deneme no, 0–1 oran); turSiniri: yinelemeli aramanın en çok tur
+ *  sayısı (yalnız testlerdeki hızlı tarama için; 0: yinelemeli arama yok) */
+export interface AramaSecenegi { varyasyon?: number; ilerleme?: (deneme: number, oran: number) => void; turSiniri?: number }
 /** ilk denemenin sonucuna göre ek deneme yapılır mı: uyarı kaldıysa ve neden kadro yetersizliği değilse */
 export function ekDenemeGerekli(ilk: CizelgeSonucu): boolean {
   return !ilk.warnings.some(w => /matematiksel olarak mümkün değil/.test(w)) && !uyarisiz(ilk);
@@ -69,9 +74,8 @@ export function enIyiDeneme(denemeler: CizelgeSonucu[]): CizelgeSonucu {
 }
 /** hata, uyarı ve kırmızı gün kalmadı mı */
 export const uyarisiz = (r: CizelgeSonucu) => !uyariPuani(r).some(x => x > 0);
-/** uyarısız çizelge bulunamazsa en fazla bu kadar ek deneme, toplam bu kadar milisaniye içinde */
+/** uyarısız çizelge bulunamazsa en fazla bu kadar ek deneme (farklı başlangıçlarla) */
 export const EK_DENEME = 3;
-const EK_DENEME_SURE = 20000;
 /** ek denemelerin "farklı dağılım" numaralarıyla çakışmaması için */
 const EK_TOHUM = 1000000;
 function uyariPuani(r: CizelgeSonucu): number[] {
