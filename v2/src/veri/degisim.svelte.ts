@@ -9,6 +9,8 @@ import type { Degisim, PuantajKodu } from "./tipler";
 import type { Izgara } from "../disa/puantajTipleri";
 
 export type Gorev = "N" | "H";
+/** Gün penceresinden "Değişim yap" ile gelinen görev: Puantaj > Nöbet değişimi açılınca seçili gelir, sonra silinir */
+export const degisimOnSecimi = $state<{ deger: { y: number; m: number; gun: number; id: number; kod: Gorev } | null }>({ deger: null });
 export type IzinTuru = "R" | "YI" | "NI" | "DI";
 export const IZIN_AD: Record<IzinTuru, string> = {
   R: "Rapor",

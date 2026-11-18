@@ -16,6 +16,7 @@
     type Gorev,
     type DegisimIstegi,
     type IzinTuru,
+    degisimOnSecimi,
   } from "../../veri/degisim.svelte";
   import { GUN_KISA, gunMetni, haftaGunu, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
@@ -79,6 +80,15 @@
     y;
     m;
     untrack(temizle);
+  });
+  // gün penceresinden gelinen görev seçili açılır
+  $effect(() => {
+    const o = degisimOnSecimi.deger;
+    if (!o || acil) return;
+    untrack(() => {
+      degisimOnSecimi.deger = null;
+      if (o.y === y && o.m === m) sec({ id: o.id, gun: o.gun, kod: o.kod });
+    });
   });
   const ayni = (a: Secim | null, b: Secim) => !!a && a.id === b.id && a.gun === b.gun && a.kod === b.kod;
   function sec(x: Secim) {

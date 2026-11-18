@@ -1,10 +1,10 @@
 // Günlük eczane nöbet listesi: PDF / Excel, çizelge oluşturma ve onay, elle gün düzeni, paylaşım.
-import { test, expect, git, bas, kayit, indir, pdfOku, excelMi, durum } from "./yardimci";
+import { test, expect, git, bas, menu, kayit, indir, pdfOku, excelMi, durum } from "./yardimci";
 
 test("nöbet listesi PDF'i (takvim, gün listesi, kişi özeti) ve Excel", async ({ page, kur }) => {
   await kur();
   await git(page, "gunluk/nobet");
-  const p = await indir(page, () => bas(page, /^PDF$/));
+  const p = await indir(page, () => menu(page, "Dışa aktar", /^PDF$/));
   expect(p.ad).toBe("nobet-cizelgesi-2026-11.pdf");
   const { sayfa, metin } = await pdfOku(p.veri);
   expect(sayfa).toBe(3);
@@ -12,7 +12,7 @@ test("nöbet listesi PDF'i (takvim, gün listesi, kişi özeti) ve Excel", async
   expect(metin[0]).toContain("BORA KAYA");
   expect(metin[1]).toContain("01.11.2026");
   expect(metin[2]).toContain("AYŞE YILMAZ");
-  const x = await indir(page, () => bas(page, /^Excel$/));
+  const x = await indir(page, () => menu(page, "Dışa aktar", /^Excel$/));
   expect(excelMi(x.veri)).toBe(true);
 });
 
@@ -55,7 +55,7 @@ test("tatil gününde 3 nöbetçi ve elle saat: kaydedilir, puantaja girer", asy
 test("paylaş: ayın listesi ve kişinin görevleri metin olarak", async ({ page, kur }) => {
   await kur();
   await git(page, "gunluk/nobet");
-  await bas(page, /^Paylaş$/);
+  await menu(page, "Dışa aktar", /^Paylaş$/);
   const t = page.locator("dialog[open] textarea");
   await expect(t).toHaveValue(
     /^\*Kasım 2026 Nöbet Listesi\* · Test Hastanesi \(taslak\)\n1 Paz\*: Bora Kaya, Selin Uçar · Haz\.: Cem Demir, Kaan Polat/,

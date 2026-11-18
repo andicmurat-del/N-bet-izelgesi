@@ -1,5 +1,5 @@
 // Öğlen nöbeti, onay listesi, acil eczane ve hazırlama listesi çıktıları.
-import { test, expect, git, bas, indir, pdfOku, excelMi } from "./yardimci";
+import { test, expect, git, bas, menu, indir, pdfOku, excelMi } from "./yardimci";
 
 test("öğlen nöbeti haftalık PDF'i tek sayfa", async ({ page, kur }) => {
   await kur();
@@ -26,11 +26,11 @@ test("onay listesi haftalık PDF'i tek sayfa", async ({ page, kur }) => {
 test("acil eczane listesi PDF'i ve Excel'i", async ({ page, kur }) => {
   await kur();
   await git(page, "acil/acil");
-  const p = await indir(page, () => bas(page, /^PDF$/));
+  const p = await indir(page, () => menu(page, "Dışa aktar", /^PDF$/));
   const { metin } = await pdfOku(p.veri);
   expect(metin.join(" ")).toContain("Kasım 2026 acil eczane nöbet listesi");
   expect(metin.join(" ")).toContain("FATMA ÖZTÜRK");
-  const x = await indir(page, () => bas(page, /^Excel$/));
+  const x = await indir(page, () => menu(page, "Dışa aktar", /^Excel$/));
   expect(excelMi(x.veri)).toBe(true);
 });
 

@@ -18,11 +18,34 @@
   import { gunMetni, gunSayisi, isoTarih } from "../../veri/tarih";
   import Pencere from "../ortak/Pencere.svelte";
   import Ikon from "../ortak/Ikon.svelte";
+  import { puantajIzgarasi, type Gorev } from "../../veri/degisim.svelte";
 
-  let { acik = $bindable(false), c, gun }: { acik?: boolean; c: AyCizelgesi; gun: number } = $props();
+  let {
+    acik = $bindable(false),
+    c,
+    gun,
+    degisimeGit,
+  }: {
+    acik?: boolean;
+    c: AyCizelgesi;
+    gun: number;
+    /** onaylı ayda: seçilen görev için Puantaj > Nöbet değişimi açılır */
+    degisimeGit?: (s: { gun: number; id: number; kod: Gorev }) => void;
+  } = $props();
 
   const g = $derived(c.days[gun - 1]);
   const onayli = $derived(!!c.onay);
+  // onaylı ayda günün o anki görevlileri (puantaja göre: yapılmış değişimler işlenmiş)
+  const guncelGorevliler = $derived.by(() => {
+    if (!onayli || !degisimeGit) return [];
+    const l: { id: number; ad: string; kod: Gorev }[] = [];
+    for (const r of puantajIzgarasi(c.year, c.month).satirlar) {
+      const h = r.cells[gun - 1];
+      if (!h || acilKadrosunda(r.s)) continue;
+      if ((h.kod === "N" && !h.acil) || h.kod === "H") l.push({ id: r.s.id, ad: r.s.name, kod: h.kod });
+    }
+    return l.sort((a, b) => (a.kod === b.kod ? 0 : a.kod === "N" ? -1 : 1));
+  });
   const iso = $derived(isoTarih(c.year, c.month, gun));
   const calisiyor = (k: Kisi) => !(k.baslangic && iso < k.baslangic) && !(k.bitis && iso > k.bitis);
   const tum = $derived(
@@ -151,7 +174,29 @@
   baslik={gunMetni(c.year, c.month, gun)}
   altBaslik="{tur} · nöbet fazla mesaisi {gosterFm} saat{typeof fmNobet === 'number' ? ' (elle)' : ''}"
 >
-  {#if onayli}<p class="not bilgi">Bu ay onaylı; günler değiştirilemez. Değiştirmek için önce onayı kaldırın.</p>{/if}
+  {#if onayli}
+    <p class="not bilgi">
+      Bu ay onaylı; çizelgenin günleri değiştirilemez.{degisimeGit
+        ? " Ay içindeki değişiklik (yerine tutma, takas) için görevi seçin:"
+        : " Değiştirmek için önce onayı kaldırın."}
+    </p>
+    {#if guncelGorevliler.length}
+      <ul class="degisim-listesi">
+        {#each guncelGorevliler as k (k.id + k.kod)}
+          <li>
+            <span><b>{k.ad}</b> · {k.kod === "N" ? "nöbet" : "hazırlama"}</span>
+            <button
+              class="dugme kucuk"
+              onclick={() => {
+                acik = false;
+                degisimeGit?.({ gun, id: k.id, kod: k.kod });
+              }}><Ikon ad="karisik" boyut={16} />Değişim yap</button
+            >
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  {/if}
   <fieldset disabled={onayli}>
     <legend class="bas"
       ><span>Nöbetçiler</span>
@@ -365,6 +410,23 @@
   .not.hata {
     background: var(--hata-zemin);
     color: var(--hata);
+  }
+  .degisim-listesi {
+    list-style: none;
+    margin: 0 0 var(--b3);
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+  .degisim-listesi li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--b2);
+    padding: 6px var(--b3);
+    border: 1px solid var(--cizgi);
+    border-radius: var(--r-kucuk);
+    font-size: var(--f-sm);
   }
   .not.bilgi {
     background: var(--bilgi-zemin);

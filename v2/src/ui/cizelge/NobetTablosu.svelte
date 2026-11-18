@@ -39,6 +39,15 @@
     ara: string;
   } = $props();
   const eczaciRol = (r: string) => r === "eczaci" || r === "nobetci";
+  // dar ekran (telefon): tablo yerine gün kartları
+  const DAR = "(max-width: 720px)";
+  let dar = $state(typeof matchMedia !== "undefined" && matchMedia(DAR).matches);
+  $effect(() => {
+    const mq = matchMedia(DAR),
+      degis = () => (dar = mq.matches);
+    mq.addEventListener("change", degis);
+    return () => mq.removeEventListener("change", degis);
+  });
   const degistiMi = (g: Gun) => !!degisen?.has(g.day);
   const filtreUy: Record<Filtre, (g: Gun) => boolean> = {
     tumu: () => true,
@@ -87,6 +96,21 @@
 {#snippet adlar(l: { id: number; name: string }[])}
   {#each l as p, i (p.id)}{i ? ", " : ""}{#if p.id === vurgu}<mark class="vurgu-ad">{p.name}</mark>{:else}{p.name}{/if}{:else}—{/each}
 {/snippet}
+{#snippet etiketler(g: Gun, rt: boolean)}
+  {#if degistiMi(g)}<span class="etk degisti">değişti</span>{/if}
+  {#if g.assigned.length && !g.assigned.some(p => eczaciRol(p.role))}<span class="etk esnek"><Ikon ad="uyari" boyut={12} />eczacı yok</span
+    >{:else if g.conflict || g.assigned.length < (g.nobetSay ?? 2)}<span class="etk esnek"
+      ><Ikon ad="uyari" boyut={12} />kural esnetildi</span
+    >{/if}
+  {#if g.locked}<span class="etk elle"><Ikon ad="kilit" boyut={12} />elle</span>{/if}
+  {#if g.fmNobet !== undefined || g.fmHaz !== undefined}<span class="etk elle" title="Fazla mesai elle yazıldı"
+      >{g.fmNobet !== undefined ? `nöbet ${g.fmNobet} sa` : ""}{g.fmNobet !== undefined && g.fmHaz !== undefined ? " · " : ""}{g.fmHaz !==
+      undefined
+        ? `haz. ${g.fmHaz} sa`
+        : ""}</span
+    >{/if}
+  {#if rt}<span class="etk hsr">resmi tatil</span>{:else if g.tatil}<span class="etk hsr">hafta sonu</span>{/if}
+{/snippet}
 <section class="panel" aria-label="Liste">
   <div class="panel-bas">
     <h2>{ayAdi(depo.yil, depo.ay)} nöbet listesi{baslikEk}</h2>
@@ -105,60 +129,157 @@
       <input type="search" bind:value={ara} placeholder="Ad ara" aria-label="Ad ara" />
     </div>
   </div>
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin) -->
-  <div class="tablo-kap" tabindex="0" role="region" aria-label="Nöbet listesi tablosu">
-    <table class="tablo liste">
-      <thead
-        ><tr
-          ><th>Tarih</th><th>Gün</th><th>Nöbetçi eczacı</th><th>Nöbetçi tekniker</th><th>Hazırlama 1</th><th>Hazırlama 2</th><th>Durum</th
-          ></tr
-        ></thead
-      >
-      <tbody>
-        {#each haftalar as h (h.no)}
-          <tr class="grup"><td colspan="7">{h.no}. hafta{h.yarim ? " (yarım)" : ""}</td></tr>
-          {#each h.gunler as g (g.day)}
-            {@const ec = g.assigned.filter(p => eczaciRol(p.role))}
-            {@const tk = g.assigned.filter(p => !eczaciRol(p.role))}
-            {@const rt = resmiTatilMi(depo.yil, depo.ay, g.day)}
-            <tr
-              class:secili-satir={seciliGun === g.day}
-              class:hs={g.tatil}
-              class:vurgulu={vurgu !== null && (g.assigned.some(p => p.id === vurgu) || (g.tatil && g.prep.some(p => p.id === vurgu)))}
-              onclick={() => gunAc(g.day)}
+  {#if dar}
+    <!-- telefonda: her gün bir kart (tablo yana kaymasın; bütün görevliler görünsün) -->
+    <div class="kartlar">
+      {#each haftalar as h (h.no)}
+        <h3 class="hafta">{h.no}. hafta{h.yarim ? " (yarım)" : ""}</h3>
+        {#each h.gunler as g (g.day)}
+          {@const rt = resmiTatilMi(depo.yil, depo.ay, g.day)}
+          {@const sirali = [...g.assigned].sort((x, y) => Number(eczaciRol(y.role)) - Number(eczaciRol(x.role)))}
+          <button
+            class="gun-kart"
+            class:secili-kart={seciliGun === g.day}
+            class:hs={g.tatil}
+            class:vurgulu={vurgu !== null && (g.assigned.some(p => p.id === vurgu) || (g.tatil && g.prep.some(p => p.id === vurgu)))}
+            onclick={() => gunAc(g.day)}
+          >
+            <span class="kart-bas"
+              ><b class="rakam">{g.day} {AYLAR[depo.ay]}</b>
+              <span class="gun-adi">{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</span></span
             >
-              <td class="rakam"><b>{g.day} {AYLAR[depo.ay]}</b></td>
-              <td>{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</td>
-              <td>{@render adlar(ec)}</td>
-              <td>{@render adlar(tk)}</td>
-              <td>{@render adlar(g.tatil && g.prep[0] ? [g.prep[0]] : [])}</td>
-              <td>{@render adlar(g.tatil ? g.prep.slice(1) : [])}</td>
-              <td class="durum">
-                {#if degistiMi(g)}<span class="etk degisti">değişti</span>{/if}
-                {#if g.assigned.length && !g.assigned.some(p => eczaciRol(p.role))}<span class="etk esnek"
-                    ><Ikon ad="uyari" boyut={12} />eczacı yok</span
-                  >{:else if g.conflict || g.assigned.length < (g.nobetSay ?? 2)}<span class="etk esnek"
-                    ><Ikon ad="uyari" boyut={12} />kural esnetildi</span
-                  >{/if}
-                {#if g.locked}<span class="etk elle"><Ikon ad="kilit" boyut={12} />elle</span>{/if}
-                {#if g.fmNobet !== undefined || g.fmHaz !== undefined}<span class="etk elle" title="Fazla mesai elle yazıldı"
-                    >{g.fmNobet !== undefined ? `nöbet ${g.fmNobet} sa` : ""}{g.fmNobet !== undefined && g.fmHaz !== undefined
-                      ? " · "
-                      : ""}{g.fmHaz !== undefined ? `haz. ${g.fmHaz} sa` : ""}</span
-                  >{/if}
-                {#if rt}<span class="etk hsr">resmi tatil</span>{:else if g.tatil}<span class="etk hsr">hafta sonu</span>{/if}
-              </td>
-            </tr>
-          {/each}
-        {:else}
-          <tr><td colspan="7" class="bos-sonuc">Bu süzgece uyan gün yok.</td></tr>
+            <span class="kart-gorev">
+              {#each sirali as p (p.id)}<span class="kisi"
+                  ><span class="gorev {eczaciRol(p.role) ? 'ecz' : 'tek'}">{eczaciRol(p.role) ? "ECZ" : "TEK"}</span
+                  >{#if p.id === vurgu}<mark class="vurgu-ad">{p.name}</mark>{:else}{p.name}{/if}</span
+                >{:else}<span class="yok">Nöbetçi yok</span>{/each}
+            </span>
+            {#if g.tatil}<span class="kart-gorev">
+                {#each g.prep as p, i (p.id)}<span class="kisi"
+                    ><span class="gorev haz">H{i + 1}</span>{#if p.id === vurgu}<mark class="vurgu-ad">{p.name}</mark
+                      >{:else}{p.name}{/if}</span
+                  >{:else}<span class="yok">Hazırlamacı yok</span>{/each}
+              </span>{/if}
+            <span class="kart-etiket">{@render etiketler(g, rt)}</span>
+          </button>
         {/each}
-      </tbody>
-    </table>
-  </div>
+      {:else}
+        <p class="bos-sonuc">Bu süzgece uyan gün yok.</p>
+      {/each}
+    </div>
+  {:else}
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin) -->
+    <div class="tablo-kap" tabindex="0" role="region" aria-label="Nöbet listesi tablosu">
+      <table class="tablo liste">
+        <thead
+          ><tr
+            ><th>Tarih</th><th>Gün</th><th>Nöbetçi eczacı</th><th>Nöbetçi tekniker</th><th>Hazırlama 1</th><th>Hazırlama 2</th><th>Durum</th
+            ></tr
+          ></thead
+        >
+        <tbody>
+          {#each haftalar as h (h.no)}
+            <tr class="grup"><td colspan="7">{h.no}. hafta{h.yarim ? " (yarım)" : ""}</td></tr>
+            {#each h.gunler as g (g.day)}
+              {@const ec = g.assigned.filter(p => eczaciRol(p.role))}
+              {@const tk = g.assigned.filter(p => !eczaciRol(p.role))}
+              {@const rt = resmiTatilMi(depo.yil, depo.ay, g.day)}
+              <tr
+                class:secili-satir={seciliGun === g.day}
+                class:hs={g.tatil}
+                class:vurgulu={vurgu !== null && (g.assigned.some(p => p.id === vurgu) || (g.tatil && g.prep.some(p => p.id === vurgu)))}
+                onclick={() => gunAc(g.day)}
+              >
+                <td class="rakam"><b>{g.day} {AYLAR[depo.ay]}</b></td>
+                <td>{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</td>
+                <td>{@render adlar(ec)}</td>
+                <td>{@render adlar(tk)}</td>
+                <td>{@render adlar(g.tatil && g.prep[0] ? [g.prep[0]] : [])}</td>
+                <td>{@render adlar(g.tatil ? g.prep.slice(1) : [])}</td>
+                <td class="durum">
+                  {@render etiketler(g, rt)}
+                </td>
+              </tr>
+            {/each}
+          {:else}
+            <tr><td colspan="7" class="bos-sonuc">Bu süzgece uyan gün yok.</td></tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  {/if}
 </section>
 
 <style>
+  .kartlar {
+    display: grid;
+    gap: var(--b2);
+    padding: var(--b3);
+  }
+  .hafta {
+    margin: var(--b2) 0 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--lacivert);
+  }
+  .hafta:first-child {
+    margin-top: 0;
+  }
+  .gun-kart {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+    padding: var(--b3);
+    border: 1px solid var(--cizgi);
+    border-radius: var(--r);
+    background: var(--yuzey);
+    color: var(--yazi);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .gun-kart.hs {
+    background: color-mix(in srgb, var(--acik-mavi) 14%, var(--yuzey));
+  }
+  .gun-kart.vurgulu {
+    background: color-mix(in srgb, var(--altin) 16%, var(--yuzey));
+    box-shadow: inset 3px 0 0 var(--altin);
+  }
+  .gun-kart.secili-kart {
+    border-color: var(--altin);
+    box-shadow: 0 0 0 1px var(--altin);
+  }
+  .kart-bas {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    color: var(--lacivert);
+  }
+  .gun-adi {
+    color: var(--yazi-2);
+    font-size: var(--f-sm);
+  }
+  .kart-gorev {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+  .kisi {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: var(--f-sm);
+  }
+  .yok {
+    color: var(--soluk);
+    font-size: var(--f-sm);
+  }
+  .kart-etiket:empty {
+    display: none;
+  }
   .liste tbody tr {
     cursor: pointer;
   }

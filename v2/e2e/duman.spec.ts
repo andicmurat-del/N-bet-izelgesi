@@ -12,6 +12,7 @@ const GORUNUMLER = [
   "gunluk/hazirlama",
   "gunluk/puantaj",
   "gunluk/izinler",
+  "gunluk/kisi",
   "gunluk/raporlar",
   "acil/acil",
   "acil/puantaj",

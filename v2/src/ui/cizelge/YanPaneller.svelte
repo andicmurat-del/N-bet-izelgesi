@@ -1,8 +1,13 @@
 <script lang="ts">
   // Nöbet Listesi yan sütunu: seçili gün (nöbetçiler, hazırlama, işaretler, düzenleme düğmesi), kural denetimi ve onay.
   import { depo } from "../../veri/depo.svelte";
-  import { gunMetni } from "../../veri/tarih";
+  import { AYLAR, gunMetni } from "../../veri/tarih";
   import type { AyCizelgesi } from "../../veri/tipler";
+  import { uyariGunleri } from "../../veri/uyariGunleri";
+
+  type Sinif = { t: string; seviye: "hata" | "uyari" | "bilgi"; baslik: string };
+  /** uyarı başına gösterilen en çok gün düğmesi */
+  const GUN_SINIR = 14;
   import Ikon from "../ortak/Ikon.svelte";
 
   let {
@@ -10,12 +15,15 @@
     sg,
     siniflar,
     gunuDuzenle,
+    gunAc,
   }: {
     c: AyCizelgesi;
     /** seçili gün (gösterilen çizelgeden) */
     sg: AyCizelgesi["days"][number] | undefined;
-    siniflar: { t: string; seviye: "hata" | "uyari" | "bilgi"; baslik: string }[];
+    siniflar: Sinif[];
     gunuDuzenle: () => void;
+    /** uyarıda geçen güne dokununca: o gün seçilir (dar ekranda gün penceresi açılır) */
+    gunAc: (d: number) => void;
   } = $props();
   const eczaciRol = (r: string) => r === "eczaci" || r === "nobetci";
 </script>
@@ -51,21 +59,30 @@
       </div>
     {/if}
   </section>
+  {#snippet uyari(u: Sinif, sinif: string)}
+    {@const gunler = uyariGunleri(u.t, c.month, c.days.length)}
+    <div class="kutu {sinif}">
+      <details>
+        <summary
+          ><b>{u.baslik}</b>{#if gunler.length}<span class="gun-say">{gunler.length} gün</span>{/if}</summary
+        >
+        <p>{u.t}</p>
+      </details>
+      {#if gunler.length}<div class="gunler" role="group" aria-label="{u.baslik}: günler">
+          {#each gunler.slice(0, GUN_SINIR) as d}<button
+              class="gun-cip rakam"
+              title="{d} {AYLAR[c.month]} gününü aç"
+              onclick={() => gunAc(d)}>{d}</button
+            >{/each}{#if gunler.length > GUN_SINIR}<span class="fazla">+{gunler.length - GUN_SINIR}</span>{/if}
+        </div>{/if}
+    </div>
+  {/snippet}
   <section class="panel">
     <div class="panel-bas"><h2>Kural denetimi</h2></div>
     <div class="panel-ic denetim">
-      {#each siniflar.filter(u => u.seviye === "hata") as u}<div class="kutu hata">
-          <b>{u.baslik}</b>
-          <p>{u.t}</p>
-        </div>{/each}
-      {#each siniflar.filter(u => u.seviye === "uyari") as u}<div class="kutu dikkat">
-          <b>{u.baslik}</b>
-          <p>{u.t}</p>
-        </div>{/each}
-      {#each siniflar.filter(u => u.seviye === "bilgi") as u}<div class="kutu bilgi">
-          <b>{u.baslik}</b>
-          <p>{u.t}</p>
-        </div>{/each}
+      {#each siniflar.filter(u => u.seviye === "hata") as u}{@render uyari(u, "hata")}{/each}
+      {#each siniflar.filter(u => u.seviye === "uyari") as u}{@render uyari(u, "dikkat")}{/each}
+      {#each siniflar.filter(u => u.seviye === "bilgi") as u}{@render uyari(u, "bilgi")}{/each}
       {#if !siniflar.length}<p class="tamam"><Ikon ad="tamam" boyut={15} /> Tüm kurallar sağlandı.</p>{/if}
     </div>
   </section>
@@ -153,8 +170,61 @@
     overflow-y: auto;
   }
   .denetim .kutu b {
-    display: block;
     font-size: var(--f-sm);
+  }
+  summary {
+    display: flex;
+    align-items: center;
+    gap: var(--b2);
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary::before {
+    content: "";
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform 0.15s;
+  }
+  details[open] summary::before {
+    transform: rotate(45deg);
+  }
+  .gun-say {
+    margin-left: auto;
+    font-size: var(--f-xs);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .gunler {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .gun-cip {
+    min-width: 30px;
+    min-height: 28px;
+    padding: 0 6px;
+    border: 1px solid currentColor;
+    border-radius: var(--r-kucuk);
+    background: var(--yuzey);
+    color: inherit;
+    font-size: var(--f-xs);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .gun-cip:hover {
+    background: color-mix(in srgb, currentColor 12%, var(--yuzey));
+  }
+  .fazla {
+    align-self: center;
+    font-size: var(--f-xs);
   }
   .denetim .kutu p {
     font-size: var(--f-xs);

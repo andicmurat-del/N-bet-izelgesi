@@ -7,7 +7,7 @@
 <script lang="ts">
   // Günlük Eczane > Nöbet Listesi: çizelgeyi oluşturma, onay, PDF / Excel / paylaşım, özet şerit, takvim ya da liste
   // görünümü, seçili gün, kural denetimi ve onay panelleri, aylık özet.
-  import { puantajIzgarasi } from "../../veri/degisim.svelte";
+  import { puantajIzgarasi, degisimOnSecimi } from "../../veri/degisim.svelte";
   import { ciktiPaketi } from "../../disa/yukle";
   import {
     depo,
@@ -34,6 +34,8 @@
   import type { Gorevli } from "../../veri/tipler";
   import IslemAlani from "../ortak/IslemAlani.svelte";
   import Ikon from "../ortak/Ikon.svelte";
+  import Menu, { type MenuOgesi } from "../ortak/Menu.svelte";
+  import { ciktiAlindi } from "../../veri/adimlar.svelte";
   import Takvim from "./Takvim.svelte";
   import VurguSecici from "../ortak/VurguSecici.svelte";
   import AylikOzet from "../ortak/AylikOzet.svelte";
@@ -186,6 +188,7 @@
         depo.veri.settings.hazSaat,
       );
       const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}${ekAd()}.xlsx`, blob, blob.type);
+      if (ok) ciktiAlindi(y, m);
       durum = ok ? "Excel dosyası kaydedildi." : "";
     } catch (e) {
       durum = hataMetni(e, "Dosya kaydedilemedi.");
@@ -208,6 +211,7 @@
         hazSaat: depo.veri.settings.hazSaat,
       });
       const ok = await dosyaKaydet(`nobet-cizelgesi-${y}-${String(m + 1).padStart(2, "0")}${ekAd()}.pdf`, blob, "application/pdf");
+      if (ok) ciktiAlindi(y, m);
       durum = ok ? "PDF kaydedildi." : "";
     } catch (e) {
       durum = hataMetni(e, "PDF oluşturulamadı.");
@@ -215,14 +219,38 @@
       pdfHazirlaniyor = false;
     }
   }
+  const disaAktarma: MenuOgesi[] = $derived([
+    { yazi: pdfHazirlaniyor ? "PDF hazırlanıyor…" : "PDF", ikon: "indir", tikla: pdf, devreDisi: pdfHazirlaniyor },
+    { yazi: "Excel", ikon: "tablo", tikla: excel },
+    {
+      yazi: "Paylaş",
+      ikon: "liste",
+      tikla: () => (paylasAcik = true),
+      baslik: "Tüm listeyi ya da bir kişinin nöbetlerini mesaj olarak gönderin",
+    },
+  ]);
+  const digerIslemler: MenuOgesi[] = $derived(
+    c?.onay
+      ? [{ yazi: "Onayı kaldır", ikon: "kilit", tikla: () => onayiKaldir(depo.yil, depo.ay) }]
+      : [
+          {
+            yazi: "Farklı dağılım",
+            ikon: "karisik",
+            tikla: () => olustur(1 + Math.floor(Math.random() * 9999)),
+            baslik: "Aynı kurallarla farklı bir dağılım",
+          },
+          { yazi: "Çizelgeyi sil", ikon: "sil", tehlike: true, tikla: () => (silOnayi = true) },
+        ],
+  );
   function sil() {
-    if (!silOnayi) {
-      silOnayi = true;
-      return;
-    }
     cizelgeSil(depo.yil, depo.ay);
     silOnayi = false;
   }
+  // ay değişince açık silme sorusu kapanır
+  $effect(() => {
+    void [depo.yil, depo.ay];
+    silOnayi = false;
+  });
 </script>
 
 <IslemAlani>
@@ -241,39 +269,23 @@
         onclick={() => (kalici.nobetGorunum = "liste")}>Liste</button
       >
     </div>{/if}
-  {#if !c}
-    <button class="dugme ana" onclick={() => olustur()} disabled={kalici.calisiyor || nobetci.length < 2}
-      ><Ikon ad="takvim" />Çizelgeyi oluştur</button
-    >
-  {:else if !c.onay}
-    <button class="dugme" onclick={() => olustur()} disabled={kalici.calisiyor} title="Elle düzenlenen günler korunur"
-      ><Ikon ad="yenile" />Yeniden oluştur</button
-    >
-    <button
-      class="dugme"
-      onclick={() => olustur(1 + Math.floor(Math.random() * 9999))}
-      disabled={kalici.calisiyor}
-      title="Aynı kurallarla farklı bir dağılım"><Ikon ad="karisik" />Farklı dağılım</button
-    >
-    <button class="dugme ana" onclick={() => (onaySor = true)} disabled={kalici.calisiyor}><Ikon ad="tamam" />Onayla</button>
-  {:else}
-    <button class="dugme" onclick={() => onayiKaldir(depo.yil, depo.ay)}>Onayı kaldır</button>
-  {/if}
-  {#if c}
-    <button class="dugme" onclick={pdf} disabled={kalici.calisiyor || pdfHazirlaniyor}
-      ><Ikon ad="indir" />{pdfHazirlaniyor ? "Hazırlanıyor…" : "PDF"}</button
-    >
-    <button class="dugme" onclick={excel} disabled={kalici.calisiyor}><Ikon ad="indir" />Excel</button>
-    <button
-      class="dugme"
-      onclick={() => (paylasAcik = true)}
-      disabled={kalici.calisiyor}
-      title="Tüm listeyi ya da bir kişinin nöbetlerini mesaj olarak gönderin">Paylaş</button
-    >
-  {/if}
-  {#if c && !c.onay}<button class="dugme sade tehlike" onclick={sil} disabled={kalici.calisiyor}
-      ><Ikon ad="sil" />{silOnayi ? "Evet, sil" : "Sil"}</button
-    >{/if}
+  <!-- o anki ana işlem öne çıkar; dışa aktarma ve seyrek işlemler menülerde -->
+  <div class="islemler">
+    {#if !c}
+      <button class="dugme ana" onclick={() => olustur()} disabled={kalici.calisiyor || nobetci.length < 2}
+        ><Ikon ad="takvim" />Çizelgeyi oluştur</button
+      >
+    {:else}
+      {#if !c.onay}
+        <button class="dugme" onclick={() => olustur()} disabled={kalici.calisiyor} title="Elle düzenlenen günler korunur"
+          ><Ikon ad="yenile" />Yeniden oluştur</button
+        >
+        <button class="dugme ana" onclick={() => (onaySor = true)} disabled={kalici.calisiyor}><Ikon ad="tamam" />Onayla</button>
+      {/if}
+      <Menu etiket="Dışa aktar" ikon="indir" devreDisi={kalici.calisiyor} ogeler={disaAktarma} />
+      <Menu etiket="Diğer" devreDisi={kalici.calisiyor} ogeler={digerIslemler} />
+    {/if}
+  </div>
 </IslemAlani>
 {#if c && sayilar}
   <div class="ozet-serit">
@@ -317,6 +329,13 @@
     <button class="baglanti" onclick={() => git("kisiler")}>Personel ekleyin</button>.
   </p>
 {:else if !eczaci.length}<p class="bant dikkat">Her gün en az bir eczacı nöbetçi olmalı; personel listesinde eczacı yok.</p>{/if}
+{#if silOnayi && c && !c.onay}
+  <div class="bant hata" role="alert">
+    {ayAdi(depo.yil, depo.ay)} çizelgesi silinsin mi? Elle düzenlenen günler de silinir.
+    <button class="dugme kucuk tehlike" onclick={sil}><Ikon ad="sil" />Evet, sil</button>
+    <button class="dugme kucuk" onclick={() => (silOnayi = false)}>Vazgeç</button>
+  </div>
+{/if}
 {#if hata}<p class="bant hata" role="alert">{hata}</p>{/if}
 {#if durum}<p class="bant tamam" role="status">{durum}</p>{/if}
 
@@ -375,10 +394,18 @@
         />
       {/if}
     </div>
-    <YanPaneller {c} {sg} {siniflar} {gunuDuzenle} />
+    <YanPaneller {c} {sg} {siniflar} {gunuDuzenle} {gunAc} />
   </div>
   <div class="ozet-kap"><AylikOzet satirlar={ozetSatirlari} bind:vurgu /></div>
-  <GunPenceresi bind:acik={gunAcik} {c} gun={acikGun} />
+  <GunPenceresi
+    bind:acik={gunAcik}
+    {c}
+    gun={acikGun}
+    degisimeGit={s => {
+      degisimOnSecimi.deger = { y: depo.yil, m: depo.ay, ...s };
+      git("puantaj");
+    }}
+  />
   {#if goster}<Paylas bind:acik={paylasAcik} c={goster} />{/if}
   <OnaySorusu
     bind:acik={onaySor}
@@ -401,6 +428,12 @@
 {/if}
 
 <style>
+  .islemler {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--b2);
+    margin-left: auto;
+  }
   .dugmeler {
     display: flex;
     flex-wrap: wrap;

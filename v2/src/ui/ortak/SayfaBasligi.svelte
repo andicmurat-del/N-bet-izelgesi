@@ -1,9 +1,7 @@
 <script lang="ts">
-  // Sayfa başlığı: konum satırı ("Ana sayfa › Günlük Eczane › Puantaj"), 26 px lacivert başlık, açıklama satırı ve
-  // sağda işlem düğmeleri; altında ince çizgi. Alt sekmeler kendi düğmelerini başlığın işlem alanına taşır
-  // (bkz. tasi.ts); bu yüzden işlem alanının kimliği sabittir.
-  import type { Snippet } from "svelte";
-  let { konum, baslik, aciklama = "", islemler }: { konum: string[]; baslik: string; aciklama?: string; islemler?: Snippet } = $props();
+  // Sayfa başlığı: konum satırı ("Ana sayfa › Günlük Eczane › Puantaj"), 26 px lacivert başlık ve açıklama satırı;
+  // altında ince çizgi. Alt sekmelerin işlem düğmeleri sekmelerin altındaki işlem satırındadır (IslemSatiri.svelte).
+  let { konum, baslik, aciklama = "" }: { konum: string[]; baslik: string; aciklama?: string } = $props();
 </script>
 
 <header class="sayfa-basligi">
@@ -15,7 +13,6 @@
       <h1>{baslik}</h1>
       {#if aciklama}<p>{aciklama}</p>{/if}
     </div>
-    <div class="islemler" id="sayfa-islemleri">{@render islemler?.()}</div>
   </div>
 </header>
 
@@ -61,17 +58,5 @@
     font-size: var(--f-sm);
     color: var(--yazi-2);
     margin-top: 2px;
-  }
-  .islemler {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--b2);
-    align-items: center;
-  }
-  .islemler:empty {
-    display: none;
-  }
-  .islemler :global(.islem-alani) {
-    display: contents;
   }
 </style>

@@ -12,11 +12,11 @@
     {
       baslik: "Her ay: günlük eczane nöbet listesi",
       adimlar: [
-        "Günlük Eczane > İzinler: yıllık izinleri, nöbet isteklerini (+ / −) ve eş durumlarını işaretleyin. Resmi tatiller ve arifeler (2026–2050) yıl ilk açılınca kendiliğinden işaretlenir; Resmi tatil ve arife sekmesinde yılın listesini kontrol edin, idari izin gibi ek günleri elle ekleyin.",
+        'Günlük Eczane > İzinler: yıllık izinleri, nöbet isteklerini (+ / −) ve eş durumlarını işaretleyin. Birden çok gün için "Aralık seç" açıp başlangıç ve bitiş gününe dokunun (bilgisayarda fareyle sürükleyerek de olur). Resmi tatiller ve arifeler (2026–2050) yıl ilk açılınca kendiliğinden işaretlenir; Resmi tatil ve arife sekmesinde yılın listesini kontrol edin, idari izin gibi ek günleri elle ekleyin.',
         "Nöbet Listesi > Çizelgeyi oluştur. Çubuk dolana kadar bekleyin; aynı bilgilerle her bilgisayarda aynı çizelge çıkar.",
-        'Kural denetimi panelindeki kırmızı (hata) ve sarı (dikkat) satırlara bakın. Bir günü değiştirmek için güne dokunup "Nöbet değişikliği yap". Elle değiştirilen gün kilitlenir; yeniden oluşturmada korunur.',
+        'Kural denetimi panelindeki kırmızı (hata) ve sarı (dikkat) satırlara bakın: ayrıntı için başlığa, ilgili gün için gün numarasına dokunun. Bir günü değiştirmek için güne dokunup "Nöbet değişikliği yap". Elle değiştirilen gün kilitlenir; yeniden oluşturmada korunur.',
         "Aynı pencereden o günün nöbetçi sayısını ve nöbet fazla mesaisini (tatil gününde hazırlama sayısını ve saatini de) değiştirebilirsiniz.",
-        'Uygunsa Onayla; sonra PDF ya da Excel alın. Personele göndermek için "Paylaş" ile metin olarak kopyalayın (tüm liste ya da tek kişinin nöbetleri).',
+        'Uygunsa Onayla; sonra "Dışa aktar" menüsünden PDF ya da Excel alın; personele göndermek için aynı menüden "Paylaş" ile metin olarak kopyalayın (tüm liste ya da tek kişinin nöbetleri). Farklı dağılım ve silme "Diğer" menüsündedir.',
       ],
     },
     {
@@ -39,7 +39,7 @@
       adimlar: [
         "Rapor / yıllık izin: Puantaj > İzin ve rapor: kişiyi, türü ve günleri seçin; görevli olduğu günler için önerilen kişi yerine yazılır (çizelgeye ve puantaja).",
         'İzinler sekmesinde, çizelge yapıldıktan sonra görevli olduğu güne izin işaretlerseniz, "yerine kim yazılsın?" listesi hemen çıkar; kişiyi seçip "Yerine yaz".',
-        "İki kişinin kendi aralarındaki değişimi: Puantaj > Nöbet değişimi: devredilecek göreve dokunun, yerine tutacak kişiyi seçin (karşılıklı takas da olur). Değişim geçmişinden geri alınabilir.",
+        'İki kişinin kendi aralarındaki değişimi: Puantaj > Nöbet değişimi: devredilecek göreve dokunun, yerine tutacak kişiyi seçin (karşılıklı takas da olur). Onaylı ayda Nöbet Listesi\'nde güne dokunup "Değişim yap" ile de gelinir; görev seçili açılır. Değişim geçmişinden geri alınabilir.',
       ],
     },
     {
@@ -47,6 +47,13 @@
       adimlar: [
         "Hazırlama Listesi: o gün çalışan teknikerlere servisler dengeli dağıtılır. Bir servisi başka teknikere vermek için servise dokunun; kişiyi o gün dağıtımdan çıkarmak için adının yanındaki anahtarı kapatın.",
         "PDF: tek sayfa, kişi başı kontrol listesi ya da servis → hazırlayan listesi.",
+      ],
+    },
+    {
+      baslik: "Takip: yapılacaklar ve kişi takvimi",
+      adimlar: [
+        'Günlük Eczane sayfasının üstündeki "yapılacaklar" kutusu ayın iş sırasını gösterir: personel, izinler, çizelge ve onayı, acil listesi, onay listesi ve öğlen haftaları, çıktı. Adıma dokununca ilgili sekme açılır; kutu "Gizle" ile tek satıra iner.',
+        'Kişi Takvimi: bir kişiyi seçin; ayın bütün görevleri (nöbet, acil nöbeti, hazırlama, öğlen, izin ve rapor) tek takvimde görünür. "Metni kopyala" ile kişiye gönderin.',
       ],
     },
     {

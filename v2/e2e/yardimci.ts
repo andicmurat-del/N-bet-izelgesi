@@ -52,6 +52,11 @@ export async function git(page: Page, adres: string) {
 export async function bas(page: Page, yazi: string | RegExp, kok = "main") {
   await page.locator(`${kok} button:not([disabled])`, { hasText: yazi }).first().click();
 }
+/** açılır menüyü açıp seçeneğe basar (ör. Dışa aktar > PDF) */
+export async function menu(page: Page, menuAdi: string, oge: string | RegExp) {
+  await page.locator("main button[aria-haspopup=menu]:not([disabled])", { hasText: menuAdi }).first().click();
+  await page.locator("main [role=menu] [role=menuitem]:not([disabled])", { hasText: oge }).first().click();
+}
 /** tarayıcıya kaydedilen veri (kayıt 150 ms gecikmeli yazılır) */
 export async function kayit(page: Page) {
   await page.waitForTimeout(400);

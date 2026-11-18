@@ -25,6 +25,7 @@
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import { AYLAR as AYLAR_AD, GUN_KISA, gunMetni, gunSayisi, haftaGunu, ayAdi, kisaAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
+  import Menu from "../ortak/Menu.svelte";
   import Pencere from "../ortak/Pencere.svelte";
   import OnaySorusu from "../ortak/OnaySorusu.svelte";
   import AylikOzet from "../ortak/AylikOzet.svelte";
@@ -178,10 +179,6 @@
     durum = "";
   });
   function sil() {
-    if (!silOnayi) {
-      silOnayi = true;
-      return;
-    }
     acilAyiniSil(y, m);
     silOnayi = false;
   }
@@ -239,14 +236,6 @@
     </div>
   </div>
   <IslemAlani>
-    {#if onay}
-      <button class="dugme" onclick={() => listeOnayiniKaldir("acil", y, m)}>Onayı kaldır</button>
-    {:else}
-      {#if adaylar.length}<button class="dugme{dolu ? '' : ' ana'}" onclick={olustur}
-          ><Ikon ad={dolu ? "yenile" : "takvim"} />{dolu ? "Yeniden oluştur" : "Acil nöbet listesini oluştur"}</button
-        >{/if}
-      {#if dolu}<button class="dugme ana" onclick={() => (onaySor = true)}><Ikon ad="tamam" />Onayla</button>{/if}
-    {/if}
     {#if degisimVar}<div class="secim" role="group" aria-label="Liste">
         <button aria-pressed={gorunum === "guncel"} onclick={() => (gorunum = "guncel")} title="Nöbet değişimleri işlenmiş liste"
           >Güncel</button
@@ -254,13 +243,33 @@
           >{onay ? "Onaylanan" : "Asıl liste"}</button
         >
       </div>{/if}
-    {#if dolu}
-      <button class="dugme" onclick={() => cikti("pdf")}><Ikon ad="indir" />PDF</button>
-      <button class="dugme" onclick={() => cikti("xlsx")}><Ikon ad="indir" />Excel</button>
-      {#if !onay}<button class="dugme sade tehlike" onclick={sil}
-          ><Ikon ad="sil" />{silOnayi ? "Evet, ayın acil nöbetlerini sil" : "Sil"}</button
-        >{/if}
-    {/if}
+    <!-- o anki ana işlem öne çıkar; dışa aktarma ve seyrek işlemler menülerde -->
+    <div class="islemler">
+      {#if !onay}
+        {#if adaylar.length}<button class="dugme{dolu ? '' : ' ana'}" onclick={olustur}
+            ><Ikon ad={dolu ? "yenile" : "takvim"} />{dolu ? "Yeniden oluştur" : "Acil nöbet listesini oluştur"}</button
+          >{/if}
+        {#if dolu}<button class="dugme ana" onclick={() => (onaySor = true)}><Ikon ad="tamam" />Onayla</button>{/if}
+      {/if}
+      {#if dolu}
+        <Menu
+          etiket="Dışa aktar"
+          ikon="indir"
+          ogeler={[
+            { yazi: "PDF", ikon: "indir", tikla: () => cikti("pdf") },
+            { yazi: "Excel", ikon: "tablo", tikla: () => cikti("xlsx") },
+          ]}
+        />
+        <Menu
+          etiket="Diğer"
+          ogeler={onay
+            ? [{ yazi: "Onayı kaldır", ikon: "kilit", tikla: () => listeOnayiniKaldir("acil", y, m) }]
+            : [{ yazi: "Ayın acil nöbetlerini sil", ikon: "sil", tehlike: true, tikla: () => (silOnayi = true) }]}
+        />
+      {:else if onay}
+        <button class="dugme" onclick={() => listeOnayiniKaldir("acil", y, m)}>Onayı kaldır</button>
+      {/if}
+    </div>
   </IslemAlani>
   <Bilgi baslik="Acil nöbeti kuralları"
     ><p>
@@ -290,6 +299,13 @@
       </p>{/if}
   {/each}
   {#each uyarilar as u}<p class="satir kutu dikkat"><Ikon ad="uyari" boyut={15} /><span>{u}</span></p>{/each}
+  {#if silOnayi && dolu && !onay}
+    <div class="bant hata" role="alert">
+      {AYLAR_AD[m]} ayının acil nöbetleri silinsin mi? Elle düzenlenen günler de silinir.
+      <button class="dugme kucuk tehlike" onclick={sil}><Ikon ad="sil" />Evet, sil</button>
+      <button class="dugme kucuk" onclick={() => (silOnayi = false)}>Vazgeç</button>
+    </div>
+  {/if}
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
   {#if degisimVar}<p class="bant bilgi">
       <Ikon ad="bilgi" boyut={16} />{guncelMi
@@ -521,6 +537,20 @@
   .bant.bilgi {
     background: var(--bilgi-zemin);
     color: var(--bilgi);
+  }
+  .bant.hata {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--b2);
+    background: var(--hata-zemin);
+    color: var(--hata);
+  }
+  .islemler {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--b2);
+    margin-left: auto;
   }
   .oneri {
     display: grid;

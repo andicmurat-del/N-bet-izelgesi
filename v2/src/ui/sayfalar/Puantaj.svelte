@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { puantajIzgarasi } from "../../veri/degisim.svelte";
+  import { untrack } from "svelte";
+  import { puantajIzgarasi, degisimOnSecimi } from "../../veri/degisim.svelte";
   import { ciktiPaketi } from "../../disa/yukle";
   // Aylık puantaj cetveli: çizelgeden gelen nöbet/hazırlama, nöbet ertesi izin ve izinler; hücre elle değiştirilebilir.
   import { puantajHesapla } from "../../motor";
@@ -35,7 +36,8 @@
     { ad: "degisim", baslik: "Nöbet değişimi", kisa: "Değişim", ikon: "karisik" },
   ] as const;
   const GORUNUMLER = TUM_GORUNUMLER;
-  let gorunum = $state<(typeof TUM_GORUNUMLER)[number]["ad"]>("cetvel");
+  // gün penceresinden "Değişim yap" ile gelindiyse Nöbet değişimi açık başlar (acil prop'u sayfa boyunca değişmez)
+  let gorunum = $state<(typeof TUM_GORUNUMLER)[number]["ad"]>(untrack(() => !acil) && degisimOnSecimi.deger ? "degisim" : "cetvel");
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
   const G = $derived.by(() => {

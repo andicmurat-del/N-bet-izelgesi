@@ -96,8 +96,27 @@
     const once = tercihAl(id, depo.yil, depo.ay, d);
     tercihAyarla(id, depo.yil, depo.ay, d, arac === "temizle" || (once === arac && !suruk) ? null : arac);
   }
+  // aralık seçimi (telefonda da): ilk dokunuş başlangıç, ikincisi bitiş; aradaki bütün günler seçili işareti alır
+  let aralikModu = $state(false);
+  let aralikBas = $state<{ id: number; d: number } | null>(null);
+  function aralikTikla(id: number, d: number) {
+    if (onayli) return;
+    const k = kisiler.find(x => x.id === id);
+    if (!k) return;
+    if (!aralikBas || aralikBas.id !== id) {
+      if (!pasifMi(k, d)) aralikBas = { id, d };
+      return;
+    }
+    const [a, b] = aralikBas.d <= d ? [aralikBas.d, d] : [d, aralikBas.d];
+    for (let g = a; g <= b; g++) if (!pasifMi(k, g)) tercihAyarla(id, depo.yil, depo.ay, g, arac === "temizle" ? null : arac);
+    aralikBas = null;
+  }
+  $effect(() => {
+    void [depo.yil, depo.ay, aralikModu, arac];
+    aralikBas = null;
+  });
   function baslaK(id: number, d: number, e: PointerEvent) {
-    dokunma = e.pointerType === "touch";
+    dokunma = e.pointerType === "touch" || aralikModu;
     if (dokunma || e.button !== 0) return;
     uygulaKisi(id, d);
     suruk = true;
@@ -105,7 +124,8 @@
   function tiklaK(id: number, d: number) {
     if (dokunma) {
       dokunma = false;
-      uygulaKisi(id, d);
+      if (aralikModu) aralikTikla(id, d);
+      else uygulaKisi(id, d);
     }
   }
   function gezK(id: number, d: number) {
@@ -186,8 +206,9 @@
   <p class="kutu bilgi kullanim">
     <Ikon ad="bilgi" boyut={16} /><span
       >Bir işaret türü seçip {mod === "kisi" ? "tablodaki hücrelere" : "takvimdeki günlere"} dokunun; bilgisayarda fareyle basılı tutup gezdirerek
-      birden çok güne işaretleyebilirsiniz. Aynı işarete yeniden dokunmak kaldırır. Tercihler çizelge oluşturulurken dikkate alınır. Çizelge zaten
-      varsa, görevli olduğu güne izin girilen kişinin yerine kimin yazılacağı burada sorulur.</span
+      birden çok güne işaretleyebilirsiniz; telefonda "Aralık seç" ile başlangıç ve bitiş gününe dokunun. Aynı işarete yeniden dokunmak kaldırır.
+      Tercihler çizelge oluşturulurken dikkate alınır. Çizelge zaten varsa, görevli olduğu güne izin girilen kişinin yerine kimin yazılacağı burada
+      sorulur.</span
     >
   </p>
   {#if onayli}<p class="kutu dikkat onay-not" role="status">
@@ -207,8 +228,20 @@
           >{#if a !== "temizle"}<i class="kod k-{a}">{KOD[a]}</i>{:else}<Ikon ad="sil" boyut={15} />{/if}{ARAC_AD[a]}</button
         >
       {/each}
+      <button
+        class="arac-d aralik-d"
+        aria-pressed={aralikModu}
+        onclick={() => (aralikModu = !aralikModu)}
+        title="Başlangıç ve bitiş gününe dokunarak aradaki bütün günleri işaretleyin">Aralık seç</button
+      >
       <input class="girdi ara-k" type="search" placeholder="Ad ara" aria-label="Personel ara" bind:value={ara} />
     </div>
+    {#if aralikModu}<p class="kutu bilgi aralik-not" role="status">
+        {#if aralikBas}{kisiler.find(k => k.id === aralikBas?.id)?.name}, {gunMetni(depo.yil, depo.ay, aralikBas.d)} seçildi: bitiş gününe dokunun
+          ({ARAC_AD[arac].toLocaleLowerCase("tr")}).
+          <button class="dugme kucuk" onclick={() => (aralikBas = null)}>Vazgeç</button>
+        {:else}Aralık seçimi açık: kişinin satırında başlangıç gününe, sonra bitiş gününe dokunun.{/if}
+      </p>{/if}
     {#if arac !== "temizle"}<p class="arac-not2">{TERCIH_ACIKLAMA[arac]}</p>{/if}
     <section class="panel" aria-label="Herkesin izin ve tercihleri">
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin) -->
@@ -239,7 +272,13 @@
                   {@const t = tercihAl(k.id, depo.yil, depo.ay, d)}
                   {@const pasif = pasifMi(k, d)}
                   {@const arasi = !t && B.izinArasiMi(k.id, depo.yil, depo.ay, d)}
-                  <td class:hs={haftaSonuMu(depo.yil, depo.ay, d)} class:rt={resmiTatilMi(depo.yil, depo.ay, d)} class:arasi class:pasif>
+                  <td
+                    class:hs={haftaSonuMu(depo.yil, depo.ay, d)}
+                    class:rt={resmiTatilMi(depo.yil, depo.ay, d)}
+                    class:arasi
+                    class:pasif
+                    class:aralik-bas={aralikBas?.id === k.id && aralikBas.d === d}
+                  >
                     <button
                       disabled={onayli || pasif}
                       onpointerdown={e => baslaK(k.id, d, e)}
@@ -248,7 +287,8 @@
                       onkeydown={e => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          uygulaKisi(k.id, d);
+                          if (aralikModu) aralikTikla(k.id, d);
+                          else uygulaKisi(k.id, d);
                         }
                       }}
                       aria-label="{k.name}, {gunMetni(depo.yil, depo.ay, d)}: {t
@@ -599,6 +639,22 @@
   }
   .arac-d.t-temizle {
     color: var(--hata);
+  }
+  .aralik-d[aria-pressed="true"] {
+    border-color: var(--vurgu);
+    background: var(--vurgu);
+    color: var(--vurgu-yazi);
+  }
+  .aralik-not {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--b2);
+    margin-bottom: var(--b2);
+  }
+  .herkes td.aralik-bas button {
+    outline: 3px solid var(--vurgu);
+    outline-offset: -3px;
   }
   .ara-k {
     margin-left: auto;

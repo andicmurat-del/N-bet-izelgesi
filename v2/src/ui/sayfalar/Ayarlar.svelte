@@ -17,6 +17,7 @@
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Ikon from "../ortak/Ikon.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
+  import IslemSatiri from "../ortak/IslemSatiri.svelte";
   import Kisiler from "./Kisiler.svelte";
   import Kurallar from "./Kurallar.svelte";
   import Yardim from "./Yardim.svelte";
@@ -147,6 +148,7 @@
 
 <SayfaBasligi konum={["Ayarlar", aktif.baslik]} baslik={aktif.uzun} aciklama={aktif.aciklama} />
 <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Ayarlar" />
+<IslemSatiri />
 
 {#if gorunum === "personel"}
   <Kisiler gomulu />

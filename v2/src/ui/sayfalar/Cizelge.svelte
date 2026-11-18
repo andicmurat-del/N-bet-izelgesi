@@ -14,7 +14,10 @@
   import OnayListesi from "../cizelge/OnayListesi.svelte";
   import CalismaListesi from "../cizelge/CalismaListesi.svelte";
   import NobetListesi from "../cizelge/NobetListesi.svelte";
+  import AyAdimlari from "../cizelge/AyAdimlari.svelte";
+  import KisiTakvimi from "../cizelge/KisiTakvimi.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
+  import IslemSatiri from "../ortak/IslemSatiri.svelte";
   import KarsilamaResmi from "../ortak/KarsilamaResmi.svelte";
 
   // Günlük Eczane: nöbet listesi, çalışma listesi, öğlen nöbeti, hazırlama listesi, puantaj ve izinler alt sekmeleri
@@ -71,6 +74,12 @@
       aciklama: "İzinli günler, nöbet istekleri, eş durumu, resmi tatil ve arife işaretleri.",
     },
     {
+      ad: "kisi",
+      baslik: "Kişi Takvimi",
+      uzun: "Kişi Takvimi",
+      aciklama: "Bir kişinin ayın bütün görevleri tek takvimde: nöbet, acil nöbeti, hazırlama, öğlen nöbeti, izin ve rapor.",
+    },
+    {
       ad: "raporlar",
       baslik: "Raporlar",
       uzun: "Günlük Eczane Raporları",
@@ -102,9 +111,19 @@
     <div class="resim"><KarsilamaResmi /></div>
   </section>
 {:else}
+  <AyAdimlari
+    git={h => {
+      if (h === "kisiler") git("kisiler");
+      else if (h === "acil") location.hash = "#acil/acil";
+      else gorunum = h;
+    }}
+  />
   <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Görünüm" telefonSutun={2} />
+  <IslemSatiri />
 
-  {#if gorunum === "raporlar"}
+  {#if gorunum === "kisi"}
+    <KisiTakvimi />
+  {:else if gorunum === "raporlar"}
     <Raporlar bolum="gunluk" />
   {:else if gorunum === "hazirlama"}
     <Hazirlama {git} />

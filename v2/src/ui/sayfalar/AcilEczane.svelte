@@ -3,6 +3,7 @@
   import { acilKadrosunda } from "../../motor";
   import SayfaBasligi from "../ortak/SayfaBasligi.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
+  import IslemSatiri from "../ortak/IslemSatiri.svelte";
   import AcilServis from "../cizelge/AcilServis.svelte";
   import Izinler from "./Izinler.svelte";
   import Puantaj from "./Puantaj.svelte";
@@ -40,6 +41,7 @@
 <SayfaBasligi konum={["Acil Eczane", aktif.baslik]} baslik={aktif.uzun} aciklama={aktif.aciklama} />
 
 <Sekmeler secenekler={GORUNUMLER} bind:secili={gorunum} etiket="Görünüm" telefonSutun={2} />
+<IslemSatiri />
 
 {#if gorunum === "raporlar"}
   <Raporlar bolum="acil" />
