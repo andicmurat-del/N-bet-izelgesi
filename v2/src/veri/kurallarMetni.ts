@@ -61,7 +61,9 @@ export const ACIL_AGIRLIK_ACIKLAMA: Record<keyof typeof ACIL_W, string> = {
   ardArda: "Art arda iki gün acil nöbeti.",
   ucBes: "5 gün içinde 3 nöbet.",
   eksik: "Günde 2 nöbetçiden eksik kalan her yer (yazılabilecek kişi varken).",
-  hsFazla: "Ayda 1'den fazla Cumartesi ya da Pazar.",
+  hsFazla: "Ayda 1'den fazla Cumartesi ya da Pazar (her fazlası).",
+  hsKesin:
+    "Kaçınılabilir fazla Cumartesi / Pazar: o günlerin yerleri kişilere birer gün düşecek biçimde dağıtılabiliyorsa (kadro yetiyorsa) aşılan her gün.",
   araIki: "İki nöbet arası Ayarlar'daki en az günden kısa.",
   toplam: "Yıllık toplam acil nöbeti eşitliği (paya göre kare sapma).",
   tur: "Yıllık Perşembe, Cuma, Cumartesi, Pazar, resmi tatil nöbeti eşitliği (her tür ayrı).",
@@ -217,7 +219,8 @@ ${tablo(AGIRLIK, NOBET_AGIRLIK_ACIKLAMA)}
 - Her gün 2 nöbetçi, ${a.nobetSuresi} saat. Eczane nöbet çizelgesinden bağımsızdır; hazırlama ve "her gün en az bir eczacı" kuralı yoktur.
 - Nöbet tutanlar: acil servis personeli ve "acilde nöbet tutar" işaretli eczacılar / kemoterapi eczacıları.
 - İzinli, eş durumu "olmasın", çalışma dönemi dışı güne yazılmaz. Kişinin aynı gün ya da komşu günde eczane nöbeti / hazırlaması varsa yazılmaz (iki liste çakışmaz).
-- Art arda iki gün ve 5 günde 3 nöbet olmaz. Acil kadrosu yetmezse 5 günde 3 nöbet uyarıyla yazılır; art arda nöbet ayara göre uyarıyla yazılır ya da gün eksik kalır. İki nöbet arası en az ${a.acilMinAra} gün önerilir; mümkünse ayda en fazla 1 Cumartesi ve 1 Pazar (küçük kadroda aşılabilir; en az aşan seçilir, uyarı verilmez).
+- Art arda iki gün ve 5 günde 3 nöbet olmaz. Acil kadrosu yetmezse 5 günde 3 nöbet uyarıyla yazılır; art arda nöbet ayara göre uyarıyla yazılır ya da gün eksik kalır. İki nöbet arası en az ${a.acilMinAra} gün önerilir.
+- Kişiye ayda en fazla 1 Cumartesi ve 1 Pazar: kadro yettiği sürece kesin. Ayın Cumartesi (ya da Pazar) yerleri, o günlerde yazılabilen kişilere birer gün düşecek biçimde dağıtılamıyorsa (ör. 5 Cumartesili ayda günde 2 kişi için en az 10 kişi gerekir) fazlası en az kişiye verilir ve uyarıda nedeniyle söylenir. Art arda nöbet ve 5 günde 3 nöbet bu kuraldan önce gelir.
 - Eş durumu "olsun" günü yazılır (yazılamazsa uyarı verilir); "istemiyor" mümkünse yazılmaz (yazılırsa uyarı verilir); ertesi gün izne çıkana mümkünse yazılmaz.
 - Eşitlik yalnız acil nöbetleri arasında ve yıl boyuncadır: toplam nöbet; Perşembe, Cuma, Cumartesi, Pazar, resmi tatil ayrı ayrı; fazla mesai saati her ay. Pay yazılabildiği gün sayısına göredir.
 - Elle düzenlenen günler korunur. Onaylanan ay elle değiştirilemez, yeniden oluşturulmaz; sonradan izne çıkan kişinin günü uyarılı görünür, yerine geçeni kullanıcı seçer.

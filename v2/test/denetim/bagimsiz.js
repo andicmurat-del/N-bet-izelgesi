@@ -300,8 +300,13 @@ export function acilListesiniDenetle(veri, y, m, sonuc) {
           ekle("acil: eş durumu, söylenmedi", d, s.name);
     if (ids.length < 2 && !uyari.includes(`${d} ${AYLAR[m]}`)) ekle("acil: eksik gün, söylenmedi", d, ids.length);
   }
+  // ayda en fazla 1 Cumartesi / 1 Pazar: aşıldıysa kişinin adıyla söylenmeli
   for (const [id, h] of Object.entries(hs))
-    if (h.cmt > 1 || h.paz > 1) ekle("bilgi: acil ayda 1'den fazla Cumartesi / Pazar", null, `${ad(Number(id))} ${h.cmt}/${h.paz}`);
+    if (
+      (h.cmt > 1 || h.paz > 1) &&
+      !sonuc.uyarilar.some(u => u.includes("ayda en fazla 1 Cumartesi / 1 Pazar") && u.includes(ad(Number(id)) + " ("))
+    )
+      ekle("acil: hafta sonu sınırı aşıldı, söylenmedi", null, `${ad(Number(id))} ${h.cmt}/${h.paz}`);
   return bulgu;
 }
 

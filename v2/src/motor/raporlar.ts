@@ -99,6 +99,18 @@ export function acilDenetle(B: Baglam, y: number, m: number, g: number, ids: num
         if (var_(kk))
           out.push({ sev: "uyari", t: s.name + ", " + gunAdi(kk) + " de acil eczanede nöbetçi (en az " + ara + " gün ara önerilir)." });
       });
+    // ayda en fazla 1 Cumartesi / 1 Pazar
+    const dwG = haftaGunu(y, m, g);
+    if (dwG === CUMARTESI || dwG === PAZAR) {
+      const n = Object.entries(ay).filter(
+        ([d, l]) => Number(d) !== g && haftaGunu(y, m, Number(d)) === dwG && (l || []).includes(id),
+      ).length;
+      if (n)
+        out.push({
+          sev: "uyari",
+          t: s.name + " bu ay " + (n + 1) + ". " + (dwG === CUMARTESI ? "Cumartesi" : "Pazar") + " acil nöbetini tutar (ayda en fazla 1).",
+        });
+    }
     if (sch && sch.days[g - 1] && sch.days[g - 1].assigned.some(p => p.id === id))
       out.push({ sev: "uyari", t: s.name + " aynı gün eczane nöbetçisi." });
     else if (eczaneGoreviYakin(B, id, y, m, g)) out.push({ sev: "uyari", t: s.name + " komşu günde eczane nöbeti ya da hazırlaması var." });

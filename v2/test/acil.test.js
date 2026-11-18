@@ -42,7 +42,9 @@ describe("acil eczane nöbet listesi", () => {
       g.ids.forEach(id => expect(kadro).toContain(id));
     });
     expect(r.gunler[9].ids).not.toContain(13);
-    expect(r.uyarilar).toEqual([]);
+    // 6 kişilik kadroda ayda en fazla 1 Cumartesi / 1 Pazar tutmaz (4 Cumartesi için 8 kişi gerekir): nedeniyle söylenir
+    expect(r.uyarilar.filter(u => !/ayda en fazla 1 Cumartesi \/ 1 Pazar için acil kadrosu yetmiyor/.test(u))).toEqual([]);
+    expect(r.uyarilar.some(u => /için acil kadrosu yetmiyor \(Cumartesi: \d+ yer/.test(u))).toBe(true);
   });
 
   test("art arda gün yok; eczane görevli eczacı aynı / komşu günde acile yazılmaz", () => {

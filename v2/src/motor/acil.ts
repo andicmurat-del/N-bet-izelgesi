@@ -22,6 +22,7 @@ export const W = {
   ucBes: 500,
   eksik: 5000,
   hsFazla: 60,
+  hsKesin: 400,
   araIki: 3,
   toplam: 6,
   tur: 3,
@@ -175,6 +176,45 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
   }
   const dw = Array.from({ length: dim }, (_, i) => haftaGunu(y, m, i + 1)),
     turler = Array.from({ length: dim }, (_, i) => gunTurleri(B, y, m, i + 1));
+  // ayda en fazla 1 Cumartesi ve 1 Pazar: kadro yettiği ölçüde kesin. Kaçınılmaz fazla (o günlerin yerleri, o gün
+  // yazılabilen kişilere birer gün düşecek biçimde dağıtılamıyorsa) hafif, kaçınılabilir fazla ağır cezalıdır.
+  const hsSinir = (gun: number) => {
+    const kullanildi = new Map<number, number>(),
+      acik: number[][] = [];
+    let zorunlu = 0,
+      yer = 0;
+    for (let i = 0; i < dim; i++) {
+      if (dw[i] !== gun) continue;
+      if (sabit[i]) {
+        for (const id of sec[i]) {
+          if (kullanildi.has(id)) zorunlu++;
+          kullanildi.set(id, -1);
+        }
+        continue;
+      }
+      for (let k = 0; k < Math.min(ACIL_GUNLUK, aday[i].length); k++) acik.push(aday[i]);
+    }
+    yer = acik.length;
+    // en çok eşleşme (her kişiye en çok bir yer): artırıcı yol
+    const eslesen = new Map<number, number>();
+    const dene = (y0: number, gorulen: Set<number>): boolean => {
+      for (const id of acik[y0]) {
+        if (kullanildi.get(id) === -1 || gorulen.has(id)) continue;
+        gorulen.add(id);
+        const o = eslesen.get(id);
+        if (o === undefined || dene(o, gorulen)) {
+          eslesen.set(id, y0);
+          return true;
+        }
+      }
+      return false;
+    };
+    let n = 0;
+    for (let y0 = 0; y0 < acik.length; y0++) if (dene(y0, new Set())) n++;
+    return { kacinilmaz: zorunlu + yer - n, yer, kisi: n };
+  };
+  const cmtSinir = hsSinir(CUMARTESI),
+    pazSinir = hsSinir(PAZAR);
   // tercihler bir kez okunur (amaç işlevi her denemede yeniden hesaplanır)
   const tercihler = Array.from({ length: dim }, (_, i) => new Map(havuz.map(s => [s.id, B.tercih(s.id, y, m, i + 1)])));
   const tercih = (id: number, i: number) => tercihler[i].get(id) ?? B.tercih(id, y, m, i + 1);
@@ -263,10 +303,13 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
         j += wDz[ti] * a * a;
       }
     }
+    let fc = 0,
+      fp = 0;
     for (let k = 0; k < H; k++) {
-      if (cmt[k] > 1) j += W.hsFazla * (cmt[k] - 1);
-      if (paz[k] > 1) j += W.hsFazla * (paz[k] - 1);
+      if (cmt[k] > 1) fc += cmt[k] - 1;
+      if (paz[k] > 1) fp += paz[k] - 1;
     }
+    j += W.hsFazla * (fc + fp) + W.hsKesin * (Math.max(0, fc - cmtSinir.kacinilmaz) + Math.max(0, fp - pazSinir.kacinilmaz));
     return j;
   };
   // açgözlü başlangıç, sonra yerel arama (bir yeri değiştir / iki günün kişilerini takas et)
@@ -443,6 +486,44 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
         " kişi gerekir).",
     );
   else uyarilar.push(...artArda, ...ucBes);
+  // ayda en fazla 1 Cumartesi / 1 Pazar: aşıldıysa kimde ve neden (kadro yetmiyor ya da izin / komşu gün görevleri)
+  {
+    const hsSay = new Map<number, { c: number; p: number }>();
+    sec.forEach((l, i) => {
+      if (dw[i] !== CUMARTESI && dw[i] !== PAZAR) return;
+      for (const id of l) {
+        const o = hsSay.get(id) ?? { c: 0, p: 0 };
+        if (dw[i] === CUMARTESI) o.c++;
+        else o.p++;
+        hsSay.set(id, o);
+      }
+    });
+    let fc = 0,
+      fp = 0;
+    const asan: string[] = [];
+    hsSay.forEach((o, id) => {
+      fc += Math.max(0, o.c - 1);
+      fp += Math.max(0, o.p - 1);
+      const l = [o.c > 1 ? o.c + " Cumartesi" : "", o.p > 1 ? o.p + " Pazar" : ""].filter(Boolean);
+      if (l.length) asan.push(ad(id) + " (" + l.join(", ") + ")");
+    });
+    if (asan.length) {
+      asan.sort((p, q) => p.localeCompare(q, "tr"));
+      const kadro = (ad: string, S: { kacinilmaz: number; yer: number; kisi: number }) =>
+        S.kacinilmaz > 0 ? ad + ": " + S.yer + " yer, yazılabilen " + S.kisi + " kişiye birer gün düşüyor" : "";
+      const yetmiyor = fc <= cmtSinir.kacinilmaz && fp <= pazSinir.kacinilmaz;
+      uyarilar.push(
+        AYLAR[m] +
+          ": ayda en fazla 1 Cumartesi / 1 Pazar " +
+          (yetmiyor
+            ? "için acil kadrosu yetmiyor (" + [kadro("Cumartesi", cmtSinir), kadro("Pazar", pazSinir)].filter(Boolean).join("; ") + ")"
+            : "kuralı esnetildi (izin, art arda nöbet ve eczane görevleri nedeniyle)") +
+          ": " +
+          asan.join(", ") +
+          ".",
+      );
+    }
+  }
   return {
     gunler: sec.map((ids, i) => ({
       gun: i + 1,
