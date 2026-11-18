@@ -8,7 +8,7 @@
 // Elle düzenlenen günler korunur.
 import type { Kisi } from "../veri/tipler";
 import { aktifAydaMi, aktifGunMu, type Baglam } from "./baglam";
-import { ayAnahtari, ayGunSayisi, AYLAR, CUMA, CUMARTESI, gunKaydir, haftaGunu, PAZAR, PERSEMBE } from "./takvim";
+import { ayAnahtari, ayGunSayisi, AYLAR, CUMA, CUMARTESI, gunKaydir, haftaGunu, oncekiAy, PAZAR, PERSEMBE } from "./takvim";
 
 /** acil nöbetine yazılabilir mi: acil servis personeli ya da "acilde nöbet tutar" işaretli eczacı / kemoterapi eczacısı */
 export const acilKadrosunda = (s: { role: string; acilTutar?: true }) =>
@@ -379,6 +379,18 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
     for (const id of aday[i])
       if (tercih(id, i) === "esVar" && !sec[i].includes(id))
         uyarilar.push(i + 1 + " " + AYLAR[m] + ": " + ad(id) + " için eş durumu isteği acil listesinde karşılanamadı.");
+    // o gün yazılamayan kişinin eş durumu isteği de söylenir (izin, izin kenarındaki hafta sonu, eczane görevi)
+    for (const s of havuz)
+      if (!aday[i].includes(s.id) && aktifGunMu(s, y, m, i + 1) && tercih(s.id, i) === "esVar")
+        uyarilar.push(
+          i +
+            1 +
+            " " +
+            AYLAR[m] +
+            ": " +
+            s.name +
+            " için eş durumu isteği acil listesinde karşılanamadı (o gün yazılamıyor: izin ya da aynı / komşu günde eczane görevi).",
+        );
     for (const id of sec[i])
       if (tercih(id, i) === "avoid")
         uyarilar.push(i + 1 + " " + AYLAR[m] + ": " + ad(id) + " nöbet istemiyordu, başka uygun kişi olmadığı için yazıldı.");
@@ -406,19 +418,31 @@ export function acilOlustur(B: Baglam, y: number, m: number, elle: Record<string
           ". Acil kadrosu yetmiyor; günleri elle doldurun ya da kadroyu artırın.",
       );
   }
-  // çok sayıda art arda nöbet kadronun yetmediğini gösterir: tek tek yerine tek satır
-  if (artArda.length > 5)
+  // 5 günde 3 nöbet (d, d+2, d+4; ay başında önceki ayın günleriyle): kadro yetmediğinde yazılır, söylenir
+  const ucBes: string[] = [];
+  const onc = oncekiAy(y, m);
+  const gunAdi = (d: number) => (d >= 1 ? d + " " + AYLAR[m] : ayGunSayisi(onc.y, onc.m) + d + " " + AYLAR[onc.m]);
+  for (const s of havuz)
+    for (let d = -3; d <= dim - 4; d++)
+      if (d + 4 >= 1 && var_(s.id, d) && var_(s.id, d + 2) && var_(s.id, d + 4))
+        ucBes.push(
+          ad(s.id) + ": " + gunAdi(d) + ", " + gunAdi(d + 2) + " ve " + gunAdi(d + 4) + " 5 günde 3 acil nöbeti (personel yetmiyor).",
+        );
+  // çok sayıda art arda / 5 günde 3 nöbet kadronun yetmediğini gösterir: tek tek yerine tek satır
+  if (artArda.length + ucBes.length > 5)
     uyarilar.push(
       AYLAR[m] +
         ": acil kadrosu yetmiyor; " +
-        artArda.length +
-        " kez art arda acil nöbeti yazıldı (günde " +
+        [artArda.length ? artArda.length + " kez art arda" : "", ucBes.length ? ucBes.length + " kez 5 günde 3" : ""]
+          .filter(Boolean)
+          .join(", ") +
+        " acil nöbeti yazıldı (günde " +
         ACIL_GUNLUK +
         " kişi için art arda gün ve 5 günde 3 nöbet olmadan en az " +
         Math.ceil((5 * ACIL_GUNLUK) / 2) +
         " kişi gerekir).",
     );
-  else uyarilar.push(...artArda);
+  else uyarilar.push(...artArda, ...ucBes);
   return {
     gunler: sec.map((ids, i) => ({
       gun: i + 1,

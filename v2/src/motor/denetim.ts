@@ -288,6 +288,11 @@ export function gunuDenetle(
       );
     else if (B.izinHaftasiKenariMi(p.id, y, m, day.day))
       ekle("hata", p.name + " bu gün bir haftalık yıllık izninin önündeki / arkasındaki hafta sonu.");
+    // görev yazılamayan öteki günler (nöbetteki gibi): çalışma dönemi dışı, puantajda izin / rapor
+    const stH = B.kisi(p.id),
+      durumH = B.puantajDurumu(p.id, y, m, day.day);
+    if (stH && !aktifGunMu(stH, y, m, day.day)) ekle("hata", p.name + " bu tarihte çalışmıyor (işe başlama / ayrılış tarihi dışında).");
+    else if (durumH) ekle("hata", p.name + " bu gün " + DURUM_AD[durumH].toLowerCase() + " kullanıyor (puantajda kayıtlı).");
     if (dw === PAZAR) {
       const gg = days[idx - 2];
       if (gg && gg.assigned.some(q => q.id === p.id))

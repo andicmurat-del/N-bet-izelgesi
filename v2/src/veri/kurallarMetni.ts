@@ -161,7 +161,7 @@ Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Ay
   - **İzinli**: o gün hiçbir görev yazılmaz; iki izinli gün arasındaki hafta sonu / tatil de izin sayılır.
   - **İstiyor**: eşitlik bozulmuyorsa o güne nöbet yazılır.
   - **İstemiyor**: mümkünse o güne nöbet / hazırlama yazılmaz; yazılırsa uyarı çıkar.
-  - **Eş durumu: nöbetçi olsun**: kişi o gün mutlaka nöbetçi yazılır (komşu gün kuralları esner).
+  - **Eş durumu: nöbetçi olsun**: kişi o gün mutlaka nöbetçi yazılır (komşu gün kuralları esner); o gün görev yazılamıyorsa (izin, uzun iznin kenarındaki hafta sonu) uyarı verilir.
   - **Eş durumu: nöbetçi olmasın**: kişi o gün kesinlikle nöbetçi yazılmaz.
 - **Yıllık eşitlik**: her takvim yılı kendi içinde değerlendirilir; Ocak'ta sayım sıfırdan başlar. Pay, kişinin o ay görev alabildiği günlere göredir: izinli / raporlu günler paydan düşer, izinden dönen fazladan yazılmaz (telafi istenmez). İşe sonradan başlayan ya da ayrılan yalnız çalıştığı aylar için değerlendirilir.
 
@@ -169,7 +169,7 @@ Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Ay
 
 ### Kesin kurallar
 1. Her gün 2 nöbetçi; en az biri eczacı (kemoterapi eczacısı da sayılır).
-2. Kişiye görev yazılamayan günler: izinli, eş durumu "olmasın", puantajda yıllık izin / rapor / nöbet izni / diğer izin, iki izin arası tatil, en az ${IZIN_HAFTA_GUN} iş günü süren yıllık iznin hemen önündeki ve arkasındaki hafta sonu, işe başlama öncesi / ayrılış sonrası.
+2. Kişiye görev yazılamayan günler: izinli, eş durumu "olmasın", puantajda yıllık izin / rapor / nöbet izni / diğer izin, iki izinli (yıllık izin) gün arasındaki tatil, en az ${IZIN_HAFTA_GUN} iş günü süren yıllık iznin hemen önündeki ve arkasındaki hafta sonu, işe başlama öncesi / ayrılış sonrası.
 3. Nöbetçi komşu günlerde (önceki ve sonraki gün) nöbetçi ya da hazırlamacı olamaz; aynı gün hem nöbet hem hazırlama olmaz. Ay sınırında da geçerlidir (önceki ayın son günü, sonraki ayın 1'i; puantajdaki gerçek değişimler dahil).
 4. 5 gün içinde 3 nöbet yazılmaz (ör. Pazartesi–Çarşamba–Cuma).
 5. Hazırlamacı aynı gün ve önceki gün nöbetçi olamaz; ertesi gün nöbetçi olması kadro yetmediğinde ilk esneyen kuraldır (yarım ihlal sayılır: ${HAFIF_IHLAL}).
@@ -178,7 +178,7 @@ Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Ay
 8. Dışarıdan gelen iki eczacı (kemoterapi eczacısı) aynı gün birlikte nöbetçi olmaz; Cuma ve Cumartesi olabilir.
 9. Destek personelinin aylık hazırlama sayısı Ayarlar'daki sayıyı (${a.destekAylik}) aşmaz.
 10. Ayrılan personelin son çalışma günü, ertesi gün mesai günüyse nöbet yazılmaz (nöbet izni kullanamaz).
-11. Nöbet tutanlar arasında aylık fazla mesai farkı en fazla ${FM_MAX_FARK} saat (destek personeli hariç; eczacı ve teknikerler birlikte).
+11. Ayın tamamında çalışan nöbetçiler arasında aylık fazla mesai farkı en fazla ${FM_MAX_FARK} saat, nöbet sayısı farkı en fazla 2 (ay içinde işe başlayan / ayrılan ve destek personeli hariç; eczacı ve teknikerler birlikte). Eczacı sayısı teknikerlere göre azsa her gün bir eczacı gerektiğinden eczacılar daha çok nöbet tutar: fark eczacılarla teknikerler arasında kalır, gruplar kendi içinde eşittir; bu durum hata değil, açıklama olarak yazılır.
 12. Ayda kişi başı en fazla 1 Cumartesi ve 1 Pazar nöbeti.
 
 Kadro bir kuralı imkânsız kılıyorsa (ör. tatilde yeterli kişi yok) program bunu nedeniyle birlikte söyler ve kuralı esnettiği
@@ -197,7 +197,7 @@ hesabına bu saatler girer (puantajda nöbet süresi yazılan fazla mesai kadar 
 ### Hazırlama sırası
 Nöbetçiler yazıldıktan sonra tatil günlerinin hazırlamacıları seçilir: önce her teknikere 1, sonra eczacılara; eşitlikte
 fazla mesaisi en az olana. Cuma + Cumartesi + Pazar nöbeti olan kendi grubunda en son alır. Cuma nöbetçisine aynı hafta
-Pazar hazırlaması yazılmaz. Destek personeli 2. yerleri, eczacı / teknikerle doldurmanın en zor olduğu günlerden başlayarak alır.
+Pazar hazırlaması eşitlik bozulmuyorsa yazılmaz (zayıf tercih; kesin kural değil). Destek personeli 2. yerleri, eczacı / teknikerle doldurmanın en zor olduğu günlerden başlayarak alır.
 
 ### Eş durumu
 Aynı gün birden çok kişi eş durumu "olsun" isterse ve hepsi yazılamıyorsa (günde 2 nöbetçi, en az 1 eczacı), yıl içinde eş
@@ -217,8 +217,8 @@ ${tablo(AGIRLIK, NOBET_AGIRLIK_ACIKLAMA)}
 - Her gün 2 nöbetçi, ${a.nobetSuresi} saat. Eczane nöbet çizelgesinden bağımsızdır; hazırlama ve "her gün en az bir eczacı" kuralı yoktur.
 - Nöbet tutanlar: acil servis personeli ve "acilde nöbet tutar" işaretli eczacılar / kemoterapi eczacıları.
 - İzinli, eş durumu "olmasın", çalışma dönemi dışı güne yazılmaz. Kişinin aynı gün ya da komşu günde eczane nöbeti / hazırlaması varsa yazılmaz (iki liste çakışmaz).
-- Art arda iki gün ve 5 günde 3 nöbet olmaz (acil kadrosu yetmezse ayara göre: art arda nöbet uyarıyla yazılır ya da gün eksik kalır); iki nöbet arası en az ${a.acilMinAra} gün önerilir; ayda en fazla 1 Cumartesi ve 1 Pazar.
-- Eş durumu "olsun" günü yazılır; "istemiyor" mümkünse yazılmaz; ertesi gün izne çıkana mümkünse yazılmaz.
+- Art arda iki gün ve 5 günde 3 nöbet olmaz. Acil kadrosu yetmezse 5 günde 3 nöbet uyarıyla yazılır; art arda nöbet ayara göre uyarıyla yazılır ya da gün eksik kalır. İki nöbet arası en az ${a.acilMinAra} gün önerilir; mümkünse ayda en fazla 1 Cumartesi ve 1 Pazar (küçük kadroda aşılabilir; en az aşan seçilir, uyarı verilmez).
+- Eş durumu "olsun" günü yazılır (yazılamazsa uyarı verilir); "istemiyor" mümkünse yazılmaz (yazılırsa uyarı verilir); ertesi gün izne çıkana mümkünse yazılmaz.
 - Eşitlik yalnız acil nöbetleri arasında ve yıl boyuncadır: toplam nöbet; Perşembe, Cuma, Cumartesi, Pazar, resmi tatil ayrı ayrı; fazla mesai saati her ay. Pay yazılabildiği gün sayısına göredir.
 - Elle düzenlenen günler korunur. Onaylanan ay elle değiştirilemez, yeniden oluşturulmaz; sonradan izne çıkan kişinin günü uyarılı görünür, yerine geçeni kullanıcı seçer.
 
@@ -228,7 +228,7 @@ ${tablo(ACIL_W, ACIL_AGIRLIK_ACIKLAMA)}
 
 - Hafta içi her gün, o gün çalışan eczacılar (acilde tutanlar dahil; kemoterapi eczacıları, nöbet ertesi izinli, izinli, raporlu olanlar hariç) masalara oturur. Resmi tatilde liste yoktur; arife günü vardır.
 - Masa 1–6 doldurulur. 7. kişi joker olur; 8 ve daha çok kişide fazlalardan ilki Masa 7'ye, kalanlar jokere.
-- İlk 6 masa dolmazsa o günün hazırlama teknikerlerinden biri oturur (yıl boyunca sırayla).
+- İlk 6 masadan boş kalanlara o günün hazırlama teknikerleri oturur (her boş masaya bir tekniker, yıl boyunca sırayla); yine boş kalan masa uyarıyla gösterilir.
 - Sabit sıra yoktur; yerler her gün yeniden dağıtılır (en az maliyetli atama, Macar yöntemi). Kimse önceki çalıştığı gün oturduğu yere oturmaz; mümkünse aynı hafta aynı yere ikinci kez oturmaz.
 - Yıl boyunca herkes her masaya ve jokerliğe eşit oturur. Cuma hafta sonu listeleriyle birlikte 3 günlük iş olduğundan ayrı sayılır: Cumalar kendi arasında, Pazartesi–Perşembe kendi arasında eşitlenir. Hesap her yıl 1 Ocak'tan yeniden yürütülür.
 - Kullanıcı bir günde iki kişinin yerini elle değiştirebilir; o gün elle kaydedilir ve eşitlikte gerçekte oturulan yer sayılır. Elle yazılan kişi o gün çalışmıyorsa yalnız onun yeri yeniden dağıtılır.

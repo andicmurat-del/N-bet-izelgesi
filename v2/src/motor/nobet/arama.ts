@@ -220,7 +220,8 @@ function destekEkle(S: Arama, iyiMi: (j: number) => boolean, sec: (h: Hamle) => 
   if (destekVar) {
     for (let i = 0; i < days.length; i++) {
       if (days[i].locked || !tatilGunu(i)) continue;
-      if (days[i].prep.some(pp => pp.role === "destek")) continue;
+      // destek personeli yalnız 2. yeri alır: 1. yer (eczacı / tekniker) boşsa eklenmez
+      if (!days[i].prep.length || days[i].prep.some(pp => pp.role === "destek")) continue;
       const eskiL = days[i].prep;
       for (const b of destekler) {
         if (eskiL.some(pp => pp.id === b.id)) continue;
