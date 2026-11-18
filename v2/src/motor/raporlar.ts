@@ -256,3 +256,32 @@ export function uyariSiniflandir(w: string): { seviye: "hata" | "uyari" | "bilgi
   const b = UYARI_BASLIK.find(x => x[0].test(t));
   return { seviye, baslik: b ? b[1] : (seviye === "bilgi" ? "Bilgi" : "Uyarı") };
 }
+
+// ---- yönetime aylık rapor: kişi başı görevler, izinler ve fazla mesai (puantaja göre, gerçekleşen) ----
+export interface AylikRaporSatiri {
+  id: number; ad: string; rol: string; acilKadro: boolean;
+  /** eczane nöbeti (tatil gününe düşenler ayrıca), acil eczane nöbeti, hazırlama, öğlen nöbeti */
+  nobet: number; tatilNobet: number; acil: number; haz: number; oglen: number;
+  /** yıllık izin, rapor, diğer izin ve elle girilen nöbet izni (fazla mesai karşılığı) günleri */
+  yi: number; rapor: number; di: number; ni: number;
+  /** saatler: toplam çalışma, aylık normal çalışma (nöbetçi eczacı / destek için yok), fazla mesai ve dilimleri */
+  toplam: number; aylik: number | null; fm: number; gunduz: number; gece: number;
+}
+export function aylikRapor(B: Baglam, y: number, m: number) {
+  const G = puantajIzgarasi(B, y, m), oglen = B.oglen[ayAnahtari(y, m)] || {};
+  const og: Record<number, number> = {};
+  for (const k of Object.values(oglen)) [...(k.e || []), ...(k.t || [])].forEach(id => { og[id] = (og[id] || 0) + 1; });
+  const satirlar: AylikRaporSatiri[] = G.satirlar.map(r => {
+    const x: AylikRaporSatiri = { id: r.s.id, ad: r.s.name, rol: r.s.role, acilKadro: acilKadrosunda(r.s), nobet: 0, tatilNobet: 0, acil: 0, haz: r.h, oglen: og[r.s.id] || 0,
+      yi: 0, rapor: 0, di: 0, ni: 0, toplam: r.toplam, aylik: r.aylik, fm: r.fm, gunduz: r.fmGunduz, gece: r.fmGece };
+    r.cells.forEach((c, i) => {
+      if (c.kod === "N") { if (c.acil) x.acil++; else { x.nobet++; if (G.gunler[i].tatil) x.tatilNobet++; } }
+      else if (c.kod === "YI") x.yi++;
+      else if (c.kod === "R") x.rapor++;
+      else if (c.kod === "DI") x.di++;
+      else if (c.kod === "NI" && c.ov) x.ni++;
+    });
+    return x;
+  });
+  return { y, m, ay: AYLAR[m] + " " + y, mesaiGun: G.mesaiGun, mesaiToplam: G.mesaiToplam, satirlar };
+}

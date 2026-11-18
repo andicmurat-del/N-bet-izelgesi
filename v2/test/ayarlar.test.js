@@ -85,3 +85,30 @@ describe("paylaşım metinleri", () => {
     expect(t).toBe(["*Kasım 2026 · E1*", "• 1 Kasım Pazar: nöbet", "• 3 Kasım Salı: acil eczane nöbeti", "• 4 Kasım Çarşamba: öğlen nöbeti", "• 5 Kasım Perşembe: hazırlama", "", "Toplam: 1 nöbet, 1 acil nöbeti, 1 hazırlama, 1 öğlen nöbeti"].join("\n"));
   });
 });
+
+describe("yönetime aylık rapor", async () => {
+  const { aylikRaporHesapla } = await import("../src/motor");
+  test("puantajdaki görev, izin ve saatlerle aynı; acil nöbeti ve öğlen ayrı sayılır", () => {
+    const acilli = [...staff, { id: 21, name: "A1", role: "servis" }, { id: 22, name: "A2", role: "servis" }, { id: 23, name: "A3", role: "servis" }, { id: 24, name: "A4", role: "servis" }, { id: 25, name: "A5", role: "servis" }];
+    const v = { ...veri(), staff: acilli, acilElle: {} };
+    v.schedules[`${Y}-${M}`] = { year: Y, month: M, days: cizelgeOlustur(v, Y, M).days };
+    v.acil[`${Y}-${M}`] = Object.fromEntries(acilHesapla(v, Y, M).gunler.map(g => [g.gun, g.ids]));
+    v.oglen[`${Y}-${M}`] = Object.fromEntries(oglenHesapla(v, Y, M).gunler.map(g => [g.gun, { e: g.e, t: g.t }]));
+    v.puantaj[`${Y}-${M}`] = { 1: { 9: "R", 10: "DI" }, 7: { 11: "YI", 12: "NI" } };
+    const R = aylikRaporHesapla(v, Y, M), G = puantajHesapla(v, Y, M);
+    expect(R.satirlar.length).toBe(G.satirlar.length);
+    for (const s of R.satirlar) {
+      const r = G.satirlar.find(x => x.s.id === s.id);
+      expect(s.nobet + s.acil).toBe(r.n);
+      expect([s.haz, s.fm, s.toplam, s.aylik]).toEqual([r.h, r.fm, r.toplam, r.aylik]);
+    }
+    // acil: günde 2 kişi; eczane nöbeti puantajdaki (acil olmayan) nöbetlerle aynı
+    const top = k => R.satirlar.reduce((t, s) => t + s[k], 0);
+    expect(top("acil")).toBe(60);
+    expect(top("nobet")).toBe(G.satirlar.flatMap(r => r.cells).filter(c => c.kod === "N" && !c.acil).length);
+    const e1 = R.satirlar.find(s => s.id === 1), t1 = R.satirlar.find(s => s.id === 7);
+    expect([e1.rapor, e1.di, t1.yi, t1.ni]).toEqual([1, 1, 1, 1]);
+    expect(top("oglen")).toBe(Object.values(v.oglen[`${Y}-${M}`]).reduce((t, g) => t + g.e.length + g.t.length, 0));
+    expect(R.satirlar.filter(s => s.acilKadro).map(s => s.id)).toEqual([21, 22, 23, 24, 25]);
+  });
+});

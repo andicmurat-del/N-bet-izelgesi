@@ -11,6 +11,7 @@
   import Ikon from "../ortak/Ikon.svelte";
   import ServisRaporu from "../hazirlama/ServisRaporu.svelte";
   import AcilOglenRaporu from "./AcilOglenRaporu.svelte";
+  import AylikRapor from "./AylikRapor.svelte";
   import type { Rapor } from "../../disa/raporCikti";
 
 
@@ -18,14 +19,14 @@
   // Her bölümde yalnız o kadronun kişileri görünür.
   let { bolum }: { bolum: "gunluk" | "acil" } = $props();
   let yil = $state(depo.yil);
-  let sekme = $state<"ozet" | "denge" | "kisi" | "acil" | "oglen" | "servis">("ozet");
+  let sekme = $state<"ozet" | "aylik" | "denge" | "kisi" | "acil" | "oglen" | "servis">("ozet");
   const acilMi = (k: { id: number; role: string }) => { const st = depo.veri.staff.find(s => s.id === k.id); return st ? acilKadrosunda(st) : k.role === "servis"; };
   const kapsam = (k: { id: number; role: string }) => (bolum === "acil" ? acilMi(k) : !acilMi(k));
   const Ham = $derived(yillikRaporHesapla(veriAnlik(), yil) as Rapor);
   const R = $derived({ ...Ham, V: { ...Ham.V, kisiler: Ham.V.kisiler.filter(kapsam) }, D: bolum === "acil" || !Ham.D ? null : { ...Ham.D, kisiler: Ham.D.kisiler.filter(x => kapsam(x.k)) } } as Rapor);
   const SEKMELER = $derived(bolum === "acil"
-    ? [["ozet", "Özet"], ["kisi", "Kişi geçmişi"], ["acil", "Acil eczane nöbeti"]] as const
-    : [["ozet", "Özet"], ["denge", "Denge"], ["kisi", "Kişi geçmişi"], ["oglen", "Öğlen nöbeti"], ["servis", "Servis hazırlama"]] as const);
+    ? [["ozet", "Özet"], ["aylik", "Aylık rapor"], ["kisi", "Kişi geçmişi"], ["acil", "Acil eczane nöbeti"]] as const
+    : [["ozet", "Özet"], ["aylik", "Aylık rapor"], ["denge", "Denge"], ["kisi", "Kişi geçmişi"], ["oglen", "Öğlen nöbeti"], ["servis", "Servis hazırlama"]] as const);
   const nobetci = (r: Rol) => r === "eczaci" || r === "teknisyen" || r === "nobetci" || (bolum === "acil" && r === "servis");
   const duty = $derived(R.V.kisiler.filter(k => nobetci(k.role)));
   const toplamNobet = $derived(duty.reduce((t, k) => t + R.toplam[k.id].nobet, 0));
@@ -58,17 +59,19 @@
     {#each SEKMELER as [ad, baslik]}<button role="tab" aria-selected={sekme === ad} class:secili={sekme === ad} onclick={() => (sekme = ad)}>{baslik}</button>{/each}
   </div>
   <div class="sag-arac">
-    <div class="yil" role="group" aria-label="Yıl seçimi">
+    {#if sekme !== "aylik"}<div class="yil" role="group" aria-label="Yıl seçimi">
       <button class="dugme sade" onclick={() => yil--} aria-label="Önceki yıl"><Ikon ad="sol" /></button>
       <span class="rakam">{yil}</span>
       <button class="dugme sade" onclick={() => yil++} aria-label="Sonraki yıl"><Ikon ad="sag" /></button>
-    </div>
+    </div>{/if}
     {#if R.V.kayitli && (sekme === "ozet" || sekme === "denge" || sekme === "kisi")}<button class="dugme" onclick={excel}><Ikon ad="indir" />Excel</button>{/if}
   </div>
 </div>
 {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
-{#if sekme === "servis"}
+{#if sekme === "aylik"}
+  <AylikRapor {bolum} />
+{:else if sekme === "servis"}
   <ServisRaporu {yil} />
 {:else if sekme === "acil" || sekme === "oglen"}
   <AcilOglenRaporu {yil} goster={sekme} />

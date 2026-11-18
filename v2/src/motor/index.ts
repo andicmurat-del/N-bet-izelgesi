@@ -22,7 +22,7 @@ import { acilDegisimDenetle as acilDegisimDenetimi, acilYerineAdaylar } from "./
 import { oglenGerek, oglenOlustur, oglenOnarimlari, oglenYillik, type OglenGunSonucu } from "./oglen";
 import { onayHaftasi, pazartesi } from "./onayMasa";
 import { puantajIzgarasi } from "./puantaj";
-import { acilAdaylari, acilDenetle as acilDenetimi, acilOglenRaporu, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
+import { acilAdaylari, acilDenetle as acilDenetimi, acilOglenRaporu, aylikRapor, calismaListesi, uyariSiniflandir, yillikRapor } from "./raporlar";
 import { ServisMotoru, sonaKadar, type AyKaydi, type HesapSecenegi } from "./servis/ay";
 import { ybMi, zorMu } from "./servis/liste";
 import { tarihNo } from "./takvim";
@@ -133,6 +133,9 @@ export function acilSorunluGunler(veri: unknown, y: number, m: number) {
 }
 /** Yılın acil eczane ve öğlen nöbeti dağılımı (Raporlar) */
 export function acilOglenRaporuHesapla(veri: unknown, yil: number) { return acilOglenRaporu(new Baglam(veri), yil); }
+/** Yönetime aylık rapor: kişi başı nöbet, acil, hazırlama, öğlen, izin ve fazla mesai (puantaja göre) */
+export function aylikRaporHesapla(veri: unknown, y: number, m: number) { return aylikRapor(new Baglam(veri), y, m); }
+export type { AylikRaporSatiri } from "./raporlar";
 /** Günlük çalışma listesi: her gün kim onayda, kim hazırlamada, kim yok (izin/rapor) */
 export function calismaListesiHesapla(veri: unknown, y: number, m: number) { return calismaListesi(new Baglam(veri), y, m); }
 /** Yılın raporu: ay ay kişi başı puantaj özeti ve yıllık denge (çizelgeye göre) */
