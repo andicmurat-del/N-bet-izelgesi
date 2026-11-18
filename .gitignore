@@ -1,2 +1,5 @@
 node_modules/
 v2/dist/
+v2/test-results/
+v2/playwright-report/
+v2/coverage/

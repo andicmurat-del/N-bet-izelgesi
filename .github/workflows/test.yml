@@ -11,7 +11,7 @@ permissions:
 jobs:
   v2:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: v2
@@ -23,6 +23,18 @@ jobs:
           cache: npm
           cache-dependency-path: v2/package-lock.json
       - run: npm ci
+      - run: npm run lint --if-present
       - run: npm run check
       - run: npm test
       - run: npm run artifact
+      # ekran testleri: derlenmiş uygulama gerçek tarayıcıda (düğmeler, PDF / Excel, telefon görünümü)
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ekran-testleri
+          path: |
+            v2/playwright-report
+            v2/test-results
+          retention-days: 7
