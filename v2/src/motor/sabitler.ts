@@ -7,9 +7,10 @@
  *  olana aynı ay Cuma da (Cuma eşleşmesi); thuHaftaSonu: Perşembe nöbetçisi aynı hafta sonu görev almaz; niDusum: nöbet
  *  izni önce 08–20 (1) ya da 20–08 (2) diliminden düşülür; acilArdArda: acil kadrosu yetmezse art arda acil nöbeti
  *  yazılır (kapalıysa gün eksik kalır); oglenHE/HT, oglenCE/CT: öğlen nöbetinde Pazartesi–Perşembe ve Cuma eczacı /
- *  tekniker sayısı. */
+ *  tekniker sayısı; tatilOtomatik: resmi tatiller her yıl kendiliğinden işaretlenir (veri/resmiTatiller.ts).
+ *  Kayıtlı verinin varsayılan ayarları da buradan gelir (veri/dogrulama.ts): değerler tek yerde. */
 export const AYAR_VARSAYILAN = { nobetSuresi: 24, mesai: 8, arifeSaat: 3, hazSaat: 8, fmHedef: 8, minAra: 3, acilMinAra: 3, maxThu: 1, hsUst: 2, cumaEsles: true, thuHaftaSonu: true, destekAylik: 2, niDusum: 1,
-  acilArdArda: true, oglenHE: 2, oglenHT: 1, oglenCE: 3, oglenCT: 2, kurumAdi: "", onaylayan: "" };
+  acilArdArda: true, oglenHE: 2, oglenHT: 1, oglenCE: 3, oglenCT: 2, tatilOtomatik: true };
 export type AyarAdi = keyof typeof AYAR_VARSAYILAN;
 
 // KESİN KURALLAR (çizelge oluşturma, elle düzenleme ve uyarılarda ortak)

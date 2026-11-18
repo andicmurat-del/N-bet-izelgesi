@@ -14,7 +14,7 @@ function tabanVeri() {
   v.schedules[`${Y}-${M}`] = { year: Y, month: M, days: cizelgeOlustur(v, Y, M, { saat: () => 0 }).days };
   v.oglen = { [`${Y}-${M}`]: Object.fromEntries(oglenHesapla(v, Y, M).gunler.map(g => [g.gun, { e: g.e, t: g.t }])) };
   const ecz = v.staff.filter(s => s.role === "eczaci");
-  v.onayMasa = { yerlesim: { "2026-01-05": Object.fromEntries(ecz.map((s, i) => [s.id, i])) } };
+  v.onayMasa = { elle: { "2026-01-05": Object.fromEntries(ecz.slice(0, 6).map((s, i) => [s.id, String(i + 1)])) } };
   v.degisimler = [{ id: 1, zaman: 1, y: Y, m: M, gun: 3, cik: 1, yer: 2, cikAd: "a", yerAd: "b", cikOnce: null, yerOnce: null, cikYeni: "M", yerYeni: "N", gorev: "N" }];
   return v;
 }
@@ -65,7 +65,7 @@ describe("dayanıklılık: bozuk yedek", () => {
     const v = veriyiDogrula(JSON.parse(tabanJson));
     expect(v.staff.length).toBe(taban.staff.length);
     expect(Object.keys(v.schedules)).toEqual([`${Y}-${M}`]);
-    expect(v.onayMasa.yerlesim["2026-01-05"]).toBeTruthy();
+    expect(v.onayMasa.elle["2026-01-05"]).toBeTruthy();
     // kaldırılmış (false) resmi tatil işareti tatil sayılmaz
     expect(v.manualTatil["2025-11-31"]).toBeUndefined();
     expect(v.manualTatil["2026-0-1"]).toBe(true);

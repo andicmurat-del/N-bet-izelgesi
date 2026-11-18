@@ -1,14 +1,12 @@
-// Öğlen nöbeti çizelgesi: PDF (A4 dikey; gün listesi, her kişi ayrı sütunda; haftalık çıktıda tek hafta, kişi başı sayılar isteğe bağlı). Resmi çıktı: adlar büyük harf.
+// Öğlen nöbeti haftalık PDF'i: gün listesi, her kişi ayrı sütunda; yalnız tablo, sayfa tablonun boyunda. Resmi çıktı: adlar büyük harf.
 import { autoTable } from "jspdf-autotable";
 import { yeniPdf } from "./pdfOrtak";
-import { AYLAR, GUN_UZUN, buyukAd } from "../veri/tarih";
+import { GUN_UZUN, buyukAd } from "../veri/tarih";
 
 export interface OglenVerisi {
-  y: number; m: number; kurum: string;
-  /** başlıktaki dönem (ör. "2–6 Kasım 2026"; haftalık çıktı); yoksa ay ve yıl */
-  donem?: string;
+  /** dönem (ör. "16–20 Kasım 2026"): PDF'in başlık bilgisi */
+  donem: string;
   haftalar: { gun: number; dw: number; e: string[]; t: string[] }[][];
-  ozet: { ad: string; rol: string; ay: number; ayCuma: number | null; yil: number; yilCuma: number | null }[];
 }
 
 /** sütun sayısı: günlerdeki en çok eczacı / tekniker (Ayarlar'daki öğlen sayılarına göre değişir; en az 1) */
@@ -38,49 +36,4 @@ function haftalikPdf(v: OglenVerisi): Blob {
   return doc.output("blob");
 }
 
-export function oglenPdf(v: OglenVerisi): Blob {
-  if (v.donem) return haftalikPdf(v);
-  const doc = yeniPdf("portrait");
-  const W = 210, K = 12;
-  const donem = v.donem ?? `${AYLAR[v.m]} ${v.y}`;
-  const baslik = `${v.kurum ? buyukAd(v.kurum) + " · " : ""}${donem} öğlen nöbeti`;
-  doc.setProperties({ title: `${donem} öğlen nöbeti`, creator: "Nöbet Çizelgesi" });
-  doc.setFont("CizelgeSans", "bold"); doc.setFontSize(14); doc.setTextColor(19, 33, 44);
-  doc.text(baslik, K, 16);
-  const satirlar: { gun: number; dw: number; e: string[]; t: string[]; ilk: boolean }[] = [];
-  v.haftalar.forEach(h => h.forEach((g, i) => satirlar.push({ ...g, ilk: i === 0 })));
-  const S = sutunlar(satirlar);
-  autoTable(doc, {
-    startY: 21, margin: { left: K, right: K, bottom: 22 },
-    head: [["Gün", ...say(S.e).map(i => `${i + 1}. eczacı`), ...say(S.t).map(i => `${i + 1}. tekniker`)]],
-    body: satirlar.map(g => [`${g.gun} ${GUN_UZUN[g.dw]}`, ...say(S.e).map(i => buyukAd(g.e[i] ?? "")), ...say(S.t).map(i => buyukAd(g.t[i] ?? ""))]),
-    theme: "grid",
-    styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 1.8, textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.15 },
-    headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [208, 230, 235] },
-    columnStyles: { 0: { cellWidth: 26, fontStyle: "bold" }, [S.e + 1]: { lineWidth: { left: 0.6, right: 0.15, top: 0.15, bottom: 0.15 } } },
-    didParseCell: h => {
-      if (h.section !== "body") return;
-      const g = satirlar[h.row.index];
-      if (g.dw === 4) h.cell.styles.fillColor = [244, 248, 249];
-      if (g.ilk && h.row.index > 0) { h.cell.styles.lineWidth = { top: 0.6, bottom: 0.15, left: 0.15, right: 0.15 }; }
-    },
-  });
-  const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 150;
-  if (v.ozet.length) {
-    autoTable(doc, {
-      startY: sonY + 7, margin: { left: K, right: K, bottom: 22 }, pageBreak: "avoid",
-      head: [["Ad soyad", "Bu ay", "Bu ay Cuma", `Yıl (${v.y})`, "Yıl Cuma"]],
-      body: v.ozet.map(o => [`${buyukAd(o.ad)}  (${o.rol})`, String(o.ay), o.ayCuma === null ? "–" : String(o.ayCuma), String(o.yil), o.yilCuma === null ? "–" : String(o.yilCuma)]),
-      theme: "grid",
-      styles: { font: "CizelgeSans", fontSize: 8.5, cellPadding: 1.6, textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.15, halign: "center" },
-      headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [208, 230, 235] },
-      columnStyles: { 0: { halign: "left" } },
-    });
-  }
-  const H = doc.internal.pageSize.getHeight();
-  doc.setFontSize(8); doc.setTextColor(88, 105, 120);
-  doc.text("Gölgeli satırlar: Cuma.", K, H - 14);
-  doc.setTextColor(19, 33, 44);
-  doc.text("Düzenleyen: __________________          Onaylayan: __________________", W - K, H - 8, { align: "right" });
-  return doc.output("blob");
-}
+export function oglenPdf(v: OglenVerisi): Blob { return haftalikPdf(v); }

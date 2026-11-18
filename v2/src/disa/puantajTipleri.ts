@@ -24,5 +24,5 @@ export const KOD_AD: Record<string, string> = {
 export const saatYaz = (n: number) => (Number.isInteger(n) ? String(n) : String(n).replace(".", ","));
 /** cetvelde hücre yazısı (kurum örneğindeki gibi): mesai, nöbet ve hazırlamada o günün saati (ayardaki süreler, arife,
  *  elle düzenlenen tatil günü), ötekilerde kısaltma */
-export const kodMetni = (kod: string, saat: number, _arife?: boolean) =>
+export const kodMetni = (kod: string, saat: number) =>
   kod === "M" || kod === "N" || kod === "H" ? saatYaz(saat) : kod === "NI" ? "Nİ" : kod === "YI" ? "Yİ" : kod === "DI" ? "Dİ" : kod === "R" ? "R" : kod === "P" ? "–" : "";

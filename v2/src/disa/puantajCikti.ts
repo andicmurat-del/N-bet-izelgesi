@@ -18,7 +18,7 @@ export function puantajKitabi(G: Izgara, y: number, m: number, kurum: string, ha
     [{ v: "Sıra", s: "baslik" }, { v: "Ad soyad", s: "baslik" }, ...gunBas, ...["Toplam çalışma", "Aylık çalışma", "Fazla mesai", "08:00-20:00", "20:00-08:00"].map(v => ({ v, s: "baslik" as const }))],
     ...G.satirlar.map((r, i) => [
       i + 1, ONEK[r.s.role] + buyukAd(r.s.name),
-      ...r.cells.map((h, k) => { const t = kodMetni(h.kod, h.saat, G.gunler[k].arife); const v = h.kod === "M" || h.kod === "N" || h.kod === "H" ? h.saat : t; return G.gunler[k].tatil ? { v, s: "tatil" as const } : v; }),
+      ...r.cells.map((h, k) => { const t = kodMetni(h.kod, h.saat); const v = h.kod === "M" || h.kod === "N" || h.kod === "H" ? h.saat : t; return G.gunler[k].tatil ? { v, s: "tatil" as const } : v; }),
       r.toplam, r.aylik ?? "–", { v: r.fm, s: "kalin" as const }, r.fmGunduz, r.fmGece,
     ]),
     [],
@@ -48,7 +48,7 @@ export function puantajPdf(G: Izgara, y: number, m: number, kurum: string, onay:
   autoTable(doc, {
     startY: 17, margin: { left: K, right: K, bottom: 20 },
     head: [["Sıra", "Ad soyad", ...G.gunler.map(g => `${g.gun}\n${GUN_KISA[g.dw]}`), "Toplam", "Aylık", "Fazla\nmesai", "08-20", "20-08"]],
-    body: G.satirlar.map((r, i) => [String(i + 1), ONEK[r.s.role] + buyukAd(r.s.name), ...r.cells.map((h, k) => kodMetni(h.kod, h.saat, G.gunler[k].arife)), String(r.toplam), r.aylik === null ? "–" : String(r.aylik), String(r.fm), String(r.fmGunduz), String(r.fmGece)]),
+    body: G.satirlar.map((r, i) => [String(i + 1), ONEK[r.s.role] + buyukAd(r.s.name), ...r.cells.map((h, k) => kodMetni(h.kod, h.saat)), String(r.toplam), r.aylik === null ? "–" : String(r.aylik), String(r.fm), String(r.fmGunduz), String(r.fmGece)]),
     theme: "grid",
     // kişi sayısı azsa satırlar yükselir: tablo sayfayı doldurur, hücreler okunur kalır
     styles: { font: "CizelgeSans", fontSize: 7.5, cellPadding: { top: Math.min(3, Math.max(0.8, 60 / Math.max(1, G.satirlar.length))), bottom: Math.min(3, Math.max(0.8, 60 / Math.max(1, G.satirlar.length))), left: 0.5, right: 0.5 }, halign: "center", valign: "middle", textColor: [21, 38, 43], lineColor: [150, 160, 170], lineWidth: 0.12, overflow: "visible" },

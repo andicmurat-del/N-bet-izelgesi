@@ -157,9 +157,8 @@
     try {
       const { oglenPdf } = await ciktiPaketi();
       const blob = oglenPdf({
-        y, m, kurum: depo.veri.kurum.ad, donem: haftaMetni(hafta) + " " + hafta.gunler[4][0],
+        donem: haftaMetni(hafta) + " " + hafta.gunler[4][0],
         haftalar: [gunler.flatMap(g => { const k = kayitAl(g); return k ? [{ gun: g[2], dw: haftaGunu(...g), e: k.e.map(ad), t: k.t.map(ad) }] : []; })],
-        ozet: [],
       });
       const [a, b, d] = hafta.pzt;
       const ok = await dosyaKaydet(`oglen-nobeti-${a}-${String(b + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}.pdf`, blob, "application/pdf");

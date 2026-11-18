@@ -117,10 +117,9 @@ export interface Veri {
   servisAyar: ServisAyar;
   /** "yil-ay" → servis hazırlama dağıtımı (motorun ay kaydı; gün gün kişiler ve servisleri, elle değişiklikler) */
   servisKayit: Record<string, ServisAyKaydi>;
-  /** onay listesi masaları: yerlesim, girilen haftalar (Pazartesi "YYYY-AA-GG") → kişi id → sıradaki yer (0'dan:
-   *  Masa 1, Masa 3, Masa 2, Masa 4, Joker, Masa 5, Joker, Masa 6, sonra jokerler); sonraki haftalar oradan ilerler */
-  /** yerlesim: eski haftalık sıra girişi (artık kullanılmaz, yedeklerde korunur); elle: elle değiştirilen gün → kişi id → yer ("1"–"7", "J") */
-  onayMasa: { yerlesim: Record<string, Record<string, number>>; elle: Record<string, Record<string, string>> };
+  /** onay listesi masaları: elle değiştirilen gün ("YYYY-AA-GG") → kişi id → yer ("1"–"7", "J"); masalar her gün
+   *  kendiliğinden dağıtılır (motor/onayMasa.ts) */
+  onayMasa: { elle: Record<string, Record<string, string>> };
   /** resmi tatilleri kendiliğinden işaretlenmiş yıllar ("2027" → true): sonradan elle kaldırılan gün yeniden işaretlenmez */
   tatilYillari: Record<string, true>;
 }

@@ -186,7 +186,6 @@ function enBuyukKisiNo(): number {
   for (const a of Object.values(v.acil)) for (const l of Object.values(a)) l.forEach(al);
   for (const a of Object.values(v.oglen)) for (const g of Object.values(a)) [...g.e, ...g.t].forEach(al);
   for (const d of v.degisimler) { al(d.cik); al(d.yer); }
-  for (const a of Object.values(v.onayMasa.yerlesim)) Object.keys(a).forEach(al);
   for (const a of Object.values(v.onayMasa.elle)) Object.keys(a).forEach(al);
   for (const R of Object.values(v.servisKayit)) { Object.keys(R.ad ?? {}).forEach(al); for (const g of Object.values(R.gun ?? {})) (g.k ?? []).forEach(al); }
   return n;

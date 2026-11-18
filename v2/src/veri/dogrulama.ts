@@ -1,11 +1,11 @@
 // Kayıtlı verinin biçimi ve doğrulaması: boş veri, varsayılan ayarlar ve dışarıdan gelen metnin (yedek dosyası,
 // tarayıcı kaydı, sunucu) güvenli biçime getirilmesi. Durumdan (depo) bağımsızdır.
+import { AYAR_VARSAYILAN as MOTOR_AYAR } from "../motor/sabitler";
 import type { Ayarlar, GunDuzeni, Gorevli, Kisi, OglenSabit, PuantajKodu, Rol, Tercih, Veri } from "./tipler";
 import { ayAnahtari, gunSayisi, haftaAnahtari, haftaGunu } from "./tarih";
 
-export const AYAR_VARSAYILAN: Ayarlar = { minAra: 3, acilMinAra: 3, destekAylik: 2, arifeSaat: 3,
-  nobetSuresi: 24, mesai: 8, hazSaat: 8, maxThu: 1, hsUst: 2, thuHaftaSonu: true, cumaEsles: true, fmHedef: 8, niDusum: 1, acilArdArda: true,
-  oglenHE: 2, oglenHT: 1, oglenCE: 3, oglenCT: 2, tatilOtomatik: true };
+/** kayıtlı verinin varsayılan ayarları: motorun varsayılanlarıyla aynı (tek kaynak: motor/sabitler.ts) */
+export const AYAR_VARSAYILAN: Ayarlar = { ...MOTOR_AYAR };
 /** gelişmiş kuralların sınırları (Ayarlar ekranı ve doğrulama ortak): [en az, en çok, adım] */
 export const AYAR_SINIR = {
   nobetSuresi: [12, 24, 1], mesai: [4, 12, 0.5], hazSaat: [1, 12, 0.5], maxThu: [1, 99, 1], hsUst: [1, 4, 1], fmHedef: [2, 24, 1], niDusum: [1, 2, 1],
@@ -30,7 +30,7 @@ export function bosVeri(): Veri {
     degisimler: [],
     servisAyar: { svc: {}, ekstra: [] },
     servisKayit: {},
-    onayMasa: { yerlesim: {}, elle: {} },
+    onayMasa: { elle: {} },
     tatilYillari: {},
   };
 }
@@ -200,12 +200,7 @@ export function veriyiDogrula(ham: unknown): Veri {
     const r = R as Record<string, unknown>;
     v.servisKayit[k] = { gun: nesne(r.gun), elle: nesne(r.elle), gunElle: nesne(r.gunElle), sk: nesne(r.sk), ad: nesne(r.ad), ata: nesne(r.ata) } as any;
   }
-  for (const [hafta, x] of Object.entries(nesne(nesne(o.onayMasa).yerlesim))) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(hafta)) continue;
-    const l: Record<string, number> = {};
-    for (const [id, yer] of Object.entries(nesne(x))) if (kisiIdleri.has(Number(id)) && Number.isInteger(yer) && (yer as number) >= 0 && (yer as number) < 30) l[id] = yer as number;
-    v.onayMasa.yerlesim[hafta] = l;
-  }
+  // eski kayıtlardaki haftalık sıra girişi (onayMasa.yerlesim) artık kullanılmaz: okunmaz
   for (const [gun, x] of Object.entries(nesne(nesne(o.onayMasa).elle))) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(gun)) continue;
     const l: Record<string, string> = {};

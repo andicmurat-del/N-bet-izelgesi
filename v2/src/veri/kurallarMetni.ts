@@ -126,7 +126,7 @@ Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Ay
 | Acil eczane: iki acil nöbeti arasında önerilen en az gün | ${a.acilMinAra} |
 | Destek personeli aylık hazırlama sayısı | ${a.destekAylik} |
 | Arife günü normal mesai (saat) | ${a.arifeSaat} |
-| Resmi tatiller her yıl kendiliğinden işaretlenir | ${(ayar as { tatilOtomatik?: boolean }).tatilOtomatik === false ? "hayır" : "evet"} |
+| Resmi tatiller her yıl kendiliğinden işaretlenir | ${a.tatilOtomatik === false ? "hayır" : "evet"} |
 | Nöbet süresi (saat) | ${a.nobetSuresi} |
 | Günlük normal mesai (saat) | ${a.mesai} |
 | Hazırlama süresi (saat) | ${a.hazSaat} |
