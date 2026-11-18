@@ -1,0 +1,10 @@
+hata · Personel kurallara yetmiyor
+uyari · Hazırlama ertesi nöbet
+hata · Zorunlu atama yapılan günler
+bilgi · Eczacı sayısı az
+hata · Hafta sonu kuralı
+hata · Hazırlama farkı
+uyari · Yıllık gün dağılımı
+hata · Fazla mesai farkı
+uyari · 3 ya da daha fazla hafta sonu nöbeti
+hata · Eksik hazırlama

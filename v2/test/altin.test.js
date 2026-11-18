@@ -1,7 +1,9 @@
 // Altın kayıt: motorun tüm dışa açık işlevlerinin zengin bir senaryodaki çıktısı (test/altin/senaryo.js) kayıtla
 // (test/altin/beklenen.json, çıktıların özeti) birebir aynı olmalı. Motor yeniden düzenlenirken davranışın hiç
 // değişmediğinin güvencesidir. Bilerek yapılan bir davranış değişikliğinden sonra: ALTIN_YAZ=1 npx vitest run test/altin.test.js
-// Farkı görmek için ALTIN_DOK=<klasör> verilirse her çıktı o klasöre tam JSON olarak yazılır (iki çalıştırma karşılaştırılır).
+// Çizelge, uyarı ve denetim çıktılarının okunur özeti ayrıca test/altin/ozet/ altında saklanır: kayıt tutmazsa hangi
+// günün / uyarının değiştiği hata iletisinde görünür (git diff ile de). Öteki çıktıların (puantaj, servis, raporlar) tam
+// farkını görmek için ALTIN_DOK=<klasör> verilirse her çıktı o klasöre tam JSON olarak yazılır.
 import { describe, test, expect, afterAll } from "vitest";
 import crypto from "crypto";
 import fs from "fs";
@@ -16,11 +18,35 @@ const kopya = o => JSON.parse(JSON.stringify(o));
 // servis kayıtlarındaki zaman damgaları (z: Date.now()) çalıştırmaya göre değişir; karşılaştırmaya girmez
 const metin = v => JSON.stringify(v, (k, x) => (k === "z" && typeof x === "number" && x > 1e11 ? undefined : x));
 
+const OZET_KLASOR = path.join(path.dirname(KAYIT_YOLU), "ozet");
+const dosyaAdi = ad => path.join(OZET_KLASOR, ad.replace(/[\/ ]/g, "_") + ".txt");
+/** okunur özet: çizelge (gün gün nöbetçi / hazırlama, işaretler, uyarılar), acil / öğlen günleri, uyarı ve denetim
+ *  metinleri. Başka biçimdeki çıktılar için null (yalnız karma tutulur). */
+function okunur(d) {
+  const kisi = l => (l || []).map(p => (typeof p === "number" ? p : p.id)).join(",");
+  if (d && Array.isArray(d.days)) return [
+    ...d.days.map(g => `${g.day}: N=${kisi(g.assigned)}${g.prep?.length ? " H=" + kisi(g.prep) : ""}${g.conflict ? " !" : ""}${g.locked ? " kilitli" : ""} fm=${g.fazlaMesai}`),
+    ...(d.warnings || []).map(w => "UYARI " + w),
+  ].join("\n");
+  if (d && !Array.isArray(d) && typeof d === "object" && !d.days && "warnings" in d) return (d.warnings || []).map(w => "UYARI " + w).join("\n");
+  if (Array.isArray(d) && d.every(x => typeof x === "string")) return d.join("\n");
+  if (Array.isArray(d) && d.every(x => x && typeof x === "object" && "seviye" in x)) return d.map(x => `${x.seviye} · ${x.baslik}`).join("\n");
+  if (Array.isArray(d) && d.every(x => Array.isArray(x))) return d.map((l, i) => `#${i}: ` + l.map(x => (x && x.t ? `${x.sev}: ${x.t}` : JSON.stringify(x))).join(" | ")).join("\n");
+  return null;
+}
 function kontrol(ad, deger) {
-  const m = metin(deger), ozet = crypto.createHash("sha1").update(m).digest("hex");
+  const m = metin(deger), ozet = crypto.createHash("sha1").update(m).digest("hex"), oku = okunur(deger);
   if (DOK) { fs.mkdirSync(DOK, { recursive: true }); fs.writeFileSync(path.join(DOK, ad.replace(/[\/ ]/g, "_") + ".json"), m); }
-  if (YAZ) { kayit[ad] = ozet; return; }
-  expect(ozet, ad + " değişti").toBe(kayit[ad]);
+  if (YAZ) { kayit[ad] = ozet; if (oku !== null) { fs.mkdirSync(OZET_KLASOR, { recursive: true }); fs.writeFileSync(dosyaAdi(ad), oku + "\n"); } return; }
+  if (ozet === kayit[ad]) return;
+  // kayıt tutmadı: okunur özet varsa değişen satırlar iletiye yazılır
+  let fark = "";
+  if (oku !== null && fs.existsSync(dosyaAdi(ad))) {
+    const eski = fs.readFileSync(dosyaAdi(ad), "utf8").trimEnd().split("\n"), yeni = oku.split("\n"), l = [];
+    for (let i = 0; i < Math.max(eski.length, yeni.length) && l.length < 12; i++) if (eski[i] !== yeni[i]) l.push(`  satır ${i + 1}\n    önce: ${eski[i] ?? "(yok)"}\n    şimdi: ${yeni[i] ?? "(yok)"}`);
+    fark = l.length ? "\nDeğişen satırlar:\n" + l.join("\n") : "\n(okunur özet aynı; yalnız ayrıntılar değişti: ALTIN_DOK ile tam çıktıyı alın)";
+  } else fark = "\n(tam farkı görmek için: ALTIN_DOK=<klasör> ile önce ve sonra çalıştırıp karşılaştırın)";
+  expect(ozet, ad + " değişti" + fark).toBe(kayit[ad]);
 }
 afterAll(() => { if (YAZ) fs.writeFileSync(KAYIT_YOLU, JSON.stringify(kayit, null, 1) + "\n"); });
 
