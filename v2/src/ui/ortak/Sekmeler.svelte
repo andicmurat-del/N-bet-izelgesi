@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends string">
   // Sayfa içi görünüm seçici: alt çizgili sekmeler. Seçili sekme mavi ve altında 3 px çizgi; telefonda yatay kayar.
-  import Ikon from "./Ikon.svelte";
-  type Secenek = { ad: T; baslik: string; kisa?: string; ikon?: string };
+  import Ikon, { type IkonAdi } from "./Ikon.svelte";
+  type Secenek = { ad: T; baslik: string; kisa?: string; ikon?: IkonAdi };
   // telefonSutun: eski düzenden kalan seçenek (artık sekmeler telefonda yatay kayar)
   let { secenekler, secili = $bindable(), etiket }: { secenekler: readonly Secenek[]; secili: T; etiket: string; telefonSutun?: number } = $props();
 </script>
@@ -9,7 +9,7 @@
 <div class="sekmeler" role="tablist" aria-label={etiket}>
   {#each secenekler as s}
     <button role="tab" aria-selected={secili === s.ad} class:secili={secili === s.ad} onclick={() => (secili = s.ad)}>
-      {#if s.ikon}<Ikon ad={s.ikon as any} boyut={16} />{/if}<span>{s.baslik}</span>
+      {#if s.ikon}<Ikon ad={s.ikon} boyut={16} />{/if}<span>{s.baslik}</span>
     </button>
   {/each}
 </div>

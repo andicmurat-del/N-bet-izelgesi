@@ -73,6 +73,7 @@
   {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 </section>
 
+<!-- eslint-disable-next-line svelte/no-at-html-tags -- metin uygulamanın kendi kural metni; html() önce kaçırır -->
 <article class="kart panel-blok metin">{@html html(metin)}</article>
 
 <style>

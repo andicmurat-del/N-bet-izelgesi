@@ -24,7 +24,7 @@ function esZamanli(): number {
 export interface Ilerleme { oran: number; ek: boolean }
 export function arkaPlandaOlustur(veri: Veri, yil: number, ay: number, varyasyon = 0, ilerleme?: (i: Ilerleme) => void): Promise<OlusturmaSonucu> {
   // sayfada (işçi yoksa) hesap ekranı dondurur; ilerleme yalnız başta ve sonda bildirilir
-  const sayfada = () => new Promise<OlusturmaSonucu>((coz, reddet) => setTimeout(() => { try { coz(cizelgeOlustur(veri, yil, ay, { varyasyon }) as OlusturmaSonucu); } catch (e) { reddet(e); } }, 30));
+  const sayfada = () => new Promise<OlusturmaSonucu>((coz, reddet) => setTimeout(() => { try { coz(cizelgeOlustur(veri, yil, ay, { varyasyon })); } catch (e) { reddet(e); } }, 30));
   if (isciEngelli) return sayfada();
   return new Promise<OlusturmaSonucu>((coz, reddet) => {
     const N = EK_DENEME + 1, es = esZamanli();
@@ -45,11 +45,11 @@ export function arkaPlandaOlustur(veri: Veri, yil: number, ay: number, varyasyon
       if (bitti) return;
       const ilk = sonuc[0];
       if (ilk && ekGerekli === null) ekGerekli = ekDenemeGerekli(ilk);
-      if (ilk && !ekGerekli) return bitir(() => coz(ilk as OlusturmaSonucu));
+      if (ilk && !ekGerekli) return bitir(() => coz(ilk));
       // uyarısız bir deneme bulunduysa beklemeye gerek yok
       const temiz = ilk ? sonuc.find(r => r && uyarisiz(r)) : undefined;
-      if (temiz) return bitir(() => coz(temiz as OlusturmaSonucu));
-      if (sonuc.every(r => r)) return bitir(() => coz(enIyiDeneme(sonuc as CizelgeSonucu[]) as OlusturmaSonucu));
+      if (temiz) return bitir(() => coz(temiz));
+      if (sonuc.every(r => r)) return bitir(() => coz(enIyiDeneme(sonuc as CizelgeSonucu[])));
       while (isciler.size < es && siradaki < N) baslat(siradaki++);
     };
     const baslat = (deneme: number) => {

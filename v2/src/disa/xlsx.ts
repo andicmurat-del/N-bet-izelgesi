@@ -22,6 +22,7 @@ const STILLER = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
 
+// eslint-disable-next-line no-control-regex -- XML'de geçersiz denetim karakterleri silinir
 const xe = (t: string) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
 function sutunAdi(i: number): string { let s = ""; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
 

@@ -1,6 +1,6 @@
 // Acil servis nöbet çizelgesi: Excel (gün listesi + kişi özeti) ve PDF (A4 yatay takvim + kişi özeti). Resmi çıktı: adlar büyük harf.
 import { autoTable } from "jspdf-autotable";
-import { yeniPdf } from "./pdfOrtak";
+import { yeniPdf, sonTabloY } from "./pdfOrtak";
 import { xlsxKitap, type Hucre } from "./xlsx";
 import { AYLAR, GUN_UZUN, buyukAd } from "../veri/tarih";
 
@@ -57,7 +57,7 @@ export function acilPdf(v: AcilVerisi): Blob {
       if (!g) h.cell.styles.fillColor = [244, 248, 249];
     },
   });
-  const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 150;
+  const sonY = sonTabloY(doc, 150);
   if (v.ozet.length) {
     autoTable(doc, {
       startY: sonY + 8, margin: { left: K, right: K, bottom: 22 }, pageBreak: "avoid",

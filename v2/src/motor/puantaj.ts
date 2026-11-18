@@ -54,7 +54,7 @@ export function puantajIzgarasi(B: Baglam, y: number, m: number): PuantajIzgaras
   const sa = sonrakiAy(y, m);
   const satirlar = kisiler.map(st => {
     const hucre: PuantajHucresi[] = []; let prev = oncekiAySonKodu(B, st.id, y, m);
-    const r = { s: st, cells: hucre, toplam: 0, fm: 0, n: 0, hi: 0, cu: 0, cmt: 0, paz: 0, thu: 0, h: 0, ni: 0, yi: 0, rd: 0, rt: 0, gunlerN: [] } as unknown as PuantajSatiri;
+    const r = { s: st, cells: hucre, toplam: 0, fm: 0, n: 0, hi: 0, cu: 0, cmt: 0, paz: 0, thu: 0, h: 0, ni: 0, yi: 0, rd: 0, rt: 0, gunlerN: [] } as unknown as PuantajSatiri;   // öteki alanlar aşağıda bu sırayla eklenir (çıktının alan sırası korunur)
     let nMesaiSaat = 0, niSaat = 0, pSaat = 0, izinMesai = 0;
     const sadeceNobet = st.role === "nobetci" || st.role === "destek"; // normal mesaisi olmayanlar: yalnızca nöbet/hazırlama günleri
     gunler.forEach((g, i) => {

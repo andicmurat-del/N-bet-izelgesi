@@ -46,5 +46,13 @@ export default defineConfig({
     // jsPDF'in isteğe bağlı eklentileri (HTML'den görüntü, SVG) kullanılmıyor; pakete girmesin
     rollupOptions: { external: ["html2canvas", "dompurify", "canvg"] },
   },
-  test: { include: ["test/**/*.test.{js,ts}"], testTimeout: 600_000, pool: "threads" },
+  test: {
+    include: ["test/**/*.test.{js,ts}"], testTimeout: 600_000, pool: "threads",
+    // kapsam ölçümü (npm run test:kapsam): motor ve veri kodu. Ekranlar, PDF / Excel çıktıları ve arka plan işçisi
+    // tarayıcıda çalışır; onları ekran testleri (npm run e2e) denetler.
+    coverage: {
+      provider: "v8", include: ["src/motor/**/*.ts", "src/veri/**/*.ts"], exclude: ["src/motor/isci.ts", "src/motor/istemci.ts"],
+      reporter: ["text-summary", "text", "html"], reportsDirectory: "coverage",
+    },
+  },
 });

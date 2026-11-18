@@ -20,7 +20,7 @@ const kopya = o => JSON.parse(JSON.stringify(o));
 const metin = v => JSON.stringify(v, (k, x) => (k === "z" && typeof x === "number" && x > 1e11 ? undefined : x));
 
 const OZET_KLASOR = path.join(KLASOR, "ozet");
-const dosyaAdi = ad => path.join(OZET_KLASOR, ad.replace(/[\/ ]/g, "_") + ".txt");
+const dosyaAdi = ad => path.join(OZET_KLASOR, ad.replace(/[/ ]/g, "_") + ".txt");
 /** okunur özet: çizelge (gün gün nöbetçi / hazırlama, işaretler, uyarılar), acil / öğlen günleri, uyarı ve denetim
  *  metinleri. Başka biçimdeki çıktılar için null (yalnız karma tutulur). */
 function okunur(d) {
@@ -37,7 +37,7 @@ function okunur(d) {
 }
 function kontrol(ad, deger) {
   const m = metin(deger), ozet = crypto.createHash("sha1").update(m).digest("hex"), oku = okunur(deger);
-  if (DOK) { fs.mkdirSync(DOK, { recursive: true }); fs.writeFileSync(path.join(DOK, ad.replace(/[\/ ]/g, "_") + ".json"), m); }
+  if (DOK) { fs.mkdirSync(DOK, { recursive: true }); fs.writeFileSync(path.join(DOK, ad.replace(/[/ ]/g, "_") + ".json"), m); }
   if (YAZ) { kayit[ad] = ozet; if (oku !== null) { fs.mkdirSync(OZET_KLASOR, { recursive: true }); fs.writeFileSync(dosyaAdi(ad), oku + "\n"); } return; }
   if (ozet === kayit[ad]) return;
   // kayıt tutmadı: okunur özet varsa değişen satırlar iletiye yazılır

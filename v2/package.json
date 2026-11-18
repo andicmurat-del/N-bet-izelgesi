@@ -8,8 +8,12 @@
     "build": "vite build",
     "test": "vitest run",
     "test:hizli": "vitest run --exclude \"test/motor*.test.js\" --exclude \"test/altin*.test.js\" --exclude \"test/tarama*.test.js\" --exclude test/kurallar-uclu.test.js --exclude test/yedek-rapor.test.js",
+    "test:kapsam": "vitest run --coverage",
     "e2e": "playwright test",
     "check": "svelte-check --tsconfig ./tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:denetle": "prettier --check .",
     "artifact": "vite build && node scripts/artifact.mjs"
   },
   "devDependencies": {

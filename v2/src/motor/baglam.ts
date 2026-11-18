@@ -2,6 +2,7 @@
 // sorular (o gün tatil mi, kişi izinli mi, ayarın değeri…). Eskiden her yerden erişilen tek bir ortak değişkendi;
 // artık her hesap kendi Baglam'ıyla çalışır.
 import type { Gorevli, Kisi } from "../veri/tipler";
+import type { AyKaydi } from "./servis/ay";
 import { AYAR_VARSAYILAN, DURUM_KOD, IZIN_HAFTA_GUN, type AyarAdi } from "./sabitler";
 import { ayAnahtari, ayGunSayisi, CUMA, CUMARTESI, gunAnahtari, gunKaydir, haftaGunu, haftaSonuMu, isoNo, sonrakiAy, tarihNo } from "./takvim";
 
@@ -31,7 +32,7 @@ export function gunDuzeni(g: { nobetSay?: number; hazSay?: number; fmNobet?: num
   for (const k of ["nobetSay", "hazSay", "fmNobet", "fmHaz"] as const) if (typeof g[k] === "number") o[k] = g[k];
   return o;
 }
-export interface MotorCizelgesi { year: number; month: number; days: MotorGunu[]; [k: string]: unknown }
+export interface MotorCizelgesi { year: number; month: number; days: MotorGunu[] }
 export type PuantajAyi = Record<string, Record<string, string>>;
 /** motorun okuduğu değişim kaydı alanları */
 interface Degisimi { y: number; m: number; gun: number; cik: number; yer: number; cikAd?: string; yerYeni: "N" | "H"; zorunlu?: true; sebep?: string }
@@ -50,7 +51,8 @@ export class Baglam {
   acil: Nesne<Nesne<number[]>>;
   acilElle: Nesne<Nesne<true>>;
   oglen: Nesne<Nesne<{ e: number[]; t: number[]; elle?: true; sabit?: { e: number[]; t: number[]; be?: number; bt?: number } }>>;
-  servisKayit: Nesne<any>;
+  /** servis hazırlama ay kayıtları; yedekten gelen bozuk alanlar ilk okumada onarılır (servis/ay.ts kayit) */
+  servisKayit: Nesne<AyKaydi & { __ok?: true }>;
   /** onay listesi masaları: haftanın Pazartesi'si ("YYYY-AA-GG") → kişi id → sıradaki yer (girilen haftalar) */
   readonly onayElle: Record<string, Record<string, string>>;
   /** puantajdaki değişim kayıtları (nöbet değişimi, izin/rapor nedeniyle yerine geçme) */

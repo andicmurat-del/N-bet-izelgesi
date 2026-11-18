@@ -1,6 +1,11 @@
+<script lang="ts" module>
+  /** çizili simgelerin adları */
+  export type IkonAdi = "bilgi" | "takvim" | "kisiler" | "izin" | "ayarlar" | "sol" | "sag" | "indir" | "kilit" | "uyari" | "tamam" | "yenile" | "kapat" | "arti" | "sil" | "duzenle" | "yukle" | "karisik" | "tablo" | "acil" | "liste" | "katman" | "geri" | "ileri" | "saat";
+</script>
+
 <script lang="ts">
   // Tek çizgi kalınlığında, 24'lük ızgarada simgeler. Her zaman ekran okuyucudan gizlidir; anlamı düğme metni ya da aria-label taşır.
-  type Ad = "bilgi" | "takvim" | "kisiler" | "izin" | "ayarlar" | "sol" | "sag" | "indir" | "kilit" | "uyari" | "tamam" | "yenile" | "kapat" | "arti" | "sil" | "duzenle" | "yukle" | "karisik" | "tablo" | "acil" | "liste" | "katman" | "geri" | "ileri" | "saat";
+  type Ad = IkonAdi;
   let { ad, boyut = 18 }: { ad: Ad; boyut?: number } = $props();
 </script>
 

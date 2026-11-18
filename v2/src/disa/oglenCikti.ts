@@ -1,6 +1,6 @@
 // Öğlen nöbeti haftalık PDF'i: gün listesi, her kişi ayrı sütunda; yalnız tablo, sayfa tablonun boyunda. Resmi çıktı: adlar büyük harf.
 import { autoTable } from "jspdf-autotable";
-import { yeniPdf } from "./pdfOrtak";
+import { yeniPdf, sonTabloY } from "./pdfOrtak";
 import { GUN_UZUN, buyukAd } from "../veri/tarih";
 
 export interface OglenVerisi {
@@ -27,7 +27,7 @@ function haftalikPdf(v: OglenVerisi): Blob {
       columnStyles: { 0: { cellWidth: 34, fontStyle: "bold" }, [S.e + 1]: { lineWidth: { left: 0.6, right: 0.2, top: 0.2, bottom: 0.2 } } },
       didParseCell: h => { if (h.section === "body" && satirlar[h.row.index].dw === 4) h.cell.styles.fillColor = [244, 248, 249]; },
     });
-    return (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 100;
+    return sonTabloY(doc, 100);
   };
   // önce ölçülür, sonra tablonun boyunda sayfaya çizilir
   const boy = ciz(yeniPdf("portrait", [EN, 400])) + K;

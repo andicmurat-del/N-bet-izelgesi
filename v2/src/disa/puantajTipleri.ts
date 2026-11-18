@@ -1,8 +1,8 @@
 // Motorun puantajHesapla() sonucunun biçimi (src/motor/puantaj.ts, puantajIzgarasi)
-import type { Rol } from "../veri/tipler";
+import type { Kisi } from "../veri/tipler";
 
 export interface PuantajSatiri {
-  s: { id: number; name: string; role: Rol };
+  s: Kisi;
   cells: { kod: string; saat: number; ov: boolean; acil?: boolean }[];
   toplam: number;
   /** aylık normal mesai; normal mesaisi olmayanlarda (kemoterapi eczacısı, destek) null */

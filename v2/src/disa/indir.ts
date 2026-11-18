@@ -25,7 +25,11 @@ export async function dosyaKaydet(dosyaAdi: string, veri: Blob | string, tur: st
   const d = await indirmeYetenegi();
   if (d) {
     try { await d.save({ filename: dosyaAdi, data: veri }); return true; }
-    catch (e: any) { if (e?.code === "declined") return false; throw new IndirmeHatasi("Dosya kaydedilemedi: " + (e?.message ?? "indirme reddedildi") + "."); }
+    catch (e) {
+      const h = (e ?? {}) as { code?: unknown; message?: unknown };
+      if (h.code === "declined") return false;
+      throw new IndirmeHatasi("Dosya kaydedilemedi: " + String(h.message ?? "indirme reddedildi") + ".");
+    }
   }
   // claude.ai içinde indirme izni yoksa bağlantıyla indirme de çalışmaz: başarılı gibi görünmesin
   if (window.claude) throw new IndirmeHatasi("Dosya kaydedilemedi: bu sayfanın dosya indirme izni yok. Sayfanın İzinler menüsünden indirmeye izin verin.");

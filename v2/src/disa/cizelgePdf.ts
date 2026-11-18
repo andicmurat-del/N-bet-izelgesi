@@ -2,7 +2,7 @@
 // Artifact içinde tarayıcının yazdırma penceresi açılmadığı için PDF sayfada üretilir. Türkçe karakterler için
 // yazı tipi gömülür (yazitipi/OKUBENI.md).
 import { autoTable } from "jspdf-autotable";
-import { yeniPdf } from "./pdfOrtak";
+import { yeniPdf, sonTabloY } from "./pdfOrtak";
 import type { AyCizelgesi, Gorevli, Kisi } from "../veri/tipler";
 import { ROL_AD } from "../veri/tipler";
 import { AYLAR, GUN_KISA, GUN_UZUN, buyukAd, haftaGunu } from "../veri/tarih";
@@ -126,7 +126,7 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
     headStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [222, 238, 241], textColor: [21, 38, 43] },
     columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" }, 7: { halign: "right" }, 8: { halign: "right" } },
   });
-  const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 120;
+  const sonY = sonTabloY(doc, 120);
   doc.setFontSize(8); renk(RENK.soluk);
   doc.text("Fazla mesai: nöbet süresi (" + sy(NS) + " saat) eksi o günün ve ertesi günün normal mesaisi; hazırlama " + sy(HZ) + " saat (elle değiştirilen günde yazılan saat).", K, sonY + 6);
 

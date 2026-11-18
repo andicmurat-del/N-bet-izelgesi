@@ -71,7 +71,7 @@
   type Izgara = { satirlar: { s: { id: number }; cells: { kod: string; saat: number }[] }[] };
   const izgaralar = $derived.by(() => {
     const o: Record<string, Izgara> = {};
-    for (const [a, b] of gunler) if (ayCizelgesi(a, b)) o[`${a}-${b}`] ??= puantajIzgarasi(a, b) as Izgara;
+    for (const [a, b] of gunler) if (ayCizelgesi(a, b)) o[`${a}-${b}`] ??= puantajIzgarasi(a, b);
     return o;
   });
   const hucre = (id: number, [a, b, d]: Gun) => izgaralar[`${a}-${b}`]?.satirlar.find(r => r.s.id === id)?.cells[d - 1];

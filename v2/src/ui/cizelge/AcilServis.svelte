@@ -68,7 +68,7 @@
   const sorunluGunler = $derived(dolu ? acilSorunluGunler(veriAnlik(), y, m).map(x => ({ gun: x.gun, adlar: x.ids.map(ad), artArda: (x.artArda ?? []).map(ad) })) : []);
   const sorunluMu = (g: number) => sorunluGunler.some(x => x.gun === g);
   // kişi başı aylık özet (puantajdaki gibi; acil kadrosu, hazırlama yok)
-  const ozetSatirlari = $derived(dolu ? (puantajIzgarasi(y, m) as { satirlar: { s: { id: number; role: string; acilTutar?: true } }[] }).satirlar.filter(r => acilKadrosunda(r.s)) as never : []);
+  const ozetSatirlari = $derived(dolu ? puantajIzgarasi(y, m).satirlar.filter(r => acilKadrosunda(r.s)) : []);
   const bugun = new Date();
   const bugunMu = (d: number) => bugun.getFullYear() === y && bugun.getMonth() === m && bugun.getDate() === d;
 

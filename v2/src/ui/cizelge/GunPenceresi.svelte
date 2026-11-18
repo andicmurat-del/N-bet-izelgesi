@@ -58,7 +58,7 @@
     ...(g.tatil && hSay !== 2 ? { hazSay: hSay } : {}), ...(g.tatil && typeof fmHaz === "number" ? { fmHaz } : {}),
   } : null);
   const gosterFm = $derived(typeof fmNobet === "number" ? fmNobet : otoFm);
-  const denetim = $derived(acik && !ayniKisi && !saatHatasi ? (gunuDenetle(veriAnlik(), duzKopya(c) as never, gun, nb, pr, duzen) as { sev: "hata" | "uyari" | "bilgi"; t: string }[]) : []);
+  const denetim = $derived(acik && !ayniKisi && !saatHatasi ? gunuDenetle(veriAnlik(), duzKopya(c), gun, nb, pr, duzen) : []);
   const hatalar = $derived(denetim.filter(x => x.sev === "hata"));
   const uyarilar = $derived(denetim.filter(x => x.sev === "uyari"));
   const bilgiler = $derived(denetim.filter(x => x.sev === "bilgi"));

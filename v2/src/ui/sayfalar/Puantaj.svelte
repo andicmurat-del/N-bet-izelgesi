@@ -8,7 +8,7 @@
   import { ROL_AD } from "../../veri/tipler";
   import { AYLAR, GUN_KISA, gunMetni } from "../../veri/tarih";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
-  import { KOD_AD, kodMetni, saatYaz, type Izgara, type PuantajSatiri } from "../../disa/puantajTipleri";
+  import { KOD_AD, kodMetni, saatYaz, type PuantajSatiri } from "../../disa/puantajTipleri";
   const ayar = $derived(depo.veri.settings);
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
@@ -28,7 +28,7 @@
   let gorunum = $state<(typeof TUM_GORUNUMLER)[number]["ad"]>("cetvel");
 
   const c = $derived(ayCizelgesi(depo.yil, depo.ay));
-  const G = $derived.by(() => { const t = puantajIzgarasi(depo.yil, depo.ay) as Izgara; return { ...t, satirlar: t.satirlar.filter(r => kimler(r.s as Kisi)) }; });
+  const G = $derived.by(() => { const t = puantajIzgarasi(depo.yil, depo.ay); return { ...t, satirlar: t.satirlar.filter(r => kimler(r.s)) }; });
   const elleSayisi = $derived(Object.values(depo.veri.puantaj[`${depo.yil}-${depo.ay}`] ?? {}).reduce((t, a) => t + Object.keys(a).length, 0));
 
   // özet şerit: fazla mesai aralığı (eczacı / tekniker ya da acil servis), toplam nöbet
@@ -68,7 +68,7 @@
     // elle kod kaldırılınca çıkacak kod: kayıt geçici kaldırılıp hesaplanır
     const v = duzKopya(depo.veri);
     if (elle) delete v.puantaj[`${depo.yil}-${depo.ay}`][r.s.id][gun];
-    const oto = (puantajHesapla(v, depo.yil, depo.ay) as Izgara).satirlar.find(x => x.s.id === r.s.id)?.cells[i].kod ?? "";
+    const oto = puantajHesapla(v, depo.yil, depo.ay).satirlar.find(x => x.s.id === r.s.id)?.cells[i].kod ?? "";
     secili = { id: r.s.id, ad: r.s.name, gun, otomatik: oto, simdiki: r.cells[i].kod };
     yeniKod = elle ?? "";
     acik = true;

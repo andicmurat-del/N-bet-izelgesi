@@ -168,12 +168,15 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     return mx - mn > 1 + 1e-9 ? UYARI + AGIRLIK.gunYil * (mx - mn - 1) + AGIRLIK.gunYil * yilBantTam(yilDizi, yilOnek) : 0;
   }
 
-  /** sayaçlardan toplam amaç değeri; soft: günlük tercihler, zPen: günlerin uyarıları */
-  function ozetJ(soft: number, zPen: number): number {
-    let uy = 0, hsSifir = 0;   // uy: uyarı çıkaran durum sayısı
-    let destekFazla = 0;
-    // hazırlama adaleti: eczacılar kendi arasında, teknikerler kendi arasında fark en fazla 1
+  // ozetJ'nin ara toplamları: her çağrıda sıfırdan kurulur. Parçalar ayrı işlevlerde ama eski tek işlevdeki sırayla
+  // toplanır (kayan nokta toplamı sıraya bağlı; sonuç birebir aynı kalmalı: altın kayıt testleri)
+  let uy = 0;   // uyarı çıkaran durum sayısı
+  let hsPen = 0, thuFazla = 0, devirPen = 0, hsSifir = 0;
+
+  /** hazırlama adaleti (grup içi, eczacı–tekniker, tekniker önce, üçlü nöbetli en son) ve aylık nöbet sayısı farkı */
+  function hazirlamaVeNobetFarki(): number {
     let hzAdil = 0;
+    // hazırlama adaleti: eczacılar kendi arasında, teknikerler kendi arasında fark en fazla 1
     hzAdil += grupFarkCeza(hPrp, ixEczPrep, AGIRLIK.grupHazFark); hzAdil += grupFarkCeza(hPrp, ixTekPrep, AGIRLIK.grupHazFark);
     // eczacı + tekniker hazırlama sayıları arasında fark en fazla 1 (biri 0, biri 2 olmaz); öncelik Ayarlar'daki seçime göre
     { const c = grupFarkCeza(hPrp, ixPrepAdil, ayar.hzFark); if (c > 0) { hzAdil += c; uy++; } }
@@ -202,13 +205,24 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
       for (let q = 0; q < ixFmKural.length; q++) { const v = hCnt[ixFmKural[q]]; if (v > mx) mx = v; if (v < mn) mn = v; }
       if (mx - mn > 2) { hzAdil += KESIN * (mx - mn - 2); uy++; }
     }
+    return hzAdil;
+  }
+
+  /** destek personelinin aylık hazırlama sayısı */
+  function destekCezasi(): number {
+    let destekFazla = 0;
     // KESİN: destek personeli ayda tam ayardaki sayı kadar hazırlama alır
     if (destekVar) for (let q = 0; q < ixDestek.length; q++) {
       const v = hPrp[ixDestek[q]];
       destekFazla += AGIRLIK.destekSayi * Math.abs(v - DESTEK_AYLIK);
       if (destekTamUyari && v !== DESTEK_AYLIK) uy++;
     }
-    let hsPen = 0, thuFazla = 0, devirPen = 0, kesinPen = 0;
+    return destekFazla;
+  }
+
+  /** aylık fazla mesai farkı (kesin kural) */
+  function fmBantCezasi(): number {
+    let kesinPen = 0;
     // KESİN: aylık fazla mesai farkı (destek hariç) en fazla FM_MAX_FARK saat
     if (ixFmKural.length > 1) {
       let mx = -1e9, mn = 1e9; const n = ixFmKural.length;
@@ -225,35 +239,46 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
         kesinPen += KESIN * (mx - mn - FM_MAX_FARK) + AGIRLIK.fmBant * enAz; uy++;
       }
     }
+    return kesinPen;
+  }
+
+  /** kişi başı sınırlar: Cumartesi / Pazar, Cuma eşleşmesi, hafta sonu alt ve üst sınırı, Perşembe, hazırlama sayısı ve
+   *  önceki aydan devir. Kesin kural cezası kesinPen'e eklenip döner; ötekiler hsPen, thuFazla, devirPen, hsSifir'e yazılır */
+  function kisiCezalari(kesinPen: number): number {
+    let u = 0, hsP = 0, thu = 0, dev = 0, sifir = 0;
     for (let q = 0; q < ixStaff.length; q++) {
       const ix = ixStaff[q];
       const w = hSat[ix] + hSun[ix], cm = hCum[ix];
       // ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti (kesin); Cuma + Cumartesi + Pazar üçü birden güçlü tercih
-      if (hSat[ix] > 1) { kesinPen += AGIRLIK.hsKural * (hSat[ix] - 1); uy += hSat[ix] - 1; }
-      if (hSun[ix] > 1) { kesinPen += AGIRLIK.hsKural * (hSun[ix] - 1); uy += hSun[ix] - 1; }
-      if (cm > 0 && hSat[ix] > 0 && hSun[ix] > 0) hsPen += AGIRLIK.cuCmtPaz;
-      if (ayar.cumaEsles && w >= 1 && cm === 0) hsPen += AGIRLIK.cumaEslesmeYok;
-      if (ayar.cumaEsles && w === 0 && cm >= 1) hsPen += AGIRLIK.cumaTek;
-      if (cm > 1) hsPen += AGIRLIK.cumaFazla * (cm - 1);
+      if (hSat[ix] > 1) { kesinPen += AGIRLIK.hsKural * (hSat[ix] - 1); u += hSat[ix] - 1; }
+      if (hSun[ix] > 1) { kesinPen += AGIRLIK.hsKural * (hSun[ix] - 1); u += hSun[ix] - 1; }
+      if (cm > 0 && hSat[ix] > 0 && hSun[ix] > 0) hsP += AGIRLIK.cuCmtPaz;
+      if (ayar.cumaEsles && w >= 1 && cm === 0) hsP += AGIRLIK.cumaEslesmeYok;
+      if (ayar.cumaEsles && w === 0 && cm >= 1) hsP += AGIRLIK.cumaTek;
+      if (cm > 1) hsP += AGIRLIK.cumaFazla * (cm - 1);
       // ayda en az 1 Cumartesi/Pazar nöbeti (uygun hafta sonu günü varsa)
-      if (hHs[ix] === 0 && hsMusait[ix]) { hsPen += AGIRLIK.hsEnAz1; hsSifir++; }
+      if (hHs[ix] === 0 && hsMusait[ix]) { hsP += AGIRLIK.hsEnAz1; sifir++; }
       // Cumartesi/Pazar NÖBETİ Ayarlar'daki hafta sonu üst sınırını aşmasın (hazırlama sayılmaz)
-      if (hHs[ix] > ayar.hsUst) { hsPen += AGIRLIK.hsUst * (hHs[ix] - ayar.hsUst); uy += hHs[ix] - ayar.hsUst; }
-      if (hThu[ix] > ayar.maxThu) thuFazla += hThu[ix] - ayar.maxThu;
+      if (hHs[ix] > ayar.hsUst) { hsP += AGIRLIK.hsUst * (hHs[ix] - ayar.hsUst); u += hHs[ix] - ayar.hsUst; }
+      if (hThu[ix] > ayar.maxThu) thu += hThu[ix] - ayar.maxThu;
       // eczacı / tekniker: ayda en fazla 2 hazırlama (çok güçlü tercih; yalnız başka çare yoksa aşılır)
-      if (hPrp[ix] > 2) { hsPen += AGIRLIK.prepUst * (hPrp[ix] - 2); uy += hPrp[ix] - 2; }
+      if (hPrp[ix] > 2) { hsP += AGIRLIK.prepUst * (hPrp[ix] - 2); u += hPrp[ix] - 2; }
       // ayda 1 hazırlama hedef: 2. hazırlama yalnız yerler 1'er kişiyle dolmuyorsa
-      if (hPrp[ix] > 1) hsPen += AGIRLIK.prp2 * (hPrp[ix] - 1);
+      if (hPrp[ix] > 1) hsP += AGIRLIK.prp2 * (hPrp[ix] - 1);
       if (devir.havePrev) {
         const p = pv[q];
-        if (p.thu === 0 && hThu[ix] === 0) devirPen += AGIRLIK.devirPersembe;
-        if (p.thu > 0 && hThu[ix] > 0) devirPen += AGIRLIK.devirPersembe;
-        if (p.sun > 0 && hSun[ix] > 0) devirPen += AGIRLIK.devirPazar * hSun[ix];
-        if (p.sat > 0 && hSat[ix] > 0) devirPen += AGIRLIK.devirCumartesi * hSat[ix];
+        if (p.thu === 0 && hThu[ix] === 0) dev += AGIRLIK.devirPersembe;
+        if (p.thu > 0 && hThu[ix] > 0) dev += AGIRLIK.devirPersembe;
+        if (p.sun > 0 && hSun[ix] > 0) dev += AGIRLIK.devirPazar * hSun[ix];
+        if (p.sat > 0 && hSat[ix] > 0) dev += AGIRLIK.devirCumartesi * hSat[ix];
       }
     }
-    if (hsSifir > HS_SIFIR_IZIN) uy += hsSifir - HS_SIFIR_IZIN;
-    // resmi tatil görevleri: nöbet ve hazırlama ayrı ayrı, gün sayısı olarak (saat değil); destek personeli kendi arasında
+    uy += u; hsPen = hsP; thuFazla = thu; devirPen = dev; hsSifir = sifir;
+    return kesinPen;
+  }
+
+  /** resmi tatil görevleri: nöbet ve hazırlama ayrı ayrı, gün sayısı olarak (saat değil); destek personeli kendi arasında */
+  function resmiTatilCezasi(): number {
     let resmiPen = 0;
     if (resmiGunVar) {
       resmiPen = AGIRLIK.resmi * ssIx2(hRc, onceki.rc, ixStaff) + AGIRLIK.resmi * ssIx2(hRcH, onceki.rcH, ixPrep) + (destekVar ? AGIRLIK.resmi * ssIx2(hRcH, onceki.rcH, ixDestek) : 0);
@@ -264,6 +289,18 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
         if (mx - mn > 1 + 1e-6) resmiPen += AGIRLIK.resmiYilToplam * (mx - mn - 1 + yilBant(v));
       }
     }
+    return resmiPen;
+  }
+
+  /** sayaçlardan toplam amaç değeri; soft: günlük tercihler, zPen: günlerin uyarıları */
+  function ozetJ(soft: number, zPen: number): number {
+    uy = 0;
+    const hzAdil = hazirlamaVeNobetFarki();
+    const destekFazla = destekCezasi();
+    let kesinPen = fmBantCezasi();
+    kesinPen = kisiCezalari(kesinPen);
+    if (hsSifir > HS_SIFIR_IZIN) uy += hsSifir - HS_SIFIR_IZIN;
+    const resmiPen = resmiTatilCezasi();
     const hsYilPen = AGIRLIK.hsYil * ssIx2(hHs, onceki.hs, ixStaff);
     const cuYilPen = AGIRLIK.cuYil * ssIx2(hCu, onceki.cu, ixStaff);
     const peYilPen = AGIRLIK.peYil * ssIx2(hThu, onceki.pe, ixStaff);
@@ -279,6 +316,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
       + AGIRLIK.prpGrup * (ssIx2(hPrp, onceki.prp, ixEczPrep) + ssIx2(hPrp, onceki.prp, ixTekPrep)) + (destekVar ? AGIRLIK.destekYil * ssIx2(hPrp, onceki.prp, ixDestek) : 0)
       + destekFazla + hzAdil + hsPen + AGIRLIK.gunTercihCarpani * soft + AGIRLIK.thuFazla * thuFazla + resmiPen;
   }
+
 
   /** tam hesap: tüm günler baştan sayılır */
   function hesaplaJ(): number {

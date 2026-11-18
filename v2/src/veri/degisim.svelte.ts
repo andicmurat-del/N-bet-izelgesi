@@ -25,7 +25,7 @@ export function puantajIzgarasi(y: number, m: number): Izgara {
   if (puantajOnbellek?.v !== v) puantajOnbellek = { v, s: new Map() };
   const k = y + "-" + m;
   let G = puantajOnbellek.s.get(k);
-  if (!G) { G = puantajHesapla(v, y, m) as Izgara; puantajOnbellek.s.set(k, G); }
+  if (!G) { G = puantajHesapla(v, y, m); puantajOnbellek.s.set(k, G); }
   return G;
 }
 const kisiAdi = (id: number) => depo.veri.staff.find(k => k.id === id)?.name ?? "(silinmiş)";

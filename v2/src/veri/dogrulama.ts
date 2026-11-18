@@ -12,6 +12,9 @@ export const AYAR_SINIR = {
   oglenHE: [0, 4, 1], oglenHT: [0, 3, 1], oglenCE: [0, 4, 1], oglenCT: [0, 3, 1],
 } as const;
 
+/** tarayıcı kaydının (localStorage) anahtarı; yedek, geri dönüş ve hatırlatma kayıtları bunun ekleriyle */
+export const KAYIT_ANAHTARI = "nobet-cizelgesi-v2";
+
 export function bosVeri(): Veri {
   return {
     surum: 1,
@@ -63,20 +66,24 @@ export function gunDuzeniDogrula(x: Record<string, unknown> | null | undefined):
   return o;
 }
 
+/** doğrulanmamış (yedekten ya da tarayıcıdan okunan) değer: kullanılmadan önce her alanı tek tek denetlenir */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- biçimi bilinmeyen ham girdi; bu dosyanın dışına çıkmaz
+type Ham = any;
+
 /** Yedekten ya da tarayıcıdan okunan veriyi güvenli biçime getirir; tanınmayan alanlar atılır. */
 export function veriyiDogrula(ham: unknown): Veri {
   const v = bosVeri();
   if (!ham || typeof ham !== "object") return v;
-  const o = ham as Record<string, any>;
-  const nesne = (x: unknown) => (x && typeof x === "object" && !Array.isArray(x) ? (x as Record<string, any>) : {});
+  const o = ham as Record<string, Ham>;
+  const nesne = (x: unknown) => (x && typeof x === "object" && !Array.isArray(x) ? (x as Record<string, Ham>) : {});
   const roller: Rol[] = ["eczaci", "teknisyen", "destek", "nobetci", "servis"];
   const iso = (t: unknown) => (typeof t === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : undefined);
   const kurum = nesne(o.kurum);
   v.kurum = { ad: String(kurum.ad ?? ""), onaylayan: String(kurum.onaylayan ?? "") };
   const goruldu = new Set<number>();
   v.staff = (Array.isArray(o.staff) ? o.staff : [])
-    .filter((k: any) => k && Number.isInteger(k.id) && !goruldu.has(k.id) && goruldu.add(k.id))
-    .map((k: any): Kisi => ({
+    .filter((k: Ham) => k && Number.isInteger(k.id) && !goruldu.has(k.id) && goruldu.add(k.id))
+    .map((k: Ham): Kisi => ({
       id: k.id,
       name: String(k.name ?? "").trim().slice(0, 60),
       role: roller.includes(k.role) ? k.role : "eczaci",
@@ -155,8 +162,8 @@ export function veriyiDogrula(ham: unknown): Veri {
     // anahtar, ay ve gün sayısı tutmalı; günler alan alan kurulur (bozuk bir gün sayfayı her açılışta çökertmesin)
     if (c.month < 0 || c.month > 11 || k !== ayAnahtari(c.year, c.month) || c.days.length !== gunSayisi(c.year, c.month)) continue;
     const gorevli = (l: unknown): Gorevli[] => (Array.isArray(l) ? l : [])
-      .filter((p: any) => p && Number.isInteger(p.id))
-      .map((p: any) => ({ id: p.id, name: String(p.name ?? ""), role: roller.includes(p.role) ? p.role : "eczaci" }));
+      .filter((p: Ham) => p && Number.isInteger(p.id))
+      .map((p: Ham) => ({ id: p.id, name: String(p.name ?? ""), role: roller.includes(p.role) ? p.role : "eczaci" }));
     v.schedules[k] = {
       year: c.year, month: c.month,
       // Array.from: dizide eksik (silinmiş) gün de boş gün olarak kurulur (map boşlukları atlardı)
@@ -173,9 +180,9 @@ export function veriyiDogrula(ham: unknown): Veri {
   const tamsayi = (x: unknown) => Number.isInteger(x);
   const kodMu = (x: unknown) => kodlar.includes(x as PuantajKodu);
   v.degisimler = (Array.isArray(o.degisimler) ? o.degisimler : [])
-    .filter((d: any) => d && [d.id, d.y, d.m, d.gun, d.cik, d.yer].every(tamsayi) && d.m >= 0 && d.m <= 11 && d.gun >= 1 && d.gun <= 31 && (d.gorev === "N" || d.gorev === "H") && kodMu(d.cikYeni) && (d.yerYeni === "N" || d.yerYeni === "H"))
+    .filter((d: Ham) => d && [d.id, d.y, d.m, d.gun, d.cik, d.yer].every(tamsayi) && d.m >= 0 && d.m <= 11 && d.gun >= 1 && d.gun <= 31 && (d.gorev === "N" || d.gorev === "H") && kodMu(d.cikYeni) && (d.yerYeni === "N" || d.yerYeni === "H"))
     .slice(-300)
-    .map((d: any) => ({
+    .map((d: Ham) => ({
       id: d.id, zaman: Number(d.zaman) || 0, y: d.y, m: d.m, gun: d.gun, cik: d.cik, yer: d.yer,
       cikAd: String(d.cikAd ?? ""), yerAd: String(d.yerAd ?? ""),
       cikOnce: kodMu(d.cikOnce) ? d.cikOnce : null, yerOnce: kodMu(d.yerOnce) ? d.yerOnce : null,
@@ -193,12 +200,12 @@ export function veriyiDogrula(ham: unknown): Veri {
     v.servisAyar.svc[ad] = { z: sayi(x.z, 1, 10, 1), h: sayi(x.h, 0, 999, 0), multi: x.multi === true, on: x.on !== false };
   }
   v.servisAyar.ekstra = (Array.isArray(sa.ekstra) ? sa.ekstra : [])
-    .filter((e: any) => e && typeof e.name === "string" && e.name.trim())
-    .map((e: any) => ({ name: String(e.name).trim().slice(0, 40), z: sayi(e.z, 1, 10, 1), h: sayi(e.h, 0, 999, 0), multi: e.multi === true }));
+    .filter((e: Ham) => e && typeof e.name === "string" && e.name.trim())
+    .map((e: Ham) => ({ name: String(e.name).trim().slice(0, 40), z: sayi(e.z, 1, 10, 1), h: sayi(e.h, 0, 999, 0), multi: e.multi === true }));
   for (const [k, R] of Object.entries(nesne(o.servisKayit))) {
     if (!/^\d{4}-\d{1,2}$/.test(k) || !R || typeof R !== "object") continue;
     const r = R as Record<string, unknown>;
-    v.servisKayit[k] = { gun: nesne(r.gun), elle: nesne(r.elle), gunElle: nesne(r.gunElle), sk: nesne(r.sk), ad: nesne(r.ad), ata: nesne(r.ata) } as any;
+    v.servisKayit[k] = { gun: nesne(r.gun), elle: nesne(r.elle), gunElle: nesne(r.gunElle), sk: nesne(r.sk), ad: nesne(r.ad), ata: nesne(r.ata) };
   }
   // eski kayıtlardaki haftalık sıra girişi (onayMasa.yerlesim) artık kullanılmaz: okunmaz
   for (const [gun, x] of Object.entries(nesne(nesne(o.onayMasa).elle))) {

@@ -30,7 +30,7 @@ for (let s = BAS; s < BAS + N; s++) test("senaryo " + s, () => {
     if (JSON.stringify(veri) !== once) bulgu.push("girdi değişti");
     const r2 = M.cizelgeOlustur(veri, y, m, hizli());
     if (JSON.stringify(r1) !== JSON.stringify(r2)) bulgu.push(`${y}-${m + 1} aynı girdi farklı sonuç`);
-    bulgu.push(...denetle(veri, y, m, r1, kilitli && kilitli.map((k, i) => k)));
+    bulgu.push(...denetle(veri, y, m, r1, kilitli && [...kilitli]));
     // destek personelinin aylık hazırlama sayısı kesin sınırdır (Ayarlar): aşılmamalı (elle kilitlenen günler hariç)
     if (r1.days) {
       const sinir = new Baglam(veri).sayi("destekAylik"), say = {};

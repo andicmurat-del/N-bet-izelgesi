@@ -1,0 +1,11 @@
+dist/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+test/altin/beklenen*.json
+test/altin/ozet/
+test/eski/
+test/servis-beklenen.json
+e2e/veri/
+ikon/

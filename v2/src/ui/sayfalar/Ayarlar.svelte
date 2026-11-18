@@ -67,10 +67,10 @@
   function sayiYaz(k: SayiAyari, el: HTMLInputElement) {
     const [a, b, adim] = AYAR_SINIR[k], v = Number(el.value.replace(",", "."));
     const n = el.value === "" || !Number.isFinite(v) ? AYAR_VARSAYILAN[k] : Math.round(Math.max(a, Math.min(b, v)) / adim) * adim;
-    (depo.veri.settings as unknown as Record<string, number>)[k] = n; el.value = String(n);
+    depo.veri.settings[k] = n; el.value = String(n);
   }
   function varsayilanaDon() {
-    for (const k of Object.keys(AYAR_SINIR) as SayiAyari[]) (depo.veri.settings as unknown as Record<string, number>)[k] = AYAR_VARSAYILAN[k];
+    for (const k of Object.keys(AYAR_SINIR) as SayiAyari[]) depo.veri.settings[k] = AYAR_VARSAYILAN[k];
     depo.veri.settings.thuHaftaSonu = AYAR_VARSAYILAN.thuHaftaSonu; depo.veri.settings.cumaEsles = AYAR_VARSAYILAN.cumaEsles;
   }
   // sayı alanları: boş ya da sınır dışı değer kaydedilmez, sınıra çekilir

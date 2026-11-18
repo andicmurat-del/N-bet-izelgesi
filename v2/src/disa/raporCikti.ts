@@ -1,6 +1,6 @@
 // Yıllık rapor Excel'i (aylara göre fazla mesai, görev dağılımı, yıllık denge) ve yönetime aylık rapor (PDF, Excel). Resmi çıktı: adlar büyük harf.
 import { autoTable } from "jspdf-autotable";
-import { yeniPdf } from "./pdfOrtak";
+import { yeniPdf, sonTabloY } from "./pdfOrtak";
 import { xlsxKitap, type Hucre, type Sayfa } from "./xlsx";
 import { ROL_AD, type Rol } from "../veri/tipler";
 import { buyukAd } from "../veri/tarih";
@@ -126,7 +126,7 @@ function aylikCiz(v: AylikRaporVerisi, olcek: number) {
     footStyles: { font: "CizelgeSans", fontStyle: "bold", fillColor: [240, 244, 246], textColor: [21, 38, 43] },
     columnStyles: { 0: { halign: "left", cellWidth: 44 }, 1: { halign: "left", cellWidth: 30 }, 13: { fontStyle: "bold" } },
   });
-  const sonY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 150;
+  const sonY = sonTabloY(doc, 150);
   doc.setFont("CizelgeSans", "normal"); doc.setFontSize(7); doc.setTextColor(88, 105, 120);
   doc.text(AYLIK_NOT, K, Math.min(sonY + 4, H - 30), { maxWidth: W - 2 * K });
   // imza alanları
