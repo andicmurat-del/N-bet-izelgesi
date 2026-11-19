@@ -56,10 +56,10 @@ export function hazirlamaAta(K: AramaKurulumu, kural: Kurallar): void {
       ((i - 2 >= 0 && days[i - 2].assigned.some(p => p.id === s.id)) || (oncekiAyCuma[i] && oncekiAyCuma[i]!.has(s.id)))
         ? 1
         : 0;
-    // istenmeyen: "istemiyor" işareti, Cuma-Pazar, ayda 2. ve 3. hazırlama
+    // istenmeyen: "istemiyor" işareti, Cuma-Pazar (güçlü tercih; "istemiyor"dan sonra gelir), ayda 2. ve 3. hazırlama
     const ist = (s: Kisi) =>
-      (prefGun[i][s.id] === "avoid" ? 1 : 0) +
-      2 * cuPz(s) +
+      (prefGun[i][s.id] === "avoid" ? 2 : 0) +
+      cuPz(s) +
       (s.role !== "destek" && prpCnt[s.id] >= 2 ? 8 : 0) +
       (s.role !== "destek" && prpCnt[s.id] === 1 ? 4 : 0);
     const rH = (s: Kisi) => (resmiGunDizi[i] ? (resmiDv.offH[s.id] || 0) + (rhCnt[s.id] || 0) : 0);

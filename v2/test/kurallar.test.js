@@ -134,11 +134,11 @@ describe("eş durumu isteyenler birlikte yazılamıyorsa biri yazılır", () => 
 });
 
 describe("çizelge her zaman en az uyarılı hâliyle oluşturulur", () => {
-  // ilk aramada uyarı kalırsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir. Gerçekçi kadrolu 37.
-  // senaryoda ilk arama 6 uyarı / kırmızı gün bırakıyor; ek denemelerle 2'ye iner
+  // ilk aramada uyarı kalırsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir. Küçük kadrolu 5.
+  // senaryoda ilk arama 4 uyarı / kırmızı gün bırakıyor; ek denemelerle hiç kalmıyor
   const say = r => r.warnings.filter(w => uyariSiniflandir(w).seviye !== "bilgi").length + r.days.filter(g => g.conflict).length;
   test("ilk aramadan daha çok uyarılı olmaz; ek denemelerin en az uyarılısı seçilir", () => {
-    const { y, m0, veri } = senaryo(37, { eczaci: [6, 8], teknisyen: [4, 8] });
+    const { y, m0, veri } = senaryo(5);
     const ilk = cizelgeUret(new Baglam(veri), y, m0, 0, () => 0),
       son = cizelgeOlustur(veri, y, m0, { saat: () => 0 });
     expect(say(ilk)).toBeGreaterThan(0);

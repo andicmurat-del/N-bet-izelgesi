@@ -53,7 +53,7 @@ export const NOBET_AGIRLIK_ACIKLAMA: Record<keyof typeof AGIRLIK, string> = {
   destekYil: "Destek personeli yıllık hazırlama dengesi (kare sapma).",
   haftaSonuIs: "Aylık hafta sonu nöbeti + hazırlama sayısı dengesi (kare sapma).",
   istiyor: '"İstiyor" işaretli güne nöbet (ödül; günlük tercih, ×3).',
-  cuPaz: "Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması (günlük tercih, ×3).",
+  cuPaz: "Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması: Cumartesi dinlenmesi bölünmesin (günlük tercih, ×3).",
   araGun: "İki nöbet arası Ayarlar'daki en az günden kısa (günlük tercih, ×3).",
   gunTercihCarpani: "Günlük tercihlerin (thuHs, cuPaz, istiyor, araGun) çarpanı.",
 };
@@ -192,14 +192,15 @@ hesabına bu saatler girer (puantajda nöbet süresi yazılan fazla mesai kadar 
 ### Öncelik sırası
 1. Uyarısız çizelge (her şeyden önce).
 2. Kesin kurallar: aylık nöbet sayısı farkı en fazla 2, fazla mesai farkı en fazla ${FM_MAX_FARK} saat, aylık hazırlama farkı en fazla 1, hazırlama önce teknikerlere, yıllık Perşembe / Cuma / Cumartesi / Pazar / resmi tatil farkı en fazla 1, ayda en fazla 1 Cumartesi ve 1 Pazar, "istemiyor" günleri.
-3. Güçlü tercihler: Cuma + Cumartesi + Pazar aynı kişide toplanmasın, eczacı / tekniker ayda en fazla 2 hazırlama, ayda en az 1 hafta sonu nöbeti, aylık nöbet farkı en fazla 1, Perşembe nöbetçisine aynı hafta sonu nöbet yok.
+3. Güçlü tercihler: Cuma + Cumartesi + Pazar aynı kişide toplanmasın, eczacı / tekniker ayda en fazla 2 hazırlama, ayda en az 1 hafta sonu nöbeti, aylık nöbet farkı en fazla 1, Perşembe nöbetçisine aynı hafta sonu nöbet yok, Cuma nöbetçisine aynı hafta Pazar nöbeti / hazırlaması yok (Cumartesi dinlenmesi bölünmesin).
 4. Yıllık eşitlik ve aylık düzen: yıllık nöbet, hafta sonu, Cuma, Perşembe, hazırlama, resmi tatil dengeleri; önceki aydan devir (Pazar / Cumartesi tutan bu ay yine tutmasın).
 5. İnce ayar: yıllık fazla mesai dengesi, "istiyor" günleri, iki nöbet arası en az gün (${a.minAra}).
 
 ### Hazırlama sırası
 Nöbetçiler yazıldıktan sonra tatil günlerinin hazırlamacıları seçilir: önce her teknikere 1, sonra eczacılara; eşitlikte
 fazla mesaisi en az olana. Cuma + Cumartesi + Pazar nöbeti olan kendi grubunda en son alır. Cuma nöbetçisine aynı hafta
-Pazar hazırlaması eşitlik bozulmuyorsa yazılmaz (zayıf tercih; kesin kural değil). Destek personeli 2. yerleri, eczacı / teknikerle doldurmanın en zor olduğu günlerden başlayarak alır.
+Pazar hazırlaması (ya da nöbeti) yazılmaz; güçlü tercihtir: kesin kurallar (hazırlama farkı, önce teknikerler, fazla mesai)
+ya da kadro gerektirirse esner, elle düzenlemede uyarı verilir. Destek personeli 2. yerleri, eczacı / teknikerle doldurmanın en zor olduğu günlerden başlayarak alır.
 
 ### Eş durumu
 Aynı gün birden çok kişi eş durumu "olsun" isterse ve hepsi yazılamıyorsa (günde 2 nöbetçi, en az 1 eczacı), yıl içinde eş

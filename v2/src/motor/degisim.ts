@@ -194,16 +194,14 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     if (dwG === CUMA) {
       const c = c2(gun + 1);
       if (c && c.kod === "N")
-        out.bilgi.push(n + " " + (gun + 2) + ". gün (Pazar) de nöbetçi (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).");
+        out.uyari.push(n + " " + (gun + 2) + ". gün (Pazar) de nöbetçi; Cuma nöbetini alırsa hafta sonu dinlenmesi bölünür.");
       else if (c && c.kod === "H")
-        out.bilgi.push(n + " " + (gun + 2) + ". gün (Pazar) hazırlama görevinde (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).");
+        out.uyari.push(n + " " + (gun + 2) + ". gün (Pazar) hazırlama görevinde; Cuma nöbetini alırsa hafta sonu dinlenmesi bölünür.");
     }
     if (dwG === PAZAR) {
       const c = c2(gun - 3);
       if (c && c.kod === "N")
-        out.bilgi.push(
-          n + " aynı haftanın Cuma günü (" + (gun - 2) + ". gün) de nöbetçi (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).",
-        );
+        out.uyari.push(n + " aynı haftanın Cuma günü (" + (gun - 2) + ". gün) de nöbetçi (hafta sonu dinlenmesi bölünür).");
     }
     if ((dwG === CUMARTESI || dwG === PAZAR) && thuHs) {
       const c = c2(gun - 1 - (dwG === CUMARTESI ? 2 : 3));
@@ -258,12 +256,7 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     if (dwH === PAZAR) {
       const c = c2(gun - 3);
       if (c && c.kod === "N")
-        out.bilgi.push(
-          n +
-            " aynı haftanın Cuma günü (" +
-            (gun - 2) +
-            ". gün) nöbetçi; Pazar hazırlaması (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).",
-        );
+        out.uyari.push(n + " aynı haftanın Cuma günü (" + (gun - 2) + ". gün) nöbetçi; Pazar hazırlaması hafta sonu dinlenmesini böler.");
     }
     if ((dwH === CUMARTESI || dwH === PAZAR) && B.ayar("thuHaftaSonu")) {
       const c = c2(gun - 1 - (dwH === CUMARTESI ? 2 : 3));

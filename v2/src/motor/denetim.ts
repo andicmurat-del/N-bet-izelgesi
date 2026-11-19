@@ -217,26 +217,17 @@ export function gunuDenetle(
     if (dw === CUMA) {
       const gg = days[idx + 2];
       if (gg && gg.assigned.some(q => q.id === p.id))
-        ekle(
-          "bilgi",
-          p.name + " Cuma nöbetçisi; aynı hafta Pazar (" + gg.day + ". gün) de nöbetçi (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).",
-        );
+        ekle("uyari", p.name + " Cuma nöbetçisi; aynı hafta Pazar (" + gg.day + ". gün) de nöbetçi (hafta sonu dinlenmesi bölünür).");
       if (gg && (gg.prep || []).some(q => q.id === p.id))
         ekle(
-          "bilgi",
-          p.name +
-            " Cuma nöbetçisi; aynı hafta Pazar (" +
-            gg.day +
-            ". gün) hazırlama görevinde (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).",
+          "uyari",
+          p.name + " Cuma nöbetçisi; aynı hafta Pazar (" + gg.day + ". gün) hazırlama görevinde (hafta sonu dinlenmesi bölünür).",
         );
     }
     if (dw === PAZAR) {
       const gg = days[idx - 2];
       if (gg && gg.assigned.some(q => q.id === p.id))
-        ekle(
-          "bilgi",
-          p.name + " aynı haftanın Cuma günü (" + gg.day + ". gün) de nöbetçi (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).",
-        );
+        ekle("uyari", p.name + " aynı haftanın Cuma günü (" + gg.day + ". gün) de nöbetçi (hafta sonu dinlenmesi bölünür).");
     }
     if ((dw === CUMARTESI || dw === PAZAR) && thuHaftaSonu) {
       const gg = days[idx - (dw === CUMARTESI ? 2 : 3)];
@@ -296,13 +287,7 @@ export function gunuDenetle(
     if (dw === PAZAR) {
       const gg = days[idx - 2];
       if (gg && gg.assigned.some(q => q.id === p.id))
-        ekle(
-          "bilgi",
-          p.name +
-            " aynı haftanın Cuma günü (" +
-            gg.day +
-            ". gün) nöbetçi; Pazar hazırlaması (kural dışı değil; eşitlik gerekmiyorsa kaçınılır).",
-        );
+        ekle("uyari", p.name + " aynı haftanın Cuma günü (" + gg.day + ". gün) nöbetçi; Pazar hazırlaması hafta sonu dinlenmesini böler.");
     }
     if ((dw === CUMARTESI || dw === PAZAR) && thuHaftaSonu) {
       const gg = days[idx - (dw === CUMARTESI ? 2 : 3)];

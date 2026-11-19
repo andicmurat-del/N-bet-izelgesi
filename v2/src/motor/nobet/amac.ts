@@ -234,11 +234,12 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
         if (i + 3 < GUN_SAY && gundeVar(i + 3, pid)) sf += AGIRLIK.thuHs;
       }
       if (ayar.thuHaftaSonu && oncekiAyPersembe[i] && oncekiAyPersembe[i]!.has(pid)) sf += AGIRLIK.thuHs;
-      // Cuma nöbeti tutana aynı hafta Pazar nöbeti yazılmaz (mümkün olduğunca; güçlü tercih)
+      // Cuma nöbeti tutana aynı hafta Pazar nöbeti yazılmaz (güçlü tercih; kesin kurallar ve personel yetmezse esner)
       if (dow === CUMA && i + 2 < GUN_SAY && gundeVar(i + 2, pid)) sf += AGIRLIK.cuPaz;
       if (oncekiAyCuma[i] && oncekiAyCuma[i]!.has(pid)) sf += AGIRLIK.cuPaz;
     }
-    // Cuma nöbeti tutana aynı hafta Pazar hazırlaması da yazılmaz (mümkün olduğunca)
+    // Cuma nöbeti tutana aynı hafta Pazar hazırlaması da yazılmaz (aynı güçlü tercih; yalnız hazırlamada caydırılırsa
+    // arama kişiyi Pazar nöbetine kaydırır)
     if (dow === PAZAR) {
       const pl = days[i].prep || [];
       for (let q = 0; q < pl.length; q++) {

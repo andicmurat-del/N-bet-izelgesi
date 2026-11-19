@@ -99,6 +99,7 @@ export const AGIRLIK = Object.freeze({
   nobetFark: 100000, // aylık nöbet sayısı farkı 1'i aşınca
   hsUst: 80000, // ayda Cumartesi/Pazar nöbeti ayardaki üst sınırı aşınca
   thuHs: 20000, // Perşembe nöbeti tutana aynı hafta sonu nöbet (etkin: ×3 = 60000)
+  cuPaz: 20000, // Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması (etkin: ×3 = 60000; Cumartesi dinlenmesi bölünmesin)
   // 4. yıllık eşitlik ve aylık düzen
   thuFazla: 4000, // ayda Perşembe nöbeti ayardaki sınırı aşınca
   hsYil: 2500, // yıllık Cumartesi/Pazar nöbeti dengesi (kare sapma)
@@ -122,8 +123,6 @@ export const AGIRLIK = Object.freeze({
   destekYil: 25, // destek personeli yıllık hazırlama dengesi (kare sapma)
   haftaSonuIs: 20, // aylık hafta sonu nöbeti + hazırlama sayısı dengesi (kare sapma)
   istiyor: 5, // "istiyor" işaretli güne nöbet (ödül; etkin: ×3 = 15)
-  cuPaz: 2, // Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması (etkin: ×3 = 6); yalnız eşitliği
-  // bozmuyorsa kaçınılır (art arda gün kuralı zaten var)
   araGun: 1, // iki nöbet arası ayardaki en az günden kısa (etkin: ×3 = 3)
   gunTercihCarpani: 3, // günlük tercih toplamının (thuHs, cuPaz, istiyor, araGun) çarpanı
 });

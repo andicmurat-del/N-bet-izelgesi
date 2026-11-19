@@ -176,6 +176,7 @@ export function cizelgeyiDenetle(veri, y, m, sonuc) {
       }
     // metinde "yazılmaz" denen ama motorda tercih olan kurallar (bilgi)
     for (const p of H) if (dw === 6 && g(d, -2).N.has(p.id)) ekle("bilgi: Cuma nöbetçisine aynı hafta Pazar hazırlaması", d, p.name);
+    for (const p of N) if (dw === 6 && g(d, -2).N.has(p.id)) ekle("bilgi: Cuma nöbetçisine aynı hafta Pazar nöbeti", d, p.name);
     for (const p of [...N, ...H])
       if (T.tercih(p.id, y, m, d) === "avoid" && !gun.conflict && !sonuc.warnings.some(u => u.includes(p.name) && u.includes(String(d))))
         ekle("bilgi: istemiyor gününe görev, uyarı yok", d, p.name);
