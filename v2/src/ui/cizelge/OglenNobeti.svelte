@@ -2,6 +2,8 @@
   import { puantajIzgarasi } from "../../veri/degisim.svelte";
   import { ciktiPaketi } from "../../disa/yukle";
   import IslemAlani from "../ortak/IslemAlani.svelte";
+  import OglenDagilim from "./OglenDagilim.svelte";
+  import OglenKurallari from "./OglenKurallari.svelte";
   // Öğlen nöbeti: hafta içi öğle arasında eczanede kalanlar (Pzt–Prş 2 eczacı + 1 tekniker, Cuma 3 eczacı + 2 tekniker).
   // O günün çalışma listesinden (puantaj) yazılır; yıl boyunca toplam ve Cuma sayısı eşit tutulur. Haftalık oluşturulur
   // ve onaylanır (ay sınırını aşan hafta tek parça); haftanın onay listesi onaylanmadan oluşturulmaz.
@@ -419,70 +421,11 @@
           </table>
         </div>
       </section>
-      <section class="panel" aria-label="Kişi başı dağılım">
-        <div class="panel-bas">
-          <h2>Kişi başı dağılım</h2>
-          <p class="lejant">
-            <span><i class="kare a"></i>Pzt–Prş</span><span><i class="kare c"></i>Cuma</span><span>{AYLAR[m]} · yıl</span>
-          </p>
-        </div>
-        <div class="panel-ic dagilim">
-          {#each [{ ad: "Eczacılar", rol: "eczaci" }, { ad: "Teknikerler", rol: "teknisyen" }] as grup}
-            {@const l = ozet.filter(o => o.k.role === grup.rol)}
-            {#if l.length}
-              <h3>{grup.ad}</h3>
-              {#each l as o (o.k.id)}
-                <div class="dag" title="{o.k.name}: bu ay {o.ay} (Cuma {o.ayCuma}), yıl {o.top} (Cuma {o.cuma})">
-                  <span class="dad"
-                    >{o.k.name}{#if o.k.cumaMuaf}{" "}<small>Cuma muaf</small>{/if}</span
-                  >
-                  <span class="kareler" aria-hidden="true"
-                    >{#each { length: o.ay } as _, j}<i class="kare {j >= o.ay - o.ayCuma ? 'c' : 'a'}"></i>{/each}</span
-                  >
-                  <b class="rakam">{o.ay}</b><span class="yil rakam">{o.top}</span>
-                </div>
-              {/each}
-            {/if}
-          {/each}
-        </div>
-      </section>
+      <OglenDagilim {ozet} ay={AYLAR[m]} />
     </div>
   {/if}
 
-  <div class="alt-duzen">
-    <section class="panel">
-      <div class="panel-bas"><h2>Öğlen nöbeti kuralları</h2></div>
-      <table class="tablo">
-        <thead><tr><th>Gün</th><th class="sag">Eczacı</th><th class="sag">Tekniker</th></tr></thead>
-        <tbody>
-          <tr><td>Pazartesi – Perşembe</td><td class="sag">{OGLEN_GEREK.hafta.e}</td><td class="sag">{OGLEN_GEREK.hafta.t}</td></tr>
-          <tr><td>Cuma</td><td class="sag">{OGLEN_GEREK.cuma.e}</td><td class="sag">{OGLEN_GEREK.cuma.t}</td></tr>
-          <tr><td>Resmi tatil ve arife</td><td class="sag">—</td><td class="sag">—</td></tr>
-        </tbody>
-      </table>
-    </section>
-    <section class="panel">
-      <div class="panel-bas"><h2>Eşitlik ilkesi</h2></div>
-      <div class="panel-ic ilke">
-        <p>
-          O gün mesaide çalışanlardan yazılır. Herkese haftada bir (kişi yetmezse iki; haftada iki sırayla verilir, herkes bir kez almadan
-          kimse yeniden almaz); yıl boyunca toplam sayı ve Cuma sayısı ayrı ayrı eşit dağıtılır. Eşitlik kişinin çalıştığı günlere göre
-          hesaplanır: yıllık izin ve raporlu günler paydan düşer, izinden dönen fazladan yazılmaz. Mümkünse aynı kişi art arda iki Cuma
-          yazılmaz. Teknikerde Pazartesi–Perşembe Cuma'dan muaf olanlara, Cuma öbürlerine yazılır (muaflar yetmezse öbürleri de); eşitlik
-          iki grubun kendi içinde aranır. Eşitlik bozulmuyorsa o günün nöbetçisine yazılmaz. Cuma günü onay listesinde Masa 1, Masa 2, Masa
-          7 ve jokerlerden en az 2 eczacı masada kalır: bu gruptan öğlene en fazla (grup − 2) kişi, öğlen nöbetini en az tutanlar yazılır.
-        </p>
-        <p>
-          Öğlen nöbeti haftalık oluşturulur ve onaylanır; haftanın onay listesi onaylanmadan yazılmaz (onay listesinin onayı kalkarsa o
-          haftanın öğlen nöbeti de silinir). Bir hücreye dokunup kişileri elle değiştirebilirsiniz: yalnız değiştirdiğiniz yerler korunur,
-          "Seçilmedi" yaptığınız yer boş kalır. Sonradan girilen izin ve raporlarda boşalan yerler kendiliğinden doldurulur.
-        </p>
-        <button class="baglanti" onclick={() => git("kisiler")}
-          ><Ikon ad="kisiler" boyut={16} />Cuma'dan muaf olanları düzenle (Personel)</button
-        >
-      </div>
-    </section>
-  </div>
+  <OglenKurallari {git} gerek={OGLEN_GEREK} />
 {/if}
 
 <Pencere bind:acik baslik={gunMetni(...gun)} altBaslik="Öğlen nöbeti · {gerekE} eczacı + {gerekT} tekniker{onay ? ' · onaylı liste' : ''}">
@@ -726,60 +669,6 @@
   .kisa-et {
     display: none;
   }
-  .dagilim {
-    display: grid;
-    gap: 2px;
-  }
-  .dagilim h3 {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--yazi-2);
-    margin: 6px 0 2px;
-  }
-  .dag {
-    display: grid;
-    grid-template-columns: 175px minmax(0, 1fr) 22px 26px;
-    gap: 8px;
-    align-items: center;
-    font-size: var(--f-sm);
-    padding: 2px 0;
-  }
-  .dad {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .dag b {
-    text-align: right;
-    color: var(--lacivert);
-  }
-  .yil {
-    text-align: right;
-    color: var(--soluk);
-    font-size: var(--f-xs);
-  }
-  .kareler {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-  }
-  .kare {
-    display: inline-block;
-    width: 14px;
-    height: 11px;
-  }
-  .kare.a {
-    background: var(--vurgu);
-  }
-  .kare.c {
-    background: var(--haz);
-  }
-  .lejant .kare {
-    width: 9px;
-    height: 9px;
-  }
   .lejant {
     display: flex;
     flex-wrap: wrap;
@@ -791,19 +680,6 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-  }
-  .alt-duzen {
-    display: grid;
-    grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
-    gap: var(--b4);
-    margin-top: var(--b4);
-    align-items: start;
-  }
-  .ilke {
-    display: grid;
-    gap: var(--b2);
-    font-size: var(--f-sm);
-    color: var(--yazi-2);
   }
   .baglanti {
     display: inline-flex;
@@ -821,11 +697,6 @@
   }
   @media (max-width: 1100px) {
     .ust-duzen {
-      grid-template-columns: 1fr;
-    }
-  }
-  @media (max-width: 960px) {
-    .alt-duzen {
       grid-template-columns: 1fr;
     }
   }
@@ -871,14 +742,6 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .dag {
-      grid-template-columns: 110px minmax(0, 1fr) 20px 22px;
-    }
-  }
-  .pdf-hafta {
-    display: inline-flex;
-    gap: var(--b2);
-    align-items: center;
   }
   .iki {
     display: grid;
