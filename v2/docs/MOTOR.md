@@ -42,7 +42,7 @@ anda çalışır, sonuç sırayla aramadakiyle aynıdır.
    nöbetçi değiştir, iki günün nöbetçilerini takas et, hazırlamacı değiştir, hazırlama takası, destek ekle, hazırlama için nöbet
    devri, resmi tatil nöbeti için devir, aynı gün nöbet ↔ hazırlama, hazırlamayı ver nöbet al.
 2. **Yinelemeli arama (`yinelemeliArama`)**: birkaç nöbetçi ve hazırlama yeri rastgele değiştirilir, yeniden iniş yapılır;
-   sonuç daha iyiyse saklanır. Uyarı yoksa `ARAMA_TUR.KISA`, varsa `ARAMA_TUR.UZUN` tur.
+   sonuç daha iyiyse saklanır. Uyarı yoksa `ARAMA_TUR.KISA`, varsa `ARAMA_TUR.UZUN` tur. Kalan tek uyarı yapısalsa (eczacı sayısı az olduğundan fazla mesai farkı kaçınılmaz; `amac.ts` `yapisalUyariMi`) uzun arama onu gideremez, `KISA` turda kalınır.
 3. **Hazırlama onarımı (`hazirlamaOnarimi`)**: ilk yerleştirmede "başka kimse yok" diye kural esnetilerek yazılan
    hazırlamalar, sonradan uygun biri bulunursa ona verilir.
 

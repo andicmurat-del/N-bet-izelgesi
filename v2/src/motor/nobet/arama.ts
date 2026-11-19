@@ -468,7 +468,17 @@ function yinelemeliArama(S: Arama, ilerleme?: (oran: number) => void, turSiniri?
   });
   let denemeSayisi = 0;
   // turSiniri: testlerdeki hızlı tarama için üst sınır (0: yinelemeli arama yapılmaz)
-  const sinir = () => Math.min(turSiniri ?? Infinity, enIyiToplamJ >= AGIRLIK.UYARI ? ARAMA_TUR.UZUN : ARAMA_TUR.KISA);
+  // tek uyarı yapısalsa (eczacı az: fazla mesai farkı kaçınılmaz) uzun arama onu gideremez: kısa turda kalınır. Karar
+  // kısa tur bitince bir kez verilir (o anda günler en iyi çizelgededir)
+  let yapisal: boolean | null = null;
+  const sinir = () => {
+    let uzun = enIyiToplamJ >= AGIRLIK.UYARI;
+    if (uzun && denemeSayisi >= ARAMA_TUR.KISA) {
+      if (yapisal === null) yapisal = S.amac.yapisalUyariMi();
+      if (yapisal) uzun = false;
+    }
+    return Math.min(turSiniri ?? Infinity, uzun ? ARAMA_TUR.UZUN : ARAMA_TUR.KISA);
+  };
   while (acikGunler.length > 2 && denemeSayisi < sinir()) {
     denemeSayisi++;
     if (ilerleme && denemeSayisi % 10 === 0) ilerleme(Math.min(1, denemeSayisi / sinir()));

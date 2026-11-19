@@ -635,5 +635,35 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
   /** taban çözümde i. günde kesin kural ihlali var mı */
   const tabanIhlalli = (i: number) => bIhlGun[i] > 0;
 
-  return { hesaplaJ, tabanKur, jDelta, tabanIhlalli };
+  /** Çizelgenin (şu anki günler) tek uyarısı yapısal mı: fazla mesai farkı kuralı, eczacı sayısı teknikerlerden az
+   *  olduğu için tutmuyor (her gün bir eczacı gerektiğinden eczacılar daha çok nöbet tutar) ve iki grup kendi içinde
+   *  eşit. Böyle bir uyarı daha uzun aramayla giderilemez (uyarilar.ts'teki açıklama ile aynı ölçüt). */
+  function yapisalUyariMi(): boolean {
+    const j = hesaplaJ();
+    if (j >= 2 * UYARI || ixFmKural.length < 2) return false;
+    let nE = 0,
+      nT = 0;
+    for (const ix of ixStaff) eczIx[ix] ? nE++ : nT++;
+    if (!nE || nE >= nT) return false;
+    let mxE = -1e9,
+      mnE = 1e9,
+      mxT = -1e9,
+      mnT = 1e9;
+    for (const ix of ixFmKural) {
+      const v = hFm[ix];
+      if (eczIx[ix]) {
+        if (v > mxE) mxE = v;
+        if (v < mnE) mnE = v;
+      } else {
+        if (v > mxT) mxT = v;
+        if (v < mnT) mnT = v;
+      }
+    }
+    if (mxE < -1e8 || mxT < -1e8) return false;
+    // uyarının kaynağı fazla mesai bandı olmalı (fark kuralı aşılıyor) ve gruplar kendi içinde kurala uymalı
+    const fark = Math.max(mxE, mxT) - Math.min(mnE, mnT);
+    return fark > FM_MAX_FARK && mxE - mnE <= FM_MAX_FARK && mxT - mnT <= FM_MAX_FARK && mxE >= mxT && mnT <= mnE;
+  }
+
+  return { hesaplaJ, tabanKur, jDelta, tabanIhlalli, yapisalUyariMi };
 }
