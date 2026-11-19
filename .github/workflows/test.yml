@@ -3,7 +3,7 @@ name: Testler
 on:
   pull_request:
   push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -28,9 +28,12 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run artifact
-      # ekran testleri: derlenmiş uygulama gerçek tarayıcıda (düğmeler, PDF / Excel, telefon görünümü)
-      - run: npx playwright install --with-deps chromium
+      # ekran testleri: derlenmiş uygulama gerçek tarayıcıda (düğmeler, PDF / Excel, telefon görünümü); Chromium,
+      # Firefox ve WebKit (Safari motoru; telefon görünümü iPhone'daki gibi WebKit ile)
+      - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run e2e
+        env:
+          E2E_TUM_TARAYICILAR: "1"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

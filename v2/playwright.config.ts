@@ -11,9 +11,17 @@ export default defineConfig({
   retries: 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: { baseURL: "http://localhost:4173", trace: "off", acceptDownloads: true, viewport: { width: 1400, height: 900 } },
+  // yerelde yalnız Chromium kurulu; CI'da (E2E_TUM_TARAYICILAR=1) Firefox ve WebKit de
   projects: [
     { name: "masaustu", testIgnore: /mobil\.spec/ },
     { name: "telefon", testMatch: /mobil\.spec/, use: { ...devices["iPhone 13"], browserName: "chromium" } },
+    ...(process.env.E2E_TUM_TARAYICILAR
+      ? [
+          { name: "firefox", testIgnore: /mobil\.spec/, use: { browserName: "firefox" as const } },
+          { name: "webkit", testIgnore: /mobil\.spec/, use: { browserName: "webkit" as const } },
+          { name: "telefon-webkit", testMatch: /mobil\.spec/, use: { ...devices["iPhone 13"] } },
+        ]
+      : []),
   ],
   webServer: {
     command: "npx vite build && npx vite preview --port 4173 --strictPort",
