@@ -276,8 +276,8 @@
       Her gün 2 kişi; acil servis personeli ile nöbet yeri "Acil eczane" olan eczacılar ve kemoterapi eczacıları arasından eşit dağıtılır
       (eczane nöbetinden ayrı; her ay fazla mesai saati, yıl boyunca toplam ile Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı;
       herkesin payı yazılabildiği gün sayısına göre: izinli / raporlu günler düşülür, telafi istenmez). Aynı ya da komşu günde eczane nöbeti
-      olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz. Bir güne dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden
-      oluşturmada korunur.
+      olan kişi yazılmaz; art arda gün ve 5 günde 3 nöbet olmaz; kadro yettiği sürece kişiye ayda en fazla 1 Cumartesi ve 1 Pazar. Bir güne
+      dokunup elle değiştirebilirsiniz: elle düzenlenen gün yeniden oluşturmada korunur.
     </p></Bilgi
   >
   {#if onay}<p class="bant bilgi">
