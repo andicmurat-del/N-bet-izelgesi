@@ -311,7 +311,7 @@ export function acilListesiniDenetle(veri, y, m, sonuc) {
 }
 
 /** öğlen nöbeti (oglenHesapla sonucu) — "4. Öğlen nöbeti"; P: puantajHesapla sonucu (o gün mesaide olanlar) */
-export function oglenNobetiniDenetle(veri, y, m, sonuc, P) {
+export function oglenNobetiniDenetle(veri, y, m, sonuc, P, onayGunu) {
   const T = takvim(veri),
     bulgu = [];
   const ekle = (tur, d, ayrinti) => bulgu.push({ tur, yer: `${y}-${m + 1}-${d ?? "*"}`, ayrinti });
@@ -353,6 +353,14 @@ export function oglenNobetiniDenetle(veri, y, m, sonuc, P) {
       const aday = veri.staff.filter(s => s.role === rol && mesaide(s.id, d) && !(cuma && s.cumaMuaf)).length;
       if (l.length < Math.min(gerek, aday)) ekle("öğlen: kişi sayısı eksik", d, `${grup} ${l.length}/${gerek} (aday ${aday})`);
       if (l.length > gerek) ekle("öğlen: kişi sayısı fazla", d, `${grup} ${l.length}/${gerek}`);
+    }
+    // Cuma masa kuralı: Masa 1, 2, 7 ve jokerlerdeki eczacılardan en az 2'si masada kalır; tutmazsa söylenir
+    const og = cuma && onayGunu && !g.elle ? onayGunu(d) : null;
+    if (og) {
+      const grup = [og.masa[0], og.masa[1], og.masa[6], ...og.joker].filter(h => h?.id && !h.tekniker).map(h => h.id);
+      const giden = g.e.filter(id => grup.includes(id));
+      if (giden.length > Math.max(0, grup.length - 2) && !sonuc.uyarilar.some(u => u.startsWith(`${d} `) && u.includes("Cuma masa kuralı")))
+        ekle("öğlen: Cuma masa kuralı tutmadı, söylenmedi", d, giden.map(id => T.kisi(id)?.name).join(","));
     }
   }
   return bulgu;

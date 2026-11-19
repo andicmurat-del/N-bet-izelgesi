@@ -98,7 +98,7 @@ for (const s of SENARYOLAR)
         veri.acil[y + "-" + m] = Object.fromEntries(a.gunler.filter(g => g.ids.length).map(g => [g.gun, g.ids]));
         const P = M.puantajHesapla(veri, y, m);
         const o = M.oglenHesapla(veri, y, m);
-        kaydet(oglenNobetiniDenetle(veri, y, m, o, P));
+        kaydet(oglenNobetiniDenetle(veri, y, m, o, P, d => M.onayHaftasiHesapla(veri, y, m, d).gunler.find(z => z.m === m && z.d === d)));
         veri.oglen[y + "-" + m] = Object.fromEntries(o.gunler.map(g => [g.gun, { e: g.e, t: g.t }]));
         const haftalar = [];
         for (let d = 1; d <= gunSayisi(y, m); d++)

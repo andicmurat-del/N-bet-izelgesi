@@ -558,6 +558,22 @@ export function oglenOlustur(
         uyarilar.push(
           (B.kisi(Number(k.split(":")[1]))?.name ?? "") + " bir haftada " + v + " öğlen nöbeti aldı (o hafta yeterli kişi yok).",
         );
+    // Cuma masa kuralı tutmadıysa (o gün masa grubu dışından yeterli eczacı yok) bildirilir
+    if (g === "e")
+      sec.forEach((l, i) => {
+        const mg = masaGrubu[i];
+        if (!mg || tamSabit[i]) return;
+        const giden = l.filter(id => mg.kisi.has(id));
+        if (giden.length > mg.sinir)
+          uyarilar.push(
+            gunler[i].gun +
+              " " +
+              AYLAR[m] +
+              ": Cuma masa kuralı tutmadı — Masa 1, Masa 2, Masa 7 ve jokerlerden 2 eczacı masada kalamıyor; öğlene yazılan: " +
+              giden.map(id => B.kisi(id)?.name ?? "").join(", ") +
+              " (o gün masa dışından yeterli eczacı yok).",
+          );
+      });
     gunler.forEach((x, i) => {
       x[g] = tamSabit[i] ? sec[i] : sec[i].slice().sort((a, b) => a - b);
     });

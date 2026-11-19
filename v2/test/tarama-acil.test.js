@@ -161,7 +161,19 @@ for (let s = BAS; s < BAS + N; s++)
             // kadro yetmeyince (uyarılı) eşitlik aranmaz
             const l = veri.staff.filter(st => st.role === rol && tam(st));
             if (fark(l.filter(st => !st.cumaMuaf).map(st => og[st.id] || 0)) > 2) bulgu.push(`öğlen ${rol} sayı farkı 2'yi aşıyor`);
-            if (fark(l.filter(st => !st.cumaMuaf).map(st => ogCu[st.id] || 0)) > 1) bulgu.push(`öğlen ${rol} Cuma farkı 1'i aşıyor`);
+            // Cuma: bütün Cumalarda mesaide olan ve hiçbir Cuma masa grubunda (Masa 1, 2, 7, joker; öğlene gidemeyebilir)
+            // oturmayanlar arasında
+            const cumalar = ro.gunler.filter(g => g.dw === 4).map(g => g.gun);
+            const masaGrubu = new Set(
+              cumalar.flatMap(d => {
+                const og = M.onayHaftasiHesapla(veri, y, m, d).gunler.find(z => z.m === m && z.d === d);
+                return og ? [og.masa[0], og.masa[1], og.masa[6], ...og.joker].filter(h => h?.id).map(h => h.id) : [];
+              }),
+            );
+            const cumaTam = l.filter(
+              st => !st.cumaMuaf && !masaGrubu.has(st.id) && cumalar.every(d => ["M", "N"].includes(hucre(st.id, d)?.kod)),
+            );
+            if (fark(cumaTam.map(st => ogCu[st.id] || 0)) > 1) bulgu.push(`öğlen ${rol} Cuma farkı 1'i aşıyor`);
           }
           M.calismaListesiHesapla(veri, y, m);
           M.yillikRaporHesapla(veri, y);
