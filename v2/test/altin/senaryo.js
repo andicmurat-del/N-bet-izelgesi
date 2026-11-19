@@ -64,7 +64,7 @@ function veriKur() {
 // iki ayar takımı: varsayılan ve değiştirilmiş (Ayarlar ekranındaki seçenekler)
 const AYARLAR = {
   varsayilan: {},
-  farkli: { minAra: 4, destekAylik: 1, arifeSaat: 5 },
+  farkli: { minAra: 4, destekAylik: 1, arifeSaat: 5, hsTopla: false },
 };
 
 // sırayla oluşturulan aylar (önceki ayın çizelgesi sonrakinin girdisi olur)

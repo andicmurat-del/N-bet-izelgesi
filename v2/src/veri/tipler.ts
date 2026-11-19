@@ -95,6 +95,8 @@ export interface Ayarlar {
   /** Perşembe nöbetçisi aynı hafta sonu görev almaz; hafta sonu nöbeti olana aynı ay Cuma da yazılır */
   thuHaftaSonu: boolean;
   cumaEsles: boolean;
+  /** Cumartesi hazırlaması + Pazar nöbeti aynı kişiye yazılabilir ve tercih edilir (hafta sonu tek kişide toplanır) */
+  hsTopla: boolean;
   /** elle düzenlemede kişinin fazla mesaisi ortalamadan bu kadar saat saparsa uyarı */
   fmHedef: number;
   /** nöbet izni önce 08–20 (1) ya da 20–08 (2) diliminden düşülür */

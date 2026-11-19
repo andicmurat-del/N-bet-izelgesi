@@ -157,11 +157,12 @@ export function cizelgeyiDenetle(veri, y, m, sonuc) {
     if (H[0]?.role === "destek") ihlal.push("hazırlama 1. yeri destek personelinde: " + H.map(p => p.name + "/" + p.role).join(","));
     // ertesi gün nöbet (5'in esneyen kısmı): uyarıda söylenmeli
     if (ihlal.length && !gun.conflict) ekle("işaretsiz ihlal", d, ihlal.join("; "));
-    // (Cumartesi hazırlaması + Pazar nöbeti serbest: hafta sonu tek kişide toplanır)
+    // (Ayarlar açıksa Cumartesi hazırlaması + Pazar nöbeti serbest: hafta sonu tek kişide toplanır)
+    const hsTopla = veri.settings?.hsTopla !== false;
     for (const p of H)
-      if (dw !== 5 && g(d, 1).N.has(p.id) && !uyari.includes(`${p.name} (${d} `) && !gun.conflict)
+      if (!(hsTopla && dw === 5) && g(d, 1).N.has(p.id) && !uyari.includes(`${p.name} (${d} `) && !gun.conflict)
         ekle("5: hazırlama ertesi nöbet söylenmedi", d, p.name);
-    if (dw === 5) for (const p of H) if (g(d, 1).N.has(p.id)) ekle("bilgi: Cumartesi hazırlaması + Pazar nöbeti", d, p.name);
+    if (hsTopla && dw === 5) for (const p of H) if (g(d, 1).N.has(p.id)) ekle("bilgi: Cumartesi hazırlaması + Pazar nöbeti", d, p.name);
     // puantajda girilen iki izin (Yİ / R / Dİ) arasında kalan tatile görev (yazılı kural "iki izin arası tatil")
     if (T.tatil(y, m, d))
       for (const p of [...N, ...H]) {

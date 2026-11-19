@@ -395,7 +395,7 @@ export function uyarilariYaz(K: AramaKurulumu, kural: Kurallar): string[] {
     if (!dd.locked || !dd.prep.length) return;
     const ix = dd.day - 1;
     // Cumartesi hazırlaması + Pazar nöbeti kural dışı değil
-    const son = haftaGunu(y, m, dd.day) === CUMARTESI ? ix : ix + 1;
+    const son = B.ayar("hsTopla") && haftaGunu(y, m, dd.day) === CUMARTESI ? ix : ix + 1;
     dd.prep.forEach(pp => {
       for (let k = ix - 1; k <= son; k++) {
         if (k >= 0 && k < days.length && days[k].assigned.some(p => p.id === pp.id)) {

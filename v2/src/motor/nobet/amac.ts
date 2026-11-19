@@ -240,7 +240,7 @@ export function amacKur(K: AramaKurulumu, kural: Kurallar) {
     }
     // hafta sonları olabildiğince boş kalsın: Cumartesi hazırlaması Pazar nöbetçisine verilirse hafta sonu tek kişide
     // toplanır (ödül; Pazar nöbeti değişince de bu gün yeniden hesaplanır: 3 gün geriye bakılır)
-    if (dow === CUMARTESI && i + 1 < GUN_SAY) {
+    if (ayar.hsTopla && dow === CUMARTESI && i + 1 < GUN_SAY) {
       const pl = days[i].prep || [];
       for (let q = 0; q < pl.length; q++) if (hIx[pl[q].id] !== undefined && gundeVar(i + 1, pl[q].id)) sf -= AGIRLIK.hsBirlesik;
     }

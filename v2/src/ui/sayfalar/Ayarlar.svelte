@@ -136,6 +136,7 @@
     for (const k of Object.keys(AYAR_SINIR) as SayiAyari[]) depo.veri.settings[k] = AYAR_VARSAYILAN[k];
     depo.veri.settings.thuHaftaSonu = AYAR_VARSAYILAN.thuHaftaSonu;
     depo.veri.settings.cumaEsles = AYAR_VARSAYILAN.cumaEsles;
+    depo.veri.settings.hsTopla = AYAR_VARSAYILAN.hsTopla;
   }
   // sayı alanları: boş ya da sınır dışı değer kaydedilmez, sınıra çekilir
   const sinirla = (v: string, a: number, b: number, vars: number) => {
@@ -319,6 +320,14 @@
             <label class="secim-satir"
               ><input type="checkbox" bind:checked={depo.veri.settings.cumaEsles} /><span
                 ><b>Cuma ile hafta sonu nöbeti eşleşsin</b><small>Hafta sonu nöbeti olana aynı ay Cuma nöbeti de yazılmaya çalışılır.</small
+                ></span
+              ></label
+            >
+            <label class="secim-satir"
+              ><input type="checkbox" bind:checked={depo.veri.settings.hsTopla} /><span
+                ><b>Hafta sonu tek kişide toplanabilsin</b><small
+                  >Cumartesi hazırlaması yapan, ertesi gün Pazar nöbetini de tutabilir; böylece başkalarının hafta sonu boş kalır. Kapalıysa
+                  bu birleşim yalnız kadro yetmezse yazılır (gün kırmızı, uyarılı).</small
                 ></span
               ></label
             >

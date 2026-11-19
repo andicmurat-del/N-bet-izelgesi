@@ -133,6 +133,7 @@ export function veriyiDogrula(ham: unknown): Veri {
     ) as Pick<Ayarlar, keyof typeof AYAR_SINIR>),
     thuHaftaSonu: s.thuHaftaSonu !== false,
     cumaEsles: s.cumaEsles !== false,
+    hsTopla: s.hsTopla !== false,
     acilArdArda: s.acilArdArda !== false,
     tatilOtomatik: s.tatilOtomatik !== false,
   };

@@ -210,7 +210,7 @@ export function ilkYerlestirme(A: AyBilgisi): MotorGunu[] {
 
     const dinlenen = new Set(oncekiNobetciler);
     // kilitli günlerde hazırlama personeli olanlar komşu günlerde nöbetçi yazılmasın (Cumartesi hazırlaması Pazar nöbetine engel değil)
-    const pazar = gunTuru(d) === PAZAR;
+    const pazar = gunTuru(d) === PAZAR && !!B.ayar("hsTopla");
     [d - 2, d - 1, d].forEach(ix => {
       const e = taslak[ix];
       if (ix === d - 2 && pazar) return;

@@ -4,7 +4,8 @@
  *  bölümünde). Değerlerin sınırları veri/depo.svelte.ts'deki doğrulamada.
  *  nobetSuresi / mesai / hazSaat: saat; fmHedef: elle düzenlemede ortalamadan sapma uyarısı (saat); maxThu: kişiye ayda
  *  en fazla Perşembe nöbeti (99: sınırsız); hsUst: ayda en fazla Cumartesi + Pazar nöbeti; cumaEsles: hafta sonu nöbeti
- *  olana aynı ay Cuma da (Cuma eşleşmesi); thuHaftaSonu: Perşembe nöbetçisi aynı hafta sonu görev almaz; niDusum: nöbet
+ *  olana aynı ay Cuma da (Cuma eşleşmesi); thuHaftaSonu: Perşembe nöbetçisi aynı hafta sonu görev almaz; hsTopla:
+ *  Cumartesi hazırlaması + Pazar nöbeti aynı kişiye yazılabilir ve tercih edilir (hafta sonları boş kalsın); niDusum: nöbet
  *  izni önce 08–20 (1) ya da 20–08 (2) diliminden düşülür; acilArdArda: acil kadrosu yetmezse art arda acil nöbeti
  *  yazılır (kapalıysa gün eksik kalır); oglenHE/HT, oglenCE/CT: öğlen nöbetinde Pazartesi–Perşembe ve Cuma eczacı /
  *  tekniker sayısı; tatilOtomatik: resmi tatiller her yıl kendiliğinden işaretlenir (veri/resmiTatiller.ts).
@@ -21,6 +22,7 @@ export const AYAR_VARSAYILAN = {
   hsUst: 2,
   cumaEsles: true,
   thuHaftaSonu: true,
+  hsTopla: true,
   destekAylik: 2,
   niDusum: 1,
   acilArdArda: true,

@@ -4,7 +4,7 @@
 import { gorevli, hazirlamaRol } from "../baglam";
 import type { Gorevli, Kisi } from "../../veri/tipler";
 import { AGIRLIK, HAZ_SAYISI } from "../sabitler";
-import { CUMARTESI, PAZAR } from "../takvim";
+import { CUMARTESI } from "../takvim";
 import type { Amac } from "./amac";
 import type { Kurallar } from "./kurallar";
 import type { AramaKurulumu } from "./kurulum";
@@ -264,7 +264,7 @@ function hazirlamaIcinNobetDevri(S: Arama, iyiMi: (j: number) => boolean, sec: (
           days[i].prep = slot < eskiListe.length ? eskiListe.map((pp, ix) => (ix === slot ? gn(b) : pp)) : eskiListe.concat([gn(b)]);
           const cHazirlamada =
             days[i].prep.some(pp => pp.id === c.id) ||
-            (k - 1 >= 0 && gunDow[k] !== PAZAR && (days[k - 1].prep || []).some(pp => pp.id === c.id)) ||
+            (k - 1 >= 0 && !S.kural.cmtHazirlamaSerbest(k) && (days[k - 1].prep || []).some(pp => pp.id === c.id)) ||
             (k + 1 < days.length && (days[k + 1].prep || []).some(pp => pp.id === c.id));
           if (uygunGun(k) && prepUygun(b.id, i) && !cHazirlamada && iyiMi(jDelta(i, k, true))) sec({ tip: "resmiHaz", i, k, slot, b, c });
           days[k].assigned = eskiK;

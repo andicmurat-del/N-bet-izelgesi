@@ -97,6 +97,35 @@ describe("Cumartesi hazırlaması + Pazar nöbeti serbest; kadro yetmezse önce 
     const w = r.warnings.find(u => /hazırlamanın ertesi günü nöbet/.test(u)) ?? "";
     cmtPaz.forEach(d => expect(w).not.toContain(`(${d} Mart)`));
   });
+  test("ayar kapalıysa (hafta sonu tek kişide toplanmasın) Cumartesi hazırlaması + Pazar nöbeti yalnız kadro yetmezse, uyarılı", () => {
+    const k = { ...v, settings: { hsTopla: false } };
+    const r = cizelgeOlustur(k, 2027, 2, { saat: () => 0 });
+    const cmtPaz = [];
+    r.days.forEach((g, i) =>
+      g.prep.forEach(p => {
+        if (r.days[i + 1] && r.days[i + 1].assigned.some(q => q.id === p.id) && (new Date(2027, 2, g.day).getDay() + 6) % 7 === 5)
+          cmtPaz.push(g.day);
+      }),
+    );
+    const w = r.warnings.find(u => /hazırlamanın ertesi günü nöbet/.test(u)) ?? "";
+    cmtPaz.forEach(d => expect(w).toContain(`(${d} Mart)`));
+    // elle düzenleme denetimi de uyarı verir (bilgi değil)
+    const acik = cizelgeOlustur(v, 2027, 2, { saat: () => 0 });
+    const d =
+      acik.days.findIndex(
+        (g, i) =>
+          g.prep.some(p => acik.days[i + 1]?.assigned.some(q => q.id === p.id)) && (new Date(2027, 2, g.day).getDay() + 6) % 7 === 5,
+      ) + 1;
+    expect(d).toBeGreaterThan(0);
+    const sch = { year: 2027, month: 2, days: acik.days };
+    const g = acik.days[d - 1];
+    const sev = v2 =>
+      gunuDenetle(v2, sch, d, g.assigned, g.prep)
+        .filter(b => /Pazar nöbeti|ertesi gün nöbet/.test(b.t))
+        .map(b => b.sev);
+    expect(sev(v)).toEqual(["bilgi"]);
+    expect(sev(k)).toEqual(["uyari"]);
+  });
 });
 
 describe("eş durumu isteyenler birlikte yazılamıyorsa biri yazılır", () => {

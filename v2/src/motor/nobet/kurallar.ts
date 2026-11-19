@@ -1,6 +1,7 @@
 // Aramada her hamlede korunan kesin kurallar: izinli yok, komşu günde nöbet/hazırlama yok, günde en az 1 eczacı,
 // 5 gün içinde 3 nöbet yok, Perşembe nöbetçisine aynı hafta sonu hazırlama yok, art arda iki gün hazırlama yok.
-// Cumartesi hazırlaması + Pazar nöbeti aynı kişiye yazılabilir (hafta sonu tek kişide toplanır, öbürlerinin hafta sonu boş kalır).
+// Cumartesi hazırlaması + Pazar nöbeti aynı kişiye yazılabilir (Ayarlar, varsayılan açık: hafta sonu tek kişide toplanır,
+// öbürlerinin hafta sonu boş kalır).
 import type { Gorevli } from "../../veri/tipler";
 import { eczaciMi } from "../baglam";
 import { HAFIF_IHLAL, HAZ_SAYISI } from "../sabitler";
@@ -13,7 +14,8 @@ export type Kurallar = ReturnType<typeof kurallarKur>;
 export function kurallarKur(K: AramaKurulumu) {
   const { B, y, m, days, A, yasakGun, zorunluGun, gunDow } = K;
   const { sinir, sonGunEngel } = A;
-  const thuHaftaSonu = K.ayar.thuHaftaSonu;
+  const thuHaftaSonu = K.ayar.thuHaftaSonu,
+    hsTopla = K.ayar.hsTopla;
   const destekId = new Set(K.destekler.map(s => s.id)),
     DESTEK_AYLIK = K.DESTEK_AYLIK;
 
@@ -36,9 +38,9 @@ export function kurallarKur(K: AramaKurulumu) {
     return !!days[idx].tatil;
   }
 
-  /** Pazar nöbetçisi önceki gün (Cumartesi) hazırlama yapabilir: hafta sonu tek kişide toplanır */
+  /** Pazar nöbetçisi önceki gün (Cumartesi) hazırlama yapabilir: hafta sonu tek kişide toplanır (ayar açıksa) */
   function cmtHazirlamaSerbest(idx: number): boolean {
-    return gunDow[idx] === PAZAR;
+    return hsTopla && gunDow[idx] === PAZAR;
   }
   /** nöbetçi yazılacak kişi komşu günlerde nöbetçi, komşu günlerde ya da aynı gün hazırlama personeli olamaz
    *  (Pazar nöbetçisinin Cumartesi hazırlaması hariç) */
@@ -76,9 +78,9 @@ export function kurallarKur(K: AramaKurulumu) {
     return idx === 0 && sinir.oncekiSonN.indexOf(id) >= 0;
   }
   /** hazırlama personeli ertesi gün nöbetçi (ör. resmi tatil hazırlaması, ertesi gün nöbet): kadro yetmezse ilk esneyen
-   *  kural. Cumartesi hazırlaması + Pazar nöbeti serbesttir (hafta sonları boş kalsın diye). */
+   *  kural. Ayar açıksa Cumartesi hazırlaması + Pazar nöbeti serbesttir (hafta sonları boş kalsın diye). */
   function prepSonrasiNobet(id: number, idx: number): boolean {
-    if (gunDow[idx] === CUMARTESI) return false;
+    if (hsTopla && gunDow[idx] === CUMARTESI) return false;
     if (idx + 1 < days.length) return gundeVar(idx + 1, id);
     return sinir.sonrakiIlkN.indexOf(id) >= 0;
   }
@@ -220,6 +222,7 @@ export function kurallarKur(K: AramaKurulumu) {
     gundeVar,
     tatilGunu,
     komsuda,
+    cmtHazirlamaSerbest,
     prepKomsu,
     prepKomsuSert,
     prepSonrasiNobet,

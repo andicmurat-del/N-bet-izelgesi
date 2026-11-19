@@ -80,7 +80,8 @@ export function gunuDenetle(
   };
   const g = (k: number): MotorGunu | KomsuGun | undefined => days[idx + k] || komsuAy(k);
   const gl = (gg: { day: number | string }) => (typeof gg.day === "number" ? gg.day + ". gün" : gg.day);
-  const thuHaftaSonu = B.ayar("thuHaftaSonu");
+  const thuHaftaSonu = B.ayar("thuHaftaSonu"),
+    hsTopla = B.ayar("hsTopla");
 
   if (nb.length && !nb.some(p => eczaciMi(p.role))) ekle("hata", "Bu günde eczacı yok.");
   if (nb.filter(p => p.role === "nobetci").length > 1 && !ikiDisaridanSerbestMi(y, m, day.day))
@@ -131,7 +132,7 @@ export function gunuDenetle(
       if (!gg) return;
       if (gg.assigned.some(q => q.id === p.id))
         ekle("hata", p.name + ", " + gl(gg) + " de nöbetçi; nöbetten sonra ertesi gün izinli olmalı.");
-      if (k === -1 && dw === PAZAR && (gg.prep || []).some(q => q.id === p.id))
+      if (k === -1 && hsTopla && dw === PAZAR && (gg.prep || []).some(q => q.id === p.id))
         ekle(
           "bilgi",
           p.name +
@@ -261,7 +262,7 @@ export function gunuDenetle(
     for (let k = -1; k <= 1; k++) {
       const gg = g(k);
       if (!gg || k === 0) continue;
-      if (k === 1 && dw === CUMARTESI && gg.assigned.some(q => q.id === p.id))
+      if (k === 1 && hsTopla && dw === CUMARTESI && gg.assigned.some(q => q.id === p.id))
         ekle(
           "bilgi",
           p.name +

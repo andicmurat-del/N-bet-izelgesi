@@ -28,7 +28,16 @@ describe("ayarların doğrulaması", () => {
     const v = veriyiDogrula({
       staff: [],
       schedules: {},
-      settings: { nobetSuresi: 40, mesai: 7.4, hazSaat: "x", maxThu: 99, oglenCE: 9, acilArdArda: false, thuHaftaSonu: false },
+      settings: {
+        nobetSuresi: 40,
+        mesai: 7.4,
+        hazSaat: "x",
+        maxThu: 99,
+        oglenCE: 9,
+        acilArdArda: false,
+        thuHaftaSonu: false,
+        hsTopla: false,
+      },
     });
     expect(v.settings).toMatchObject({
       nobetSuresi: 24,
@@ -39,6 +48,7 @@ describe("ayarların doğrulaması", () => {
       acilArdArda: false,
       thuHaftaSonu: false,
       cumaEsles: true,
+      hsTopla: false,
     });
   });
   test("eski kayıt (yalnız dört ayar) varsayılanlarla tamamlanır", () => {

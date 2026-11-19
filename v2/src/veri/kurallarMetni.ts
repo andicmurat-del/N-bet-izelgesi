@@ -143,6 +143,7 @@ Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Ay
 | Kişiye ayda en fazla hafta sonu (Cumartesi + Pazar) nöbeti | ${a.hsUst} |
 | Perşembe nöbetçisi aynı hafta sonu görev almaz | ${a.thuHaftaSonu ? "evet" : "hayır"} |
 | Cuma ile hafta sonu nöbeti eşleşir | ${a.cumaEsles ? "evet" : "hayır"} |
+| Hafta sonu tek kişide toplanabilir (Cumartesi hazırlaması + Pazar nöbeti) | ${a.hsTopla !== false ? "evet" : "hayır"} |
 | Elle düzenlemede fazla mesai sapma uyarısı (saat) | ${a.fmHedef} |
 | Nöbet izni önce düşülen dilim | ${a.niDusum === 2 ? "20:00–08:00" : "08:00–20:00"} |
 | Acil kadrosu yetmezse art arda acil nöbeti yazılır | ${a.acilArdArda ? "evet" : "hayır (gün eksik kalır)"} |
@@ -174,9 +175,9 @@ Program bir tarayıcı uygulamasıdır; veriler yalnız o tarayıcıda durur. Ay
 ### Kesin kurallar
 1. Her gün 2 nöbetçi; en az biri eczacı (kemoterapi eczacısı da sayılır).
 2. Kişiye görev yazılamayan günler: izinli, eş durumu "olmasın", puantajda yıllık izin / rapor / nöbet izni / diğer izin, iki izinli (yıllık izin) gün arasındaki tatil, en az ${IZIN_HAFTA_GUN} iş günü süren yıllık iznin hemen önündeki ve arkasındaki hafta sonu, işe başlama öncesi / ayrılış sonrası.
-3. Nöbetçi komşu günlerde (önceki ve sonraki gün) nöbetçi ya da hazırlamacı olamaz (Cumartesi hazırlaması + Pazar nöbeti hariç, 5. kurala bakın); aynı gün hem nöbet hem hazırlama olmaz. Ay sınırında da geçerlidir (önceki ayın son günü, sonraki ayın 1'i; puantajdaki gerçek değişimler dahil).
+3. Nöbetçi komşu günlerde (önceki ve sonraki gün) nöbetçi ya da hazırlamacı olamaz${a.hsTopla !== false ? " (Cumartesi hazırlaması + Pazar nöbeti hariç, 5. kurala bakın)" : ""}; aynı gün hem nöbet hem hazırlama olmaz. Ay sınırında da geçerlidir (önceki ayın son günü, sonraki ayın 1'i; puantajdaki gerçek değişimler dahil).
 4. 5 gün içinde 3 nöbet yazılmaz (ör. Pazartesi–Çarşamba–Cuma).
-5. Hazırlamacı aynı gün ve önceki gün nöbetçi olamaz; ertesi gün nöbetçi olması kadro yetmediğinde ilk esneyen kuraldır (yarım ihlal sayılır: ${HAFIF_IHLAL}). İstisna: Cumartesi hazırlaması + Pazar nöbeti serbesttir ve tercih edilir; hafta sonu tek kişide toplanır, öbürlerinin hafta sonu boş kalır (hazırlama 16:00'da biter, nöbet ertesi sabah 08:00'de başlar).
+5. Hazırlamacı aynı gün ve önceki gün nöbetçi olamaz; ertesi gün nöbetçi olması kadro yetmediğinde ilk esneyen kuraldır (yarım ihlal sayılır: ${HAFIF_IHLAL}).${a.hsTopla !== false ? " İstisna (Ayarlar: hafta sonu tek kişide toplanabilsin): Cumartesi hazırlaması + Pazar nöbeti serbesttir ve tercih edilir; hafta sonu tek kişide toplanır, öbürlerinin hafta sonu boş kalır (hazırlama 16:00'da biter, nöbet ertesi sabah 08:00'de başlar)." : ""}
 6. Aynı kişiye art arda iki gün hazırlama yazılmaz (Cumartesi + Pazar; ay sınırı dahil).
 7. Perşembe nöbetçisine aynı hafta sonu hazırlama yazılmaz.
 8. Dışarıdan gelen iki eczacı (kemoterapi eczacısı) aynı gün birlikte nöbetçi olmaz; Cuma ve Cumartesi olabilir.
@@ -194,14 +195,13 @@ hesabına bu saatler girer (puantajda nöbet süresi yazılan fazla mesai kadar 
 ### Öncelik sırası
 1. Uyarısız çizelge (her şeyden önce).
 2. Kesin kurallar: aylık nöbet sayısı farkı en fazla 2, fazla mesai farkı en fazla ${FM_MAX_FARK} saat, aylık hazırlama farkı en fazla 1, hazırlama önce teknikerlere, yıllık Perşembe / Cuma / Cumartesi / Pazar / resmi tatil farkı en fazla 1, ayda en fazla 1 Cumartesi ve 1 Pazar, "istemiyor" günleri.
-3. Güçlü tercihler: Cuma + Cumartesi + Pazar aynı kişide toplanmasın, eczacı / tekniker ayda en fazla 2 hazırlama, ayda en az 1 hafta sonu nöbeti, aylık nöbet farkı en fazla 1, Perşembe nöbetçisine aynı hafta sonu nöbet yok, Cuma nöbetçisine aynı hafta Pazar nöbeti / hazırlaması yok (Cumartesi dinlenmesi bölünmesin), hafta sonları olabildiğince boş kalsın (Cumartesi hazırlaması o hafta sonunun Pazar nöbetçisine).
+3. Güçlü tercihler: Cuma + Cumartesi + Pazar aynı kişide toplanmasın, eczacı / tekniker ayda en fazla 2 hazırlama, ayda en az 1 hafta sonu nöbeti, aylık nöbet farkı en fazla 1, Perşembe nöbetçisine aynı hafta sonu nöbet yok, Cuma nöbetçisine aynı hafta Pazar nöbeti / hazırlaması yok (Cumartesi dinlenmesi bölünmesin)${a.hsTopla !== false ? ", hafta sonları olabildiğince boş kalsın (Cumartesi hazırlaması o hafta sonunun Pazar nöbetçisine)" : ""}.
 4. Yıllık eşitlik ve aylık düzen: yıllık nöbet, hafta sonu, Cuma, Perşembe, hazırlama, resmi tatil dengeleri; önceki aydan devir (Pazar / Cumartesi tutan bu ay yine tutmasın).
 5. İnce ayar: yıllık fazla mesai dengesi, "istiyor" günleri, iki nöbet arası en az gün (${a.minAra}).
 
 ### Hazırlama sırası
 Nöbetçiler yazıldıktan sonra tatil günlerinin hazırlamacıları seçilir: önce her teknikere 1, sonra eczacılara; eşitlikte
-fazla mesaisi en az olana. Cuma + Cumartesi + Pazar nöbeti olan kendi grubunda en son alır. Cumartesi hazırlaması aynı sıra içinde önce ertesi gün
-Pazar nöbetçisi olana verilir (hafta sonu tek kişide toplanır). Cuma nöbetçisine aynı hafta
+fazla mesaisi en az olana. Cuma + Cumartesi + Pazar nöbeti olan kendi grubunda en son alır.${a.hsTopla !== false ? " Cumartesi hazırlaması aynı sıra içinde önce ertesi gün\nPazar nöbetçisi olana verilir (hafta sonu tek kişide toplanır)." : ""} Cuma nöbetçisine aynı hafta
 Pazar hazırlaması (ya da nöbeti) yazılmaz; güçlü tercihtir: kesin kurallar (hazırlama farkı, önce teknikerler, fazla mesai)
 ya da kadro gerektirirse esner, elle düzenlemede uyarı verilir. Destek personeli 2. yerleri, eczacı / teknikerle doldurmanın en zor olduğu günlerden başlayarak alır.
 
@@ -289,7 +289,7 @@ Ayarlar > Yedek al ile alınan dosya şu alanları taşır (aylar 0'dan sayılı
 - \`staff\`: kişiler — \`id\`, \`name\`, \`role\` (eczaci, teknisyen, destek, nobetci = kemoterapi eczacısı, servis = acil servis personeli), \`baslangic\` / \`bitis\` (YYYY-AA-GG), \`cumaMuaf\`, \`acilTutar\`.
 - \`prefs\`: "kisiId-yil-ay-gun" → izinli / want (istiyor) / avoid (istemiyor) / esVar / esYok.
 - \`manualTatil\`, \`arife\`: "yil-ay-gun" → true.
-- \`settings\`: minAra, acilMinAra, destekAylik, arifeSaat; gelişmiş: nobetSuresi, mesai, hazSaat, maxThu, hsUst, thuHaftaSonu, cumaEsles, fmHedef, niDusum, acilArdArda, oglenHE / oglenHT / oglenCE / oglenCT.
+- \`settings\`: minAra, acilMinAra, destekAylik, arifeSaat; gelişmiş: nobetSuresi, mesai, hazSaat, maxThu, hsUst, thuHaftaSonu, cumaEsles, hsTopla, fmHedef, niDusum, acilArdArda, oglenHE / oglenHT / oglenCE / oglenCT.
 - \`schedules\`: "yil-ay" → { year, month, days: [{ day, tatil, assigned (nöbetçiler), prep (hazırlamacılar), locked (elle), conflict (kural esnedi), fazlaMesai, elle düzenlenen günde nobetSay / fmNobet (tatil gününde hazSay / fmHaz da) }], uyarilar, onay }.
 - \`puantaj\`: "yil-ay" → kişi id → gün → elle yazılan kod (M, N, H, NI, YI, R, DI, B).
 - \`degisimler\`: nöbet değişimi ve izin nedeniyle yerine geçme kayıtları (cik: çıkan, yer: giren, gorev: N ya da H).

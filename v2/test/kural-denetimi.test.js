@@ -41,6 +41,7 @@ for (const s of SENARYOLAR)
       veri.acil = {};
       veri.oglen = {};
       if (r() < 0.3) veri.settings.acilArdArda = false;
+      if (r() < 0.3) veri.settings.hsTopla = false;
       const bulgu = [];
       const kaydet = l =>
         l.forEach(b => {

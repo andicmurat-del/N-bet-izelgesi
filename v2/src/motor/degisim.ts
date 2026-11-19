@@ -144,7 +144,7 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     });
     if (gun === 1 && oncekiSon(id) === "N") out.engel.push(n + " önceki ayın son günü nöbetçi: art arda nöbet olur.");
     if (sonGun && sonrakiIlkN.indexOf(id) >= 0) out.engel.push(n + " sonraki ayın 1. günü nöbetçi: art arda nöbet olur.");
-    const pazarGunu = G1.gunler[gun - 1].dw === PAZAR;
+    const pazarGunu = B.ayar("hsTopla") && G1.gunler[gun - 1].dw === PAZAR;
     if (gun === 1 && oncekiSon(id) === "H" && pazarGunu)
       out.bilgi.push(
         n +
@@ -242,7 +242,7 @@ export function degisimDenetle(B: Baglam, d: Degisiklik): DegisimSonucu {
     if (once === "N") out.engel.push(n + " " + et + " nöbetçi; aynı gün hazırlama yapamaz.");
     else if (once === "H") out.engel.push(n + " " + et + " zaten hazırlama görevinde.");
     if (!G1.gunler[gun - 1].tatil) out.uyari.push(et + " tatil günü değil; hazırlama yalnızca hafta sonu ve resmi tatilde yapılır.");
-    const cumartesiGunu = G1.gunler[gun - 1].dw === CUMARTESI;
+    const cumartesiGunu = B.ayar("hsTopla") && G1.gunler[gun - 1].dw === CUMARTESI;
     [-1, 1].forEach(kk => {
       const c = c2(gun - 1 + kk);
       if (c && c.kod === "N" && kk === 1 && cumartesiGunu)
