@@ -10,7 +10,7 @@ import { oglenOnarimlariHesapla } from "../motor";
 export { AYAR_VARSAYILAN, AYAR_SINIR, bosVeri, guvenliJson, gunDuzeniDogrula, veriyiDogrula } from "./dogrulama";
 import { KAYIT_ANAHTARI as ANAHTAR, bosVeri, guvenliJson, veriyiDogrula } from "./dogrulama";
 import { oglenKaydet } from "./listeler.svelte";
-import { degisiklikIsle, gunlukKopyaAl, kaynakBelirt } from "./gunluk.svelte";
+import { degisiklikIsle, gunlukBosalt, gunlukKopyaAl, kaynakBelirt } from "./gunluk.svelte";
 
 let acilisSorunu = "";
 function yukle(): Veri {
@@ -88,9 +88,12 @@ function oglenOnar() {
 let kayitZamanlayici: ReturnType<typeof setTimeout> | undefined;
 // son yazılan hâl: değişiklik geçmişi bununla karşılaştırır (açılıştaki ilk kayıt geçmişe girmez)
 let sonKaydedilen: Veri | null = null;
+/** yerel kayıt kapalı: erişimi kaldırılan hesapta bu tarayıcıdaki veriler silindi, bu oturumda bir daha yazılmaz */
+let yerelKayitKapali = false;
 function simdiKaydet() {
   clearTimeout(kayitZamanlayici);
   kayitZamanlayici = undefined;
+  if (yerelKayitKapali) return;
   // başka pencere yeni veriyi yazdıysa bu penceredeki eski veriyle üzerine yazılmaz
   if (depo.baskaPencere) return;
   oglenOnar();
@@ -168,6 +171,29 @@ export function gecmiseIsle() {
   sonEkleme = su;
   gecmis.ileri = [];
   sonGoruntu = t;
+}
+/** Bu tarayıcıdaki bütün kayıtları siler: veri, tarayıcıdaki değişiklik geçmişi, günlük kopyalar, yükleme öncesi kopya,
+ *  eşitleme izi (hepsi KAYIT_ANAHTARI ile başlar). Sayfadaki veri boşalır; bu oturumda tarayıcıya bir daha yazılmaz,
+ *  değişiklik geçmişine kayıt düşülmez. Erişimi kaldırılan claude.ai hesabı için (veri/bulut.svelte.ts). */
+export function yerelVerileriSil() {
+  yerelKayitKapali = true;
+  clearTimeout(kayitZamanlayici);
+  kayitZamanlayici = undefined;
+  const bos = bosVeri();
+  sonKaydedilen = bos;
+  depo.veri = bos;
+  gecmisiSifirla();
+  gunlukBosalt();
+  try {
+    const l: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(ANAHTAR)) l.push(k);
+    }
+    for (const k of l) localStorage.removeItem(k);
+  } catch {
+    /* depolama yok */
+  }
 }
 /** Geri alma noktası: önceki adımlar unutulur */
 export function gecmisiSifirla() {

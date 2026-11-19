@@ -269,8 +269,10 @@
     {:else if bulut.durum === "yetkisiz"}
       <div class="kayit-sorunu kutu hata" role="alert">
         <Ikon ad="uyari" /><span
-          >Bu claude.ai hesabının sunucudaki ortak verilere erişim yetkisi yok; burada yaptığınız değişiklikler yalnız bu tarayıcıda kalır.
-          Sayfanın sahibinden sizi paylaşımda sorumlu olarak eklemesini isteyin (Ayarlar > Geçmiş > Kullanıcılar ve yetki).</span
+          >{#if bulut.yerelSilindi}Bu claude.ai hesabının bu sayfadaki verilere erişimi yok ya da kaldırıldı; bu tarayıcıdaki kopya da
+            silindi. Erişim gerekiyorsa sayfanın sahibinden sizi paylaşımda yeniden sorumlu olarak eklemesini isteyin.{:else}Bu claude.ai
+            hesabının sunucudaki ortak verilere erişim yetkisi yok; burada yaptığınız değişiklikler yalnız bu tarayıcıda kalır. Sayfanın
+            sahibinden sizi paylaşımda sorumlu olarak eklemesini isteyin (Ayarlar > Geçmiş > Kullanıcılar ve yetki).{/if}</span
         >
       </div>
     {/if}

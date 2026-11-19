@@ -96,8 +96,9 @@
         <p class="aciklama">
           Sorumlu eklemek için claude.ai'de bu sayfanın <b>Paylaş</b> menüsünden kişiyi ekleyin: kurumunuzun (Team / Enterprise) üyesiyse
           <b>Contributor</b> verin; kurum dışından e-postayla davet ediyorsanız veri yazabilmesi için <b>Editor</b> gerekir. Editor sayfanın yeni
-          sürümünü de yayımlayabildiğinden (kuralları değiştirebilir) mümkünse Contributor tercih edin. Görevden ayrılanı paylaşımdan çıkarın;
-          geçmişteki kayıtları silinmez. Tüm verileri silme yalnız sizde.
+          sürümünü de yayımlayabildiğinden (kuralları değiştirebilir) mümkünse Contributor tercih edin. Görevden ayrılanı paylaşımdan çıkarın
+          ya da Viewer yapın: sunucudaki verilere erişimi hemen kesilir; sayfa o an açıksa ya da sonra açarsa kendi tarayıcısındaki kopya da silinir.
+          Geçmişteki kayıtları silinmez. Tüm verileri silme yalnız sizde.
         </p>
       {/if}
     </section>

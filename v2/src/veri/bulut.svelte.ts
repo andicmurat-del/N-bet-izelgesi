@@ -9,7 +9,7 @@
 // (sunucuGecmis.svelte.ts, sunucuKopya.ts).
 // Belgeler: "nobet/ana" (ortak bölüm + sürüm damgası z), "nobet/ana/aylar/<yil-ay>" (ayın kayıtları). Önce ay belgeleri,
 // en son ana belge yazılır; öteki cihazlar ana belgenin damgası değişince yeniden okur.
-import { depo, guvenliJson, kaynakBelirt, tumVeriyiDegistir, veriAnlik, veriyiDogrula } from "./depo.svelte";
+import { depo, guvenliJson, kaynakBelirt, tumVeriyiDegistir, veriAnlik, veriyiDogrula, yerelVerileriSil } from "./depo.svelte";
 import {
   BELGE_SINIRI,
   birlestir,
@@ -82,7 +82,26 @@ export const bulut = $state({
   sunucuZaman: 0,
   /** çakışmada iki tarafta da değişen bölümlerin adları (boşsa bütün veri) */
   catisan: [] as string[],
+  /** erişimi kaldırıldığı için bu tarayıcıdaki kopya silindi */
+  yerelSilindi: false,
 });
+
+/** Bu claude.ai hesabının erişimi yok ya da kaldırıldı: eşitleme durur; sahip değilse bu tarayıcıdaki kopya da silinir
+ *  (yetkisi kaldırılan sorumlu son eşitlenen verileri görmeye devam etmesin). */
+function erisimYok() {
+  clearTimeout(zamanlayici);
+  db = null;
+  degisiklikDinle(null);
+  bulut.durum = "yetkisiz";
+  bulut.mesaj = "";
+  bulut.catisan = [];
+  bekleyen = null;
+  if (kimlik.var && kimlik.rol !== "sahip") {
+    yerelVerileriSil();
+    bulut.yerelSilindi = true;
+  }
+}
+const kaldirildi = (e: unknown) => (e as { code?: string } | null)?.code === "revoked";
 
 let db: Db | null = null;
 /** sunucudaki son bilinen içerik ve sürüm damgası */
@@ -181,7 +200,7 @@ async function birlesimiUygula(d: Db, s: { p: Parcalar; z: number }, sonuc: Reco
 
 async function esitle() {
   const d = db;
-  if (!d || bulut.durum === "cakisma" || depo.baskaPencere) return;
+  if (!d || bulut.durum === "cakisma" || bulut.durum === "yetkisiz" || depo.baskaPencere) return;
   if (mesgul) {
     yeniden = true;
     return;
@@ -235,6 +254,11 @@ async function esitle() {
     bulut.mesaj = "";
     bulut.sunucuZaman = bilinenZ ?? 0;
   } catch (e) {
+    // erişim sayfa açıkken kaldırıldı
+    if (kaldirildi(e)) {
+      erisimYok();
+      return;
+    }
     // yetkisiz yazım (paylaşım düzeyi düşük): sunucu isteği reddeder
     if ((e as { code?: string })?.code === "invalid_argument" && kimlik.var && kimlik.rol !== "sahip") {
       bulut.durum = "yetkisiz";
@@ -302,7 +326,7 @@ export async function bulutuBaslat() {
   // kim kullanıyor, yetkisi ne (claude.ai): yalnız görüntüleyen verilere erişemez
   await kimlikBaslat();
   if (kimlik.rol === "okuyan") {
-    bulut.durum = "yetkisiz";
+    erisimYok();
     return;
   }
   if (kimlik.id) {
@@ -316,8 +340,9 @@ export async function bulutuBaslat() {
       if (!b.exists || b.metadata?.hasPendingWrites) return;
       if ((Number(b.data()?.z) || 0) !== bilinenZ) planla(0);
     },
-    () => {
-      /* dinleme koparsa veri değişiminde ve açılışta yine eşitlenir */
+    e => {
+      // erişim kaldırıldıysa; öteki kopmalarda veri değişiminde ve açılışta yine eşitlenir
+      if (kaldirildi(e)) erisimYok();
     },
   );
   // bu cihazda veri değişince (art arda değişiklikler tek yazımda toplanır)

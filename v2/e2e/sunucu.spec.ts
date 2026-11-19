@@ -1,11 +1,11 @@
 // claude.ai'de birden çok sorumlu: sayfaya sahte bir claude.ai ortamı (kimlik, veritabanı, "şu an kim açık") verilir.
 // Giriş yapanın adı ve yetkisi görünür, değişiklik sunucu geçmişine giriş yapanın kimliğiyle yazılır, bütün sorumluların
-// geçmişi adlarıyla listelenir, aynı ekrandaki öteki sorumlu belirtilir, yetkisiz hesap uyarılır, tüm verileri yalnız sahip
-// silebilir.
+// geçmişi adlarıyla listelenir, aynı ekrandaki öteki sorumlu belirtilir, tüm verileri yalnız sahip silebilir. Erişimi
+// olmayan ya da sayfa açıkken erişimi kaldırılan hesapta bu tarayıcıdaki kopya silinir (sunucudaki veriler durur).
 import AxeBuilder from "@axe-core/playwright";
 import { test, expect, git, type Page } from "./yardimci";
 
-type Rol = "sahip" | "katkida" | "okuyan";
+type Rol = "sahip" | "katkida" | "okuyan" | "kaldirilan";
 async function claudeOrtami(page: Page, rol: Rol) {
   await page.addInitScript(r => {
     const belgeler = new Map<string, Record<string, unknown>>();
@@ -26,7 +26,11 @@ async function claudeOrtami(page: Page, rol: Rol) {
         belgeler.set(y, kopya(d));
       },
       delete: async () => void belgeler.delete(y),
-      onSnapshot: () => () => {},
+      // "kaldirilan": sayfa açıkken erişim kaldırılır (platform dinleyiciye "revoked" bildirir)
+      onSnapshot: (_n: unknown, h?: (e: unknown) => void) => {
+        if (r === "kaldirilan" && y === "nobet/ana") setTimeout(() => h?.({ code: "revoked", message: "erişim kaldırıldı" }), 2500);
+        return () => {};
+      },
       collection: (a: string) => kol(y + "/" + a),
     });
     type F = [string, unknown][];
@@ -126,9 +130,27 @@ test("sahip: sorumlu ekleme yolu anlatılır, tüm verileri silebilir", async ({
   await expect(page.locator("main button", { hasText: "Tüm verileri sil" })).toBeVisible();
 });
 
-test("yalnız görüntüleyen hesap: sunucudaki verilere erişemediği söylenir, sunucuya yazmaz", async ({ page, kur }) => {
+const yerelAnahtarlar = (page: Page) =>
+  page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith("nobet-cizelgesi-v2") && !k.endsWith("-yedek")));
+
+test("yalnız görüntüleyen hesap: erişemediği söylenir, sunucuya yazmaz, bu tarayıcıdaki kopya silinir", async ({ page, kur }) => {
   await claudeOrtami(page, "okuyan");
   await kur();
-  await expect(page.locator("main")).toContainText("sunucudaki ortak verilere erişim yetkisi yok");
+  await expect(page.locator("main")).toContainText("bu tarayıcıdaki kopya da silindi");
   expect(await sunucuBelgeleri(page, "")).toEqual([]);
+  expect(await yerelAnahtarlar(page)).toEqual([]);
+  await git(page, "ayarlar/personel");
+  await expect(page.locator("main")).not.toContainText("Ayşe");
+});
+
+test("sayfa açıkken erişimi kaldırılan sorumlu: kopya silinir, sunucudaki veriler durur", async ({ page, kur }) => {
+  await claudeOrtami(page, "kaldirilan");
+  await kur();
+  await expect(page.locator(".ust-serit")).toContainText("Veriler sunucuya kaydedildi");
+  expect((await yerelAnahtarlar(page)).length).toBeGreaterThan(0);
+  await expect(page.locator("main")).toContainText("bu tarayıcıdaki kopya da silindi", { timeout: 8000 });
+  expect(await yerelAnahtarlar(page)).toEqual([]);
+  expect((await sunucuBelgeleri(page, "nobet/ana")).length).toBeGreaterThan(1);
+  // silme bir değişiklik olarak sunucuya ya da geçmişe gitmez
+  expect(JSON.stringify(await sunucuBelgeleri(page, "gecmis/"))).not.toContain("silindi");
 });

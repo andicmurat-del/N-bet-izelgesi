@@ -79,6 +79,12 @@ export function kullaniciAyarla(ad: string) {
   gunluk.kullanici = ad.trim().slice(0, 40);
   yaz(KULLANICI_ANAHTAR, JSON.stringify(gunluk.kullanici));
 }
+/** bellekteki geçmişi ve kullanıcı adını boşaltır (tarayıcıya yazmaz; yerel veriler silinirken) */
+export function gunlukBosalt() {
+  gunluk.kayit = [];
+  gunluk.kullanici = "";
+  kopyaIzi.surum++;
+}
 export function gecmisiTemizle() {
   gunluk.kayit = [];
   yaz(GECMIS_ANAHTAR, []);
