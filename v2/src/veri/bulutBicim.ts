@@ -76,6 +76,8 @@ export const bosMu = (v: Veri) => !v.staff.length && !Object.keys(v.schedules).l
 export interface Iz {
   z: number;
   ozet: string;
+  /** o andaki bölüm özetleri (bölüm bölüm birleştirmenin tabanı; eski izlerde yok) */
+  bolum?: Record<string, string>;
 }
 
 export type Karar =
@@ -109,4 +111,130 @@ export function eslemeKarari(o: {
   if (o.yerelBos && !o.iz) return "al";
   if (!sunucuDegisti) return yerelDegisti ? "gonder" : "ayni";
   return yerelDegisti ? "sor" : "al";
+}
+
+// ---------- bölüm bölüm üç yönlü birleştirme (birden çok sorumlu) ----------
+// Veri bölümlere ayrılır: ortak bölümler kendi adıyla ("staff", "prefs", "settings"…), aylık bölümler bölüm ve ay olarak
+// ("schedules/2026-10", "puantaj/2026-10"…). Son eşitlemedeki her bölümün özeti tarayıcıda saklanır (taban). Eşitlemede
+// bir bölüm yalnız bir tarafta değiştiyse o tarafınki alınır; iki tarafta da (farklı biçimde) değiştiyse çatışmadır ve
+// yalnız o bölümler için kullanıcıya sorulur. Böylece iki sorumlu farklı aylarda ya da farklı ekranlarda çalışınca
+// değişiklikler kendiliğinden birleşir.
+
+/** anahtarları sıralı JSON: aynı içerik, anahtar sırası farklı olsa da aynı metni verir */
+export function kararliJson(x: unknown): string {
+  if (x === null || typeof x !== "object") return JSON.stringify(x) ?? "null";
+  if (Array.isArray(x)) return "[" + x.map(kararliJson).join(",") + "]";
+  const o = x as Record<string, unknown>;
+  return (
+    "{" +
+    Object.keys(o)
+      .filter(k => o[k] !== undefined)
+      .sort()
+      .map(k => JSON.stringify(k) + ":" + kararliJson(o[k]))
+      .join(",") +
+    "}"
+  );
+}
+function metinOzeti(t: string): string {
+  let h1 = 0x811c9dc5,
+    h2 = 5381;
+  for (let i = 0; i < t.length; i++) {
+    const c = t.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 0x01000193);
+    h2 = (Math.imul(h2, 33) + c) | 0;
+  }
+  return `${t.length}-${(h1 >>> 0).toString(36)}-${(h2 >>> 0).toString(36)}`;
+}
+const ayBolumuMu = (b: string) => (AY_BOLUMLERI as readonly string[]).includes(b);
+
+/** bölüm anahtarı → içerik özeti (olmayan aylık bölüm listede yer almaz) */
+export function bolumOzetleri(v: Veri): Record<string, string> {
+  const o: Record<string, string> = {};
+  for (const [b, deger] of Object.entries(v)) {
+    if (!ayBolumuMu(b)) {
+      o[b] = metinOzeti(kararliJson(deger));
+      continue;
+    }
+    for (const [ayK, x] of Object.entries(deger as Record<string, unknown>)) o[b + "/" + ayK] = metinOzeti(kararliJson(x));
+  }
+  return o;
+}
+function bolumAl(v: Veri, k: string): unknown {
+  const [b, ayK] = k.split("/");
+  const d = (v as unknown as Record<string, unknown>)[b];
+  return ayK === undefined ? d : (d as Record<string, unknown> | undefined)?.[ayK];
+}
+function bolumYaz(v: Record<string, unknown>, k: string, deger: unknown) {
+  const [b, ayK] = k.split("/");
+  if (ayK === undefined) {
+    v[b] = deger;
+    return;
+  }
+  const d = { ...((v[b] as Record<string, unknown>) ?? {}) };
+  if (deger === undefined) delete d[ayK];
+  else d[ayK] = deger;
+  v[b] = d;
+}
+
+export interface Birlesim {
+  /** birleşmiş veri (doğrulanmamış: çağıran veriyiDogrula'dan geçirir); çatışan bölümlerde sunucudaki ya da (secim
+   *  "yerel" ise) bu cihazdaki */
+  sonuc: Record<string, unknown>;
+  /** iki tarafta da farklı biçimde değişen bölümler */
+  catisan: string[];
+  /** bu cihazdan sunucuya gidecek bölümler, sunucudan bu cihaza gelecek bölümler */
+  yerelden: string[];
+  sunucudan: string[];
+}
+/** taban: son eşitlemedeki bölüm özetleri. secim: çatışan bölümlerde hangi tarafın alınacağı */
+export function ucluBirlestir(taban: Record<string, string>, yerel: Veri, sunucu: Veri, secim: "sunucu" | "yerel" = "sunucu"): Birlesim {
+  const oy = bolumOzetleri(yerel),
+    os = bolumOzetleri(sunucu);
+  const sonuc: Record<string, unknown> = { ...(sunucu as unknown as Record<string, unknown>) };
+  const catisan: string[] = [],
+    yerelden: string[] = [],
+    sunucudan: string[] = [];
+  for (const k of new Set([...Object.keys(oy), ...Object.keys(os), ...Object.keys(taban)])) {
+    const b = taban[k],
+      l = oy[k],
+      s = os[k];
+    if (l === s) continue;
+    if (s === b) {
+      yerelden.push(k);
+      bolumYaz(sonuc, k, bolumAl(yerel, k));
+    } else if (l === b) sunucudan.push(k);
+    else {
+      catisan.push(k);
+      if (secim === "yerel") bolumYaz(sonuc, k, bolumAl(yerel, k));
+    }
+  }
+  return { sonuc, catisan, yerelden, sunucudan };
+}
+
+const BOLUM_ADI: Record<string, string> = {
+  staff: "personel",
+  prefs: "izin ve tercih işaretleri",
+  manualTatil: "resmi tatil işaretleri",
+  arife: "arife işaretleri",
+  settings: "ayarlar",
+  kurum: "kurum bilgileri",
+  listeOnay: "liste onayları",
+  degisimler: "nöbet değişimleri",
+  servisAyar: "servis listesi ayarları",
+  onayMasa: "onay listesi masaları",
+  tatilYillari: "resmi tatil yılları",
+  schedules: "nöbet çizelgesi",
+  puantaj: "puantaj",
+  acil: "acil listesi",
+  acilElle: "acil listesi (elle günler)",
+  oglen: "öğlen nöbeti",
+  servisKayit: "servis hazırlama",
+};
+/** bölüm anahtarının okunur adı: "Kasım 2026 nöbet çizelgesi", "izin ve tercih işaretleri" */
+export function bolumAdi(k: string, aylar: readonly string[]): string {
+  const [b, ayK] = k.split("/");
+  const ad = BOLUM_ADI[b] ?? b;
+  if (ayK === undefined) return ad;
+  const [y, m] = ayK.split("-").map(Number);
+  return `${aylar[m] ?? "?"} ${y} ${ad}`;
 }

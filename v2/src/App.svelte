@@ -12,6 +12,8 @@
     tatilleriKendiligindenIsaretle,
   } from "./veri/depo.svelte";
   import { bulut, bulutuBaslat, bulutYenidenDene, cakismayiCoz } from "./veri/bulut.svelte";
+  import { kimlik, kisiAdi, ROL_ADI } from "./veri/kimlik.svelte";
+  import { oda, odaBaslat, konumBildir } from "./veri/oda.svelte";
   import { dosyaKaydet, hataMetni } from "./disa/indir";
   import { ayAdi } from "./veri/tarih";
   import AySecici from "./ui/ortak/AySecici.svelte";
@@ -70,7 +72,34 @@
     gonderiliyor: "Sunucuya kaydediliyor…",
     hata: "Sunucuya kaydedilemedi (veriler bu bilgisayarda)",
     cakisma: "Sunucuyla eşitleme bekliyor",
+    yetkisiz: "Sunucudaki verilere erişim yetkiniz yok (veriler bu bilgisayarda)",
   };
+  // şu an açık olan öteki sorumlular: bu sekmenin ekranı ötekilere bildirilir; aynı ekranda, aynı ayda çalışan varsa söylenir
+  const ALT_AD: Record<string, string> = {
+    nobet: "nöbet çizelgesi",
+    liste: "nöbet listesi",
+    oglen: "öğlen nöbeti",
+    onay: "onay listesi",
+    hazirlama: "servis hazırlama",
+    puantaj: "puantaj",
+    izinler: "izinler",
+    kisi: "kişi takvimi",
+    raporlar: "raporlar",
+    acil: "acil nöbet listesi",
+    genel: "ayarlar",
+    personel: "personel",
+    kurallar: "kurallar",
+    gecmis: "geçmiş",
+    yardim: "yardım",
+  };
+  const altGorunum = $derived(sayfa === "gunluk" ? gunlukAlt : sayfa === "acil" ? acilAlt : ayarAlt);
+  const ayK = $derived(`${depo.yil}-${depo.ay}`);
+  $effect(() => konumBildir({ sayfa, alt: altGorunum, ay: ayK }));
+  const ayniEkranda = $derived(
+    oda.digerleri.filter(
+      d => d.konum && d.konum.sayfa === sayfa && d.konum.alt === altGorunum && d.konum.ay === ayK && sayfa !== "ayarlar",
+    ),
+  );
   // resmi tatiller: seçilen yıl ilk kez açılınca kendiliğinden işaretlenir. Sunucuyla eşitleme belli olduktan sonra
   // (sunucudaki veri gelmeden yerel veri değişip iki cihaz arasında gereksiz çakışma çıkmasın)
   $effect(() => {
@@ -83,6 +112,7 @@
   });
   onMount(() => {
     void bulutuBaslat();
+    void odaBaslat();
     const dinle = () => (sayfa = hashOku());
     addEventListener("hashchange", dinle);
     return () => removeEventListener("hashchange", dinle);
@@ -149,7 +179,11 @@
     <div class="genislik">
       <span>Hastane Eczanesi · Nöbet ve Puantaj Sistemi</span>
       <span class="sag"
-        ><span role="status">{SAKLAMA[bulut.durum]}</span> · <button class="serit-baglanti" onclick={yedekAl}>Yedek al</button> ·
+        >{#if kimlik.var}<span title={kimlik.rol ? ROL_ADI[kimlik.rol] : ""}>{kimlik.ad || "Giriş yapıldı"}</span> ·
+        {/if}{#if oda.digerleri.length}<span title="Bu sayfayı şu an açmış öteki kişiler"
+            >Şu an açık: {oda.digerleri.map(d => kisiAdi(d.id)).join(", ")}</span
+          > ·
+        {/if}<span role="status">{SAKLAMA[bulut.durum]}</span> · <button class="serit-baglanti" onclick={yedekAl}>Yedek al</button> ·
         <button
           class="serit-baglanti"
           onclick={() => {
@@ -205,13 +239,25 @@
         <Ikon ad="uyari" />
         <div>
           <b>Bu cihazdaki veriler ile sunucudaki veriler farklı.</b>
-          <p>
-            İkisinde de ayrı değişiklik yapılmış (ör. başka bir bilgisayarda ya da telefonda çalışıldı). Hangisiyle devam edilsin?
-            Seçilmeyen taraf silinir; emin değilseniz önce "Yedek al" ile bu cihazdakini dosyaya kaydedin.
-          </p>
+          {#if bulut.catisan.length}
+            <p>
+              Siz ve başka bir sorumlu (ya da başka bir cihaz) aynı bölümü değiştirdiniz: <b>{bulut.catisan.join(", ")}</b>. Öteki
+              değişiklikler kendiliğinden birleştirilir; bu bölümlerde hangisi kalsın? Seçilmeyen tarafın bu bölümlerdeki değişikliği
+              silinir; emin değilseniz önce "Yedek al" ile bu cihazdakini dosyaya kaydedin.
+            </p>
+          {:else}
+            <p>
+              İkisinde de ayrı değişiklik yapılmış (ör. başka bir bilgisayarda ya da telefonda çalışıldı). Hangisiyle devam edilsin?
+              Seçilmeyen taraf silinir; emin değilseniz önce "Yedek al" ile bu cihazdakini dosyaya kaydedin.
+            </p>
+          {/if}
           <div class="dugmeler">
-            <button class="dugme" onclick={() => cakismayiCoz("sunucu")}>Sunucudakini al</button>
-            <button class="dugme" onclick={() => cakismayiCoz("cihaz")}>Bu cihazdakini sunucuya yaz</button>
+            <button class="dugme" onclick={() => cakismayiCoz("sunucu")}
+              >{bulut.catisan.length ? "Bu bölümlerde sunucudakini al" : "Sunucudakini al"}</button
+            >
+            <button class="dugme" onclick={() => cakismayiCoz("cihaz")}
+              >{bulut.catisan.length ? "Bu bölümlerde bu cihazdakini yaz" : "Bu cihazdakini sunucuya yaz"}</button
+            >
             <button class="dugme sade" onclick={yedekAl}><Ikon ad="indir" />Yedek al</button>
           </div>
         </div>
@@ -219,6 +265,23 @@
     {:else if bulut.durum === "hata"}
       <div class="kayit-sorunu kutu hata" role="alert">
         <Ikon ad="uyari" />{bulut.mesaj}<button class="dugme" onclick={bulutYenidenDene}><Ikon ad="yenile" />Yeniden dene</button>
+      </div>
+    {:else if bulut.durum === "yetkisiz"}
+      <div class="kayit-sorunu kutu hata" role="alert">
+        <Ikon ad="uyari" /><span
+          >Bu claude.ai hesabının sunucudaki ortak verilere erişim yetkisi yok; burada yaptığınız değişiklikler yalnız bu tarayıcıda kalır.
+          Sayfanın sahibinden sizi paylaşımda sorumlu olarak eklemesini isteyin (Ayarlar > Geçmiş > Kullanıcılar ve yetki).</span
+        >
+      </div>
+    {/if}
+    {#if ayniEkranda.length}
+      <div class="kayit-sorunu kutu bilgi" role="status">
+        <Ikon ad="bilgi" /><span
+          >{ayniEkranda.map(d => kisiAdi(d.id)).join(", ")} de şu an bu ekranda ({ALT_AD[altGorunum] ?? altGorunum}, {ayAdi(
+            depo.yil,
+            depo.ay,
+          )}). Değişiklikler bölüm bölüm birleştirilir; aynı bölümü ikiniz de değiştirirseniz hangisinin kalacağı sorulur.</span
+        >
       </div>
     {/if}
     {#if yedekGun !== null && bulut.durum !== "cakisma"}

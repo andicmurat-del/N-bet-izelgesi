@@ -3,11 +3,34 @@
 // önce oradan açılır, sunucuya ulaşılamazsa uygulama eskisi gibi çalışır.
 //
 // Kurallar (bulutBicim.ts > eslemeKarari): yalnız değişmemiş ya da hiç eşitlenmemiş boş taraf ötekinin verisini alır.
-// İki tarafta da ayrı değişiklik varsa (ör. iki cihazda aynı anda çalışıldı) hiçbiri ezilmez, kullanıcıya sorulur.
+// İki tarafta da değişiklik varsa (ör. iki sorumlu aynı anda çalıştı) bölüm bölüm birleştirilir (ucluBirlestir): farklı
+// bölümlerdeki (ör. farklı aylardaki) değişiklikler kendiliğinden birleşir; yalnız iki tarafta da değişen bölümler sorulur.
+// Kimlik ve yetki claude.ai'den (kimlik.svelte.ts); değişiklik geçmişi ve günlük kopyalar da sunucuda tutulur
+// (sunucuGecmis.svelte.ts, sunucuKopya.ts).
 // Belgeler: "nobet/ana" (ortak bölüm + sürüm damgası z), "nobet/ana/aylar/<yil-ay>" (ayın kayıtları). Önce ay belgeleri,
 // en son ana belge yazılır; öteki cihazlar ana belgenin damgası değişince yeniden okur.
 import { depo, guvenliJson, kaynakBelirt, tumVeriyiDegistir, veriAnlik, veriyiDogrula } from "./depo.svelte";
-import { BELGE_SINIRI, birlestir, bosMu, eslemeKarari, ozet, parcala, parcalarAyni, type Iz, type Parcalar } from "./bulutBicim";
+import {
+  BELGE_SINIRI,
+  birlestir,
+  bolumAdi,
+  bolumOzetleri,
+  bosMu,
+  eslemeKarari,
+  kararliJson,
+  ozet,
+  parcala,
+  parcalarAyni,
+  ucluBirlestir,
+  type Iz,
+  type Parcalar,
+} from "./bulutBicim";
+import type { Veri } from "./tipler";
+import { AYLAR as AY_ADLARI } from "./tarih";
+import { kimlik, kimlikBaslat } from "./kimlik.svelte";
+import { degisiklikDinle } from "./gunluk.svelte";
+import { sunucuGecmisBaslat, sunucuyaKaydet } from "./sunucuGecmis.svelte";
+import { gunlukSunucuKopyasi, sunucuKopyalari, sunucuKopyasiOku, type SunucuKopyasi } from "./sunucuKopya";
 
 // claude.ai "db" yeteneğinin kullanılan kısmı
 interface Belge {
@@ -21,14 +44,24 @@ interface BelgeRef {
   set(d: Record<string, unknown>): Promise<void>;
   delete(): Promise<void>;
   onSnapshot(n: (b: Belge) => void, h?: (e: unknown) => void): () => void;
+  /** kısa süreli kilit (platformda var; sahte ortamlarda olmayabilir) */
+  acquire?(o: { holder: string; ttlMs?: number }): Promise<{ acquired: boolean; expiresAt?: string }>;
+}
+interface Sorgu {
+  where(a: string, op: string, d: unknown): Sorgu;
+  orderBy(a: string, yon?: "asc" | "desc"): Sorgu;
+  limit(n: number): Sorgu;
+  get(): Promise<{ docs: Belge[] }>;
 }
 interface Db {
   doc(yol: string): BelgeRef;
-  collection(yol: string): { doc(id: string): BelgeRef; limit(n: number): { get(): Promise<{ docs: Belge[] }> } };
+  collection(yol: string): Sorgu & { doc(id: string): BelgeRef };
 }
 
 const ANA = "nobet/ana",
   AYLAR = "nobet/ana/aylar",
+  /** yazım kilidi: iki sorumlu aynı anda yazınca biri ötekinin değişikliğini ezmesin */
+  KILIT = "nobet/kilit",
   IZ_ANAHTAR = "nobet-cizelgesi-v2-bulut";
 const cihaz = Math.random().toString(36).slice(2, 10);
 
@@ -40,8 +73,16 @@ export type BulutDurumu =
   | "gonderiliyor"
   | "hata"
   /** iki tarafta da değişiklik var: kullanıcı seçecek */
-  | "cakisma";
-export const bulut = $state({ durum: "bekliyor" as BulutDurumu, mesaj: "", sunucuZaman: 0 });
+  | "cakisma"
+  /** bu claude.ai hesabının sunucudaki verilere erişim ya da yazma yetkisi yok */
+  | "yetkisiz";
+export const bulut = $state({
+  durum: "bekliyor" as BulutDurumu,
+  mesaj: "",
+  sunucuZaman: 0,
+  /** çakışmada iki tarafta da değişen bölümlerin adları (boşsa bütün veri) */
+  catisan: [] as string[],
+});
 
 let db: Db | null = null;
 /** sunucudaki son bilinen içerik ve sürüm damgası */
@@ -49,13 +90,15 @@ let bilinen: Parcalar | null = null,
   bilinenZ: number | null = null;
 let mesgul = false,
   yeniden = false,
-  bekleyen: { p: Parcalar; z: number } | null = null;
+  bekleyen: { p: Parcalar; z: number; taban?: Record<string, string>; sv?: Veri } | null = null;
 let zamanlayici: ReturnType<typeof setTimeout> | undefined;
 
 function izOku(): Iz | null {
   try {
     const o = JSON.parse(localStorage.getItem(IZ_ANAHTAR) || "null");
-    return o && Number.isFinite(o.z) && typeof o.ozet === "string" ? { z: o.z, ozet: o.ozet } : null;
+    if (!o || !Number.isFinite(o.z) || typeof o.ozet !== "string") return null;
+    const b = o.bolum && typeof o.bolum === "object" && !Array.isArray(o.bolum) ? (o.bolum as Record<string, string>) : undefined;
+    return { z: o.z, ozet: o.ozet, ...(b ? { bolum: b } : {}) };
   } catch {
     return null;
   }
@@ -80,9 +123,30 @@ async function sunucudanOku(d: Db, ana: Belge): Promise<{ p: Parcalar; z: number
   return { p: { ana: a.json, aylar }, z: Number(a.z) || 0 };
 }
 const bayt = (t: string) => new TextEncoder().encode(JSON.stringify(t)).length;
-async function sunucuyaYaz(d: Db, p: Parcalar) {
+const bekle = (ms: number) => new Promise(r => setTimeout(r, ms));
+/** Sunucuya yazar. Yazımdan önce kısa süreli kilit alınır ve sunucunun okunandan beri değişmediğine bakılır: başka bir
+ *  sorumlu araya girdiyse yazılmaz (false), çağıran yeniden okuyup birleştirir. */
+async function sunucuyaYaz(d: Db, p: Parcalar, v: Veri): Promise<boolean> {
   for (const [k, t] of [["ortak bölüm", p.ana], ...Object.entries(p.aylar)])
     if (bayt(t) > BELGE_SINIRI) throw new Error(`Sunucuya yazılamadı: ${k} kaydı çok büyük. Veriler bu tarayıcıda duruyor; yedek alın.`);
+  const kilit = d.doc(KILIT);
+  if (kilit.acquire) {
+    const k = await kilit.acquire({ holder: cihaz, ttlMs: 8000 });
+    if (!k.acquired) {
+      const kalan = k.expiresAt ? Date.parse(k.expiresAt) - Date.now() : 2000;
+      await bekle(Math.min(8000, Math.max(300, kalan)) + Math.random() * 500);
+      return false;
+    }
+    const a = await d.doc(ANA).get();
+    if ((a.exists ? Number(a.data()?.z) || 0 : null) !== bilinenZ) return false;
+  }
+  // günün ilk yazımından önce sunucudaki hâl günlük kopya olarak saklanır (kopya alınamazsa yazım yine yapılır)
+  if (bilinen)
+    try {
+      await gunlukSunucuKopyasi(d, bilinen, kimlik.id);
+    } catch (e) {
+      console.warn("Sunucuya günlük kopya alınamadı", e);
+    }
   const kol = d.collection(AYLAR);
   for (const [k, t] of Object.entries(p.aylar)) if (bilinen?.aylar[k] !== t) await kol.doc(k).set({ json: t });
   for (const k of Object.keys(bilinen?.aylar ?? {})) if (!(k in p.aylar)) await kol.doc(k).delete();
@@ -90,13 +154,29 @@ async function sunucuyaYaz(d: Db, p: Parcalar) {
   await d.doc(ANA).set({ z, cihaz, surum: 1, json: p.ana });
   bilinen = p;
   bilinenZ = z;
-  izYaz({ z, ozet: ozet(p) });
+  izYaz({ z, ozet: ozet(p), bolum: bolumOzetleri(v) });
+  return true;
 }
 function sunucudakiniUygula(s: { p: Parcalar; z: number }) {
   const v = veriyiDogrula(birlestir(s.p, guvenliJson));
   kaynakBelirt("esitleme");
   tumVeriyiDegistir(v);
-  izYaz({ z: s.z, ozet: ozet(parcala(v)) });
+  izYaz({ z: s.z, ozet: ozet(parcala(v)), bolum: bolumOzetleri(v) });
+}
+/** bölüm bölüm birleşmiş veriyi bu cihaza uygular, bu cihazdan gelen bölümler varsa sunucuya yazar */
+async function birlesimiUygula(d: Db, s: { p: Parcalar; z: number }, sonuc: Record<string, unknown>, yerel: Veri): Promise<boolean> {
+  const v = veriyiDogrula(sonuc);
+  if (kararliJson(v) !== kararliJson(yerel)) {
+    kaynakBelirt("esitleme");
+    tumVeriyiDegistir(v);
+  }
+  const p = parcala(v);
+  if (parcalarAyni(p, s.p)) izYaz({ z: s.z, ozet: ozet(p), bolum: bolumOzetleri(v) });
+  else {
+    bulut.durum = "gonderiliyor";
+    return sunucuyaYaz(d, p, v);
+  }
+  return true;
 }
 
 async function esitle() {
@@ -125,16 +205,29 @@ async function esitle() {
         yerelOzet,
         yerelBos: bosMu(yerelVeri),
       });
-      if (karar === "sor") {
-        bekleyen = sunucu;
+      if (karar === "sor" && sunucu) {
+        // son eşitlemenin bölüm özetleri biliniyorsa bölüm bölüm birleştirilir; yalnız iki tarafta da değişen bölümler sorulur
+        const taban = izOku()?.bolum;
+        const sv = taban ? veriyiDogrula(birlestir(sunucu.p, guvenliJson)) : undefined;
+        const b = taban && sv ? ucluBirlestir(taban, yerelVeri, sv) : null;
+        if (b && !b.catisan.length) {
+          if (!(await birlesimiUygula(d, sunucu, b.sonuc, yerelVeri))) yeniden = true;
+          continue;
+        }
+        bekleyen = { ...sunucu, ...(b ? { taban, sv } : {}) };
+        bulut.catisan = b ? b.catisan.map(k => bolumAdi(k, AY_ADLARI)) : [];
         bulut.durum = "cakisma";
         return;
       }
       if (karar === "gonder") {
         bulut.durum = "gonderiliyor";
-        await sunucuyaYaz(d, yerel);
+        if (!(await sunucuyaYaz(d, yerel, yerelVeri))) {
+          // başka bir sorumlu araya girdi: yeniden okunup birleştirilir
+          yeniden = true;
+          continue;
+        }
       } else if (karar === "al" && sunucu) sunucudakiniUygula(sunucu);
-      else if (sunucu) izYaz({ z: sunucu.z, ozet: yerelOzet });
+      else if (sunucu) izYaz({ z: sunucu.z, ozet: yerelOzet, bolum: bolumOzetleri(yerelVeri) });
       // hesap sürerken veri değiştiyse (ya da sunucudan alındıysa) bir kez daha bakılır
       if (veriAnlik() !== yerelVeri && karar !== "al") yeniden = true;
     } while (yeniden);
@@ -142,6 +235,12 @@ async function esitle() {
     bulut.mesaj = "";
     bulut.sunucuZaman = bilinenZ ?? 0;
   } catch (e) {
+    // yetkisiz yazım (paylaşım düzeyi düşük): sunucu isteği reddeder
+    if ((e as { code?: string })?.code === "invalid_argument" && kimlik.var && kimlik.rol !== "sahip") {
+      bulut.durum = "yetkisiz";
+      bulut.mesaj = "";
+      return;
+    }
     bulut.durum = "hata";
     bulut.mesaj =
       e instanceof Error && /^Sunucu/.test(e.message)
@@ -162,10 +261,22 @@ function planla(ms: number) {
  *  alınabilir), "cihaz" bu cihazdaki veriyi sunucuya yazar */
 export function cakismayiCoz(secim: "sunucu" | "cihaz") {
   if (bulut.durum !== "cakisma" || !bekleyen) return;
-  if (secim === "sunucu") sunucudakiniUygula(bekleyen);
+  if (bekleyen.taban && bekleyen.sv) {
+    // yalnız çatışan bölümlerde seçilen taraf alınır; öteki bölümler birleşir. Sunucunun bu sürümü görülmüş sayılır:
+    // birleşen veri (sunucudakinden farklıysa) bir sonraki eşitlemede yazılır
+    const yerel = veriAnlik();
+    const b = ucluBirlestir(bekleyen.taban, yerel, bekleyen.sv, secim === "cihaz" ? "yerel" : "sunucu");
+    const v = veriyiDogrula(b.sonuc);
+    if (kararliJson(v) !== kararliJson(yerel)) {
+      kaynakBelirt("esitleme");
+      tumVeriyiDegistir(v);
+    }
+    izYaz({ z: bekleyen.z, ozet: "", bolum: bolumOzetleri(bekleyen.sv) });
+  } else if (secim === "sunucu") sunucudakiniUygula(bekleyen);
   // sunucunun bu sürümü görülmüş sayılır: bu cihazdaki değişiklik onun üzerine yazılır
   else izYaz({ z: bekleyen.z, ozet: "" });
   bekleyen = null;
+  bulut.catisan = [];
   bulut.durum = "bekliyor";
   void esitle();
 }
@@ -188,6 +299,16 @@ export async function bulutuBaslat() {
     bulut.durum = "kapali";
     return;
   }
+  // kim kullanıyor, yetkisi ne (claude.ai): yalnız görüntüleyen verilere erişemez
+  await kimlikBaslat();
+  if (kimlik.rol === "okuyan") {
+    bulut.durum = "yetkisiz";
+    return;
+  }
+  if (kimlik.id) {
+    sunucuGecmisBaslat(db, kimlik.id);
+    degisiklikDinle(sunucuyaKaydet);
+  }
   await esitle();
   // başka cihaz yazınca: ana belgenin damgası değişir
   db.doc(ANA).onSnapshot(
@@ -206,4 +327,18 @@ export async function bulutuBaslat() {
       planla(1500);
     });
   });
+}
+
+/** sunucudaki günlük kopyalar (sunucu yoksa boş) */
+export async function sunucuKopyaListesi(): Promise<SunucuKopyasi[]> {
+  return db ? sunucuKopyalari(db) : [];
+}
+/** sunucudaki bir günlük kopyaya döner (dönüş de bir değişikliktir: sunucuya yazılır, geçmişe girer) */
+export async function sunucuKopyasinaDon(gun: string): Promise<boolean> {
+  if (!db) return false;
+  const p = await sunucuKopyasiOku(db, gun);
+  if (!p) return false;
+  kaynakBelirt("yukleme");
+  tumVeriyiDegistir(veriyiDogrula(birlestir(p, guvenliJson)));
+  return true;
 }

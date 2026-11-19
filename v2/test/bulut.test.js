@@ -1,7 +1,19 @@
 // Sunucuda saklama biçimi ve eşitleme kararı (src/veri/bulutBicim.ts): veri belgelere bölünüp geri kurulunca aynı kalır;
 // hiçbir durumda dolu ve değişmiş bir taraf sorulmadan ezilmez.
 import { describe, test, expect } from "vitest";
-import { parcala, birlestir, parcalarAyni, ozet, bosMu, eslemeKarari, BELGE_SINIRI } from "../src/veri/bulutBicim.ts";
+import {
+  parcala,
+  birlestir,
+  parcalarAyni,
+  ozet,
+  bosMu,
+  eslemeKarari,
+  BELGE_SINIRI,
+  bolumOzetleri,
+  ucluBirlestir,
+  kararliJson,
+  bolumAdi,
+} from "../src/veri/bulutBicim.ts";
 import { veriyiDogrula, guvenliJson, bosVeri } from "../src/veri/depo.svelte.ts";
 import { cizelgeOlustur, acilHesapla, oglenHesapla } from "../src/motor";
 import { veriKur } from "./altin/senaryo.js";
@@ -92,5 +104,66 @@ describe("eşitleme kararı", () => {
   test("eşitlenmiş cihazda tüm verinin silinmesi bir değişikliktir: sunucudaki geri gelmez", () => {
     expect(k({ yerelBos: true, yerelOzet: "bos" })).toBe("gonder");
     expect(k({ yerelBos: true, yerelOzet: "bos", sunucuZ: 6 })).toBe("sor");
+  });
+});
+
+describe("bölüm bölüm birleştirme (birden çok sorumlu)", () => {
+  const taban = doluVeri();
+  const tabanOzet = bolumOzetleri(taban);
+  const kopya = () => JSON.parse(JSON.stringify(taban));
+  test("anahtar sırası farklı olsa da aynı içerik aynı özeti verir", () => {
+    const v = kopya();
+    v.prefs = Object.fromEntries(Object.entries(v.prefs).reverse());
+    v.kurum = { onaylayan: v.kurum.onaylayan, ad: v.kurum.ad };
+    expect(bolumOzetleri(v)).toEqual(tabanOzet);
+    expect(kararliJson({ b: 1, a: [1, { d: 2, c: 3 }] })).toBe('{"a":[1,{"c":3,"d":2}],"b":1}');
+  });
+  test("farklı bölümlerdeki değişiklikler kendiliğinden birleşir", () => {
+    const yerel = kopya(),
+      sunucu = kopya();
+    yerel.schedules["2026-0"].days[3].assigned = []; // bu cihaz: Ocak çizelgesi
+    sunucu.prefs["99-2026-1-5"] = "izinli"; // öbür sorumlu: izinler
+    sunucu.puantaj["2026-0"] = { 1: { 4: "R" } }; // öbür sorumlu: Ocak puantajı (çizelgeden ayrı bölüm)
+    const b = ucluBirlestir(tabanOzet, yerel, sunucu);
+    expect(b.catisan).toEqual([]);
+    expect(b.yerelden).toEqual(["schedules/2026-0"]);
+    expect(b.sunucudan.sort()).toEqual(["prefs", "puantaj/2026-0"]);
+    const v = veriyiDogrula(b.sonuc);
+    expect(v.schedules["2026-0"].days[3].assigned).toEqual([]);
+    expect(v.prefs["99-2026-1-5"]).toBe("izinli");
+    expect(v.puantaj["2026-0"]).toEqual({ 1: { 4: "R" } });
+  });
+  test("aynı bölüm iki tarafta farklı değiştiyse çatışmadır; seçilen taraf alınır, ötekiler yine birleşir", () => {
+    const yerel = kopya(),
+      sunucu = kopya();
+    yerel.kurum.ad = "Bu cihaz";
+    sunucu.kurum.ad = "Öbür sorumlu";
+    sunucu.manualTatil["2026-1-9"] = true;
+    const b = ucluBirlestir(tabanOzet, yerel, sunucu);
+    expect(b.catisan).toEqual(["kurum"]);
+    expect(veriyiDogrula(b.sonuc).kurum.ad).toBe("Öbür sorumlu");
+    const y = ucluBirlestir(tabanOzet, yerel, sunucu, "yerel");
+    expect(veriyiDogrula(y.sonuc).kurum.ad).toBe("Bu cihaz");
+    expect(veriyiDogrula(y.sonuc).manualTatil["2026-1-9"]).toBe(true);
+    expect(bolumAdi("kurum", ["Ocak"])).toBe("kurum bilgileri");
+  });
+  test("iki taraf aynı değişikliği yaptıysa çatışma yok", () => {
+    const yerel = kopya(),
+      sunucu = kopya();
+    yerel.prefs["7-2026-1-3"] = "avoid";
+    sunucu.prefs["7-2026-1-3"] = "avoid";
+    expect(ucluBirlestir(tabanOzet, yerel, sunucu).catisan).toEqual([]);
+  });
+  test("bir tarafta silinen ay kaydı silinmiş kalır; öbür tarafta eklenen ay gelir", () => {
+    const yerel = kopya(),
+      sunucu = kopya();
+    delete yerel.schedules["2026-1"];
+    sunucu.acil["2026-5"] = { 3: [1] };
+    const b = ucluBirlestir(tabanOzet, yerel, sunucu);
+    expect(b.catisan).toEqual([]);
+    const v = veriyiDogrula(b.sonuc);
+    expect(v.schedules["2026-1"]).toBeUndefined();
+    expect(v.acil["2026-5"]).toEqual({ 3: [1] });
+    expect(bolumAdi("schedules/2026-5", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran"])).toBe("Haziran 2026 nöbet çizelgesi");
   });
 });

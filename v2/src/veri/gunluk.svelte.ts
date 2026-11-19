@@ -61,10 +61,17 @@ export function degisiklikIsle(once: Veri | null, sonra: Veri, simdi = Date.now(
   if (t.length > 12) t = [...t.slice(0, 12), `… ve ${t.length - 12} değişiklik daha`];
   // aynı kişinin bir dakika içindeki aynı türden değişiklikleri tek kayıtta birleşir (ör. izin tablosunda art arda dokunuşlar)
   const son = gunluk.kayit[gunluk.kayit.length - 1];
-  if (son && !tur && !son.tur && son.kim === gunluk.kullanici && simdi - son.z < 60_000 && json(son.t) === json(t)) son.z = simdi;
+  const birlesti = !!son && !tur && !son.tur && son.kim === gunluk.kullanici && simdi - son.z < 60_000 && json(son.t) === json(t);
+  if (birlesti) son.z = simdi;
   else gunluk.kayit.push({ z: simdi, kim: gunluk.kullanici, t, ...(tur ? { tur } : {}) });
   if (gunluk.kayit.length > KAYIT_SINIR) gunluk.kayit.splice(0, gunluk.kayit.length - KAYIT_SINIR);
   yaz(GECMIS_ANAHTAR, gunluk.kayit);
+  dinleyici?.(gunluk.kayit[gunluk.kayit.length - 1], birlesti);
+}
+let dinleyici: ((k: DegisiklikKaydi, birlesti: boolean) => void) | null = null;
+/** her yeni kayıtta çağrılır (sunucu geçmişi: veri/sunucuGecmis.svelte.ts) */
+export function degisiklikDinle(f: typeof dinleyici) {
+  dinleyici = f;
 }
 const json = (x: unknown) => JSON.stringify(x);
 

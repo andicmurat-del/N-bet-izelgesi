@@ -14,6 +14,7 @@
     AYAR_SINIR,
   } from "../../veri/depo.svelte";
   import { bulut } from "../../veri/bulut.svelte";
+  import { kimlik } from "../../veri/kimlik.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Ikon from "../ortak/Ikon.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
@@ -83,6 +84,8 @@
     if (gorunum === "genel") geriAlinabilir = yuklemeOncesiVar();
   });
   const sunucuda = $derived(bulut.durum === "esit" || bulut.durum === "gonderiliyor");
+  // tüm verileri silme yalnız sayfanın sahibinde (claude.ai'de, başka sorumlular da kullanırken)
+  const silmeYetkisi = $derived(!kimlik.var || kimlik.rol === "sahip");
   async function dosyaSecildi(e: Event) {
     const f = (e.target as HTMLInputElement).files?.[0];
     if (!f) return;
@@ -374,8 +377,8 @@
       <h2>Yedek</h2>
       {#if sunucuda}
         <p class="aciklama">
-          Veriler bu tarayıcıda ve claude.ai hesabınıza bağlı sunucuda durur: aynı hesapla başka bir bilgisayardan ya da telefondan açınca
-          aynı veriler gelir. Yine de ara sıra yedek alın; yedek dosyası elinizdeki bağımsız kopyadır.
+          Veriler bu tarayıcıda ve sayfanın claude.ai sunucusunda durur: sayfayı paylaştığınız sorumlular ve sizin öteki cihazlarınız aynı
+          verilerle çalışır. Yine de ara sıra yedek alın; yedek dosyası elinizdeki bağımsız kopyadır.
         </p>
       {:else}
         <p class="aciklama">
@@ -408,10 +411,14 @@
         Personel, izinler, çizelgeler ve ayarlar bu tarayıcıdan{sunucuda ? " ve sunucudan" : ""} silinir. Sayfa açıkken Geri al ile, sayfa yenilendikten
         sonra da bu tarayıcıda "Önceki verilere dön" ile bir kez geri dönülebilir; yine de önce yedek alın.
       </p>
-      <div class="dugmeler">
-        <button class="dugme tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, hepsini sil" : "Tüm verileri sil"}</button>
-        {#if silOnayi}<button class="dugme" onclick={() => (silOnayi = false)}>Vazgeç</button>{/if}
-      </div>
+      {#if silmeYetkisi}
+        <div class="dugmeler">
+          <button class="dugme tehlike" onclick={sil}><Ikon ad="sil" />{silOnayi ? "Evet, hepsini sil" : "Tüm verileri sil"}</button>
+          {#if silOnayi}<button class="dugme" onclick={() => (silOnayi = false)}>Vazgeç</button>{/if}
+        </div>
+      {:else}
+        <p class="aciklama"><b>Tüm verileri yalnız sayfanın sahibi silebilir.</b></p>
+      {/if}
     </section>
   </div>
 
