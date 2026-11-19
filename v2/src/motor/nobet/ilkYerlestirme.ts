@@ -209,12 +209,14 @@ export function ilkYerlestirme(A: AyBilgisi): MotorGunu[] {
     }
 
     const dinlenen = new Set(oncekiNobetciler);
-    // kilitli günlerde hazırlama personeli olanlar komşu günlerde nöbetçi yazılmasın
+    // kilitli günlerde hazırlama personeli olanlar komşu günlerde nöbetçi yazılmasın (Cumartesi hazırlaması Pazar nöbetine engel değil)
+    const pazar = gunTuru(d) === PAZAR;
     [d - 2, d - 1, d].forEach(ix => {
       const e = taslak[ix];
+      if (ix === d - 2 && pazar) return;
       if (e && e.locked && e.prep) e.prep.forEach(pp => dinlenen.add(pp.id));
     });
-    if (d === 1) sinir.oncekiSonH.forEach(id => dinlenen.add(id));
+    if (d === 1 && !pazar) sinir.oncekiSonH.forEach(id => dinlenen.add(id));
     if (d === dim) sinir.sonrakiIlkN.concat(sinir.sonrakiIlkH).forEach(id => dinlenen.add(id));
     // 5 gün içinde 3 nöbet olmasın: 2 ve 4 gün önce nöbet tutan bu gün dinlenir
     eczacilar.concat(teknisyenler).forEach(s => {

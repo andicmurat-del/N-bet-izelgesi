@@ -131,7 +131,16 @@ export function gunuDenetle(
       if (!gg) return;
       if (gg.assigned.some(q => q.id === p.id))
         ekle("hata", p.name + ", " + gl(gg) + " de nöbetçi; nöbetten sonra ertesi gün izinli olmalı.");
-      if ((gg.prep || []).some(q => q.id === p.id))
+      if (k === -1 && dw === PAZAR && (gg.prep || []).some(q => q.id === p.id))
+        ekle(
+          "bilgi",
+          p.name +
+            ", " +
+            gl(gg) +
+            ":" +
+            " Cumartesi hazırlaması + Pazar nöbeti: hafta sonu tek kişide toplanır (kural dışı değil; öbürlerinin hafta sonu boş kalır).",
+        );
+      else if ((gg.prep || []).some(q => q.id === p.id))
         ekle(
           k === -1 ? "uyari" : "hata",
           p.name +
@@ -252,7 +261,16 @@ export function gunuDenetle(
     for (let k = -1; k <= 1; k++) {
       const gg = g(k);
       if (!gg || k === 0) continue;
-      if (gg.assigned.some(q => q.id === p.id))
+      if (k === 1 && dw === CUMARTESI && gg.assigned.some(q => q.id === p.id))
+        ekle(
+          "bilgi",
+          p.name +
+            ", " +
+            gl(gg) +
+            " nöbetçi;" +
+            " Cumartesi hazırlaması + Pazar nöbeti: hafta sonu tek kişide toplanır (kural dışı değil; öbürlerinin hafta sonu boş kalır).",
+        );
+      else if (gg.assigned.some(q => q.id === p.id))
         ekle(
           k === 1 ? "uyari" : "hata",
           p.name +

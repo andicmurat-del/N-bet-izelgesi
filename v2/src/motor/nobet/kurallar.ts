@@ -1,5 +1,6 @@
 // Aramada her hamlede korunan kesin kurallar: izinli yok, komşu günde nöbet/hazırlama yok, günde en az 1 eczacı,
 // 5 gün içinde 3 nöbet yok, Perşembe nöbetçisine aynı hafta sonu hazırlama yok, art arda iki gün hazırlama yok.
+// Cumartesi hazırlaması + Pazar nöbeti aynı kişiye yazılabilir (hafta sonu tek kişide toplanır, öbürlerinin hafta sonu boş kalır).
 import type { Gorevli } from "../../veri/tipler";
 import { eczaciMi } from "../baglam";
 import { HAFIF_IHLAL, HAZ_SAYISI } from "../sabitler";
@@ -35,15 +36,22 @@ export function kurallarKur(K: AramaKurulumu) {
     return !!days[idx].tatil;
   }
 
-  /** nöbetçi yazılacak kişi komşu günlerde nöbetçi, komşu günlerde ya da aynı gün hazırlama personeli olamaz */
+  /** Pazar nöbetçisi önceki gün (Cumartesi) hazırlama yapabilir: hafta sonu tek kişide toplanır */
+  function cmtHazirlamaSerbest(idx: number): boolean {
+    return gunDow[idx] === PAZAR;
+  }
+  /** nöbetçi yazılacak kişi komşu günlerde nöbetçi, komşu günlerde ya da aynı gün hazırlama personeli olamaz
+   *  (Pazar nöbetçisinin Cumartesi hazırlaması hariç) */
   function komsuda(id: number, idx: number): boolean {
+    const oncekiHazSerbest = cmtHazirlamaSerbest(idx);
     for (let k = idx - 1; k <= idx + 1; k++) {
       if (k < 0 || k >= days.length) continue;
       if (k !== idx && gundeVar(k, id)) return true;
+      if (k === idx - 1 && oncekiHazSerbest) continue;
       const pr = days[k].prep;
       if (pr) for (let q = 0; q < pr.length; q++) if (pr[q].id === id) return true;
     }
-    if (idx === 0 && (sinir.oncekiSonN.indexOf(id) >= 0 || sinir.oncekiSonH.indexOf(id) >= 0)) return true;
+    if (idx === 0 && (sinir.oncekiSonN.indexOf(id) >= 0 || (!oncekiHazSerbest && sinir.oncekiSonH.indexOf(id) >= 0))) return true;
     if (idx === days.length - 1 && (sinir.sonrakiIlkN.indexOf(id) >= 0 || sinir.sonrakiIlkH.indexOf(id) >= 0)) return true;
     return false;
   }
@@ -67,8 +75,10 @@ export function kurallarKur(K: AramaKurulumu) {
     }
     return idx === 0 && sinir.oncekiSonN.indexOf(id) >= 0;
   }
-  /** hazırlama personeli ertesi gün nöbetçi (ör. Cumartesi hazırlama, Pazar nöbet): kadro yetmezse ilk esneyen kural */
+  /** hazırlama personeli ertesi gün nöbetçi (ör. resmi tatil hazırlaması, ertesi gün nöbet): kadro yetmezse ilk esneyen
+   *  kural. Cumartesi hazırlaması + Pazar nöbeti serbesttir (hafta sonları boş kalsın diye). */
   function prepSonrasiNobet(id: number, idx: number): boolean {
+    if (gunDow[idx] === CUMARTESI) return false;
     if (idx + 1 < days.length) return gundeVar(idx + 1, id);
     return sinir.sonrakiIlkN.indexOf(id) >= 0;
   }

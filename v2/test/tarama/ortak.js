@@ -122,7 +122,9 @@ export function denetle(veri, y, m, r0, kilitli) {
       if (B.kesinYasak(p.id, y, m, d)) ihlal.push(p.name + " yasaklı günde nöbet");
       if (zorunlu(p.id)) return;
       if ((i > 0 && nob[i - 1].has(p.id)) || (i < dim - 1 && nob[i + 1].has(p.id))) ihlal.push(p.name + " art arda nöbet");
-      if ([i - 1, i, i + 1].some(k => k >= 0 && k < dim && haz[k].has(p.id))) ihlal.push(p.name + " nöbet komşu/aynı gün hazırlama");
+      // Cumartesi hazırlaması + Pazar nöbeti serbest (hafta sonu tek kişide toplanır)
+      const oncekiHaz = hg(y, m, d) === 6 ? [] : [i - 1];
+      if ([...oncekiHaz, i, i + 1].some(k => k >= 0 && k < dim && haz[k].has(p.id))) ihlal.push(p.name + " nöbet komşu/aynı gün hazırlama");
       const v = k => i + k >= 0 && i + k < dim && nob[i + k].has(p.id);
       if ((v(-2) && v(-4)) || (v(-2) && v(2)) || (v(2) && v(4))) ihlal.push(p.name + " 5 günde 3 nöbet");
       if (hg(y, m, d) === 3)
@@ -146,8 +148,9 @@ export function denetle(veri, y, m, r0, kilitli) {
       if (B.kesinYasak(p.id, y, m, d)) ihlal.push(p.name + " yasaklı günde hazırlama");
       if ([i - 1, i + 1].some(k => k >= 0 && k < dim && haz[k].has(p.id)) && p.role !== "destek")
         ihlal.push(p.name + " art arda hazırlama");
-      if ([i - 1, i, i + 1].some(k => k >= 0 && k < dim && nob[k].has(p.id))) ihlal.push(p.name + " hazırlama komşu nöbet");
       const dw = hg(y, m, d);
+      const sonrakiNob = dw === 5 ? [] : [i + 1];
+      if ([i - 1, i, ...sonrakiNob].some(k => k >= 0 && k < dim && nob[k].has(p.id))) ihlal.push(p.name + " hazırlama komşu nöbet");
       if (dw === 5 || dw === 6) {
         const k = i - (dw === 5 ? 2 : 3);
         if (k >= 0 && nob[k].has(p.id)) ihlal.push(p.name + " Perşembe nöbetçisine hafta sonu hazırlama");

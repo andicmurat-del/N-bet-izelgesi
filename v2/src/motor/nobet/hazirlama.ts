@@ -63,6 +63,8 @@ export function hazirlamaAta(K: AramaKurulumu, kural: Kurallar): void {
       (s.role !== "destek" && prpCnt[s.id] >= 2 ? 8 : 0) +
       (s.role !== "destek" && prpCnt[s.id] === 1 ? 4 : 0);
     const rH = (s: Kisi) => (resmiGunDizi[i] ? (resmiDv.offH[s.id] || 0) + (rhCnt[s.id] || 0) : 0);
+    // hafta sonları boş kalsın: Cumartesi hazırlaması önce ertesi gün (Pazar) nöbetçi olana
+    const tekHs = (s: Kisi) => (gunDow[i] === CUMARTESI && i + 1 < days.length && days[i + 1].assigned.some(p => p.id === s.id) ? 0 : 1);
     let adaylar: Kisi[];
     if (destekMi) {
       adaylar = destekler
@@ -79,6 +81,7 @@ export function hazirlamaAta(K: AramaKurulumu, kural: Kurallar): void {
           (a, b) =>
             tur(a) - tur(b) ||
             ist(a) - ist(b) ||
+            tekHs(a) - tekHs(b) ||
             rH(a) - rH(b) ||
             fmTop[a.id] - fmTop[b.id] ||
             prpAg(a.id) - prpAg(b.id) ||

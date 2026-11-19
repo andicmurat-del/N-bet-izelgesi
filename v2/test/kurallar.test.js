@@ -69,9 +69,9 @@ describe("Cuma + Cumartesi + Pazar kesin kural değil", () => {
   });
 });
 
-describe("kadro yetmezse önce hazırlama ertesi gün nöbet esner", () => {
+describe("Cumartesi hazırlaması + Pazar nöbeti serbest; kadro yetmezse önce hazırlama ertesi gün nöbet esner", () => {
   // 4 eczacı + 3 tekniker: hafta sonu için 8 farklı kişi gerekir, 7 kişi var. Hazırlamacı ertesi gün nöbet tutabilince
-  // (Cumartesi hazırlama, Pazar nöbet) yerler dolar. Ters yön (nöbet ertesi gün hazırlama) bu ayda olmaz: nöbet ertesi
+  // (Cumartesi hazırlama, Pazar nöbet; artık kural dışı değil, uyarı çıkmaz) yerler dolar. Ters yön (nöbet ertesi gün hazırlama) bu ayda olmaz: nöbet ertesi
   // dinlenilir (kadronun yetmediği bazı aylarda zorunlu kalabilir; ör. Ocak 2027). Bu kural eklenmeden önce Ocak 2027'de
   // 7 tatil gününde hazırlama eksik kalıyordu; Mart 2027'de 4.
   const kadro = [];
@@ -81,18 +81,21 @@ describe("kadro yetmezse önce hazırlama ertesi gün nöbet esner", () => {
   test("eksik hazırlama azalır, nöbet ertesi hazırlama olmaz", () => {
     const r = cizelgeOlustur(v, 2027, 2, { saat: () => 0 });
     const eksik = r.days.filter(g => g.tatil && g.prep.length < 2).length;
-    let duz = 0,
-      ters = 0;
+    let ters = 0;
+    const cmtPaz = [];
     r.days.forEach((g, i) =>
       g.prep.forEach(p => {
-        if (r.days[i + 1] && r.days[i + 1].assigned.some(q => q.id === p.id)) duz++;
+        if (r.days[i + 1] && r.days[i + 1].assigned.some(q => q.id === p.id) && (new Date(2027, 2, g.day).getDay() + 6) % 7 === 5)
+          cmtPaz.push(g.day);
         if (i > 0 && r.days[i - 1].assigned.some(q => q.id === p.id)) ters++;
       }),
     );
     expect(ters).toBe(0);
-    expect(duz).toBeGreaterThan(0);
+    expect(cmtPaz.length).toBeGreaterThan(0);
     expect(eksik).toBeLessThan(7);
-    expect(r.warnings.some(w => /hazırlamanın ertesi günü nöbet/.test(w))).toBe(true);
+    // Cumartesi hazırlaması + Pazar nöbeti uyarıda geçmez
+    const w = r.warnings.find(u => /hazırlamanın ertesi günü nöbet/.test(u)) ?? "";
+    cmtPaz.forEach(d => expect(w).not.toContain(`(${d} Mart)`));
   });
 });
 
@@ -134,11 +137,11 @@ describe("eş durumu isteyenler birlikte yazılamıyorsa biri yazılır", () => 
 });
 
 describe("çizelge her zaman en az uyarılı hâliyle oluşturulur", () => {
-  // ilk aramada uyarı kalırsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir. Küçük kadrolu 5.
-  // senaryoda ilk arama 4 uyarı / kırmızı gün bırakıyor; ek denemelerle hiç kalmıyor
+  // ilk aramada uyarı kalırsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir. Küçük kadrolu 33.
+  // senaryoda ilk arama 6 uyarı / kırmızı gün bırakıyor; ek denemelerle 3'e iner
   const say = r => r.warnings.filter(w => uyariSiniflandir(w).seviye !== "bilgi").length + r.days.filter(g => g.conflict).length;
   test("ilk aramadan daha çok uyarılı olmaz; ek denemelerin en az uyarılısı seçilir", () => {
-    const { y, m0, veri } = senaryo(5);
+    const { y, m0, veri } = senaryo(33);
     const ilk = cizelgeUret(new Baglam(veri), y, m0, 0, () => 0),
       son = cizelgeOlustur(veri, y, m0, { saat: () => 0 });
     expect(say(ilk)).toBeGreaterThan(0);

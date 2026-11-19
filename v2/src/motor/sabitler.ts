@@ -71,7 +71,7 @@ export type YilGunTipi = (typeof YIL_GUN_TIP)[number][0];
 //  3. Güçlü tercihler (on binler, yüz binler): ancak başka çare yoksa esner.
 //  4. Yıllık eşitlik ve aylık düzen (binler, yüzler): adalet; birbirleriyle dengelenir.
 //  5. Aylık denge ve ince ayar (onlar, birler): eşitlik bozulmadan karşılanan tercihler.
-// Günlük tercihler (thuHs, cuPaz, istiyor, araGun) gunTercihCarpani (3) ile çarpılır; etkin değerleri yanlarında yazılı.
+// Günlük tercihler (thuHs, cuPaz, hsBirlesik, istiyor, araGun) gunTercihCarpani (3) ile çarpılır; etkin değerleri yanlarında yazılı.
 // Bir değeri değiştirmeden önce: testler (npm test) senaryolarda hata sayısının artmadığını denetler.
 const KESIN_AGIRLIK = 2e6,
   GUNYIL_AGIRLIK = 1.5e6;
@@ -100,6 +100,7 @@ export const AGIRLIK = Object.freeze({
   hsUst: 80000, // ayda Cumartesi/Pazar nöbeti ayardaki üst sınırı aşınca
   thuHs: 20000, // Perşembe nöbeti tutana aynı hafta sonu nöbet (etkin: ×3 = 60000)
   cuPaz: 20000, // Cuma nöbeti tutana aynı hafta Pazar nöbeti / hazırlaması (etkin: ×3 = 60000; Cumartesi dinlenmesi bölünmesin)
+  hsBirlesik: 20000, // ödül: Cumartesi hazırlaması Pazar nöbetçisinde (hafta sonu tek kişide toplanır, öbürlerininki boş kalır; etkin: ×3 = 30000)
   // 4. yıllık eşitlik ve aylık düzen
   thuFazla: 4000, // ayda Perşembe nöbeti ayardaki sınırı aşınca
   hsYil: 2500, // yıllık Cumartesi/Pazar nöbeti dengesi (kare sapma)
@@ -124,5 +125,5 @@ export const AGIRLIK = Object.freeze({
   haftaSonuIs: 20, // aylık hafta sonu nöbeti + hazırlama sayısı dengesi (kare sapma)
   istiyor: 5, // "istiyor" işaretli güne nöbet (ödül; etkin: ×3 = 15)
   araGun: 1, // iki nöbet arası ayardaki en az günden kısa (etkin: ×3 = 3)
-  gunTercihCarpani: 3, // günlük tercih toplamının (thuHs, cuPaz, istiyor, araGun) çarpanı
+  gunTercihCarpani: 3, // günlük tercih toplamının (thuHs, cuPaz, hsBirlesik, istiyor, araGun) çarpanı
 });
