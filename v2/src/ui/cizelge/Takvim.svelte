@@ -50,7 +50,7 @@
         ? ', hazırlama ' + g.prep.map(p => p.name).join(' ve ')
         : ''}{g.conflict ? ', kural esnetildi' : ''}{g.locked ? ', elle düzenlendi' : ''}"
     >
-      <span class="dev rakam" aria-hidden="true">{g.day}</span>
+      <span class="dev rakam" aria-hidden="true" data-gun={g.day}></span>
       <span class="ust">
         <b class="rakam">{g.day}</b><span class="gunadi">{GUN_KISA[dw]}</span>
         {#if rt}<span class="etiket">Resmi tatil</span>{:else if ar}<span class="etiket">Arife</span>{/if}
@@ -146,6 +146,10 @@
   }
   .gun.rt {
     background: color-mix(in srgb, var(--acik-mavi) 16%, var(--yuzey));
+  }
+  /* arka plandaki soluk gün numarası yalnız süstür: metin değil CSS içeriği (ekran okuyucu ve kontrast denetimi dışı) */
+  .dev::before {
+    content: attr(data-gun);
   }
   .dev {
     position: absolute;

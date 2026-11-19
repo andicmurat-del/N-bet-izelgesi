@@ -22,13 +22,13 @@ test("bu ay yapılacaklar: durumlar, adımdan sekmeye geçiş, çıktı alının
   await git(page, "gunluk/nobet");
   const kutu = page.getByRole("region", { name: "Bu ay yapılacaklar" });
   await expect(kutu).toContainText("3/7");
-  await expect(kutu.getByRole("button", { name: /^Nöbet çizelgesi: başlandı, Taslak/ })).toBeVisible();
-  await kutu.getByRole("button", { name: /^Öğlen nöbeti:/ }).click();
+  await expect(kutu.getByRole("button", { name: /^Nöbet çizelgesi Taslak: onay bekliyor \(başlandı\)$/ })).toBeVisible();
+  await kutu.getByRole("button", { name: /^Öğlen nöbeti / }).click();
   await expect(page.locator("h1")).toHaveText("Öğlen Nöbet Listesi");
   await page.getByRole("tab", { name: "Nöbet Listesi", exact: true }).click();
   await indir(page, () => menu(page, "Dışa aktar", /^PDF$/));
   await expect(kutu).toContainText("4/7");
-  await expect(kutu.getByRole("button", { name: /^Çıktı: tamam/ })).toBeVisible();
+  await expect(kutu.getByRole("button", { name: /^Çıktı .*\(tamam\)$/ })).toBeVisible();
   // gizlenince tek satır kalır ve hatırlanır
   await kutu.getByRole("button", { name: "Gizle" }).click();
   await page.reload();
@@ -76,7 +76,7 @@ test("kişi takvimi: seçilen kişinin bütün görevleri ve sayıları", async 
   await kur();
   await git(page, "gunluk/kisi");
   await page.getByLabel("Kişi", { exact: true }).selectOption({ label: "Hülya Koç · Kemoterapi eczacısı" });
-  const takvim = page.getByRole("grid", { name: /^Hülya Koç, Kasım 2026/ });
-  await expect(takvim.getByRole("gridcell", { name: /^14 Kasım Cumartesi: Nöbet/ })).toBeVisible();
+  const takvim = page.getByRole("group", { name: /^Hülya Koç, Kasım 2026/ });
+  await expect(takvim.getByRole("group", { name: /^14 Kasım Cumartesi: Nöbet/ })).toBeVisible();
   await expect(page.locator(".ozet")).toContainText("5 nöbet");
 });

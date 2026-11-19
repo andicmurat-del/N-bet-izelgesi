@@ -190,7 +190,15 @@
                 class:vurgulu={vurgu !== null && (g.assigned.some(p => p.id === vurgu) || (g.tatil && g.prep.some(p => p.id === vurgu)))}
                 onclick={() => gunAc(g.day)}
               >
-                <td class="rakam"><b>{g.day} {AYLAR[depo.ay]}</b></td>
+                <td class="rakam"
+                  ><button
+                    class="gun-ac"
+                    onclick={e => {
+                      e.stopPropagation();
+                      gunAc(g.day);
+                    }}><b>{g.day} {AYLAR[depo.ay]}</b></button
+                  ></td
+                >
                 <td>{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</td>
                 <td>{@render adlar(ec)}</td>
                 <td>{@render adlar(tk)}</td>
@@ -211,6 +219,20 @@
 </section>
 
 <style>
+  /* tarih hücresindeki düğme: görünüşte düz yazı, klavyeyle güne erişim için */
+  .gun-ac {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    cursor: pointer;
+  }
+  .gun-ac:focus-visible {
+    outline: 2px solid var(--odak);
+    outline-offset: 2px;
+  }
   .kartlar {
     display: grid;
     gap: var(--b2);

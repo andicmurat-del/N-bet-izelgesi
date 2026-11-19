@@ -131,8 +131,8 @@
         {/each}
       </ul>
     {:else}
-      <div class="takvim" role="grid" aria-label="{kisi.name}, {AYLAR[m]} {y} takvimi">
-        {#each GUN_KISA as g}<div class="bas-hucre" role="columnheader">{g}</div>{/each}
+      <div class="takvim" role="group" aria-label="{kisi.name}, {AYLAR[m]} {y} takvimi">
+        {#each GUN_KISA as g}<div class="bas-hucre" aria-hidden="true">{g}</div>{/each}
         {#each Array.from({ length: gunler[0].dw }) as _, i (i)}<div class="hucre bos-hucre" aria-hidden="true"></div>{/each}
         {#each gunler as g (g.d)}
           <div
@@ -140,10 +140,10 @@
             class:tatil={g.tatil}
             class:bugun={bugunMu(g.d)}
             class:dolu={g.isler.length}
-            role="gridcell"
+            role="group"
             aria-label="{gunMetni(y, m, g.d)}: {g.isler.map(x => x.yazi).join(', ') || 'görev yok'}"
           >
-            <span class="no rakam">{g.d}</span>
+            <span class="no rakam" aria-hidden="true">{g.d}</span>
             {@render isler(g.isler)}
           </div>
         {/each}

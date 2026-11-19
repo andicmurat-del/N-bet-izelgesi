@@ -45,16 +45,12 @@
     <ol class="adimlar">
       {#each adimlar as a, i}
         <li>
-          <button
-            class="adim {a.durum}"
-            class:simdi={a === siradaki}
-            onclick={() => git(a.hedef)}
-            aria-label="{a.baslik}: {DURUM_AD[a.durum]}, {a.ayrinti}"
-          >
+          <button class="adim {a.durum}" class:simdi={a === siradaki} onclick={() => git(a.hedef)}>
             <span class="adim-isaret" aria-hidden="true"
               >{#if a.durum === "tamam"}<Ikon ad="tamam" boyut={14} />{:else}{i + 1}{/if}</span
             >
             <span class="metin"><b>{a.baslik}</b><small>{a.ayrinti}</small></span>
+            <span class="gizli-yazi">({DURUM_AD[a.durum]})</span>
           </button>
         </li>
       {/each}
