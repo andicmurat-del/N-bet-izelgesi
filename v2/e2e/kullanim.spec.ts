@@ -80,3 +80,27 @@ test("kişi takvimi: seçilen kişinin bütün görevleri ve sayıları", async 
   await expect(takvim.getByRole("group", { name: /^14 Kasım Cumartesi: Nöbet/ })).toBeVisible();
   await expect(page.locator(".ozet")).toContainText("5 nöbet");
 });
+
+test("değişiklik geçmişi: kim, ne zaman, ne değişti; günlük kopyaya dönüş", async ({ page, kur }) => {
+  await kur();
+  await git(page, "ayarlar/gecmis");
+  await page.getByLabel("Bu cihazda değişiklik yapan").fill("Test Kullanıcı");
+  await page.getByLabel("Bu cihazda değişiklik yapan").blur();
+  // bir izin işareti ve çizelgenin silinmesi
+  await git(page, "gunluk/izinler");
+  await page.getByRole("button", { name: /^Dila Şahin, 3 Kasım/ }).click();
+  await git(page, "gunluk/nobet");
+  await menu(page, "Diğer", "Çizelgeyi sil");
+  await page.getByRole("alert").getByRole("button", { name: "Evet, sil" }).click();
+  expect((await kayit(page)).schedules["2026-10"]).toBeUndefined();
+  await git(page, "ayarlar/gecmis");
+  const liste = page.locator("ol.kayitlar");
+  await expect(liste).toContainText("Kasım 2026 nöbet çizelgesi silindi");
+  await expect(liste).toContainText("İzin ve tercih işaretleri (Kasım 2026: 1)");
+  await expect(liste.locator("li").first()).toContainText("Test Kullanıcı");
+  // günün ilk değişikliğinden önceki hâl kopyalanmıştı: ona dönülünce çizelge geri gelir
+  await page.locator("ul.kopyalar li").first().getByRole("button", { name: "Bu kopyaya dön" }).click();
+  await page.getByRole("button", { name: "Evet, dön" }).click();
+  expect((await kayit(page)).schedules["2026-10"]).toBeTruthy();
+  await expect(liste).toContainText("Yedekten / kopyadan yükleme");
+});

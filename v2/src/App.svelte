@@ -57,7 +57,8 @@
     }
     if (h === "gunluk" && GUNLUK_ALT.includes(alt as GunlukGorunum)) gunlukAlt = alt as GunlukGorunum;
     if (h === "acil" && (alt === "acil" || alt === "puantaj" || alt === "izinler" || alt === "raporlar")) acilAlt = alt;
-    if (h === "ayarlar" && (alt === "genel" || alt === "personel" || alt === "kurallar" || alt === "yardim")) ayarAlt = alt;
+    if (h === "ayarlar" && (alt === "genel" || alt === "personel" || alt === "kurallar" || alt === "gecmis" || alt === "yardim"))
+      ayarAlt = alt;
     return (SAYFALAR.find(s => s.ad === h)?.ad ?? "gunluk") as SayfaAdi;
   };
   let sayfa = $state<SayfaAdi>(hashOku());

@@ -10,6 +10,7 @@ import { oglenOnarimlariHesapla } from "../motor";
 export { AYAR_VARSAYILAN, AYAR_SINIR, bosVeri, guvenliJson, gunDuzeniDogrula, veriyiDogrula } from "./dogrulama";
 import { KAYIT_ANAHTARI as ANAHTAR, bosVeri, guvenliJson, veriyiDogrula } from "./dogrulama";
 import { oglenKaydet } from "./listeler.svelte";
+import { degisiklikIsle, gunlukKopyaAl, kaynakBelirt } from "./gunluk.svelte";
 
 let acilisSorunu = "";
 function yukle(): Veri {
@@ -85,6 +86,8 @@ function oglenOnar() {
   }
 }
 let kayitZamanlayici: ReturnType<typeof setTimeout> | undefined;
+// son yazılan hâl: değişiklik geçmişi bununla karşılaştırır (açılıştaki ilk kayıt geçmişe girmez)
+let sonKaydedilen: Veri | null = null;
 function simdiKaydet() {
   clearTimeout(kayitZamanlayici);
   kayitZamanlayici = undefined;
@@ -92,8 +95,12 @@ function simdiKaydet() {
   if (depo.baskaPencere) return;
   oglenOnar();
   gecmiseIsle();
+  const v = veriAnlik();
+  degisiklikIsle(sonKaydedilen, v);
+  sonKaydedilen = v;
   try {
-    localStorage.setItem(ANAHTAR, JSON.stringify(veriAnlik()));
+    localStorage.setItem(ANAHTAR, JSON.stringify(v));
+    gunlukKopyaAl(v);
     if (depo.kayitSorunu !== acilisSorunu && !depo.baskaPencere) depo.kayitSorunu = "";
   } catch {
     depo.kayitSorunu =
@@ -205,6 +212,7 @@ export function geriAl(): boolean {
   const t = gecmis.geri.pop();
   if (t === undefined) return false;
   gecmis.ileri.push(sonGoruntu!);
+  kaynakBelirt("geri");
   goruntuyuUygula(t);
   return true;
 }
@@ -214,6 +222,7 @@ export function yinele(): boolean {
   const t = gecmis.ileri.pop();
   if (t === undefined) return false;
   gecmis.geri.push(sonGoruntu!);
+  kaynakBelirt("yinele");
   goruntuyuUygula(t);
   return true;
 }
@@ -223,3 +232,4 @@ export * from "./izinler.svelte";
 export * from "./cizelge.svelte";
 export * from "./listeler.svelte";
 export * from "./yedek.svelte";
+export * from "./gunluk.svelte";

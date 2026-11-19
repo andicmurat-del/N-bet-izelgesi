@@ -3,7 +3,7 @@
 import { test, git } from "./yardimci";
 
 const ATLA =
-  /^(Yedek al|Yarın hatırlat|Yedekten yükle|Tüm verileri sil|Evet|Sil|Çizelgeyi oluştur|Yeniden oluştur|Farklı dağılım|Nöbet Listesi|Aylık Çalışma Listesi|Öğlen Nöbet Listesi|Onay Listesi|Hazırlama Listesi|Puantaj|İzinler|Raporlar|Genel|Personel|Kurallar|Yardım)$/;
+  /^(Yedek al|Yarın hatırlat|Yedekten yükle|Tüm verileri sil|Evet|Sil|Çizelgeyi oluştur|Yeniden oluştur|Farklı dağılım|Nöbet Listesi|Aylık Çalışma Listesi|Öğlen Nöbet Listesi|Onay Listesi|Hazırlama Listesi|Puantaj|İzinler|Raporlar|Genel|Personel|Kurallar|Geçmiş|Yardım)$/;
 const GORUNUMLER = [
   "gunluk/nobet",
   "gunluk/liste",
@@ -21,6 +21,7 @@ const GORUNUMLER = [
   "ayarlar/genel",
   "ayarlar/personel",
   "ayarlar/kurallar",
+  "ayarlar/gecmis",
   "ayarlar/yardim",
 ];
 

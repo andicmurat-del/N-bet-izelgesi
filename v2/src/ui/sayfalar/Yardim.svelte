@@ -62,6 +62,7 @@
         "Yanlış bir değişikliği Ctrl+Z (telefonda üstteki geri ok) ile geri alın; onay bir geri alma noktasıdır.",
         'Haftada bir "Yedek al". Yedek, verilerinizin elinizdeki bağımsız kopyasıdır; başka bilgisayara da onunla taşınır.',
         'Yanlış yedek yüklediyseniz ya da tüm verileri yanlışlıkla sildiyseniz Ayarlar > Genel > "Önceki verilere dön".',
+        'Ayarlar > Geçmiş: kimin ne zaman neyi değiştirdiği listelenir ("Bu cihazda değişiklik yapan" alanına adınızı yazın). Aynı yerde son 7 günün otomatik kopyaları vardır: bir önceki günün hâline dönebilirsiniz.',
       ],
     },
   ];

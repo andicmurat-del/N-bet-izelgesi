@@ -21,6 +21,7 @@
   import Kisiler from "./Kisiler.svelte";
   import Kurallar from "./Kurallar.svelte";
   import Yardim from "./Yardim.svelte";
+  import Gecmis from "./Gecmis.svelte";
   import type { AyarGorunum } from "./sayfaTipleri";
 
   let { gorunum = $bindable("genel") }: { gorunum?: AyarGorunum } = $props();
@@ -43,6 +44,12 @@
       baslik: "Kurallar",
       uzun: "Kurallar",
       aciklama: "Programın nöbet, liste ve puantaj kuralları; başka bir yapay zekâya ya da yeni çalışana vermek için kopyalanabilir.",
+    },
+    {
+      ad: "gecmis",
+      baslik: "Geçmiş",
+      uzun: "Değişiklik geçmişi",
+      aciklama: "Ne zaman, kim, neyi değiştirdi; günlük otomatik kopyalar ve bir önceki güne dönüş.",
     },
     {
       ad: "yardim",
@@ -71,6 +78,10 @@
   }
   // yedekten yükleme ya da sunucudan alma öncesindeki veri saklıysa geri dönülebilir
   let geriAlinabilir = $state(yuklemeOncesiVar());
+  // Geçmiş sekmesinde kopyaya dönülmüş olabilir: Genel'e dönünce yeniden bakılır
+  $effect(() => {
+    if (gorunum === "genel") geriAlinabilir = yuklemeOncesiVar();
+  });
   const sunucuda = $derived(bulut.durum === "esit" || bulut.durum === "gonderiliyor");
   async function dosyaSecildi(e: Event) {
     const f = (e.target as HTMLInputElement).files?.[0];
@@ -156,6 +167,8 @@
   <Kurallar />
 {:else if gorunum === "yardim"}
   <Yardim />
+{:else if gorunum === "gecmis"}
+  <Gecmis />
 {:else}
   <div class="bolumler">
     <section class="kart panel-blok bolum">

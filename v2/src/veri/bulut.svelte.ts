@@ -6,7 +6,7 @@
 // İki tarafta da ayrı değişiklik varsa (ör. iki cihazda aynı anda çalışıldı) hiçbiri ezilmez, kullanıcıya sorulur.
 // Belgeler: "nobet/ana" (ortak bölüm + sürüm damgası z), "nobet/ana/aylar/<yil-ay>" (ayın kayıtları). Önce ay belgeleri,
 // en son ana belge yazılır; öteki cihazlar ana belgenin damgası değişince yeniden okur.
-import { depo, guvenliJson, tumVeriyiDegistir, veriAnlik, veriyiDogrula } from "./depo.svelte";
+import { depo, guvenliJson, kaynakBelirt, tumVeriyiDegistir, veriAnlik, veriyiDogrula } from "./depo.svelte";
 import { BELGE_SINIRI, birlestir, bosMu, eslemeKarari, ozet, parcala, parcalarAyni, type Iz, type Parcalar } from "./bulutBicim";
 
 // claude.ai "db" yeteneğinin kullanılan kısmı
@@ -94,6 +94,7 @@ async function sunucuyaYaz(d: Db, p: Parcalar) {
 }
 function sunucudakiniUygula(s: { p: Parcalar; z: number }) {
   const v = veriyiDogrula(birlestir(s.p, guvenliJson));
+  kaynakBelirt("esitleme");
   tumVeriyiDegistir(v);
   izYaz({ z: s.z, ozet: ozet(parcala(v)) });
 }

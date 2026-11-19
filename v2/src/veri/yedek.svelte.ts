@@ -4,6 +4,7 @@ import type { Veri } from "./tipler";
 import { KAYIT_ANAHTARI as ANAHTAR } from "./dogrulama";
 import { bosVeri, guvenliJson, veriyiDogrula } from "./dogrulama";
 import { depo, gecmisiSifirla, veriAnlik } from "./depo.svelte";
+import { gunlukKopyaVerisi, kaynakBelirt } from "./gunluk.svelte";
 
 // ---------- yedek ----------
 export function yedekVerisi(): string {
@@ -24,11 +25,20 @@ export function yedektenYukle(metin: string): { tamam: true; atlanan: number } |
   const v = veriyiDogrula(o.veri);
   // okunamayıp atlanan kişi ve çizelge sayısı (kullanıcıya söylenir)
   const atlanan = staff.length - v.staff.length + (Object.keys(schedules).length - Object.keys(v.schedules).length);
+  kaynakBelirt("yukleme");
   tumVeriyiDegistir(v);
   return { tamam: true, atlanan };
 }
 /** Verinin tamamını dışarıdan gelenle (yedek dosyası, sunucu) değiştirir. Önceki veri bir kez saklanır: yanlış dosya
  *  seçildiyse ya da sunucudan beklenmeyen veri geldiyse geri alınabilir (yuklemeOncesineDon). */
+/** günlük kopyaya döner (önceki hâl "Önceki verilere dön" ile geri alınabilir); kopya okunamazsa false */
+export function gunlukKopyayaDon(gun: string): boolean {
+  const v = gunlukKopyaVerisi(gun);
+  if (!v) return false;
+  kaynakBelirt("yukleme");
+  tumVeriyiDegistir(v);
+  return true;
+}
 export function tumVeriyiDegistir(v: Veri) {
   try {
     localStorage.setItem(ANAHTAR + "-yukleme-oncesi", JSON.stringify(veriAnlik()));

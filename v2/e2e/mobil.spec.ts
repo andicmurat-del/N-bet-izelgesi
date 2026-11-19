@@ -16,6 +16,7 @@ const GORUNUMLER = [
   "ayarlar/genel",
   "ayarlar/personel",
   "ayarlar/kurallar",
+  "ayarlar/gecmis",
   "ayarlar/yardim",
 ];
 
