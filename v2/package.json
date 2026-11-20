@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:denetle": "prettier --check .",
-    "artifact": "vite build && node scripts/artifact.mjs"
+    "artifact": "vite build && node scripts/artifact.mjs",
+    "kesin-kontrol": "vitest run --config vitest.kesin.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
@@ -25,6 +26,7 @@
     "eslint": "^9.39.5",
     "eslint-plugin-svelte": "^3.24.1",
     "globals": "^15.15.0",
+    "highs": "^1.16.0",
     "pdfjs-dist": "^4.10.38",
     "prettier": "^3.10.1",
     "prettier-plugin-svelte": "^3.5.2",

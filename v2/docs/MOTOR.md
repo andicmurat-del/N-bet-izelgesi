@@ -91,3 +91,13 @@ birimleri (`KESIN`, `hsKural`…), güçlü tercihler, yıllık eşitlik dengele
 | `test/tarama*.test.js`                                               | rastgele senaryolarda çökme yok, girdi değişmez, aynı girdi aynı sonuç                              |
 | `test/kurallar*.test.js`, `test/acil.test.js`, `test/oglen.test.js`… | tek tek kurallar                                                                                    |
 | `e2e/`                                                               | derlenmiş uygulama gerçek tarayıcıda: düğmeler, PDF / Excel içerikleri, telefon görünümü            |
+
+## Kesin kontrol (geliştirme aracı)
+
+`npm run kesin-kontrol` (`arac/kesin/`): programın çizelgesini kesin çözücüyle (HiGHS, karma tamsayılı doğrusal programlama)
+karşılaştırır; npm test'e girmez (ay başına birkaç dakika). Kesin kurallar ve uyarı düzeyindeki kurallar zorunlu kısıttır; her
+ölçüt (hafta sonu nöbetsiz kalan, dolu kişi-hafta sonu, Cuma→Pazar, Perşembe→hafta sonu, kısa ara, fazla mesai ve nöbet sayısı
+farkı) için olabilecek en iyi değer hesaplanır, sonra "hiçbir ölçütü kötüleştirmeden daha iyisi var mı" aranır ve bulunan
+çizelge programın kendi denetimi, bağımsız denetçi ve amaç değeriyle ölçülür. Arama yöntemi değiştiğinde önce ve sonra
+çalıştırın. Model programın kurulum verilerini motordan alır; programın kendi çizelgesi modele uymuyorsa (model programdan
+sıkıysa) özet bunu söyler. Ortam: `SEN=1,2,3` (rastgele aylar), `SURE=60` (çözüm başına saniye), `ORNEK=0` (örnek ayı atla).

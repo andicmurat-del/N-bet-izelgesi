@@ -14,6 +14,7 @@ Eczane nöbet çizelgesinin baştan yazılan sürümü. Eski tek dosyalık uygul
 ```
 npm ci
 npm run dev        # geliştirme sunucusu
+npm run kesin-kontrol  # programın çizelgesini kesin çözücüyle karşılaştırır (yavaş; docs/MOTOR.md)
 npm run check      # tip denetimi
 npm run lint       # ESLint (eslint.config.js): olası hatalar, kullanılmayan değişken, any
 npm run format     # Prettier ile biçimlendirme (.prettierrc.json); format:denetle yalnız denetler
