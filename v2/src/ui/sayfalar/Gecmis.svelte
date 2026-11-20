@@ -12,7 +12,7 @@
     KOPYA_GUN,
     type KayitTuru,
   } from "../../veri/depo.svelte";
-  import { kimlik, kisiAdi, adlariCoz, ROL_ADI } from "../../veri/kimlik.svelte";
+  import { kimlik, kisiAdi, adlariCoz, ROL_ADI, yonetimYetkisi, YONETIM_UYARISI } from "../../veri/kimlik.svelte";
   import { sunucuGecmis, sunucuGecmisiYukle } from "../../veri/sunucuGecmis.svelte";
   import { sunucuKopyaListesi, sunucuKopyasinaDon } from "../../veri/bulut.svelte";
   import { SUNUCU_KOPYA_GUN, type SunucuKopyasi } from "../../veri/sunucuKopya";
@@ -89,16 +89,25 @@
       </p>
       <p class="aciklama">
         Program yalnız sorumlularla paylaşılır; giriş ve kimlik doğrulamayı claude.ai yapar. Yetki, sayfanın claude.ai'deki paylaşım
-        düzeyinden gelir ve sunucuda uygulanır: verileri okuyup değiştirmek için en az <b>Contributor</b> düzeyi gerekir; Viewer ve Commenter
-        verilere erişemez.
+        düzeyinden gelir ve sunucuda uygulanır:
       </p>
+      <ul class="roller">
+        <li><b>Sorumlu (Contributor):</b> çizelge, izin, puantaj, acil / öğlen / onay listeleri, gün notları.</li>
+        <li>
+          <b>Baş sorumlu (Editor):</b> ayrıca personel, ayarlar, kurum bilgileri, servis listesi; yedekten yükleme ve kopyaya dönme. Programın
+          yeni sürümünü de yayımlayabilir.
+        </li>
+        <li><b>Sahip:</b> hepsi; tüm verileri silme yalnız sahipte.</li>
+        <li><b>Viewer / Commenter:</b> verilere erişemez.</li>
+      </ul>
       {#if kimlik.rol === "sahip"}
         <p class="aciklama">
           Sorumlu eklemek için claude.ai'de bu sayfanın <b>Paylaş</b> menüsünden kişiyi ekleyin: kurumunuzun (Team / Enterprise) üyesiyse
-          <b>Contributor</b> verin; kurum dışından e-postayla davet ediyorsanız veri yazabilmesi için <b>Editor</b> gerekir. Editor sayfanın yeni
-          sürümünü de yayımlayabildiğinden (kuralları değiştirebilir) mümkünse Contributor tercih edin. Görevden ayrılanı paylaşımdan çıkarın
-          ya da Viewer yapın: sunucudaki verilere erişimi hemen kesilir; sayfa o an açıksa ya da sonra açarsa kendi tarayıcısındaki kopya da silinir.
-          Geçmişteki kayıtları silinmez. Tüm verileri silme yalnız sizde.
+          <b>Contributor</b> (sorumlu) ya da <b>Editor</b> (baş sorumlu) verin; kurum dışından e-postayla davet ediyorsanız veri yazabilmesi
+          için
+          <b>Editor</b> gerekir. Editor programın yeni sürümünü de yayımlayabildiğinden (kuralları değiştirebilir) yalnız güvendiğiniz kişiye
+          verin. Görevden ayrılanı paylaşımdan çıkarın ya da Viewer yapın: sunucudaki verilere erişimi hemen kesilir; sayfa o an açıksa ya da
+          sonra açarsa kendi tarayıcısındaki kopya da silinir. Geçmişteki kayıtları silinmez. Tüm verileri silme yalnız sizde.
         </p>
       {/if}
     </section>
@@ -224,7 +233,12 @@
                   ><button class="dugme kucuk" onclick={() => (soru = null)}>Vazgeç</button></span
                 >
               {:else}
-                <button class="dugme kucuk" onclick={() => (soru = "s:" + k.gun)}><Ikon ad="geri" boyut={16} />Bu kopyaya dön</button>
+                <button
+                  class="dugme kucuk"
+                  onclick={() => (soru = "s:" + k.gun)}
+                  disabled={!yonetimYetkisi()}
+                  title={yonetimYetkisi() ? "" : YONETIM_UYARISI}><Ikon ad="geri" boyut={16} />Bu kopyaya dön</button
+                >
               {/if}
             </li>
           {/each}
@@ -247,7 +261,12 @@
                 ></span
               >
             {:else}
-              <button class="dugme kucuk" onclick={() => (soru = k.gun)}><Ikon ad="geri" boyut={16} />Bu kopyaya dön</button>
+              <button
+                class="dugme kucuk"
+                onclick={() => (soru = k.gun)}
+                disabled={!yonetimYetkisi()}
+                title={yonetimYetkisi() ? "" : YONETIM_UYARISI}><Ikon ad="geri" boyut={16} />Bu kopyaya dön</button
+              >
             {/if}
           </li>
         {/each}
@@ -257,6 +276,13 @@
 </div>
 
 <style>
+  .roller {
+    margin: 0;
+    padding-left: 1.2em;
+    font-size: var(--f-sm);
+    display: grid;
+    gap: 2px;
+  }
   .duzen {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);

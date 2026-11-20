@@ -6,6 +6,7 @@
   import { SERVIS_ZOR_ESIK } from "../../motor";
   import Ikon from "../ortak/Ikon.svelte";
   import { adIcerir } from "../../veri/tarih";
+  import { yonetimYetkisi, YONETIM_UYARISI } from "../../veri/kimlik.svelte";
 
   const L = $derived(servisler());
   let ara = $state("");
@@ -78,102 +79,108 @@
   </p></Bilgi
 >
 
-<div class="ust">
-  <span class="rozet notr rakam">{ozet.acik} / {L.length} servis hazırlanıyor · {ozet.yb} YB · {ozet.cok} çok günlük</span>
-  <div class="sag">
-    <input class="girdi ara" type="search" bind:value={ara} placeholder="Servis ara" aria-label="Servis ara" />
-    <button class="dugme sade" onclick={sifirla}>{sifirOnay ? "Evet, ilk haline döndür" : "İlk haline döndür"}</button>
+{#if !yonetimYetkisi()}<p class="bant" role="note">Servis listesini görüntülüyorsunuz. {YONETIM_UYARISI}</p>{/if}
+<fieldset class="yetki-kap" disabled={!yonetimYetkisi()}>
+  <div class="ust">
+    <span class="rozet notr rakam">{ozet.acik} / {L.length} servis hazırlanıyor · {ozet.yb} YB · {ozet.cok} çok günlük</span>
+    <div class="sag">
+      <input class="girdi ara" type="search" bind:value={ara} placeholder="Servis ara" aria-label="Servis ara" />
+      <button class="dugme sade" onclick={sifirla}>{sifirOnay ? "Evet, ilk haline döndür" : "İlk haline döndür"}</button>
+    </div>
   </div>
-</div>
-{#if durum}<p class="bant" role="status">{durum}</p>{/if}
+  {#if durum}<p class="bant" role="status">{durum}</p>{/if}
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
-<div class="kart tablo-kap" tabindex="0" role="region" aria-label="Servis listesi">
-  <table>
-    <thead
-      ><tr
-        ><th class="sol" scope="col">Servis</th><th scope="col">Zorluk</th><th scope="col">Hasta</th><th scope="col">Çok günlük</th><th
-          scope="col">Günlük yük</th
-        ><th scope="col"><span class="gizli-yazi">İşlem</span></th></tr
-      ></thead
-    >
-    <tbody>
-      {#each gorunen as s (s.name)}
-        <tr class:kapali={!s.on}>
-          <th class="sol" scope="row">
-            <label class="ad"
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex (kaydırılan tablo klavyeyle kaydırılabilsin: WCAG 2.1.1) -->
+  <div class="kart tablo-kap" tabindex="0" role="region" aria-label="Servis listesi">
+    <table>
+      <thead
+        ><tr
+          ><th class="sol" scope="col">Servis</th><th scope="col">Zorluk</th><th scope="col">Hasta</th><th scope="col">Çok günlük</th><th
+            scope="col">Günlük yük</th
+          ><th scope="col"><span class="gizli-yazi">İşlem</span></th></tr
+        ></thead
+      >
+      <tbody>
+        {#each gorunen as s (s.name)}
+          <tr class:kapali={!s.on}>
+            <th class="sol" scope="row">
+              <label class="ad"
+                ><input
+                  type="checkbox"
+                  checked={s.on}
+                  onchange={e => degistir(s, "on", e.currentTarget.checked)}
+                  aria-label="{s.name} hazırlanıyor"
+                />{s.name}</label
+              >
+              {#if s.ekstra}<small class="etk">eklendi</small>{:else if s.z !== s.z0 || s.h !== s.h0 || s.multi !== s.multi0}<small
+                  class="etk">değişti</small
+                >{/if}
+              {#if s.zor}<small class="etk zor">zor</small>{/if}{#if s.grup}<small
+                  class="etk"
+                  title="Aynı gruptaki servisler aynı kişiye birlikte verilmez">grup</small
+                >{/if}
+            </th>
+            <td
+              ><input
+                class="girdi sayi"
+                type="number"
+                min="1"
+                max="10"
+                value={s.z}
+                onchange={e => sayiYaz(s, "z", e.currentTarget)}
+                aria-label="{s.name} zorluk"
+              /></td
+            >
+            <td
+              ><input
+                class="girdi sayi"
+                type="number"
+                min="0"
+                max="999"
+                value={s.h}
+                onchange={e => sayiYaz(s, "h", e.currentTarget)}
+                aria-label="{s.name} hasta sayısı"
+              /></td
+            >
+            <td
               ><input
                 type="checkbox"
-                checked={s.on}
-                onchange={e => degistir(s, "on", e.currentTarget.checked)}
-                aria-label="{s.name} hazırlanıyor"
-              />{s.name}</label
+                checked={s.multi}
+                onchange={e => degistir(s, "multi", e.currentTarget.checked)}
+                aria-label="{s.name} çok günlük"
+              /></td
             >
-            {#if s.ekstra}<small class="etk">eklendi</small>{:else if s.z !== s.z0 || s.h !== s.h0 || s.multi !== s.multi0}<small
-                class="etk">değişti</small
-              >{/if}
-            {#if s.zor}<small class="etk zor">zor</small>{/if}{#if s.grup}<small
-                class="etk"
-                title="Aynı gruptaki servisler aynı kişiye birlikte verilmez">grup</small
-              >{/if}
-          </th>
-          <td
-            ><input
-              class="girdi sayi"
-              type="number"
-              min="1"
-              max="10"
-              value={s.z}
-              onchange={e => sayiYaz(s, "z", e.currentTarget)}
-              aria-label="{s.name} zorluk"
-            /></td
-          >
-          <td
-            ><input
-              class="girdi sayi"
-              type="number"
-              min="0"
-              max="999"
-              value={s.h}
-              onchange={e => sayiYaz(s, "h", e.currentTarget)}
-              aria-label="{s.name} hasta sayısı"
-            /></td
-          >
-          <td
-            ><input
-              type="checkbox"
-              checked={s.multi}
-              onchange={e => degistir(s, "multi", e.currentTarget.checked)}
-              aria-label="{s.name} çok günlük"
-            /></td
-          >
-          <td class="rakam">{s.h * s.z}</td>
-          <td
-            >{#if s.ekstra}<button class="dugme kucuk sade tehlike" onclick={() => sil(s)}
-                >{silinecek === s.name ? "Evet, sil" : "Sil"}</button
-              >{/if}</td
-          >
-        </tr>
-      {/each}
-    </tbody>
-  </table>
-</div>
-
-<form class="kart panel-blok yeni" onsubmit={ekle}>
-  <h2>Servis ekle</h2>
-  <div class="alanlar">
-    <label class="alan genis"
-      ><span>Servis adı</span><input class="girdi" bind:value={yeniAd} maxlength="40" placeholder="ör. ONKOLOJİ ya da ÇOCUK YB" /></label
-    >
-    <label class="alan"><span>Zorluk (1–10)</span><input class="girdi" type="number" min="1" max="10" bind:value={yeniZ} /></label>
-    <label class="alan"><span>Hasta sayısı</span><input class="girdi" type="number" min="0" max="999" bind:value={yeniH} /></label>
-    <label class="secim"><input type="checkbox" bind:checked={yeniCok} />Çok günlük</label>
-    <button class="dugme ana" type="submit"><Ikon ad="arti" />Ekle</button>
+            <td class="rakam">{s.h * s.z}</td>
+            <td
+              >{#if s.ekstra}<button class="dugme kucuk sade tehlike" onclick={() => sil(s)}
+                  >{silinecek === s.name ? "Evet, sil" : "Sil"}</button
+                >{/if}</td
+            >
+          </tr>
+        {/each}
+      </tbody>
+    </table>
   </div>
-  {#if hata}<p class="hata" role="alert">{hata}</p>{/if}
-</form>
+
+  <form class="kart panel-blok yeni" onsubmit={ekle}>
+    <h2>Servis ekle</h2>
+    <div class="alanlar">
+      <label class="alan genis"
+        ><span>Servis adı</span><input class="girdi" bind:value={yeniAd} maxlength="40" placeholder="ör. ONKOLOJİ ya da ÇOCUK YB" /></label
+      >
+      <label class="alan"><span>Zorluk (1–10)</span><input class="girdi" type="number" min="1" max="10" bind:value={yeniZ} /></label>
+      <label class="alan"><span>Hasta sayısı</span><input class="girdi" type="number" min="0" max="999" bind:value={yeniH} /></label>
+      <label class="secim"><input type="checkbox" bind:checked={yeniCok} />Çok günlük</label>
+      <button class="dugme ana" type="submit"><Ikon ad="arti" />Ekle</button>
+    </div>
+    {#if hata}<p class="hata" role="alert">{hata}</p>{/if}
+  </form>
+</fieldset>
 
 <style>
+  .yetki-kap {
+    display: contents;
+  }
   :where(tbody tr:nth-child(even)) > :where(td, th) {
     background: var(--yuzey-2);
   }

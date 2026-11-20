@@ -34,7 +34,13 @@ export async function gunlukSunucuKopyasi(db: KopyaDb, p: Parcalar, kim: string 
     const aylar = Object.keys(p.aylar);
     for (const k of aylar) await db.collection(`${KOK}/${gun}/aylar`).doc(k).set({ json: p.aylar[k] });
     // ana belge en son: varsa kopya tamdır
-    await ana.set({ z: simdi.getTime(), json: p.ana, aylar, ...(kim ? { kim } : {}) });
+    await ana.set({
+      z: simdi.getTime(),
+      json: p.ana,
+      ...(p.yonetim !== undefined ? { yonetim: p.yonetim } : {}),
+      aylar,
+      ...(kim ? { kim } : {}),
+    });
   }
   alinanGun = gun;
   const sinir = gunAnahtari(new Date(simdi.getFullYear(), simdi.getMonth(), simdi.getDate() - SUNUCU_KOPYA_GUN + 1));
@@ -58,7 +64,12 @@ export async function sunucuKopyalari(db: KopyaDb): Promise<SunucuKopyasi[]> {
   for (const b of (await db.collection(KOK).limit(100).get()).docs) {
     const d = b.data();
     if (!b.exists || !d || typeof d.json !== "string") continue;
-    l.push({ gun: b.id, z: Number(d.z) || 0, kim: typeof d.kim === "string" ? d.kim : null, kb: Math.round(d.json.length / 1024) });
+    l.push({
+      gun: b.id,
+      z: Number(d.z) || 0,
+      kim: typeof d.kim === "string" ? d.kim : null,
+      kb: Math.round((d.json.length + (typeof d.yonetim === "string" ? d.yonetim.length : 0)) / 1024),
+    });
   }
   return l.sort((a, b) => (a.gun < b.gun ? 1 : -1));
 }
@@ -74,7 +85,7 @@ export async function sunucuKopyasiOku(db: KopyaDb, gun: string): Promise<Parcal
     if (!b.exists || typeof j !== "string") return null;
     aylar[String(k)] = j;
   }
-  return { ana: d.json, aylar };
+  return { ana: d.json, aylar, ...(typeof d.yonetim === "string" ? { yonetim: d.yonetim } : {}) };
 }
 /** testler için */
 export function sunucuKopyaSifirla() {

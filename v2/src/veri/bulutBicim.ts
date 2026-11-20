@@ -6,32 +6,48 @@ import type { Veri } from "./tipler";
 
 /** aya göre tutulan bölümler: anahtarları "yil-ay" */
 const AY_BOLUMLERI = ["schedules", "puantaj", "acil", "acilElle", "oglen", "servisKayit", "notlar"] as const;
+/** yönetim bölümleri: personel, ayarlar, kurum, servis listesi ayarları. Sunucuda ayrı belgede ("nobet/yonetim") durur;
+ *  veritabanı kuralı gereği yalnız sahip ve Editor (baş sorumlu) yazar */
+export const YONETIM_BOLUMLERI = ["staff", "settings", "kurum", "servisAyar"] as const;
 /** bir belgenin metni en çok bu kadar olabilir (sunucu sınırı 256 KiB; kaçış karakterleri ve zarf için pay bırakılır) */
 export const BELGE_SINIRI = 200 * 1024;
 
 export interface Parcalar {
   ana: string;
   aylar: Record<string, string>;
+  /** yönetim bölümleri (boşsa eski biçim: hepsi ana belgede) */
+  yonetim?: string;
 }
 
-/** veriyi sunucu belgelerine böler: ana (ortak bölüm) ve ay belgeleri ("yil-ay" → o ayın kayıtları) */
-export function parcala(veri: Veri): Parcalar {
+/** veriyi sunucu belgelerine böler: ana (ortak bölüm), yönetim (ayri ise) ve ay belgeleri ("yil-ay" → o ayın kayıtları).
+ *  ayri: false eski biçim (yönetim bölümleri de ana belgede; yönetim belgesi henüz yokken yazma yetkisi olmayan için) */
+export function parcala(veri: Veri, ayri = true): Parcalar {
   const ana: Record<string, unknown> = {},
+    yon: Record<string, unknown> = {},
     aylar: Record<string, Record<string, unknown>> = {};
   for (const [bolum, deger] of Object.entries(veri)) {
+    if (ayri && (YONETIM_BOLUMLERI as readonly string[]).includes(bolum)) {
+      yon[bolum] = deger;
+      continue;
+    }
     if (!(AY_BOLUMLERI as readonly string[]).includes(bolum)) {
       ana[bolum] = deger;
       continue;
     }
     for (const [ayK, x] of Object.entries(deger as Record<string, unknown>)) (aylar[ayK] ??= {})[bolum] = x;
   }
-  return { ana: JSON.stringify(ana), aylar: Object.fromEntries(Object.entries(aylar).map(([k, x]) => [k, JSON.stringify(x)])) };
+  return {
+    ana: JSON.stringify(ana),
+    aylar: Object.fromEntries(Object.entries(aylar).map(([k, x]) => [k, JSON.stringify(x)])),
+    ...(ayri ? { yonetim: JSON.stringify(yon) } : {}),
+  };
 }
 
 /** belgelerden veriyi geri kurar (doğrulanmamış; çağıran veriyiDogrula'dan geçirir). oku: güvenli JSON okuyucu */
 export function birlestir(p: Parcalar, oku: (metin: string) => unknown): Record<string, unknown> {
   const nesne = (x: unknown) => (x && typeof x === "object" && !Array.isArray(x) ? (x as Record<string, unknown>) : {});
-  const v: Record<string, unknown> = { ...nesne(oku(p.ana)) };
+  // yönetim belgesi varsa onun bölümleri geçerlidir (ana belgede kalmış eski kopyası sayılmaz)
+  const v: Record<string, unknown> = { ...nesne(oku(p.ana)), ...(p.yonetim ? nesne(oku(p.yonetim)) : {}) };
   for (const b of AY_BOLUMLERI) v[b] = {};
   for (const [ayK, metin] of Object.entries(p.aylar)) {
     if (!/^\d{4}-\d{1,2}$/.test(ayK)) continue;
@@ -45,7 +61,7 @@ export function birlestir(p: Parcalar, oku: (metin: string) => unknown): Record<
 export function parcalarAyni(a: Parcalar, b: Parcalar): boolean {
   const ka = Object.keys(a.aylar),
     kb = Object.keys(b.aylar);
-  return a.ana === b.ana && ka.length === kb.length && ka.every(k => a.aylar[k] === b.aylar[k]);
+  return a.ana === b.ana && (a.yonetim ?? "") === (b.yonetim ?? "") && ka.length === kb.length && ka.every(k => a.aylar[k] === b.aylar[k]);
 }
 
 /** parçaların kısa özeti: "bu cihazdaki veri son eşitlemeden beri değişti mi" sorusu için (güvenlik amaçlı değildir) */
@@ -62,6 +78,7 @@ export function ozet(p: Parcalar): string {
     }
   };
   ekle(p.ana);
+  if (p.yonetim) ekle("\n#yonetim\n" + p.yonetim);
   for (const k of Object.keys(p.aylar).sort()) {
     ekle("\n" + k + "\n");
     ekle(p.aylar[k]);

@@ -19,6 +19,7 @@ import {
   eslemeKarari,
   kararliJson,
   ozet,
+  YONETIM_BOLUMLERI,
   parcala,
   parcalarAyni,
   ucluBirlestir,
@@ -27,7 +28,7 @@ import {
 } from "./bulutBicim";
 import type { Veri } from "./tipler";
 import { AYLAR as AY_ADLARI } from "./tarih";
-import { kimlik, kimlikBaslat } from "./kimlik.svelte";
+import { kimlik, kimlikBaslat, yonetimYetkisi as yonetimYazabilir } from "./kimlik.svelte";
 import { degisiklikDinle } from "./gunluk.svelte";
 import { sunucuGecmisBaslat, sunucuyaKaydet } from "./sunucuGecmis.svelte";
 import { gunlukSunucuKopyasi, sunucuKopyalari, sunucuKopyasiOku, type SunucuKopyasi } from "./sunucuKopya";
@@ -62,6 +63,8 @@ const ANA = "nobet/ana",
   AYLAR = "nobet/ana/aylar",
   /** yazım kilidi: iki sorumlu aynı anda yazınca biri ötekinin değişikliğini ezmesin */
   KILIT = "nobet/kilit",
+  /** personel, ayarlar, kurum, servis ayarları: veritabanı kuralıyla yalnız sahip ve Editor (baş sorumlu) yazar */
+  YONETIM = "nobet/yonetim",
   IZ_ANAHTAR = "nobet-cizelgesi-v2-bulut";
 const cihaz = Math.random().toString(36).slice(2, 10);
 
@@ -84,8 +87,17 @@ export const bulut = $state({
   catisan: [] as string[],
   /** erişimi kaldırıldığı için bu tarayıcıdaki kopya silindi */
   yerelSilindi: false,
+  /** bilgi notu (ör. yetkisiz değişiklik geri alındı) */
+  bilgi: "",
 });
 
+/** yönetim bölümleri son eşitlemeden beri bu cihazda değişti mi */
+function yonetimYerelDegisti(v: Veri): boolean {
+  const taban = izOku()?.bolum;
+  if (!taban) return false;
+  const o = bolumOzetleri(v);
+  return YONETIM_BOLUMLERI.some(b => taban[b] !== undefined && o[b] !== taban[b]);
+}
 /** Bu claude.ai hesabının erişimi yok ya da kaldırıldı: eşitleme durur; sahip değilse bu tarayıcıdaki kopya da silinir
  *  (yetkisi kaldırılan sorumlu son eşitlenen verileri görmeye devam etmesin). */
 function erisimYok() {
@@ -139,7 +151,9 @@ async function sunucudanOku(d: Db, ana: Belge): Promise<{ p: Parcalar; z: number
     const j = b.data()?.json;
     if (metinMi(j)) aylar[b.id] = j;
   }
-  return { p: { ana: a.json, aylar }, z: Number(a.z) || 0 };
+  const y = await d.doc(YONETIM).get(),
+    yj = y.exists ? y.data()?.json : undefined;
+  return { p: { ana: a.json, aylar, ...(metinMi(yj) ? { yonetim: yj } : {}) }, z: Number(a.z) || 0 };
 }
 const bayt = (t: string) => new TextEncoder().encode(JSON.stringify(t)).length;
 const bekle = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -166,6 +180,12 @@ async function sunucuyaYaz(d: Db, p: Parcalar, v: Veri): Promise<boolean> {
     } catch (e) {
       console.warn("Sunucuya günlük kopya alınamadı", e);
     }
+  // yönetim bölümleri: yalnız yetkisi olan yazar (öteki sorumluda sunucudaki olduğu gibi kalır)
+  if (p.yonetim !== undefined && p.yonetim !== bilinen?.yonetim) {
+    if (yonetimYazabilir()) await d.doc(YONETIM).set({ json: p.yonetim });
+    else if (bilinen?.yonetim !== undefined) p = { ...p, yonetim: bilinen.yonetim };
+    else throw new Error("Sunucu: yönetim bölümleri yazılamadı (yetki yok).");
+  }
   const kol = d.collection(AYLAR);
   for (const [k, t] of Object.entries(p.aylar)) if (bilinen?.aylar[k] !== t) await kol.doc(k).set({ json: t });
   for (const k of Object.keys(bilinen?.aylar ?? {})) if (!(k in p.aylar)) await kol.doc(k).delete();
@@ -209,13 +229,26 @@ async function esitle() {
   try {
     do {
       yeniden = false;
-      const yerelVeri = veriAnlik(),
-        yerel = parcala(yerelVeri);
+      let yerelVeri = veriAnlik();
       const ana = await d.doc(ANA).get(),
         z = ana.exists ? Number(ana.data()?.z) || 0 : null;
       const sunucu = z === null ? null : z === bilinenZ && bilinen ? { p: bilinen, z } : await sunucudanOku(d, ana);
       bilinen = sunucu?.p ?? null;
       bilinenZ = sunucu?.z ?? null;
+      // yönetim bölümlerini değiştirme yetkisi olmayan sorumluda bu cihazda değişmişlerse sunucudaki geri gelir
+      if (sunucu && !yonetimYazabilir() && yonetimYerelDegisti(yerelVeri)) {
+        const sv = veriyiDogrula(birlestir(sunucu.p, guvenliJson));
+        const v = { ...yerelVeri } as Record<string, unknown>;
+        for (const b of YONETIM_BOLUMLERI) v[b] = sv[b];
+        kaynakBelirt("esitleme");
+        tumVeriyiDegistir(veriyiDogrula(v));
+        bulut.bilgi =
+          "Personel, ayarlar, kurum ve servis ayarlarındaki değişiklik geri alındı: bunları yalnız sahip ve baş sorumlu (Editor) değiştirebilir.";
+        yerelVeri = veriAnlik();
+      }
+      // yönetim belgesi henüz yoksa (eski biçim ya da boş sunucu) ve yazma yetkisi yoksa eski biçimle yazılır (personel ana
+      // belgede kalır, silinmez); sahip / baş sorumlu ilk yazımında yeni biçime geçirir
+      const yerel = parcala(yerelVeri, yonetimYazabilir() || !!sunucu?.p.yonetim);
       const yerelOzet = ozet(yerel);
       const karar = eslemeKarari({
         sunucuZ: bilinenZ,

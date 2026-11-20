@@ -71,6 +71,9 @@ test("zor ay: ek denemeler sürerken 'Burada dur' şimdiye kadarki en iyi çizel
   v.schedules = {};
   for (const k of v.staff.filter((s: { role: string }) => ["eczaci", "teknisyen"].includes(s.role)).slice(0, 8))
     for (let d = 8; d <= 22; d++) v.prefs[`${k.id}-2026-10-${d}`] = "izinli";
+  // tek çekirdek gibi: denemeler sırayla çalışır, ilk arama bitince ek denemeler henüz sürüyordur (çok çekirdekte hepsi
+  // aynı anda başlar; ek denemeler ilk aramadan önce biterse beklenecek bir şey kalmaz)
+  await page.addInitScript(() => Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 1 }));
   await kur({ veri: v });
   await git(page, "gunluk/nobet");
   await bas(page, "Çizelgeyi oluştur");

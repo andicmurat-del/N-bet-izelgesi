@@ -5,6 +5,7 @@
   import { AYLAR, adAnahtari, gorunenAd } from "../../veri/tarih";
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
+  import { yonetimYetkisi, YONETIM_UYARISI } from "../../veri/kimlik.svelte";
 
   // gomulu: Ayarlar > Personel sekmesi olarak (başlık üst sayfada)
   let { gomulu = false }: { gomulu?: boolean } = $props();
@@ -98,6 +99,7 @@
   let surukId = $state<number | null>(null),
     hedefRol = $state<Rol | null>(null);
   function birak(r: Rol) {
+    if (!yonetimYetkisi()) return;
     const k = depo.veri.staff.find(x => x.id === surukId);
     if (k && k.role !== r) kisiGuncelle(k.id, { role: r, cumaMuaf: k.cumaMuaf && cumaOlur(r) ? true : undefined });
     surukId = null;
@@ -116,174 +118,197 @@
     aciklama="Nöbet ve hazırlama tutan herkes. İşe yeni başlayan ya da ayrılan kişinin tarihlerini girin; o tarihlerin dışında görev yazılmaz."
   />{/if}
 
-<form class="kart ekle" onsubmit={ekle}>
-  <label class="alan ad"
-    ><span>Ad soyad</span><input
-      class="girdi"
-      bind:value={yeniAd}
-      maxlength="60"
-      autocomplete="off"
-      placeholder="ör. Zeynep Demir"
-    /></label
-  >
-  <label class="alan"
-    ><span>Görev</span>
-    <select class="girdi" bind:value={yeniRol}
-      >{#each ROLLER as r}<option value={r}>{ROL_AD[r]}</option>{/each}</select
+{#if !yonetimYetkisi()}<p class="bant-yetki" role="note">
+    Personeli görüntülüyorsunuz. {YONETIM_UYARISI} Sorumlular izin, çizelge ve puantajla çalışır.
+  </p>{/if}
+<fieldset class="yetki-kap" disabled={!yonetimYetkisi()}>
+  <form class="kart ekle" onsubmit={ekle}>
+    <label class="alan ad"
+      ><span>Ad soyad</span><input
+        class="girdi"
+        bind:value={yeniAd}
+        maxlength="60"
+        autocomplete="off"
+        placeholder="ör. Zeynep Demir"
+      /></label
     >
-  </label>
-  <button class="dugme ana" type="submit"><Ikon ad="arti" />Ekle</button>
-  <p class="aciklama">{ROL_ACIKLAMA[yeniRol]}</p>
-  {#if ekleHata}<p class="hata" role="alert">{ekleHata}</p>{/if}
-</form>
-
-<p class="ipucu ust">
-  Kişiyi ⋮⋮ tutamağından başka bir görev sütununa sürükleyerek görevini değiştirin; anahtarlarla özel durumları açıp kapatın. Ad ve tarihler
-  için ✎.
-</p>
-<div class="gruplar">
-  {#each gruplar as g}
-    {#if g.kisiler.length || g.rol === "eczaci" || g.rol === "teknisyen"}
-      <section
-        class="panel grup"
-        class:hedef={hedefRol === g.rol}
-        aria-label={ROL_AD[g.rol]}
-        ondragover={e => {
-          if (surukId !== null) {
-            e.preventDefault();
-            hedefRol = g.rol;
-          }
-        }}
-        ondragleave={() => {
-          if (hedefRol === g.rol) hedefRol = null;
-        }}
-        ondrop={e => {
-          e.preventDefault();
-          birak(g.rol);
-        }}
+    <label class="alan"
+      ><span>Görev</span>
+      <select class="girdi" bind:value={yeniRol}
+        >{#each ROLLER as r}<option value={r}>{ROL_AD[r]}</option>{/each}</select
       >
-        <div class="panel-bas">
-          <h2><span class="isaret {g.rol}"></span>{ROL_AD[g.rol]}</h2>
-          <span class="sayi rakam">{g.kisiler.length}</span>
-        </div>
-        {#if g.kisiler.length}
-          <ul>
-            {#each g.kisiler as k (k.id)}
-              <li class:suruklenen={surukId === k.id}>
-                <span
-                  class="tutamak"
-                  draggable="true"
-                  role="button"
-                  tabindex="-1"
-                  aria-label="{k.name}: sürükleyerek görevini değiştir"
-                  title="Sürükleyerek görevini değiştirin"
-                  ondragstart={e => {
-                    surukId = k.id;
-                    e.dataTransfer?.setData("text/plain", String(k.id));
-                  }}
-                  ondragend={() => {
-                    surukId = null;
-                    hedefRol = null;
-                  }}>⋮⋮</span
-                >
-                <div class="kim">
-                  <b>{k.name}</b>
-                  {#if k.baslangic || k.bitis}<small
-                      >{k.baslangic ? "Başlangıç " + tarihMetni(k.baslangic) : ""}{k.baslangic && k.bitis ? " · " : ""}{k.bitis
-                        ? "Ayrılış " + tarihMetni(k.bitis)
-                        : ""}</small
-                    >{/if}
-                </div>
-                {#if cumaOlur(k.role)}
-                  <label class="anahtar" title="Öğlen nöbetinde Cuma'dan muaf"
-                    ><input
-                      type="checkbox"
-                      checked={!!k.cumaMuaf}
-                      onchange={e => kisiGuncelle(k.id, { cumaMuaf: e.currentTarget.checked ? true : undefined })}
-                    /><i aria-hidden="true"></i>Cuma muaf</label
+    </label>
+    <button class="dugme ana" type="submit"><Ikon ad="arti" />Ekle</button>
+    <p class="aciklama">{ROL_ACIKLAMA[yeniRol]}</p>
+    {#if ekleHata}<p class="hata" role="alert">{ekleHata}</p>{/if}
+  </form>
+
+  <p class="ipucu ust">
+    Kişiyi ⋮⋮ tutamağından başka bir görev sütununa sürükleyerek görevini değiştirin; anahtarlarla özel durumları açıp kapatın. Ad ve
+    tarihler için ✎.
+  </p>
+  <div class="gruplar">
+    {#each gruplar as g}
+      {#if g.kisiler.length || g.rol === "eczaci" || g.rol === "teknisyen"}
+        <section
+          class="panel grup"
+          class:hedef={hedefRol === g.rol}
+          aria-label={ROL_AD[g.rol]}
+          ondragover={e => {
+            if (surukId !== null) {
+              e.preventDefault();
+              hedefRol = g.rol;
+            }
+          }}
+          ondragleave={() => {
+            if (hedefRol === g.rol) hedefRol = null;
+          }}
+          ondrop={e => {
+            e.preventDefault();
+            birak(g.rol);
+          }}
+        >
+          <div class="panel-bas">
+            <h2><span class="isaret {g.rol}"></span>{ROL_AD[g.rol]}</h2>
+            <span class="sayi rakam">{g.kisiler.length}</span>
+          </div>
+          {#if g.kisiler.length}
+            <ul>
+              {#each g.kisiler as k (k.id)}
+                <li class:suruklenen={surukId === k.id}>
+                  <span
+                    class="tutamak"
+                    draggable={yonetimYetkisi() ? "true" : "false"}
+                    role="button"
+                    tabindex="-1"
+                    aria-label="{k.name}: sürükleyerek görevini değiştir"
+                    title="Sürükleyerek görevini değiştirin"
+                    ondragstart={e => {
+                      surukId = k.id;
+                      e.dataTransfer?.setData("text/plain", String(k.id));
+                    }}
+                    ondragend={() => {
+                      surukId = null;
+                      hedefRol = null;
+                    }}>⋮⋮</span
                   >
-                {/if}
-                {#if acilOlur(k.role)}
-                  <label class="anahtar" title="Eczane nöbeti yerine acil eczane nöbeti tutar"
-                    ><input
-                      type="checkbox"
-                      checked={!!k.acilTutar}
-                      onchange={e => kisiGuncelle(k.id, { acilTutar: e.currentTarget.checked ? true : undefined })}
-                    /><i aria-hidden="true"></i>Acilde</label
+                  <div class="kim">
+                    <b>{k.name}</b>
+                    {#if k.baslangic || k.bitis}<small
+                        >{k.baslangic ? "Başlangıç " + tarihMetni(k.baslangic) : ""}{k.baslangic && k.bitis ? " · " : ""}{k.bitis
+                          ? "Ayrılış " + tarihMetni(k.bitis)
+                          : ""}</small
+                      >{/if}
+                  </div>
+                  {#if cumaOlur(k.role)}
+                    <label class="anahtar" title="Öğlen nöbetinde Cuma'dan muaf"
+                      ><input
+                        type="checkbox"
+                        checked={!!k.cumaMuaf}
+                        onchange={e => kisiGuncelle(k.id, { cumaMuaf: e.currentTarget.checked ? true : undefined })}
+                      /><i aria-hidden="true"></i>Cuma muaf</label
+                    >
+                  {/if}
+                  {#if acilOlur(k.role)}
+                    <label class="anahtar" title="Eczane nöbeti yerine acil eczane nöbeti tutar"
+                      ><input
+                        type="checkbox"
+                        checked={!!k.acilTutar}
+                        onchange={e => kisiGuncelle(k.id, { acilTutar: e.currentTarget.checked ? true : undefined })}
+                      /><i aria-hidden="true"></i>Acilde</label
+                    >
+                  {/if}
+                  <button
+                    class="dugme sade kucuk duz"
+                    onclick={() => duzenle(k)}
+                    aria-label="{k.name}: düzenle"
+                    title="Ad, görev ve tarihler"><Ikon ad="duzenle" /></button
                   >
-                {/if}
-                <button class="dugme sade kucuk duz" onclick={() => duzenle(k)} aria-label="{k.name}: düzenle" title="Ad, görev ve tarihler"
-                  ><Ikon ad="duzenle" /></button
-                >
-              </li>
-            {/each}
-          </ul>
-        {:else}
-          <p class="bos">{surukId !== null ? "Buraya bırakın" : `Henüz ${ROL_AD[g.rol].toLocaleLowerCase("tr")} eklenmedi.`}</p>
-        {/if}
-      </section>
-    {/if}
-  {/each}
-</div>
-<p class="ipucu">Destek personeli, kemoterapi eczacısı ya da acil servis personeli eklediğinizde kendi grupları burada görünür.</p>
+                </li>
+              {/each}
+            </ul>
+          {:else}
+            <p class="bos">{surukId !== null ? "Buraya bırakın" : `Henüz ${ROL_AD[g.rol].toLocaleLowerCase("tr")} eklenmedi.`}</p>
+          {/if}
+        </section>
+      {/if}
+    {/each}
+  </div>
+  <p class="ipucu">Destek personeli, kemoterapi eczacısı ya da acil servis personeli eklediğinizde kendi grupları burada görünür.</p>
+</fieldset>
 
 <Pencere bind:acik={duzenleAcik} baslik={duzenlenen ? duzenlenen.name : ""} altBaslik="Bilgileri düzenle">
-  <label class="alan"><span>Ad soyad</span><input class="girdi" bind:value={dAd} maxlength="60" /></label>
-  <label class="alan"
-    ><span>Görev</span><select class="girdi" bind:value={dRol}
-      >{#each ROLLER as r}<option value={r}>{ROL_AD[r]}</option>{/each}</select
-    ><small>{ROL_ACIKLAMA[dRol]}</small></label
-  >
-  <div class="iki">
+  <fieldset class="yetki-kap" disabled={!yonetimYetkisi()}>
+    <label class="alan"><span>Ad soyad</span><input class="girdi" bind:value={dAd} maxlength="60" /></label>
     <label class="alan"
-      ><span>İşe başlama</span><input class="girdi" type="date" bind:value={dBas} /><small>Boş: her zaman çalışıyor</small></label
+      ><span>Görev</span><select class="girdi" bind:value={dRol}
+        >{#each ROLLER as r}<option value={r}>{ROL_AD[r]}</option>{/each}</select
+      ><small>{ROL_ACIKLAMA[dRol]}</small></label
     >
-    <label class="alan"
-      ><span>Ayrılış (son gün)</span><input class="girdi" type="date" bind:value={dBit} /><small
-        >Ayrılan kişiyi silmek yerine bu tarihi girin</small
-      ></label
-    >
-  </div>
-  {#if dRol === "eczaci" || dRol === "teknisyen"}
-    <label class="secim"><input type="checkbox" bind:checked={dCuma} /><span>Cuma günleri öğlen nöbeti tutmaz (Cuma'dan muaf)</span></label>
-  {/if}
-  {#if dRol === "eczaci" || dRol === "nobetci"}
-    <fieldset class="yer">
-      <legend>Nöbet tuttuğu yer</legend>
-      <label class="secim"
-        ><input type="radio" name="nobetYeri" checked={!dAcil} onchange={() => (dAcil = false)} /><span>Günlük eczane</span></label
+    <div class="iki">
+      <label class="alan"
+        ><span>İşe başlama</span><input class="girdi" type="date" bind:value={dBas} /><small>Boş: her zaman çalışıyor</small></label
       >
-      <label class="secim"
-        ><input type="radio" name="nobetYeri" checked={dAcil} onchange={() => (dAcil = true)} /><span>Acil eczane</span></label
+      <label class="alan"
+        ><span>Ayrılış (son gün)</span><input class="girdi" type="date" bind:value={dBit} /><small
+          >Ayrılan kişiyi silmek yerine bu tarihi girin</small
+        ></label
       >
-    </fieldset>
-  {/if}
-  {#if dHata}<p class="hata" role="alert">{dHata}</p>{/if}
-  {#if silOnayi}
-    <div class="sil-uyari" role="alert">
-      {#if onayliAylar.length}
-        <b>Bu kişi silinemez:</b> onaylı aylarda kaydı var ({onayliAylar
-          .map(k => {
-            const [y, m] = k.split("-").map(Number);
-            return `${AYLAR[m]} ${y}`;
-          })
-          .join(", ")}). Onaylı kayıtlar korunur. Kişi ayrıldıysa ayrılış tarihini girin; sonraki çizelgelere yazılmaz.
-      {:else}
-        <b>{duzenlenen?.name} silinsin mi?</b> İzin işaretleri ve onaysız aylardaki görevleri de silinir.
-      {/if}
     </div>
-  {/if}
+    {#if dRol === "eczaci" || dRol === "teknisyen"}
+      <label class="secim"
+        ><input type="checkbox" bind:checked={dCuma} /><span>Cuma günleri öğlen nöbeti tutmaz (Cuma'dan muaf)</span></label
+      >
+    {/if}
+    {#if dRol === "eczaci" || dRol === "nobetci"}
+      <fieldset class="yer">
+        <legend>Nöbet tuttuğu yer</legend>
+        <label class="secim"
+          ><input type="radio" name="nobetYeri" checked={!dAcil} onchange={() => (dAcil = false)} /><span>Günlük eczane</span></label
+        >
+        <label class="secim"
+          ><input type="radio" name="nobetYeri" checked={dAcil} onchange={() => (dAcil = true)} /><span>Acil eczane</span></label
+        >
+      </fieldset>
+    {/if}
+    {#if dHata}<p class="hata" role="alert">{dHata}</p>{/if}
+    {#if silOnayi}
+      <div class="sil-uyari" role="alert">
+        {#if onayliAylar.length}
+          <b>Bu kişi silinemez:</b> onaylı aylarda kaydı var ({onayliAylar
+            .map(k => {
+              const [y, m] = k.split("-").map(Number);
+              return `${AYLAR[m]} ${y}`;
+            })
+            .join(", ")}). Onaylı kayıtlar korunur. Kişi ayrıldıysa ayrılış tarihini girin; sonraki çizelgelere yazılmaz.
+        {:else}
+          <b>{duzenlenen?.name} silinsin mi?</b> İzin işaretleri ve onaysız aylardaki görevleri de silinir.
+        {/if}
+      </div>
+    {/if}
+  </fieldset>
   {#snippet altlik()}
-    {#if !(silOnayi && onayliAylar.length)}<button class="dugme tehlike" onclick={sil}
+    {#if !(silOnayi && onayliAylar.length)}<button class="dugme tehlike" onclick={sil} disabled={!yonetimYetkisi()}
         ><Ikon ad="sil" />{silOnayi ? "Evet, sil" : "Sil"}</button
       >{/if}
     <span style="flex:1"></span>
     <button class="dugme" onclick={() => (duzenleAcik = false)}>Vazgeç</button>
-    <button class="dugme ana" onclick={kaydet}>Kaydet</button>
+    <button class="dugme ana" onclick={kaydet} disabled={!yonetimYetkisi()}>Kaydet</button>
   {/snippet}
 </Pencere>
 
 <style>
+  .yetki-kap {
+    display: contents;
+  }
+  .bant-yetki {
+    padding: var(--b2) var(--b3);
+    border-radius: var(--r-kucuk);
+    background: var(--vurgu-zemin);
+    color: var(--vurgu);
+    font-size: var(--f-sm);
+    font-weight: 600;
+  }
   .ekle {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;

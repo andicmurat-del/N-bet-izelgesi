@@ -14,7 +14,7 @@
     AYAR_SINIR,
   } from "../../veri/depo.svelte";
   import { bulut } from "../../veri/bulut.svelte";
-  import { kimlik } from "../../veri/kimlik.svelte";
+  import { kimlik, yonetimYetkisi, YONETIM_UYARISI } from "../../veri/kimlik.svelte";
   import { dosyaKaydet, hataMetni } from "../../disa/indir";
   import Ikon from "../ortak/Ikon.svelte";
   import Sekmeler from "../ortak/Sekmeler.svelte";
@@ -183,204 +183,212 @@
 {:else if gorunum === "gecmis"}
   <Gecmis />
 {:else}
+  {#if !yonetimYetkisi()}<p class="bant-yetki" role="note">
+      Kurum bilgilerini ve ayarları görüntülüyorsunuz. {YONETIM_UYARISI}
+    </p>{/if}
   <div class="bolumler" onfocusin={ayarTabaniAl}>
-    <section class="kart panel-blok bolum">
-      <h2>Kurum</h2>
-      <label class="alan"
-        ><span>Kurum adı</span><input
-          class="girdi"
-          bind:value={depo.veri.kurum.ad}
-          maxlength="80"
-          placeholder="ör. Şehir Hastanesi Eczanesi"
-        /><small>Çıktıların başlığında görünür.</small></label
-      >
-      <label class="alan"
-        ><span>Onaylayan</span><input
-          class="girdi"
-          bind:value={depo.veri.kurum.onaylayan}
-          maxlength="80"
-          placeholder="ör. Sorumlu Eczacı Ayşe Yılmaz"
-        /><small>Çizelge onaylanınca kayda geçer.</small></label
-      >
-    </section>
-
-    <section class="kart panel-blok bolum">
-      <h2>Günlük eczane nöbet kuralları</h2>
-      <p class="aciklama">Günlük Eczane Nöbet Listesi ve hazırlama için.</p>
-      <Bilgi baslik="Sabit kurallar"
-        ><p>
-          Nöbet ertesi gün izin, art arda iki gün nöbet yok, ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti, kişiler arası fazla mesai farkı en
-          çok 8 saat, hazırlama farkı en çok 1; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı eşit.
-        </p></Bilgi
-      >
-      <label class="alan"
-        ><span>İki nöbet arasında önerilen en az gün</span>
-        <select class="girdi" bind:value={depo.veri.settings.minAra}
-          >{#each [2, 3, 4] as n}<option value={n}>{n} gün{n === AYAR_VARSAYILAN.minAra ? " (önerilen)" : ""}</option>{/each}</select
+    <fieldset class="yetki-kap" disabled={!yonetimYetkisi()}>
+      <section class="kart panel-blok bolum">
+        <h2>Kurum</h2>
+        <label class="alan"
+          ><span>Kurum adı</span><input
+            class="girdi"
+            bind:value={depo.veri.kurum.ad}
+            maxlength="80"
+            placeholder="ör. Şehir Hastanesi Eczanesi"
+          /><small>Çıktıların başlığında görünür.</small></label
         >
-        <small>Ardışık günler her zaman yasaktır; bu sınır yalnız tercih edilir.</small></label
-      >
-      <label class="alan"
-        ><span>Destek personeli aylık hazırlama sayısı</span>
-        <input
-          class="girdi"
-          type="number"
-          min="0"
-          max="8"
-          value={depo.veri.settings.destekAylik}
-          onchange={e => {
-            depo.veri.settings.destekAylik = sinirla(e.currentTarget.value, 0, 8, AYAR_VARSAYILAN.destekAylik);
-            e.currentTarget.value = String(depo.veri.settings.destekAylik);
-          }}
-        /></label
-      >
-    </section>
-
-    <section class="kart panel-blok bolum">
-      <h2>Acil eczane nöbet kuralları</h2>
-      <p class="aciklama">Acil Eczane Nöbet Listesi için.</p>
-      <Bilgi baslik="Sabit kurallar"
-        ><p>
-          Günde 2 nöbetçi, nöbet ertesi gün izin, art arda iki gün (kadro yetmezse aşağıdaki seçeneğe göre) ve 5 günde 3 nöbet yok, aynı ya
-          da komşu günde günlük eczanede görevi olan yazılmaz, mümkünse ayda en fazla 1 Cumartesi ve 1 Pazar; her ay kişiler arası fazla
-          mesai farkı mümkün olduğunca en çok 8 saat; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı
-          eşit (izinli / raporlu günler paydan düşülür).
-        </p></Bilgi
-      >
-      <label class="alan"
-        ><span>İki acil nöbeti arasında önerilen en az gün</span>
-        <select class="girdi" bind:value={depo.veri.settings.acilMinAra}
-          >{#each [2, 3, 4] as n}<option value={n}>{n} gün{n === AYAR_VARSAYILAN.acilMinAra ? " (önerilen)" : ""}</option>{/each}</select
+        <label class="alan"
+          ><span>Onaylayan</span><input
+            class="girdi"
+            bind:value={depo.veri.kurum.onaylayan}
+            maxlength="80"
+            placeholder="ör. Sorumlu Eczacı Ayşe Yılmaz"
+          /><small>Çizelge onaylanınca kayda geçer.</small></label
         >
-        <small>Bu sınır yalnız tercih edilir.</small></label
-      >
-      <label class="secim-satir"
-        ><input type="checkbox" bind:checked={depo.veri.settings.acilArdArda} /><span
-          ><b>Kadro yetmezse art arda acil nöbeti yazılsın</b><small
-            >Açıkken her gün 2 kişi yazılır; kişi yetmezse bazıları art arda iki gün nöbet tutar (uyarılır). Kapalıyken art arda nöbet hiç
-            yazılmaz; yetmeyen günler eksik kalır ve söylenir.</small
-          ></span
-        ></label
-      >
-    </section>
+      </section>
 
-    <section class="kart panel-blok bolum">
-      <h2>Puantaj</h2>
-      <p class="aciklama">Günlük eczane ve acil eczane puantajı için.</p>
-      <label class="alan"
-        ><span>Arife günü normal mesai (saat)</span>
-        <input
-          class="girdi"
-          type="number"
-          min="0"
-          max="8"
-          value={depo.veri.settings.arifeSaat}
-          onchange={e => {
-            depo.veri.settings.arifeSaat = sinirla(e.currentTarget.value, 0, 8, AYAR_VARSAYILAN.arifeSaat);
-            e.currentTarget.value = String(depo.veri.settings.arifeSaat);
-          }}
-        /></label
-      >
-    </section>
+      <section class="kart panel-blok bolum">
+        <h2>Günlük eczane nöbet kuralları</h2>
+        <p class="aciklama">Günlük Eczane Nöbet Listesi ve hazırlama için.</p>
+        <Bilgi baslik="Sabit kurallar"
+          ><p>
+            Nöbet ertesi gün izin, art arda iki gün nöbet yok, ayda en fazla 1 Cumartesi ve 1 Pazar nöbeti, kişiler arası fazla mesai farkı
+            en çok 8 saat, hazırlama farkı en çok 1; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı ayrı
+            eşit.
+          </p></Bilgi
+        >
+        <label class="alan"
+          ><span>İki nöbet arasında önerilen en az gün</span>
+          <select class="girdi" bind:value={depo.veri.settings.minAra}
+            >{#each [2, 3, 4] as n}<option value={n}>{n} gün{n === AYAR_VARSAYILAN.minAra ? " (önerilen)" : ""}</option>{/each}</select
+          >
+          <small>Ardışık günler her zaman yasaktır; bu sınır yalnız tercih edilir.</small></label
+        >
+        <label class="alan"
+          ><span>Destek personeli aylık hazırlama sayısı</span>
+          <input
+            class="girdi"
+            type="number"
+            min="0"
+            max="8"
+            value={depo.veri.settings.destekAylik}
+            onchange={e => {
+              depo.veri.settings.destekAylik = sinirla(e.currentTarget.value, 0, 8, AYAR_VARSAYILAN.destekAylik);
+              e.currentTarget.value = String(depo.veri.settings.destekAylik);
+            }}
+          /></label
+        >
+      </section>
 
-    <section class="kart panel-blok bolum genis-bolum">
-      <h2>Gelişmiş kurallar</h2>
-      <p class="aciklama">
-        Kurumun çalışma düzeni değişirse. Değişiklik bundan sonra oluşturulan çizelgelere ve puantaja (geçmiş aylar dahil) yansır; mevcut
-        çizelgeleri yeniden oluşturmanız gerekebilir.
-      </p>
-      <details class="gelismis">
-        <summary>Gelişmiş kuralları göster</summary>
-        <div class="izgara">
-          <fieldset>
-            <legend>Süreler (saat)</legend>
-            {#each SAAT_AYARLARI as [k, ad, not]}
+      <section class="kart panel-blok bolum">
+        <h2>Acil eczane nöbet kuralları</h2>
+        <p class="aciklama">Acil Eczane Nöbet Listesi için.</p>
+        <Bilgi baslik="Sabit kurallar"
+          ><p>
+            Günde 2 nöbetçi, nöbet ertesi gün izin, art arda iki gün (kadro yetmezse aşağıdaki seçeneğe göre) ve 5 günde 3 nöbet yok, aynı
+            ya da komşu günde günlük eczanede görevi olan yazılmaz, mümkünse ayda en fazla 1 Cumartesi ve 1 Pazar; her ay kişiler arası
+            fazla mesai farkı mümkün olduğunca en çok 8 saat; yıl boyunca toplam nöbet, Perşembe, Cuma, Cumartesi, Pazar ve resmi tatil ayrı
+            ayrı eşit (izinli / raporlu günler paydan düşülür).
+          </p></Bilgi
+        >
+        <label class="alan"
+          ><span>İki acil nöbeti arasında önerilen en az gün</span>
+          <select class="girdi" bind:value={depo.veri.settings.acilMinAra}
+            >{#each [2, 3, 4] as n}<option value={n}>{n} gün{n === AYAR_VARSAYILAN.acilMinAra ? " (önerilen)" : ""}</option>{/each}</select
+          >
+          <small>Bu sınır yalnız tercih edilir.</small></label
+        >
+        <label class="secim-satir"
+          ><input type="checkbox" bind:checked={depo.veri.settings.acilArdArda} /><span
+            ><b>Kadro yetmezse art arda acil nöbeti yazılsın</b><small
+              >Açıkken her gün 2 kişi yazılır; kişi yetmezse bazıları art arda iki gün nöbet tutar (uyarılır). Kapalıyken art arda nöbet hiç
+              yazılmaz; yetmeyen günler eksik kalır ve söylenir.</small
+            ></span
+          ></label
+        >
+      </section>
+
+      <section class="kart panel-blok bolum">
+        <h2>Puantaj</h2>
+        <p class="aciklama">Günlük eczane ve acil eczane puantajı için.</p>
+        <label class="alan"
+          ><span>Arife günü normal mesai (saat)</span>
+          <input
+            class="girdi"
+            type="number"
+            min="0"
+            max="8"
+            value={depo.veri.settings.arifeSaat}
+            onchange={e => {
+              depo.veri.settings.arifeSaat = sinirla(e.currentTarget.value, 0, 8, AYAR_VARSAYILAN.arifeSaat);
+              e.currentTarget.value = String(depo.veri.settings.arifeSaat);
+            }}
+          /></label
+        >
+      </section>
+
+      <section class="kart panel-blok bolum genis-bolum">
+        <h2>Gelişmiş kurallar</h2>
+        <p class="aciklama">
+          Kurumun çalışma düzeni değişirse. Değişiklik bundan sonra oluşturulan çizelgelere ve puantaja (geçmiş aylar dahil) yansır; mevcut
+          çizelgeleri yeniden oluşturmanız gerekebilir.
+        </p>
+        <details class="gelismis">
+          <summary>Gelişmiş kuralları göster</summary>
+          <div class="izgara">
+            <fieldset>
+              <legend>Süreler (saat)</legend>
+              {#each SAAT_AYARLARI as [k, ad, not]}
+                <label class="alan"
+                  ><span>{ad}</span><input
+                    class="girdi"
+                    type="number"
+                    min={AYAR_SINIR[k][0]}
+                    max={AYAR_SINIR[k][1]}
+                    step={AYAR_SINIR[k][2]}
+                    value={depo.veri.settings[k]}
+                    onchange={e => sayiYaz(k, e.currentTarget)}
+                  /><small>{not} Varsayılan {AYAR_VARSAYILAN[k]}.</small></label
+                >
+              {/each}
+            </fieldset>
+            <fieldset>
+              <legend>Günlük eczane nöbeti</legend>
               <label class="alan"
-                ><span>{ad}</span><input
-                  class="girdi"
-                  type="number"
-                  min={AYAR_SINIR[k][0]}
-                  max={AYAR_SINIR[k][1]}
-                  step={AYAR_SINIR[k][2]}
-                  value={depo.veri.settings[k]}
-                  onchange={e => sayiYaz(k, e.currentTarget)}
-                /><small>{not} Varsayılan {AYAR_VARSAYILAN[k]}.</small></label
-              >
-            {/each}
-          </fieldset>
-          <fieldset>
-            <legend>Günlük eczane nöbeti</legend>
-            <label class="alan"
-              ><span>Kişiye ayda en fazla Perşembe nöbeti</span>
-              <select class="girdi" bind:value={depo.veri.settings.maxThu}
-                >{#each [1, 2, 3, 99] as n}<option value={n}
-                    >{n === 99 ? "Sınırsız" : n}{n === AYAR_VARSAYILAN.maxThu ? " (varsayılan)" : ""}</option
-                  >{/each}</select
-              ></label
-            >
-            <label class="alan"
-              ><span>Kişiye ayda en fazla hafta sonu (Cumartesi + Pazar) nöbeti</span>
-              <select class="girdi" bind:value={depo.veri.settings.hsUst}
-                >{#each [1, 2, 3, 4] as n}<option value={n}>{n}{n === AYAR_VARSAYILAN.hsUst ? " (varsayılan)" : ""}</option>{/each}</select
-              ><small>Ayda en fazla 1 Cumartesi ve 1 Pazar kuralı ayrıca geçerlidir.</small></label
-            >
-            <label class="secim-satir"
-              ><input type="checkbox" bind:checked={depo.veri.settings.thuHaftaSonu} /><span
-                ><b>Perşembe nöbetçisi aynı hafta sonu görev almasın</b><small>Hazırlama yazılmaz, nöbet önerilmez.</small></span
-              ></label
-            >
-            <label class="secim-satir"
-              ><input type="checkbox" bind:checked={depo.veri.settings.cumaEsles} /><span
-                ><b>Cuma ile hafta sonu nöbeti eşleşsin</b><small>Hafta sonu nöbeti olana aynı ay Cuma nöbeti de yazılmaya çalışılır.</small
-                ></span
-              ></label
-            >
-            <label class="secim-satir"
-              ><input type="checkbox" bind:checked={depo.veri.settings.hsTopla} /><span
-                ><b>Hafta sonu tek kişide toplanabilsin</b><small
-                  >Cumartesi hazırlaması yapan, ertesi gün Pazar nöbetini de tutabilir; böylece başkalarının hafta sonu boş kalır. Kapalıysa
-                  bu birleşim yalnız kadro yetmezse yazılır (gün kırmızı, uyarılı).</small
-                ></span
-              ></label
-            >
-            <label class="alan"
-              ><span>Elle düzenlemede fazla mesai sapma uyarısı (saat)</span><input
-                class="girdi"
-                type="number"
-                min={AYAR_SINIR.fmHedef[0]}
-                max={AYAR_SINIR.fmHedef[1]}
-                value={depo.veri.settings.fmHedef}
-                onchange={e => sayiYaz("fmHedef", e.currentTarget)}
-              /><small>Kişinin fazla mesaisi ayın ortalamasından bu kadar saat saparsa gün penceresinde uyarılır.</small></label
-            >
-          </fieldset>
-          <fieldset>
-            <legend>Öğlen nöbeti (kişi sayısı)</legend>
-            {#each OGLEN_AYARLARI as [k, ad]}
-              <label class="alan"
-                ><span>{ad}</span><select class="girdi" bind:value={depo.veri.settings[k]}
-                  >{#each Array.from({ length: AYAR_SINIR[k][1] + 1 }, (_, i) => i) as n}<option value={n}
-                      >{n}{n === AYAR_VARSAYILAN[k] ? " (varsayılan)" : ""}</option
+                ><span>Kişiye ayda en fazla Perşembe nöbeti</span>
+                <select class="girdi" bind:value={depo.veri.settings.maxThu}
+                  >{#each [1, 2, 3, 99] as n}<option value={n}
+                      >{n === 99 ? "Sınırsız" : n}{n === AYAR_VARSAYILAN.maxThu ? " (varsayılan)" : ""}</option
                     >{/each}</select
                 ></label
               >
-            {/each}
-            <small class="not">Var olan haftalar kendiliğinden değişmez; "Haftayı yeniden oluştur" ile yeni sayıya göre yazılır.</small>
-          </fieldset>
-          <fieldset>
-            <legend>Puantaj</legend>
-            <label class="alan"
-              ><span>Nöbet izni hangi dilimden düşülsün</span>
-              <select class="girdi" bind:value={depo.veri.settings.niDusum}
-                ><option value={1}>Önce 08:00–20:00 (varsayılan)</option><option value={2}>Önce 20:00–08:00</option></select
+              <label class="alan"
+                ><span>Kişiye ayda en fazla hafta sonu (Cumartesi + Pazar) nöbeti</span>
+                <select class="girdi" bind:value={depo.veri.settings.hsUst}
+                  >{#each [1, 2, 3, 4] as n}<option value={n}>{n}{n === AYAR_VARSAYILAN.hsUst ? " (varsayılan)" : ""}</option
+                    >{/each}</select
+                ><small>Ayda en fazla 1 Cumartesi ve 1 Pazar kuralı ayrıca geçerlidir.</small></label
               >
-              <small>Fazla mesainin gündüz / gece dilimlerine ayrılmasında.</small></label
-            >
-          </fieldset>
-        </div>
-        <button class="dugme sade" onclick={varsayilanaDon}>Gelişmiş kuralları varsayılana döndür</button>
-      </details>
-    </section>
+              <label class="secim-satir"
+                ><input type="checkbox" bind:checked={depo.veri.settings.thuHaftaSonu} /><span
+                  ><b>Perşembe nöbetçisi aynı hafta sonu görev almasın</b><small>Hazırlama yazılmaz, nöbet önerilmez.</small></span
+                ></label
+              >
+              <label class="secim-satir"
+                ><input type="checkbox" bind:checked={depo.veri.settings.cumaEsles} /><span
+                  ><b>Cuma ile hafta sonu nöbeti eşleşsin</b><small
+                    >Hafta sonu nöbeti olana aynı ay Cuma nöbeti de yazılmaya çalışılır.</small
+                  ></span
+                ></label
+              >
+              <label class="secim-satir"
+                ><input type="checkbox" bind:checked={depo.veri.settings.hsTopla} /><span
+                  ><b>Hafta sonu tek kişide toplanabilsin</b><small
+                    >Cumartesi hazırlaması yapan, ertesi gün Pazar nöbetini de tutabilir; böylece başkalarının hafta sonu boş kalır.
+                    Kapalıysa bu birleşim yalnız kadro yetmezse yazılır (gün kırmızı, uyarılı).</small
+                  ></span
+                ></label
+              >
+              <label class="alan"
+                ><span>Elle düzenlemede fazla mesai sapma uyarısı (saat)</span><input
+                  class="girdi"
+                  type="number"
+                  min={AYAR_SINIR.fmHedef[0]}
+                  max={AYAR_SINIR.fmHedef[1]}
+                  value={depo.veri.settings.fmHedef}
+                  onchange={e => sayiYaz("fmHedef", e.currentTarget)}
+                /><small>Kişinin fazla mesaisi ayın ortalamasından bu kadar saat saparsa gün penceresinde uyarılır.</small></label
+              >
+            </fieldset>
+            <fieldset>
+              <legend>Öğlen nöbeti (kişi sayısı)</legend>
+              {#each OGLEN_AYARLARI as [k, ad]}
+                <label class="alan"
+                  ><span>{ad}</span><select class="girdi" bind:value={depo.veri.settings[k]}
+                    >{#each Array.from({ length: AYAR_SINIR[k][1] + 1 }, (_, i) => i) as n}<option value={n}
+                        >{n}{n === AYAR_VARSAYILAN[k] ? " (varsayılan)" : ""}</option
+                      >{/each}</select
+                  ></label
+                >
+              {/each}
+              <small class="not">Var olan haftalar kendiliğinden değişmez; "Haftayı yeniden oluştur" ile yeni sayıya göre yazılır.</small>
+            </fieldset>
+            <fieldset>
+              <legend>Puantaj</legend>
+              <label class="alan"
+                ><span>Nöbet izni hangi dilimden düşülsün</span>
+                <select class="girdi" bind:value={depo.veri.settings.niDusum}
+                  ><option value={1}>Önce 08:00–20:00 (varsayılan)</option><option value={2}>Önce 20:00–08:00</option></select
+                >
+                <small>Fazla mesainin gündüz / gece dilimlerine ayrılmasında.</small></label
+              >
+            </fieldset>
+          </div>
+          <button class="dugme sade" onclick={varsayilanaDon}>Gelişmiş kuralları varsayılana döndür</button>
+        </details>
+      </section>
+    </fieldset>
 
     <AyarOnizleme acilis={acilisAyari} />
 
@@ -399,18 +407,24 @@
       {/if}
       <div class="dugmeler">
         <button class="dugme ana" onclick={yedekAl}><Ikon ad="indir" />Yedek al</button>
-        <button class="dugme" onclick={() => dosyaGirdi?.click()}><Ikon ad="yukle" />Yedekten yükle</button>
+        <button
+          class="dugme"
+          onclick={() => dosyaGirdi?.click()}
+          disabled={!yonetimYetkisi()}
+          title={yonetimYetkisi() ? "" : YONETIM_UYARISI}><Ikon ad="yukle" />Yedekten yükle</button
+        >
         <input bind:this={dosyaGirdi} type="file" accept=".json,application/json" onchange={dosyaSecildi} hidden />
       </div>
       <p class="aciklama">
         {yedekIzi.son ? `Son yedek: ${new Date(yedekIzi.son).toLocaleDateString("tr-TR")}.` : "Bu tarayıcıdan henüz yedek alınmadı."} Bir haftadır
         yedek alınmadıysa sayfanın üstünde hatırlatılır.
       </p>
+      {#if !yonetimYetkisi()}<p class="aciklama"><b>Yedekten yükleme ve önceki verilere dönme:</b> {YONETIM_UYARISI}</p>{/if}
       <p class="aciklama">
         Yedekten yükleme, bu tarayıcıdaki verilerin yerine geçer. Yanlış dosya seçerseniz hemen ardından önceki verilere dönebilirsiniz.
       </p>
       {#if geriAlinabilir}<div>
-          <button class="dugme" onclick={geriDon}
+          <button class="dugme" onclick={geriDon} disabled={!yonetimYetkisi()}
             ><Ikon ad="yenile" />Önceki verilere dön (yükleme, sunucudan alma ya da silme öncesi)</button
           >
         </div>{/if}
@@ -437,6 +451,18 @@
 {/if}
 
 <style>
+  .yetki-kap {
+    display: contents;
+  }
+  .bant-yetki {
+    padding: var(--b2) var(--b3);
+    margin-bottom: var(--b3);
+    border-radius: var(--r-kucuk);
+    background: var(--vurgu-zemin);
+    color: var(--vurgu);
+    font-size: var(--f-sm);
+    font-weight: 600;
+  }
   .bolumler {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));

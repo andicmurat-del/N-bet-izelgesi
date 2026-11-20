@@ -22,8 +22,8 @@ export interface KullaniciYetenegi {
 export type Rol = "sahip" | "duzenleyen" | "katkida" | "okuyan";
 export const ROL_ADI: Record<Rol, string> = {
   sahip: "Sahip",
-  duzenleyen: "Düzenleyen (Editor)",
-  katkida: "Katkıda bulunan (Contributor)",
+  duzenleyen: "Baş sorumlu (Editor)",
+  katkida: "Sorumlu (Contributor)",
   okuyan: "Yalnız görüntüleyen: verilere erişemez",
 };
 
@@ -96,3 +96,8 @@ export function onayKimlikleri(v: Veri): string[] {
 }
 /** çıktıya giden onay kaydına çözülmüş adı ekler (kopya döner) */
 export const ciktiOnayi = (o: Onay | undefined | null): Onay | null => (o ? { ...o, onaylayanAd: onaylayanAdi(o) } : null);
+/** personel, ayarlar, kurum ve servis ayarlarını değiştirebilir mi: sahip ve baş sorumlu (Editor); claude.ai dışında
+ *  herkes. Sunucuda veritabanı kuralı da uygular (nobet/yonetim belgesine yalnız admin yazar). */
+export const yonetimYetkisi = () => !kimlik.var || kimlik.rol === "sahip" || kimlik.rol === "duzenleyen";
+/** tüm veriyi değiştiren işlemler (yedekten yükleme, kopyaya dönme) de yönetim bölümlerini değiştirir */
+export const YONETIM_UYARISI = "Bunu yalnız sahip ve baş sorumlu (Editor) yapabilir.";

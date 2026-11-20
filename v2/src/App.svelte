@@ -280,6 +280,11 @@
         >
       </div>
     {/if}
+    {#if bulut.bilgi}
+      <div class="kayit-sorunu kutu bilgi" role="status">
+        <Ikon ad="bilgi" /><span>{bulut.bilgi}</span><button class="dugme sade" onclick={() => (bulut.bilgi = "")}>Tamam</button>
+      </div>
+    {/if}
     {#if ayniEkranda.length}
       <div class="kayit-sorunu kutu bilgi" role="status">
         <Ikon ad="bilgi" /><span

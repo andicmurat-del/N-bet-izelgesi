@@ -42,8 +42,21 @@ describe("sunucu belgeleri", () => {
     expect(Object.keys(p.aylar).sort()).toEqual(["2025-11", "2026-0", "2026-1"].filter(k => k in p.aylar).sort());
     expect(Object.keys(p.aylar)).toContain("2026-0");
     expect(JSON.parse(p.ana).schedules).toBeUndefined();
-    expect(JSON.parse(p.ana).staff.length).toBe(v.staff.length);
+    // personel, ayarlar, kurum, servis ayarları yönetim belgesinde (yalnız baş sorumlu yazar)
+    expect(JSON.parse(p.ana).staff).toBeUndefined();
+    expect(JSON.parse(p.yonetim).staff.length).toBe(v.staff.length);
+    expect(Object.keys(JSON.parse(p.yonetim)).sort()).toEqual(["kurum", "servisAyar", "settings", "staff"]);
     expect(veriyiDogrula(birlestir(p, guvenliJson))).toEqual(v);
+  });
+  test("eski biçim (yönetim belgesi yok) okunur ve yazılabilir; yönetim belgesi varsa ondaki geçerlidir", () => {
+    const eski = parcala(v, false);
+    expect(eski.yonetim).toBeUndefined();
+    expect(JSON.parse(eski.ana).staff.length).toBe(v.staff.length);
+    expect(veriyiDogrula(birlestir(eski, guvenliJson))).toEqual(v);
+    // ana belgeye sonradan yazılmış personel, yönetim belgesindekini geçemez
+    const sahte = { ...p, ana: JSON.stringify({ ...JSON.parse(p.ana), staff: [] }) };
+    expect(veriyiDogrula(birlestir(sahte, guvenliJson)).staff.length).toBe(v.staff.length);
+    expect(ozet(eski)).not.toBe(ozet(p));
   });
   test("boş veri de gidip gelir; ay belgesi olmaz", () => {
     const b = parcala(bosVeri());
@@ -66,7 +79,7 @@ describe("sunucu belgeleri", () => {
     expect({}.kirli).toBeUndefined();
   });
   test("özet içerikle değişir, sırayla değişmez", () => {
-    const ters = { ana: p.ana, aylar: Object.fromEntries(Object.entries(p.aylar).reverse()) };
+    const ters = { ana: p.ana, yonetim: p.yonetim, aylar: Object.fromEntries(Object.entries(p.aylar).reverse()) };
     expect(ozet(ters)).toBe(ozet(p));
     expect(parcalarAyni(ters, p)).toBe(true);
     const v2 = JSON.parse(JSON.stringify(v));
