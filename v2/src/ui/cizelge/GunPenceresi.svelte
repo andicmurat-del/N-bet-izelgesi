@@ -25,6 +25,7 @@
   import Pencere from "../ortak/Pencere.svelte";
   import Ikon from "../ortak/Ikon.svelte";
   import { puantajIzgarasi, type Gorev } from "../../veri/degisim.svelte";
+  import GunAciklamasi from "./GunAciklamasi.svelte";
 
   let {
     acik = $bindable(false),
@@ -316,6 +317,8 @@
         ? ' Sayılar ve saatler de elle belirlendi; "Otomatiğe bırak" bunları da kaldırır.'
         : ""}
     </p>{/if}
+
+  {#if acik}<GunAciklamasi {c} {gun} />{/if}
 
   <section class="notlar" aria-label="Gün notları">
     <h3>Notlar{notlar.length ? ` (${notlar.length})` : ""}</h3>

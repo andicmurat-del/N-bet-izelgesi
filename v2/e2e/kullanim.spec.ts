@@ -1,5 +1,6 @@
 // Kullanım kolaylığı: işlem menüleri ve silme sorusu, "Bu ay yapılacaklar", uyarıdan güne geçiş, onaylı ayda gün
 // penceresinden nöbet değişimine geçiş, izinlerde aralık seçimi, kişi takvimi.
+import AxeBuilder from "@axe-core/playwright";
 import { test, expect, git, bas, menu, kayit, indir, durum } from "./yardimci";
 
 test("Diğer > Çizelgeyi sil: önce sorar; Vazgeç korur, Evet siler", async ({ page, kur }) => {
@@ -125,4 +126,25 @@ test("gün notu: gün penceresinden eklenir, listede işaretlenir, silinir; geç
   await bas(page, "Nöbet değişikliği yap");
   await p.locator(".notlar button", { hasText: "Sil" }).click();
   await expect(p.locator(".notlar li")).toHaveCount(0);
+});
+
+test("neden bu kişiler: gün penceresinde adaylar, yazılamayanların nedenleri", async ({ page, kur }) => {
+  await kur();
+  await git(page, "gunluk/nobet");
+  await bas(page, /^Liste$/);
+  await page.locator("main tbody tr", { hasText: "14 Kasım" }).first().click();
+  await bas(page, "Nöbet değişikliği yap");
+  const p = page.locator("dialog[open]");
+  await p.locator("summary", { hasText: "Neden bu kişiler" }).click();
+  const a = p.locator(".aciklama");
+  await expect(a.locator(".rozet.yazili")).toHaveCount(4); // 2 nöbetçi + 2 hazırlama
+  await expect(a).toContainText("Eşitliği bozar");
+  await a.locator("summary", { hasText: "Yazılamayanlar" }).first().click();
+  await expect(a).toContainText("15. gün de nöbetçi");
+  const axe = await new AxeBuilder({ page })
+    .include("dialog[open]")
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .disableRules(["label-content-name-mismatch"])
+    .analyze();
+  expect(axe.violations.map(v => `${v.id}: ${v.nodes.map(n => n.target.join(" ")).join(" | ")}`)).toEqual([]);
 });

@@ -16,6 +16,7 @@ import type { Gorevli } from "../veri/tipler";
 import { Baglam, type MotorCizelgesi } from "./baglam";
 import { degisimDenetle as degisimDenetimi, yerineAdaylar, type Degisiklik } from "./degisim";
 import { cizelgeCanliDenetim, gunuDenetle as gunDenetimi, type GunDuzeniGirdisi } from "./denetim";
+import { gunAciklamasi as gunAciklamasiHesapla } from "./aciklama";
 import { cizelgeUret, type CizelgeSonucu } from "./nobet/olustur";
 import { acilOlustur } from "./acil";
 import { acilDegisimDenetle as acilDegisimDenetimi, acilYerineAdaylar } from "./acilDegisim";
@@ -127,6 +128,11 @@ function puanKucuk(a: number[], b: number[]): boolean {
 export function canliDenetimHesapla(veri: unknown, sch: MotorCizelgesi) {
   return cizelgeCanliDenetim(new Baglam(veri), sch.year, sch.month, sch.days);
 }
+/** "Neden bu kişi?": günün adayları, yazılamayanların nedenleri, karşılaştırma sayıları (motor/aciklama.ts) */
+export function gunAciklamasi(veri: unknown, sch: MotorCizelgesi, gun: number) {
+  return gunAciklamasiHesapla(new Baglam(veri), sch, gun);
+}
+export type { GunAciklamasi, AdayAciklamasi, AdayDurumu } from "./aciklama";
 export function gunuDenetle(
   veri: unknown,
   sch: MotorCizelgesi,
