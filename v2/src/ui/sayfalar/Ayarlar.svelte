@@ -23,6 +23,9 @@
   import Kurallar from "./Kurallar.svelte";
   import Yardim from "./Yardim.svelte";
   import Gecmis from "./Gecmis.svelte";
+  import AyarOnizleme from "./AyarOnizleme.svelte";
+  import { ayarFarklari } from "../../veri/ayarAdlari";
+  import type { Ayarlar } from "../../veri/tipler";
   import type { AyarGorunum } from "./sayfaTipleri";
 
   let { gorunum = $bindable("genel") }: { gorunum?: AyarGorunum } = $props();
@@ -84,6 +87,12 @@
     if (gorunum === "genel") geriAlinabilir = yuklemeOncesiVar();
   });
   const sunucuda = $derived(bulut.durum === "esit" || bulut.durum === "gonderiliyor");
+  // ayar önizlemesinin tabanı: kullanıcı ayarlara dokunmaya başladığı andaki ayarlar (bekleyen fark yoksa yenilenir;
+  // böylece sayfa açıldıktan sonra sunucudan gelen ayarlar fark sayılmaz)
+  let acilisAyari = $state<Ayarlar>($state.snapshot(depo.veri.settings) as Ayarlar);
+  function ayarTabaniAl() {
+    if (!ayarFarklari(acilisAyari, depo.veri.settings).length) acilisAyari = $state.snapshot(depo.veri.settings) as Ayarlar;
+  }
   // tüm verileri silme yalnız sayfanın sahibinde (claude.ai'de, başka sorumlular da kullanırken)
   const silmeYetkisi = $derived(!kimlik.var || kimlik.rol === "sahip");
   async function dosyaSecildi(e: Event) {
@@ -174,7 +183,7 @@
 {:else if gorunum === "gecmis"}
   <Gecmis />
 {:else}
-  <div class="bolumler">
+  <div class="bolumler" onfocusin={ayarTabaniAl}>
     <section class="kart panel-blok bolum">
       <h2>Kurum</h2>
       <label class="alan"
@@ -372,6 +381,8 @@
         <button class="dugme sade" onclick={varsayilanaDon}>Gelişmiş kuralları varsayılana döndür</button>
       </details>
     </section>
+
+    <AyarOnizleme acilis={acilisAyari} />
 
     <section class="kart panel-blok bolum">
       <h2>Yedek</h2>

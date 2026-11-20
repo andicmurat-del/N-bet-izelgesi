@@ -29,7 +29,7 @@ test("personel, çizelge, izin, puantaj, onay ve ayar değişiklikleri okunur sa
     "İzin ve tercih işaretleri (Kasım 2026: 1, Aralık 2026: 1)",
     "Kasım 2026 puantajı: 1 hücre",
     "Kasım 2026 acil listesi onaylandı",
-    "Ayarlar: minAra",
+    "Ayarlar: iki nöbet arası en az gün 3 → 4",
   ]);
 });
 

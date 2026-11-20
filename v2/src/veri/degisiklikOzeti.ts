@@ -2,6 +2,7 @@
 // "Personel: Dila Şahin eklendi"…). Durumdan bağımsız; servis dağıtımının kendiliğinden yenilenen kaydı sayılmaz.
 import type { Veri } from "./tipler";
 import { AYLAR } from "./tarih";
+import { ayarFarklari } from "./ayarAdlari";
 
 const ayAdi = (ayK: string) => {
   const [y, m] = ayK.split("-").map(Number);
@@ -119,8 +120,8 @@ export function degisiklikOzeti(once: Veri, sonra: Veri): string[] {
     }
   }
   // ayarlar
-  const ayar = farkliAnahtarlar(once.settings as unknown as Record<string, unknown>, sonra.settings as unknown as Record<string, unknown>);
-  if (ayar.length) l.push(`Ayarlar: ${ayar.join(", ")}`);
+  const ayar = ayarFarklari(once.settings, sonra.settings);
+  if (ayar.length) l.push(`Ayarlar: ${ayar.map(x => x.metin).join(", ")}`);
   if (json(once.kurum) !== json(sonra.kurum)) l.push("Kurum bilgileri");
   if (json(once.servisAyar) !== json(sonra.servisAyar)) l.push("Servis listesi ayarları");
   return l;

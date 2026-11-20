@@ -148,3 +148,23 @@ test("neden bu kişiler: gün penceresinde adaylar, yazılamayanların nedenleri
     .analyze();
   expect(axe.violations.map(v => `${v.id}: ${v.nodes.map(n => n.target.join(" ")).join(" | ")}`)).toEqual([]);
 });
+
+test("ayar önizlemesi: değişen ayarın bu aya etkisi karşılaştırılır, ayar geri döndürülür", async ({ page, kur }) => {
+  await kur();
+  await git(page, "ayarlar/genel");
+  const m = page.locator("main");
+  const minAra = m.locator("label", { hasText: "İki nöbet arasında önerilen en az gün" }).locator("select");
+  await minAra.focus();
+  await minAra.selectOption("4");
+  const k = m.locator(".onizleme");
+  await expect(k).toContainText("iki nöbet arası en az gün 3 → 4");
+  await k.locator("button", { hasText: "etkisini gör" }).click();
+  await expect(k.locator("table")).toBeVisible({ timeout: 90_000 });
+  await expect(k.locator("tbody tr")).toHaveCount(8);
+  await expect(k.locator("caption")).toContainText("Kasım 2026");
+  const axe = await new AxeBuilder({ page }).include(".onizleme").withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+  expect(axe.violations.map(v => v.id)).toEqual([]);
+  await k.locator("button", { hasText: "önceki hâline döndür" }).click();
+  await expect(minAra).toHaveValue("3");
+  await expect(k).not.toContainText("3 → 4");
+});
