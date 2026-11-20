@@ -157,6 +157,17 @@ export interface Veri {
   onayMasa: { elle: Record<string, Record<string, string>> };
   /** resmi tatilleri kendiliğinden işaretlenmiş yıllar ("2027" → true): sonradan elle kaldırılan gün yeniden işaretlenmez */
   tatilYillari: Record<string, true>;
+  /** gün notları: "yil-ay" → gün → notlar (sorumlular arası; onaylı ayda da yazılır, çıktılara girmez) */
+  notlar: Record<string, Record<string, GunNotu[]>>;
+}
+
+/** Bir güne bırakılan not: yazan (claude.ai kimliği ya da bu cihazda yazılan ad), zaman, metin */
+export interface GunNotu {
+  id: string;
+  z: number;
+  kimId?: string;
+  kimAd?: string;
+  metin: string;
 }
 
 /** Puantajda bir günün görevi bir kişiden ötekine geçti (yerine tutma ya da takasın bir yarısı) */

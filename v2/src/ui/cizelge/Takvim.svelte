@@ -4,7 +4,7 @@
   // hazırlamacılar altta turuncu. Hafta sonu altın şeritli. Seçili gün altın sarısı çerçeveli. Telefonda kısa adlar.
   import type { AyCizelgesi, Gorevli } from "../../veri/tipler";
   import { GUN_KISA, gunMetni, haftaGunu, kisaAd } from "../../veri/tarih";
-  import { depo, resmiTatilMi, arifeMi } from "../../veri/depo.svelte";
+  import { depo, resmiTatilMi, arifeMi, notluGunler } from "../../veri/depo.svelte";
   import Ikon from "../ortak/Ikon.svelte";
 
   let {
@@ -16,6 +16,7 @@
   }: { c: AyCizelgesi; vurgu?: number | null; secili?: number | null; gunAc: (gun: number) => void; degisen?: Set<number> } = $props();
 
   const bos = $derived(haftaGunu(c.year, c.month, 1));
+  const notSay = $derived(notluGunler(c.year, c.month));
   const tumAdlar = $derived(depo.veri.staff.map(k => k.name));
   const kisa = (ad: string) => kisaAd(ad, tumAdlar);
   const eczaciMi = (p: Gorevli) => p.role === "eczaci" || p.role === "nobetci";
@@ -48,7 +49,7 @@
       aria-pressed={secili === g.day}
       aria-label="{gunMetni(c.year, c.month, g.day)}: nöbetçi {g.assigned.map(p => p.name).join(' ve ') || 'yok'}{g.prep.length
         ? ', hazırlama ' + g.prep.map(p => p.name).join(' ve ')
-        : ''}{g.conflict ? ', kural esnetildi' : ''}{g.locked ? ', elle düzenlendi' : ''}"
+        : ''}{g.conflict ? ', kural esnetildi' : ''}{g.locked ? ', elle düzenlendi' : ''}{notSay[g.day] ? `, ${notSay[g.day]} not` : ''}"
     >
       <span class="dev rakam" aria-hidden="true" data-gun={g.day}></span>
       <span class="ust">
@@ -59,6 +60,8 @@
               ><Ikon ad="uyari" boyut={14} /></span
             >{/if}
           {#if degisen?.has(g.day)}<span class="degisti" title="Bu günde nöbet değişimi var">değişti</span>{/if}
+          {#if notSay[g.day]}<span class="not-simge" title="{notSay[g.day]} not (günü açınca görünür)"><Ikon ad="not" boyut={13} /></span
+            >{/if}
           {#if g.locked}<span
               class="kilit"
               title="Elle düzenlendi; yeniden oluşturmada korunur{g.fmNobet !== undefined
@@ -88,6 +91,10 @@
 </div>
 
 <style>
+  .not-simge {
+    color: var(--baglanti);
+    display: inline-flex;
+  }
   /* koyu petrol çerçeve: hücreler arası 1 px boşluktan çerçeve rengi görünür */
   .takvim {
     display: grid;

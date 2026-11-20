@@ -12,7 +12,13 @@
     aydaCalisanlar,
     resmiTatilMi,
     arifeMi,
+    gunNotlari,
+    notEkle,
+    notSil,
+    notSilinebilir,
+    notYazari,
   } from "../../veri/depo.svelte";
+  import { NOT_SINIRI } from "../../veri/dogrulama";
   import type { AyCizelgesi, GunDuzeni, Gorevli, Kisi } from "../../veri/tipler";
   import { ROL_AD } from "../../veri/tipler";
   import { gunMetni, gunSayisi, isoTarih } from "../../veri/tarih";
@@ -158,6 +164,16 @@
     gunKilidiniKaldir(c.year, c.month, gun);
     acik = false;
   }
+  // gün notları (sorumlular arası; onaylı ayda da yazılır)
+  const notlar = $derived(gunNotlari(c.year, c.month, gun));
+  let yeniNot = $state("");
+  $effect(() => {
+    if (acik) yeniNot = "";
+  });
+  function notuEkle() {
+    if (notEkle(c.year, c.month, gun, yeniNot)) yeniNot = "";
+  }
+  const notZamani = (z: number) => new Date(z).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" });
   const tur = $derived(
     resmiTatilMi(c.year, c.month, gun)
       ? "Resmi tatil"
@@ -301,6 +317,38 @@
         : ""}
     </p>{/if}
 
+  <section class="notlar" aria-label="Gün notları">
+    <h3>Notlar{notlar.length ? ` (${notlar.length})` : ""}</h3>
+    {#if notlar.length}
+      <ul>
+        {#each notlar as n (n.id)}
+          <li>
+            <div class="not-ust">
+              <b>{notYazari(n)}</b><small class="rakam">{notZamani(n.z)}</small>
+              {#if notSilinebilir(n)}<button
+                  class="dugme kucuk sade"
+                  onclick={() => notSil(c.year, c.month, gun, n.id)}
+                  aria-label="Notu sil"><Ikon ad="sil" boyut={14} />Sil</button
+                >{/if}
+            </div>
+            <p>{n.metin}</p>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+    <div class="not-ekle">
+      <textarea
+        class="girdi"
+        rows="2"
+        maxlength={NOT_SINIRI}
+        bind:value={yeniNot}
+        placeholder="Bu güne not bırakın (ör. takas konuşuldu, bu gün değişmesin); bütün sorumlular görür"
+        aria-label="Yeni not"
+      ></textarea>
+      <button class="dugme kucuk" onclick={notuEkle} disabled={!yeniNot.trim()}><Ikon ad="arti" boyut={16} />Not ekle</button>
+    </div>
+  </section>
+
   {#snippet altlik()}
     {#if !onayli && g.locked}<button class="dugme sade" onclick={otomatigeBirak}>Otomatiğe bırak</button>{/if}
     <span style="flex:1"></span>
@@ -312,6 +360,55 @@
 </Pencere>
 
 <style>
+  .notlar {
+    display: grid;
+    gap: var(--b2);
+    border-top: 1px solid var(--cizgi);
+    padding-top: var(--b3);
+  }
+  .notlar h3 {
+    font-size: var(--f-sm);
+    margin: 0;
+  }
+  .notlar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--b2);
+  }
+  .notlar li {
+    padding: var(--b2) var(--b3);
+    border-radius: var(--r-kucuk);
+    background: var(--yuzey-2);
+    font-size: var(--f-sm);
+  }
+  .notlar li p {
+    margin: 2px 0 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .not-ust {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--b2);
+  }
+  .not-ust small {
+    color: var(--yazi-2);
+  }
+  .not-ust button {
+    margin-left: auto;
+  }
+  .not-ekle {
+    display: grid;
+    gap: var(--b2);
+    justify-items: start;
+  }
+  .not-ekle textarea {
+    width: 100%;
+    resize: vertical;
+  }
   fieldset {
     border: 0;
     margin: 0;

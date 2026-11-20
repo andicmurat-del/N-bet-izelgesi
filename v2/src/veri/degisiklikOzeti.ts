@@ -103,6 +103,21 @@ export function degisiklikOzeti(once: Veri, sonra: Veri): string[] {
       l.push(`${zaman} ${ad} ${sonra.listeOnay[tur][k] ? "onaylandı" : "onayı kaldırıldı"}`);
     }
   if (json(once.onayMasa) !== json(sonra.onayMasa)) l.push("Onay listesi masaları elle değişti");
+  // gün notları: eklenen / silinen
+  for (const ayK of farkliAnahtarlar(once.notlar, sonra.notlar)) {
+    const a = once.notlar?.[ayK] ?? {},
+      b = sonra.notlar?.[ayK] ?? {};
+    for (const g of new Set([...Object.keys(a), ...Object.keys(b)])) {
+      const ai = new Set((a[g] ?? []).map(n => n.id)),
+        bi = new Set((b[g] ?? []).map(n => n.id));
+      const eklenen = (b[g] ?? []).filter(n => !ai.has(n.id)),
+        silinen = [...ai].filter(id => !bi.has(id)).length;
+      const [y, m] = ayK.split("-").map(Number);
+      for (const n of eklenen)
+        l.push(`${g} ${AYLAR[m] ?? "?"} ${y} gün notu: "${n.metin.length > 60 ? n.metin.slice(0, 60) + "…" : n.metin}"`);
+      if (silinen) l.push(`${g} ${AYLAR[m] ?? "?"} ${y}: ${silinen} gün notu silindi`);
+    }
+  }
   // ayarlar
   const ayar = farkliAnahtarlar(once.settings as unknown as Record<string, unknown>, sonra.settings as unknown as Record<string, unknown>);
   if (ayar.length) l.push(`Ayarlar: ${ayar.join(", ")}`);

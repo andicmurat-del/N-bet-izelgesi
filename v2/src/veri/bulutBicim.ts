@@ -5,7 +5,7 @@
 import type { Veri } from "./tipler";
 
 /** aya göre tutulan bölümler: anahtarları "yil-ay" */
-const AY_BOLUMLERI = ["schedules", "puantaj", "acil", "acilElle", "oglen", "servisKayit"] as const;
+const AY_BOLUMLERI = ["schedules", "puantaj", "acil", "acilElle", "oglen", "servisKayit", "notlar"] as const;
 /** bir belgenin metni en çok bu kadar olabilir (sunucu sınırı 256 KiB; kaçış karakterleri ve zarf için pay bırakılır) */
 export const BELGE_SINIRI = 200 * 1024;
 
@@ -229,6 +229,7 @@ const BOLUM_ADI: Record<string, string> = {
   acilElle: "acil listesi (elle günler)",
   oglen: "öğlen nöbeti",
   servisKayit: "servis hazırlama",
+  notlar: "gün notları",
 };
 /** bölüm anahtarının okunur adı: "Kasım 2026 nöbet çizelgesi", "izin ve tercih işaretleri" */
 export function bolumAdi(k: string, aylar: readonly string[]): string {

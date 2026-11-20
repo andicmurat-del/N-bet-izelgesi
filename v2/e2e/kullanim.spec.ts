@@ -104,3 +104,25 @@ test("değişiklik geçmişi: kim, ne zaman, ne değişti; günlük kopyaya dön
   expect((await kayit(page)).schedules["2026-10"]).toBeTruthy();
   await expect(liste).toContainText("Yedekten / kopyadan yükleme");
 });
+
+test("gün notu: gün penceresinden eklenir, listede işaretlenir, silinir; geçmişe yazılır", async ({ page, kur }) => {
+  await kur();
+  await git(page, "gunluk/nobet");
+  await bas(page, /^Liste$/);
+  await page.locator("main tbody tr", { hasText: "14 Kasım" }).first().click();
+  await bas(page, "Nöbet değişikliği yap");
+  const p = page.locator("dialog[open]");
+  await p.getByLabel("Yeni not").fill("Ayşe ile Bora takas konuştu; bu gün değişmesin.");
+  await p.locator("button", { hasText: "Not ekle" }).click();
+  await expect(p.locator(".notlar li")).toHaveCount(1);
+  await expect(p.locator(".notlar li")).toContainText("takas konuştu");
+  await p.locator("button", { hasText: /^(Vazgeç|Kapat)$/ }).click();
+  await expect(page.locator("main tbody tr", { hasText: "14 Kasım" }).first().locator(".not-simge")).toBeVisible();
+  await git(page, "ayarlar/gecmis");
+  await expect(page.locator("main .kayitlar li").first()).toContainText("gün notu");
+  await git(page, "gunluk/nobet");
+  await page.locator("main tbody tr", { hasText: "14 Kasım" }).first().click();
+  await bas(page, "Nöbet değişikliği yap");
+  await p.locator(".notlar button", { hasText: "Sil" }).click();
+  await expect(p.locator(".notlar li")).toHaveCount(0);
+});

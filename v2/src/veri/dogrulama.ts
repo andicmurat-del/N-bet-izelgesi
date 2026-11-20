@@ -23,6 +23,8 @@ export const AYAR_SINIR = {
 
 /** tarayıcı kaydının (localStorage) anahtarı; yedek, geri dönüş ve hatırlatma kayıtları bunun ekleriyle */
 export const KAYIT_ANAHTARI = "nobet-cizelgesi-v2";
+/** bir gün notunun en çok uzunluğu */
+export const NOT_SINIRI = 500;
 
 export function bosVeri(): Veri {
   return {
@@ -44,6 +46,7 @@ export function bosVeri(): Veri {
     servisKayit: {},
     onayMasa: { elle: {} },
     tatilYillari: {},
+    notlar: {},
   };
 }
 
@@ -316,5 +319,23 @@ export function veriyiDogrula(ham: unknown): Veri {
     if (Object.keys(l).length) v.onayMasa.elle[gun] = l;
   }
   for (const [yil, x] of Object.entries(nesne(o.tatilYillari))) if (/^\d{4}$/.test(yil) && x === true) v.tatilYillari[yil] = true;
+  // gün notları
+  for (const [ayK, gunler] of Object.entries(nesne(o.notlar))) {
+    if (!/^\d{4}-\d{1,2}$/.test(ayK)) continue;
+    for (const [gun, l] of Object.entries(nesne(gunler))) {
+      if (!/^\d{1,2}$/.test(gun) || Number(gun) < 1 || Number(gun) > 31 || !Array.isArray(l)) continue;
+      const notlar = l
+        .map(x => nesne(x))
+        .filter(x => typeof x.metin === "string" && x.metin.trim() && Number(x.z) > 0)
+        .slice(0, 50)
+        .map(x => ({
+          id: typeof x.id === "string" && /^[\w-]{1,40}$/.test(x.id) ? x.id : Math.random().toString(36).slice(2, 10),
+          z: Number(x.z),
+          ...onayKisisi(x),
+          metin: String(x.metin).slice(0, NOT_SINIRI),
+        }));
+      if (notlar.length) (v.notlar[ayK] ??= {})[gun] = notlar;
+    }
+  }
   return v;
 }

@@ -6,7 +6,7 @@
 <script lang="ts">
   // Nöbet Listesi > Liste: süzgeç düğmeleri (hafta içi / hafta sonu / değişen / kural esnetilen / elle), kişi seçimi ve ad
   // arama; günler haftalara göre gruplanır. Satıra dokunmak günü seçer.
-  import { depo, resmiTatilMi } from "../../veri/depo.svelte";
+  import { depo, resmiTatilMi, notluGunler } from "../../veri/depo.svelte";
   import { AYLAR, GUN_UZUN, adIcerir, ayAdi, haftaGunu } from "../../veri/tarih";
   import type { AyCizelgesi, Kisi } from "../../veri/tipler";
   import Ikon from "../ortak/Ikon.svelte";
@@ -49,6 +49,7 @@
     return () => mq.removeEventListener("change", degis);
   });
   const degistiMi = (g: Gun) => !!degisen?.has(g.day);
+  const notSay = $derived(notluGunler(depo.yil, depo.ay));
   const filtreUy: Record<Filtre, (g: Gun) => boolean> = {
     tumu: () => true,
     hi: g => !g.tatil,
@@ -146,7 +147,10 @@
           >
             <span class="kart-bas"
               ><b class="rakam">{g.day} {AYLAR[depo.ay]}</b>
-              <span class="gun-adi">{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</span></span
+              <span class="gun-adi">{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</span>{#if notSay[g.day]}<span
+                  class="not-simge"
+                  title="{notSay[g.day]} not"><Ikon ad="not" boyut={14} /><span class="gizli-yazi">{notSay[g.day]} not</span></span
+                >{/if}</span
             >
             <span class="kart-gorev">
               {#each sirali as p (p.id)}<span class="kisi"
@@ -196,7 +200,10 @@
                     onclick={e => {
                       e.stopPropagation();
                       gunAc(g.day);
-                    }}><b>{g.day} {AYLAR[depo.ay]}</b></button
+                    }}
+                    ><b>{g.day} {AYLAR[depo.ay]}</b>{#if notSay[g.day]}<span class="not-simge" title="{notSay[g.day]} not"
+                        ><Ikon ad="not" boyut={14} /><span class="gizli-yazi">{notSay[g.day]} not</span></span
+                      >{/if}</button
                   ></td
                 >
                 <td>{GUN_UZUN[haftaGunu(depo.yil, depo.ay, g.day)]}</td>
@@ -219,6 +226,12 @@
 </section>
 
 <style>
+  .not-simge {
+    color: var(--baglanti);
+    display: inline-flex;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
   /* tarih hücresindeki düğme: görünüşte düz yazı, klavyeyle güne erişim için */
   .gun-ac {
     padding: 0;

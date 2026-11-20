@@ -91,6 +91,7 @@ export function onayKimlikleri(v: Veri): string[] {
   const l = new Set<string>();
   for (const c of Object.values(v.schedules)) if (c.onay?.kimId) l.add(c.onay.kimId);
   for (const t of Object.values(v.listeOnay)) for (const o of Object.values(t)) if (o.kimId) l.add(o.kimId);
+  for (const a of Object.values(v.notlar ?? {})) for (const g of Object.values(a)) for (const n of g) if (n.kimId) l.add(n.kimId);
   return [...l];
 }
 /** çıktıya giden onay kaydına çözülmüş adı ekler (kopya döner) */

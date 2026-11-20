@@ -259,3 +259,4 @@ export * from "./cizelge.svelte";
 export * from "./listeler.svelte";
 export * from "./yedek.svelte";
 export * from "./gunluk.svelte";
+export * from "./notlar.svelte";
