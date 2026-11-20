@@ -64,3 +64,20 @@ test("paylaş: ayın listesi ve kişinin görevleri metin olarak", async ({ page
   await expect(t).toHaveValue(/• 4 Kasım Çarşamba: nöbet/);
   await expect(t).toHaveValue(/Toplam: 5 nöbet, 1 hazırlama, \d+ öğlen nöbeti$/);
 });
+
+test("zor ay: ek denemeler sürerken 'Burada dur' şimdiye kadarki en iyi çizelgeyi kaydeder", async ({ page, kur }) => {
+  // kadronun yarısı ayın ortasında izinli: uyarısız çizelge yok, farklı başlangıçlarla yeniden aranır
+  const v = durum();
+  v.schedules = {};
+  for (const k of v.staff.filter((s: { role: string }) => ["eczaci", "teknisyen"].includes(s.role)).slice(0, 8))
+    for (let d = 8; d <= 22; d++) v.prefs[`${k.id}-2026-10-${d}`] = "izinli";
+  await kur({ veri: v });
+  await git(page, "gunluk/nobet");
+  await bas(page, "Çizelgeyi oluştur");
+  const dur = page.locator("main button", { hasText: "Burada dur" });
+  await expect(dur).toBeVisible({ timeout: 110_000 });
+  await expect(page.locator("main .ek-durum").first()).toContainText("deneme bitti");
+  await dur.click();
+  await expect.poll(async () => Object.keys((await kayit(page)).schedules).length, { timeout: 5_000 }).toBe(1);
+  await expect(page.getByRole("progressbar", { name: "Arama ilerlemesi" })).toHaveCount(0);
+});

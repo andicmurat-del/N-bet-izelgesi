@@ -1,5 +1,6 @@
 import Isci from "./isci.ts?worker&inline";
 import { EK_DENEME, cizelgeOlustur, ekDenemeGerekli, enIyiDeneme, uyarisiz, type CizelgeSonucu } from "./index";
+import { uyariSiniflandir } from "./raporlar";
 import type { Gun, Veri } from "../veri/tipler";
 
 export interface OlusturmaSonucu {
@@ -23,10 +24,19 @@ function esZamanli(): number {
  * asıl arama uyarısız biterse ötekiler durdurulur; uyarı kaldıysa sonuçların en az uyarılısı seçilir (sırayla
  * aramadaki seçimle aynı kural). İşçi açılamazsa (engelli sayfa) hesap sayfada, sırayla yapılır.
  */
-/** Aramanın ekranda gösterilecek ilerlemesi: oran 0–1; ek: asıl arama uyarılı bitti, farklı başlangıçlarla aranıyor */
+/** Aramanın ekranda gösterilecek ilerlemesi: oran 0–1; ek: asıl arama uyarılı bitti, farklı başlangıçlarla aranıyor.
+ *  Ek denemelerde: biten / toplam ek deneme ve şimdiye kadarki en iyi sonucun uyarı sayısı */
 export interface Ilerleme {
   oran: number;
   ek: boolean;
+  biten?: number;
+  toplam?: number;
+  enIyiUyari?: number;
+}
+/** Arama sürerken çağıranın elindeki denetim: dur() asıl arama bittiyse bekleyen ek denemeleri bırakıp şimdiye kadarki
+ *  en iyi sonuçla bitirir (asıl arama bitmeden bir şey yapmaz) */
+export interface AramaDenetimi {
+  dur?: () => boolean;
 }
 export function arkaPlandaOlustur(
   veri: Veri,
@@ -34,6 +44,7 @@ export function arkaPlandaOlustur(
   ay: number,
   varyasyon = 0,
   ilerleme?: (i: Ilerleme) => void,
+  denetim?: AramaDenetimi,
 ): Promise<OlusturmaSonucu> {
   // sayfada (işçi yoksa) hesap ekranı dondurur; ilerleme yalnız başta ve sonda bildirilir
   const sayfada = () =>
@@ -58,7 +69,14 @@ export function arkaPlandaOlustur(
       if (!sonuc[0]) ilerleme({ oran: oranlar[0], ek: false });
       else {
         const ek = oranlar.slice(1).map((o, i) => (sonuc[i + 1] ? 1 : o));
-        ilerleme({ oran: ek.reduce((t, x) => t + x, 0) / Math.max(1, ek.length), ek: true });
+        const biten = sonuc.filter(Boolean) as CizelgeSonucu[];
+        ilerleme({
+          oran: ek.reduce((t, x) => t + x, 0) / Math.max(1, ek.length),
+          ek: true,
+          biten: biten.length - 1,
+          toplam: N - 1,
+          enIyiUyari: enIyiDeneme(biten).warnings.filter(w => uyariSiniflandir(w).seviye !== "bilgi").length,
+        });
       }
     };
     const isciler = new Set<Worker>();
@@ -72,6 +90,13 @@ export function arkaPlandaOlustur(
       isciler.clear();
       f();
     };
+    if (denetim)
+      denetim.dur = () => {
+        const biten = sonuc.filter(Boolean) as CizelgeSonucu[];
+        if (bitti || !biten.length) return false;
+        bitir(() => coz(enIyiDeneme(biten)));
+        return true;
+      };
     // işçi yanıt vermeden hata verdiyse açılamamıştır (motor hataları mesajla gelir): hesap sayfada yapılır
     const engelli = () =>
       bitir(() => {

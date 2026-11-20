@@ -1,7 +1,9 @@
 <script lang="ts" module>
   // Sekme ya da sayfa değişince bileşen yeniden kurulur: süren arama (ilerlemesiyle) ve takvim / liste seçimi korunur;
   // arama sürerken dönülen sayfada düğmeler yine kapalıdır.
-  const kalici = $state({ calisiyor: false, ilerleme: { oran: 0, ek: false }, nobetGorunum: "liste" as "takvim" | "liste" });
+  const kalici = $state({ calisiyor: false, ilerleme: { oran: 0, ek: false } as Ilerleme, nobetGorunum: "liste" as "takvim" | "liste" });
+  /** sürmekte olan aramanın denetimi ("Burada dur") */
+  const aramaDenetimi: AramaDenetimi = {};
 </script>
 
 <script lang="ts">
@@ -24,7 +26,7 @@
     resmiTatilMi,
     arifeMi,
   } from "../../veri/depo.svelte";
-  import { arkaPlandaOlustur } from "../../motor/istemci";
+  import { arkaPlandaOlustur, type AramaDenetimi, type Ilerleme } from "../../motor/istemci";
   import IzinliGorevler from "./IzinliGorevler.svelte";
   import Paylas from "./Paylas.svelte";
   import { acilKadrosunda, canliDenetimHesapla, uyariSiniflandir } from "../../motor";
@@ -103,7 +105,7 @@
     const y = depo.yil,
       m = depo.ay;
     try {
-      const r = await arkaPlandaOlustur(veriAnlik(), y, m, varyasyon, i => (kalici.ilerleme = i));
+      const r = await arkaPlandaOlustur(veriAnlik(), y, m, varyasyon, i => (kalici.ilerleme = i), aramaDenetimi);
       if (!r.days) {
         hata = r.warnings[0] ?? "Çizelge oluşturulamadı.";
         return;
@@ -362,6 +364,18 @@
       >
         <span style="width: {Math.round(kalici.ilerleme.oran * 100)}%"></span>
       </div>
+      {#if kalici.ilerleme.ek && kalici.ilerleme.toplam}
+        <p class="ek-durum">
+          İlk arama bitti. Farklı başlangıçlarla aranıyor: {kalici.ilerleme.biten ?? 0} / {kalici.ilerleme.toplam} deneme bitti; şimdiye kadarki
+          en iyi çizelgede {kalici.ilerleme.enIyiUyari ?? 0} uyarı var.
+        </p>
+        <div>
+          <button class="dugme" onclick={() => aramaDenetimi.dur?.()}><Ikon ad="tamam" />Burada dur, en iyisini kullan</button>
+        </div>
+        <p class="ek-durum kucuk">
+          Beklerseniz daha az uyarılı bir çizelge bulunabilir; durdurursanız sonuç beklemeye göre farklı olabilir.
+        </p>
+      {/if}
     </div>
   </div>
 {/if}
@@ -431,6 +445,14 @@
 {/if}
 
 <style>
+  .ek-durum {
+    margin: var(--b2) 0 0;
+    font-size: var(--f-sm);
+  }
+  .ek-durum.kucuk {
+    color: var(--yazi-2);
+    font-size: var(--f-xs);
+  }
   .islemler {
     display: flex;
     flex-wrap: wrap;
