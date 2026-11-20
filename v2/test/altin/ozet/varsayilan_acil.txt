@@ -1,35 +1,35 @@
 #0: uyari: Oya Acil, 5. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir). | uyari: Oya Acil, 6. gün de acil eczanede nöbetçi (en az 3 gün ara önerilir).
 #1: hata: Ece Ecz acil eczane kadrosunda değil. | uyari: Ece Ecz bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında. | uyari: Ece Ecz, 5. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir). | uyari: Oya Acil, 5. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir). | uyari: Oya Acil, 6. gün de acil eczanede nöbetçi (en az 3 gün ara önerilir).
 #2: hata: Aynı kişi iki kez seçilemez. | hata: Cem Ecz acil eczane kadrosunda değil. | uyari: Cem Ecz komşu günde eczane nöbeti ya da hazırlaması var.
-#3: hata: Dila Ecz acil eczane kadrosunda değil. | uyari: Dila Ecz komşu günde eczane nöbeti ya da hazırlaması var.
-#4: hata: Bora Ecz acil eczane kadrosunda değil. | hata: Ayşe Ecz acil eczane kadrosunda değil. | uyari: Ayşe Ecz aynı gün eczane nöbetçisi.
+#3: hata: Dila Ecz acil eczane kadrosunda değil. | uyari: Dila Ecz aynı gün eczane nöbetçisi.
+#4: hata: Bora Ecz acil eczane kadrosunda değil. | hata: Ayşe Ecz acil eczane kadrosunda değil. | uyari: Ayşe Ecz komşu günde eczane nöbeti ya da hazırlaması var.
 #5: uyari: Oya Acil, 6. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir).
 #6: hata: Ece Ecz acil eczane kadrosunda değil. | uyari: Oya Acil, 6. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir).
 #7: hata: Aynı kişi iki kez seçilemez. | hata: Cem Ecz acil eczane kadrosunda değil. | uyari: Cem Ecz komşu günde eczane nöbeti ya da hazırlaması var.
-#8: hata: Dila Ecz acil eczane kadrosunda değil.
-#9: hata: Bora Ecz acil eczane kadrosunda değil. | hata: Ayşe Ecz acil eczane kadrosunda değil. | uyari: Ayşe Ecz komşu günde eczane nöbeti ya da hazırlaması var.
+#8: hata: Dila Ecz acil eczane kadrosunda değil. | uyari: Dila Ecz komşu günde eczane nöbeti ya da hazırlaması var.
+#9: hata: Bora Ecz acil eczane kadrosunda değil. | hata: Ayşe Ecz acil eczane kadrosunda değil. | uyari: Ayşe Ecz aynı gün eczane nöbetçisi.
 #10: uyari: Oya Acil, 5. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir).
 #11: hata: Ece Ecz acil eczane kadrosunda değil. | uyari: Ece Ecz, 5. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir). | uyari: Oya Acil, 5. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir).
 #12: hata: Aynı kişi iki kez seçilemez. | hata: Cem Ecz acil eczane kadrosunda değil. | uyari: Cem Ecz aynı gün eczane nöbetçisi.
 #13: hata: Dila Ecz acil eczane kadrosunda değil. | uyari: Dila Ecz komşu günde eczane nöbeti ya da hazırlaması var.
-#14: hata: Bora Ecz acil eczane kadrosunda değil. | hata: Ayşe Ecz acil eczane kadrosunda değil.
+#14: hata: Bora Ecz acil eczane kadrosunda değil. | hata: Ayşe Ecz acil eczane kadrosunda değil. | uyari: Ayşe Ecz komşu günde eczane nöbeti ya da hazırlaması var.
 #15: uyari: Oya Acil, 6. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir). | uyari: Oya Acil, 5. gün de acil eczanede nöbetçi (en az 3 gün ara önerilir).
-#16: hata: Ece Ecz acil eczane kadrosunda değil. | uyari: Ece Ecz, 5. gün de acil eczanede nöbetçi (en az 3 gün ara önerilir). | uyari: Ece Ecz komşu günde eczane nöbeti ya da hazırlaması var. | uyari: Oya Acil, 6. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir). | uyari: Oya Acil, 5. gün de acil eczanede nöbetçi (en az 3 gün ara önerilir).
+#16: hata: Ece Ecz acil eczane kadrosunda değil. | uyari: Ece Ecz, 5. gün de acil eczanede nöbetçi (en az 3 gün ara önerilir). | uyari: Oya Acil, 6. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir). | uyari: Oya Acil, 5. gün de acil eczanede nöbetçi (en az 3 gün ara önerilir).
 #17: hata: Aynı kişi iki kez seçilemez. | hata: Cem Ecz acil eczane kadrosunda değil. | uyari: Cem Ecz komşu günde eczane nöbeti ya da hazırlaması var.
 #18: hata: Dila Ecz acil eczane kadrosunda değil. | uyari: Dila Ecz aynı gün eczane nöbetçisi.
 #19: hata: Bora Ecz acil eczane kadrosunda değil. | hata: Ayşe Ecz acil eczane kadrosunda değil.
 #20: uyari: Oya Acil bu ay 2. Cumartesi acil nöbetini tutar (ayda en fazla 1).
-#21: hata: Ece Ecz acil eczane kadrosunda değil. | uyari: Oya Acil bu ay 2. Cumartesi acil nöbetini tutar (ayda en fazla 1).
+#21: hata: Ece Ecz acil eczane kadrosunda değil. | uyari: Ece Ecz komşu günde eczane nöbeti ya da hazırlaması var. | uyari: Oya Acil bu ay 2. Cumartesi acil nöbetini tutar (ayda en fazla 1).
 #22: hata: Aynı kişi iki kez seçilemez. | hata: Cem Ecz acil eczane kadrosunda değil. | uyari: Cem Ecz bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında.
 #23: hata: Dila Ecz acil eczane kadrosunda değil.
-#24: hata: Bora Ecz acil eczane kadrosunda değil. | uyari: Bora Ecz komşu günde eczane nöbeti ya da hazırlaması var. | hata: Ayşe Ecz acil eczane kadrosunda değil. | uyari: Ayşe Ecz komşu günde eczane nöbeti ya da hazırlaması var.
+#24: hata: Bora Ecz acil eczane kadrosunda değil. | hata: Ayşe Ecz acil eczane kadrosunda değil. | uyari: Ayşe Ecz komşu günde eczane nöbeti ya da hazırlaması var.
 #25: uyari: Oya Acil, 17. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir).
-#26: hata: Ece Ecz acil eczane kadrosunda değil. | uyari: Oya Acil, 17. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir).
+#26: hata: Ece Ecz acil eczane kadrosunda değil. | uyari: Ece Ecz aynı gün eczane nöbetçisi. | uyari: Oya Acil, 17. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir).
 #27: hata: Aynı kişi iki kez seçilemez. | hata: Cem Ecz acil eczane kadrosunda değil. | uyari: Cem Ecz bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında. | uyari: Cem Ecz komşu günde eczane nöbeti ya da hazırlaması var.
 #28: hata: Dila Ecz acil eczane kadrosunda değil. | uyari: Dila Ecz, 17. gün de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir).
-#29: hata: Bora Ecz acil eczane kadrosunda değil. | uyari: Bora Ecz komşu günde eczane nöbeti ya da hazırlaması var. | hata: Ayşe Ecz acil eczane kadrosunda değil. | uyari: Ayşe Ecz komşu günde eczane nöbeti ya da hazırlaması var.
+#29: hata: Bora Ecz acil eczane kadrosunda değil. | hata: Ayşe Ecz acil eczane kadrosunda değil. | uyari: Ayşe Ecz komşu günde eczane nöbeti ya da hazırlaması var.
 #30: uyari: Oya Acil bu ay 2. Cumartesi acil nöbetini tutar (ayda en fazla 1).
 #31: hata: Ece Ecz acil eczane kadrosunda değil. | uyari: Ece Ecz aynı gün eczane nöbetçisi. | uyari: Oya Acil bu ay 2. Cumartesi acil nöbetini tutar (ayda en fazla 1).
 #32: hata: Aynı kişi iki kez seçilemez. | hata: Cem Ecz acil eczane kadrosunda değil.
-#33: hata: Dila Ecz acil eczane kadrosunda değil. | uyari: Dila Ecz bu ay 2. Cumartesi acil nöbetini tutar (ayda en fazla 1). | uyari: Dila Ecz komşu günde eczane nöbeti ya da hazırlaması var.
-#34: hata: Bora Ecz acil eczane kadrosunda değil. | uyari: Bora Ecz komşu günde eczane nöbeti ya da hazırlaması var. | hata: Ayşe Ecz acil eczane kadrosunda değil. | uyari: Ayşe Ecz bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında. | uyari: Ayşe Ecz, 1 Şubat günü de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir).
+#33: hata: Dila Ecz acil eczane kadrosunda değil. | uyari: Dila Ecz bu ay 2. Cumartesi acil nöbetini tutar (ayda en fazla 1).
+#34: hata: Bora Ecz acil eczane kadrosunda değil. | hata: Ayşe Ecz acil eczane kadrosunda değil. | uyari: Ayşe Ecz bu gün izinli, eş durumu nedeniyle yazılmamalı ya da çalışma dönemi dışında. | uyari: Ayşe Ecz, 1 Şubat günü de acil eczanede nöbetçi (nöbet ertesi gün izin gerekir).

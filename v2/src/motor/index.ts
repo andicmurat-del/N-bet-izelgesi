@@ -56,13 +56,13 @@ export type { CizelgeSonucu } from "./nobet/olustur";
  * Arama süreyle değil tur sayısıyla sınırlıdır: aynı veriyle her bilgisayarda aynı çizelge çıkar.
  */
 export function cizelgeOlustur(veri: unknown, yil: number, ay: number, secenek: AramaSecenegi = {}) {
-  // uyarısız çizelge bulunamazsa farklı başlangıçlarla yeniden aranır, en az uyarılı olan seçilir (önce hata, sonra uyarı,
-  // sonra kırmızı gün sayısı; eşitse ilk bulunan). Her deneme verinin kendi kopyasıyla çalışır. Kadro kurallara
-  // matematiksel olarak yetmiyorsa ek deneme yapılmaz: uyarı sayısı azalsa da farklar büyüyebiliyor (ör. 3 eczacı +
-  // 4 teknikerde bir uyarı eksilirken fazla mesai farkı 32 saatten 64 saate çıkıyordu)
+  // en iyi sonuç için farklı başlangıçlarla EK_DENEME kez daha aranır; en iyisi seçilir: önce en az hata, uyarı, kırmızı
+  // gün; eşitse amaç değeri en küçük olan (eşitlik ve tercihlerde en iyi); o da eşitse ilk bulunan. Her deneme verinin
+  // kendi kopyasıyla çalışır. Kadro kurallara matematiksel olarak yetmiyorsa ek deneme yapılmaz: uyarı sayısı azalsa da
+  // farklar büyüyebiliyor (ör. 3 eczacı + 4 teknikerde bir uyarı eksilirken fazla mesai farkı 32 saatten 64 saate çıkıyordu)
   const denemeler = [cizelgeDenemesi(veri, yil, ay, 0, secenek)];
   if (!ekDenemeGerekli(denemeler[0])) return denemeler[0];
-  for (let k = 1; k <= EK_DENEME && !uyarisiz(enIyiDeneme(denemeler)); k++) denemeler.push(cizelgeDenemesi(veri, yil, ay, k, secenek));
+  for (let k = 1; k <= EK_DENEME; k++) denemeler.push(cizelgeDenemesi(veri, yil, ay, k, secenek));
   return enIyiDeneme(denemeler);
 }
 /** Tek bir arama denemesi: 0 asıl arama, 1..EK_DENEME farklı başlangıçlı ek aramalar. Denemeler birbirinden bağımsızdır;
@@ -86,11 +86,11 @@ export interface AramaSecenegi {
   ilerleme?: (deneme: number, oran: number) => void;
   turSiniri?: number;
 }
-/** ilk denemenin sonucuna göre ek deneme yapılır mı: uyarı kaldıysa ve neden kadro yetersizliği değilse */
+/** ilk denemenin sonucuna göre ek deneme yapılır mı: kadro kurallara matematiksel olarak yetiyorsa (daha iyisi aranır) */
 export function ekDenemeGerekli(ilk: CizelgeSonucu): boolean {
-  return !ilk.warnings.some(w => /matematiksel olarak mümkün değil/.test(w)) && !uyarisiz(ilk);
+  return !!ilk.days && !ilk.warnings.some(w => /matematiksel olarak mümkün değil/.test(w));
 }
-/** deneme sırasıyla verilen sonuçlardan en az uyarılı olan (eşitse önceki) */
+/** deneme sırasıyla verilen sonuçlardan en iyisi: en az uyarılı, eşitse amaç değeri en küçük (o da eşitse önceki) */
 export function enIyiDeneme(denemeler: CizelgeSonucu[]): CizelgeSonucu {
   let en = denemeler[0],
     enP = uyariPuani(en);
@@ -104,8 +104,11 @@ export function enIyiDeneme(denemeler: CizelgeSonucu[]): CizelgeSonucu {
   return en;
 }
 /** hata, uyarı ve kırmızı gün kalmadı mı */
-export const uyarisiz = (r: CizelgeSonucu) => !uyariPuani(r).some(x => x > 0);
-/** uyarısız çizelge bulunamazsa en fazla bu kadar ek deneme (farklı başlangıçlarla) */
+export const uyarisiz = (r: CizelgeSonucu) =>
+  !uyariPuani(r)
+    .slice(0, 3)
+    .some(x => x > 0);
+/** en iyi sonuç için bu kadar ek deneme (farklı başlangıçlarla); arayüzde asıl aramayla aynı anda çalışırlar */
 export const EK_DENEME = 3;
 /** ek denemelerin "farklı dağılım" numaralarıyla çakışmaması için */
 const EK_TOHUM = 1000000;
@@ -117,7 +120,7 @@ function uyariPuani(r: CizelgeSonucu): number[] {
     if (s === "hata") hata++;
     else if (s === "uyari") uyari++;
   });
-  return [hata, uyari, (r.days || []).filter(g => g.conflict).length];
+  return [hata, uyari, (r.days || []).filter(g => g.conflict).length, r.j ?? Infinity];
 }
 function puanKucuk(a: number[], b: number[]): boolean {
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] < b[i];

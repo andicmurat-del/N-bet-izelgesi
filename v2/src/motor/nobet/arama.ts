@@ -26,7 +26,7 @@ type Hamle =
 
 /** yinelemeli aramanın tur sayısı: uyarı kalmadıysa KISA, kaldıysa UZUN tura kadar sürer. Süreyle değil tur sayısıyla
  *  sınırlıdır: aynı veriyle her bilgisayarda (yavaş telefonda da) aynı çizelge çıkar. */
-export const ARAMA_TUR = { KISA: 60, UZUN: 600 } as const;
+export const ARAMA_TUR = { KISA: 500, UZUN: 800 } as const;
 
 /** aramanın ortak durumu: kurulum, kurallar, amaç, yardımcılar ve şu anki amaç değeri (J) */
 interface Arama {

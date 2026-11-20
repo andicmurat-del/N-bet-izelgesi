@@ -348,11 +348,10 @@
   <div class="kart calisiyor" role="status" aria-live="polite">
     <span class="donen" aria-hidden="true"></span>
     <div class="ilerleme-kutu">
-      <b>Çizelge hazırlanıyor{kalici.ilerleme.ek ? " · farklı başlangıçlarla yeniden aranıyor" : ""}</b>
+      <b>Çizelge hazırlanıyor</b>
       <p>
-        Kurallar ve eşitlik hedefleri için binlerce olasılık deneniyor. Uyarısız bir çizelge bulunamazsa farklı başlangıçlarla yeniden
-        aranır ve en az uyarılı olan seçilir. Aynı bilgilerle her bilgisayarda aynı çizelge çıkar; yavaş bilgisayarda yalnız biraz daha uzun
-        sürer.
+        En iyi çizelge için farklı başlangıçlarla dört ayrı arama yapılıyor ve en iyisi seçiliyor: önce en az uyarılı, sonra eşitlik ve
+        tercihlerde en iyi olan. Bilgisayara göre yarım dakikaya kadar sürebilir. Aynı bilgilerle her bilgisayarda aynı çizelge çıkar.
       </p>
       <div
         class="ilerleme"
@@ -366,14 +365,16 @@
       </div>
       {#if kalici.ilerleme.ek && kalici.ilerleme.toplam}
         <p class="ek-durum">
-          İlk arama bitti. Farklı başlangıçlarla aranıyor: {kalici.ilerleme.biten ?? 0} / {kalici.ilerleme.toplam} deneme bitti; şimdiye kadarki
-          en iyi çizelgede {kalici.ilerleme.enIyiUyari ?? 0} uyarı var.
+          {kalici.ilerleme.biten ?? 0} / {kalici.ilerleme.toplam} arama bitti; şimdiye kadarki en iyi çizelgede {kalici.ilerleme
+            .enIyiUyari ?? 0}
+          uyarı var.
         </p>
         <div>
           <button class="dugme" onclick={() => aramaDenetimi.dur?.()}><Ikon ad="tamam" />Burada dur, en iyisini kullan</button>
         </div>
         <p class="ek-durum kucuk">
-          Beklerseniz daha az uyarılı bir çizelge bulunabilir; durdurursanız sonuç beklemeye göre farklı olabilir.
+          Beklerseniz daha iyi (daha az uyarılı ya da daha dengeli) bir çizelge bulunabilir; durdurursanız sonuç beklemeye göre farklı
+          olabilir.
         </p>
       {/if}
     </div>

@@ -18,6 +18,8 @@ export interface CizelgeSonucu {
   warnings: string[];
   /** kişi başı gün kategorisi sayıları */
   history: Record<number, { haftaici: number; cuma: number; cumartesi: number; pazar: number }> | null;
+  /** aramanın sonundaki amaç değeri (küçük = daha iyi; aynı ayın denemeleri arasında karşılaştırmak için) */
+  j?: number;
 }
 
 /** varyasyon: "farklı dağılım" (eşitlerde kişi sırası ve arama tohumu değişir); ilerleme: aramanın ilerleme oranı (0–1) */
@@ -38,7 +40,9 @@ export function cizelgeUret(
   const K = aramaKur(A, days);
   const kural = kurallarKur(K);
   hazirlamaAta(K, kural);
-  yerelArama(K, kural, amacKur(K, kural), ilerleme, turSiniri);
+  const amac = amacKur(K, kural);
+  yerelArama(K, kural, amac, ilerleme, turSiniri);
+  const j = amac.hesaplaJ();
   // aramada aynı kişi nesnesi birden çok günde kullanılır; sonuçta her gün kendi kopyasını taşısın
   days.forEach(d => {
     if (!d.locked) {
@@ -47,5 +51,5 @@ export function cizelgeUret(
     }
   });
   gunleriIsaretle(K, kural);
-  return { days, warnings: uyarilariYaz(K, kural), history: ayGecmisi(K) };
+  return { days, warnings: uyarilariYaz(K, kural), history: ayGecmisi(K), j };
 }

@@ -1,5 +1,5 @@
 import Isci from "./isci.ts?worker&inline";
-import { EK_DENEME, cizelgeOlustur, ekDenemeGerekli, enIyiDeneme, uyarisiz, type CizelgeSonucu } from "./index";
+import { EK_DENEME, cizelgeOlustur, ekDenemeGerekli, enIyiDeneme, type CizelgeSonucu } from "./index";
 import { uyariSiniflandir } from "./raporlar";
 import type { Gun, Veri } from "../veri/tipler";
 
@@ -66,15 +66,16 @@ export function arkaPlandaOlustur(
     const oranlar: number[] = new Array(N).fill(0);
     const bildir = () => {
       if (!ilerleme || bitti) return;
-      if (!sonuc[0]) ilerleme({ oran: oranlar[0], ek: false });
+      // bütün denemelerin ortalaması (denemeler aynı anda ya da sırayla yürür)
+      const hepsi = oranlar.map((o, i) => (sonuc[i] ? 1 : o)).reduce((t, x) => t + x, 0) / N;
+      if (!sonuc[0]) ilerleme({ oran: hepsi, ek: false });
       else {
-        const ek = oranlar.slice(1).map((o, i) => (sonuc[i + 1] ? 1 : o));
         const biten = sonuc.filter(Boolean) as CizelgeSonucu[];
         ilerleme({
-          oran: ek.reduce((t, x) => t + x, 0) / Math.max(1, ek.length),
+          oran: hepsi,
           ek: true,
-          biten: biten.length - 1,
-          toplam: N - 1,
+          biten: biten.length,
+          toplam: N,
           enIyiUyari: enIyiDeneme(biten).warnings.filter(w => uyariSiniflandir(w).seviye !== "bilgi").length,
         });
       }
@@ -108,9 +109,7 @@ export function arkaPlandaOlustur(
       const ilk = sonuc[0];
       if (ilk && ekGerekli === null) ekGerekli = ekDenemeGerekli(ilk);
       if (ilk && !ekGerekli) return bitir(() => coz(ilk));
-      // uyarısız bir deneme bulunduysa beklemeye gerek yok
-      const temiz = ilk ? sonuc.find(r => r && uyarisiz(r)) : undefined;
-      if (temiz) return bitir(() => coz(temiz));
+      // en iyi sonuç için bütün denemeler beklenir (ya da "Burada dur" ile şimdiye kadarki en iyisi alınır)
       if (sonuc.every(r => r)) return bitir(() => coz(enIyiDeneme(sonuc as CizelgeSonucu[])));
       while (isciler.size < es && siradaki < N) baslat(siradaki++);
     };

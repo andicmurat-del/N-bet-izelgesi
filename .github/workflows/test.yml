@@ -12,7 +12,7 @@ jobs:
   # tür denetimi, biçim, lint, birim testleri (motor, altın kayıt, bağımsız kural denetçisi), derleme
   birim:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: v2

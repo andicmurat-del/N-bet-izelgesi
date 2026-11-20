@@ -1,31 +1,32 @@
-1: N=17,10 H=16,13 fm=16
-2: N=2,11 fm=8
-3: N=5,16 fm=8
-4: N=8,6 fm=8
-5: N=4,12 fm=8
-6: N=17,9 fm=16
-7: N=5,16 H=7,1 fm=24
-8: N=7,1 H=3,10 fm=16
-9: N=17,9 fm=8
-10: N=5,8 fm=8
-11: N=2,7 fm=8
-12: N=1,16 fm=8
-13: N=17,10 fm=16
-14: N=4,7 H=6,11 fm=24
-15: N=6,11 H=9,17 fm=16
-16: N=8,2 fm=8
-17: N=7,3 fm=8
-18: N=4,11 fm=13
-19: N=2,9 fm=21
-20: N=3,12 H=5,13 fm=24
-21: N=6,10 H=8,14 fm=24
-22: N=2,9 H=16,4 fm=16
-23: N=5,12 fm=8
-24: N=3,16 fm=8
-25: N=1,8 fm=8
-26: N=6,10 fm=8
-27: N=4,11 fm=16
-28: N=1,8 H=3,12 fm=24
-29: N=3,12 H=2,14 fm=16
-30: N=6,16 fm=8
-31: N=5,11 fm=8
+1: N=2,9 H=6,14 fm=16
+2: N=1,11 fm=8
+3: N=5,7 fm=8
+4: N=17,9 fm=8
+5: N=2,12 fm=8
+6: N=4,7 fm=16
+7: N=17,11 H=16,6 fm=24
+8: N=6,16 H=8,10 fm=16
+9: N=3,12 fm=8
+10: N=17,9 fm=8
+11: N=2,11 fm=8
+12: N=4,10 fm=8
+13: N=5,8 fm=16
+14: N=1,12 H=7,17 fm=24
+15: N=17,7 H=9,13 fm=16
+16: N=5,8 fm=8
+17: N=4,10 fm=8
+18: N=7,2 fm=13
+19: N=3,9 fm=21
+20: N=6,10 H=4,14 fm=24
+21: N=3,8 H=12,5 fm=24
+22: N=5,12 H=2,16 fm=16
+23: N=1,11 fm=8
+24: N=16,4 fm=8
+25: N=5,9 fm=8
+26: N=6,8 fm=8
+27: N=2,16 fm=16
+28: N=4,10 H=11,1 fm=24
+29: N=1,11 H=3,13 fm=16
+30: N=6,7 fm=8
+31: N=3,16 fm=8
+UYARI Yıllık gün dağılımında fark 1'i aşıyor (2026 başından bu aya kadar; sonradan başlayan personel yalnız çalıştığı aylara göre karşılaştırılır): Cumartesi (en çok: Cem Ecz 3; en az: Bora Ecz 1, Irmak Tek 1). Önceki aylardan gelen fark sonraki aylarda kapatılır; fazla mesai ya da hazırlama kuralları bu ay izin vermedi.

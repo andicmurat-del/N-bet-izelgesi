@@ -27,7 +27,7 @@ cizelgeOlustur (index.ts)
                              nobet/amac.ts             amaç değeri (artımlı hesap)
                              nobet/kurallar.ts         her hamlede korunan kesin kurallar
        4. denetim, uyarılar  nobet/uyarilar.ts         esneyen günler kırmızı, uyarı metinleri
-  └─ uyarı kaldıysa: farklı başlangıçlarla EK_DENEME kez daha aranır, en az uyarılısı seçilir (index.ts)
+  └─ en iyi sonuç için farklı başlangıçlarla EK_DENEME kez daha aranır; en az uyarılısı, eşitse amaç değeri en küçüğü seçilir (index.ts)
 ```
 
 Ekranda arama arka planda yürür (`istemci.ts` → `isci.ts`, Web Worker); asıl arama ile ek denemeler ayrı işçilerde aynı
