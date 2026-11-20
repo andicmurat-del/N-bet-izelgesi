@@ -14,10 +14,12 @@ const SEN = (process.env.SEN ?? "1,2,3,4").split(",").filter(Boolean).map(Number
 const ORNEK = process.env.ORNEK !== "0";
 const metin = [],
   json = {};
+// CIKTI=ad: aynı anda birden çok çalıştırmada ayrı dosyalar (son-sonuc-ad.md)
+const ek = process.env.CIKTI ? "-" + process.env.CIKTI : "";
 const yaz = () => {
-  fs.writeFileSync(new URL("son-sonuc.md", import.meta.url), "# Kesin kontrol\n\n" + metin.join("\n\n") + "\n");
+  fs.writeFileSync(new URL(`son-sonuc${ek}.md`, import.meta.url), "# Kesin kontrol\n\n" + metin.join("\n\n") + "\n");
   fs.writeFileSync(
-    new URL("son-sonuc.json", import.meta.url),
+    new URL(`son-sonuc${ek}.json`, import.meta.url),
     JSON.stringify(json, (k, v) => (k === "days" ? undefined : v), 1),
   );
 };
