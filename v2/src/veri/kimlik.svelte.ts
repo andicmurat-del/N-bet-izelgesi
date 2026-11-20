@@ -4,6 +4,9 @@
 // gösterimde claude.ai'den çözülür (ad değişse de geçmiş doğru kişiyi gösterir).
 // claude.ai dışında (geliştirme, ekran testleri) kimlik yoktur: uygulama eskisi gibi tek kullanıcılı çalışır.
 
+import type { Onay, Veri } from "./tipler";
+import { gunluk } from "./gunluk.svelte";
+
 interface Profil {
   id: string;
   name: string;
@@ -72,3 +75,23 @@ export async function adlariCoz(ids: readonly string[]) {
 /** kişinin adı (çözülemezse: paylaşımdan çıkarılmış ya da bilinmiyor) */
 export const kisiAdi = (id: string | null | undefined) =>
   id === kimlik.id ? kimlik.ad || "Siz" : (id && kimlik.adlar[id]) || "Bilinmeyen kullanıcı";
+
+/** onay kaydına yazılacak onaylayan: claude.ai kimliği, yoksa bu cihazda yazılan ad */
+export const onaylayanKimligi = (): { kimId?: string; kimAd?: string } =>
+  kimlik.id ? { kimId: kimlik.id } : gunluk.kullanici ? { kimAd: gunluk.kullanici } : {};
+/** programda onaylayanın adı (yoksa boş) */
+export const onaylayanAdi = (o: Onay | undefined | null): string => (o?.kimId ? kisiAdi(o.kimId) : o?.kimAd || "");
+/** onay satırına eklenecek metin: " · onaylayan: Ayşe Kaya" (yoksa boş) */
+export const onaylayanMetni = (o: Onay | undefined | null): string => {
+  const ad = onaylayanAdi(o);
+  return ad ? " · onaylayan: " + ad : "";
+};
+/** verideki bütün onaylayan kimlikleri (adları önceden çözülsün: çıktılar için) */
+export function onayKimlikleri(v: Veri): string[] {
+  const l = new Set<string>();
+  for (const c of Object.values(v.schedules)) if (c.onay?.kimId) l.add(c.onay.kimId);
+  for (const t of Object.values(v.listeOnay)) for (const o of Object.values(t)) if (o.kimId) l.add(o.kimId);
+  return [...l];
+}
+/** çıktıya giden onay kaydına çözülmüş adı ekler (kopya döner) */
+export const ciktiOnayi = (o: Onay | undefined | null): Onay | null => (o ? { ...o, onaylayanAd: onaylayanAdi(o) } : null);

@@ -44,7 +44,7 @@ export function cizelgePdf(c: AyCizelgesi, kisiler: Kisi[], b: PdfBilgi): Blob {
   const eczaciOnce = (l: Gorevli[]) =>
     [...l].sort((a, z) => Number(z.role === "eczaci" || z.role === "nobetci") - Number(a.role === "eczaci" || a.role === "nobetci"));
   const onay = c.onay
-    ? `Onaylandı: ${new Date(c.onay.zaman).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}${c.onay.kim ? " · " + c.onay.kim : ""}`
+    ? `Onaylandı: ${new Date(c.onay.zaman).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}${c.onay.kim ? " · " + c.onay.kim : ""}${c.onay.onaylayanAd ? " · onaylayan: " + c.onay.onaylayanAd : ""}`
     : "Taslak (onaylanmadı)";
 
   function ust(alt: string) {

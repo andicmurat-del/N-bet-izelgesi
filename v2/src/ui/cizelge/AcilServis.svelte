@@ -30,6 +30,7 @@
   import OnaySorusu from "../ortak/OnaySorusu.svelte";
   import AylikOzet from "../ortak/AylikOzet.svelte";
   import VurguSecici from "../ortak/VurguSecici.svelte";
+  import { onaylayanMetni } from "../../veri/kimlik.svelte";
 
   let { git }: { git: (ad: "kisiler") => void } = $props();
 
@@ -48,7 +49,9 @@
   const onay = $derived(listeOnayi("acil", y, m));
   const onayMetni = $derived(
     onay
-      ? new Date(onay.zaman).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" }) + (onay.kim ? " · " + onay.kim : "")
+      ? new Date(onay.zaman).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" }) +
+          (onay.kim ? " · " + onay.kim : "") +
+          onaylayanMetni(onay)
       : "",
   );
   $effect(() => {

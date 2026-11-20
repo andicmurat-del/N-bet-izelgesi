@@ -118,6 +118,18 @@ test("katkıda bulunan sorumlu: adı görünür, değişikliği kendi kimliğiyl
   await git(page, "ayarlar/genel");
   await expect(m).toContainText("Tüm verileri yalnız sayfanın sahibi silebilir");
   await expect(m.locator("button", { hasText: "Tüm verileri sil" })).toHaveCount(0);
+  // onaylayan: giriş yapan sorumlu kaydedilir, adıyla görünür
+  await git(page, "gunluk/nobet");
+  await page
+    .locator("main button:not([disabled])", { hasText: /^Onayla$/ })
+    .first()
+    .click();
+  await page.locator("dialog[open] button", { hasText: /^Onayla$/ }).click();
+  await expect(m.locator("dl.onay")).toContainText("Programda onaylayan");
+  await expect(m.locator("dl.onay")).toContainText("Ayşe Kaya");
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("nobet-cizelgesi-v2") ?? "{}").schedules?.["2026-10"]?.onay?.kimId))
+    .toBe("u_ayse");
 });
 
 test("sahip: sorumlu ekleme yolu anlatılır, tüm verileri silebilir", async ({ page, kur }) => {

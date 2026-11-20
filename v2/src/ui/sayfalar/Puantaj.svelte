@@ -17,6 +17,7 @@
   import IzinRapor from "../puantaj/IzinRapor.svelte";
   import NobetDegisimi from "../puantaj/NobetDegisimi.svelte";
   import AylikOzet from "../ortak/AylikOzet.svelte";
+  import { ciktiOnayi } from "../../veri/kimlik.svelte";
 
   // kimler: cetvelde ve izin/rapor kaydında görünen kişiler (o bölümün kadrosu); acil: Acil Eczane puantajı
   // (nöbet değişimi acil nöbetleri ve acil kadrosuyla)
@@ -138,7 +139,7 @@
       const blob =
         tur === "xlsx"
           ? m.puantajKitabi(G, depo.yil, depo.ay, depo.veri.kurum.ad, acil)
-          : m.puantajPdf(G, depo.yil, depo.ay, depo.veri.kurum.ad, (acil ? listeOnayi("acil", depo.yil, depo.ay) : c?.onay) ?? null);
+          : m.puantajPdf(G, depo.yil, depo.ay, depo.veri.kurum.ad, ciktiOnayi(acil ? listeOnayi("acil", depo.yil, depo.ay) : c?.onay));
       durum = (await dosyaKaydet(ad, blob, blob.type || "application/pdf"))
         ? (tur === "pdf" ? "PDF" : "Excel dosyası") + " kaydedildi."
         : "";

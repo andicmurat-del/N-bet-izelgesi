@@ -43,6 +43,7 @@
   import OnaySorusu from "../ortak/OnaySorusu.svelte";
   import NobetTablosu, { type Filtre } from "./NobetTablosu.svelte";
   import YanPaneller from "./YanPaneller.svelte";
+  import { ciktiOnayi } from "../../veri/kimlik.svelte";
 
   let { git }: { git: (ad: "cizelge" | "puantaj" | "izinler" | "kisiler" | "ayarlar") => void } = $props();
 
@@ -203,7 +204,9 @@
     durum = "";
     try {
       const { cizelgePdf } = await ciktiPaketi();
-      const blob = cizelgePdf(saatleriGuncelle(duzKopya(goster)!), duzKopya(depo.veri.staff), {
+      const cc = saatleriGuncelle(duzKopya(goster)!);
+      if (cc.onay) cc.onay = ciktiOnayi(cc.onay)!;
+      const blob = cizelgePdf(cc, duzKopya(depo.veri.staff), {
         kurum: depo.veri.kurum.ad,
         resmiTatil: d => resmiTatilMi(y, m, d),
         arife: d => arifeMi(y, m, d),

@@ -573,3 +573,27 @@ describe("tatil gününde elle nöbetçi / hazırlama sayısı ve fazla mesai", 
     expect([d.nobetSay, d.hazSay, d.fmNobet, d.fmHaz]).toEqual([undefined, undefined, undefined, undefined]);
   });
 });
+
+describe("onaylayan kişi", () => {
+  test("claude.ai kimliği ya da yazılan ad saklanır; bozuk kimlik ve fazlalık alan atılır", () => {
+    const v = veriyiDogrula({
+      staff: [],
+      schedules: {
+        "2026-10": {
+          year: 2026,
+          month: 10,
+          days: Array.from({ length: 30 }, (_, i) => ({ day: i + 1, assigned: [], prep: [] })),
+          onay: { zaman: 5, kim: "Uzm. Ecz.", kimId: "u_abc-1", onaylayanAd: "x" },
+        },
+      },
+      listeOnay: {
+        acil: { "2026-10": { zaman: 6, kim: "", kimAd: "Ayşe" } },
+        oglen: {},
+        onay: { "2026-11-16": { zaman: 7, kim: "", kimId: "<script>" } },
+      },
+    });
+    expect(v.schedules["2026-10"].onay).toEqual({ zaman: 5, kim: "Uzm. Ecz.", kimId: "u_abc-1" });
+    expect(v.listeOnay.acil["2026-10"]).toEqual({ zaman: 6, kim: "", kimAd: "Ayşe" });
+    expect(v.listeOnay.onay["2026-11-16"]).toEqual({ zaman: 7, kim: "" });
+  });
+});

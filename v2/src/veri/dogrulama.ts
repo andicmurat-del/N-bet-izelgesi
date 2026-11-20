@@ -89,6 +89,12 @@ export function gunDuzeniDogrula(x: Record<string, unknown> | null | undefined):
 type Ham = any;
 
 /** Yedekten ya da tarayıcıdan okunan veriyi güvenli biçime getirir; tanınmayan alanlar atılır. */
+/** onaylayan kişi: claude.ai kimliği (yalnız güvenli karakterler) ya da yazılan ad */
+function onayKisisi(a: Record<string, unknown>): { kimId?: string; kimAd?: string } {
+  const id = typeof a.kimId === "string" && /^[\w.:@+-]{1,200}$/.test(a.kimId) ? a.kimId : "";
+  const ad = typeof a.kimAd === "string" ? a.kimAd.slice(0, 40) : "";
+  return { ...(id ? { kimId: id } : {}), ...(!id && ad ? { kimAd: ad } : {}) };
+}
 export function veriyiDogrula(ham: unknown): Veri {
   const v = bosVeri();
   if (!ham || typeof ham !== "object") return v;
@@ -178,7 +184,7 @@ export function veriyiDogrula(ham: unknown): Veri {
   const lo = nesne(o.listeOnay),
     onayKaydi = (x: unknown) => {
       const a = nesne(x);
-      return Number(a.zaman) > 0 ? { zaman: Number(a.zaman), kim: String(a.kim ?? "") } : null;
+      return Number(a.zaman) > 0 ? { zaman: Number(a.zaman), kim: String(a.kim ?? ""), ...onayKisisi(a) } : null;
     };
   for (const [ayK, x] of Object.entries(nesne(lo.acil))) {
     const a = onayKaydi(x);
@@ -233,7 +239,9 @@ export function veriyiDogrula(ham: unknown): Veri {
       }),
       uyarilar: Array.isArray(c.uyarilar) ? c.uyarilar.map(String) : [],
       olusturma: Number(c.olusturma) || 0,
-      ...(c.onay && typeof c.onay === "object" ? { onay: { zaman: Number(c.onay.zaman) || 0, kim: String(c.onay.kim ?? "") } } : {}),
+      ...(c.onay && typeof c.onay === "object"
+        ? { onay: { zaman: Number(c.onay.zaman) || 0, kim: String(c.onay.kim ?? ""), ...onayKisisi(nesne(c.onay)) } }
+        : {}),
     };
   }
   const tamsayi = (x: unknown) => Number.isInteger(x);

@@ -29,6 +29,7 @@
   import OnaySorusu from "../ortak/OnaySorusu.svelte";
   import type { Rol } from "../../veri/tipler";
   import Ikon from "../ortak/Ikon.svelte";
+  import { onaylayanMetni } from "../../veri/kimlik.svelte";
   /** günde gereken kişi sayıları (Ayarlar > Gelişmiş kurallar) */
   const OGLEN_GEREK = $derived(oglenGerekHesapla(veriAnlik()));
 
@@ -87,7 +88,8 @@
   const onayMetni = $derived(
     onay
       ? (onay.zaman > 1 ? new Date(onay.zaman).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" }) : "önceki sürümde") +
-          (onay.kim ? " · " + onay.kim : "")
+          (onay.kim ? " · " + onay.kim : "") +
+          onaylayanMetni(onay)
       : "",
   );
   // haftanın çizelgesi olmayan ayı (ay sınırını aşan haftada öbür ay)

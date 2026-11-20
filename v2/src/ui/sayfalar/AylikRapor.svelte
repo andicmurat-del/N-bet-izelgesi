@@ -8,6 +8,7 @@
   import { depo, veriAnlik, ayCizelgesi, listeOnayi } from "../../veri/depo.svelte";
   import { ROL_AD, type Onay, type Rol } from "../../veri/tipler";
   import Ikon from "../ortak/Ikon.svelte";
+  import { onaylayanMetni } from "../../veri/kimlik.svelte";
 
   let { bolum }: { bolum: "gunluk" | "acil" } = $props();
   type Kapsam = "tum" | "gunluk" | "acil";
@@ -29,7 +30,7 @@
     !var_
       ? `${ad}: yok`
       : o
-        ? `${ad}: onaylandı ${new Date(o.zaman).toLocaleDateString("tr-TR")}${o.kim ? " · " + o.kim : ""}`
+        ? `${ad}: onaylandı ${new Date(o.zaman).toLocaleDateString("tr-TR")}${o.kim ? " · " + o.kim : ""}${onaylayanMetni(o)}`
         : `${ad}: onaylanmadı`;
   const onaylar = $derived([
     ...(kapsam !== "acil" ? [onayMetni("Nöbet çizelgesi", ayCizelgesi(depo.yil, depo.ay)?.onay, !!ayCizelgesi(depo.yil, depo.ay))] : []),

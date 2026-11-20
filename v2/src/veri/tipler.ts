@@ -62,7 +62,13 @@ export type GunDuzeni = Pick<Gun, "nobetSay" | "hazSay" | "fmNobet" | "fmHaz">;
 
 export interface Onay {
   zaman: number;
+  /** kurumun onaylayanı (Ayarlar > Genel; çıktılarda) */
   kim: string;
+  /** programda onaylayan: claude.ai kimliği (adı gösterimde çözülür) ya da claude.ai dışında bu cihazda yazılan ad */
+  kimId?: string;
+  kimAd?: string;
+  /** yalnız çıktıya giderken: programda onaylayanın çözülmüş adı (saklanmaz) */
+  onaylayanAd?: string;
 }
 
 export interface AyCizelgesi {

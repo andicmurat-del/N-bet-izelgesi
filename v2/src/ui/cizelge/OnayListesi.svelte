@@ -12,6 +12,7 @@
   import Ikon from "../ortak/Ikon.svelte";
   import Pencere from "../ortak/Pencere.svelte";
   import OnaySorusu from "../ortak/OnaySorusu.svelte";
+  import { onaylayanMetni } from "../../veri/kimlik.svelte";
 
   type Gun = [number, number, number];
   const kaydir = (y: number, m: number, d: number, k: number): Gun => {
@@ -57,7 +58,8 @@
   const onayMetni = $derived(
     onay
       ? (onay.zaman > 1 ? new Date(onay.zaman).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" }) : "önceki sürümde") +
-          (onay.kim ? " · " + onay.kim : "")
+          (onay.kim ? " · " + onay.kim : "") +
+          onaylayanMetni(onay)
       : "",
   );
   const oglenVar = $derived(!!hafta && hafta.gunler.some(([a, b, c]) => depo.veri.oglen[`${a}-${b}`]?.[c]));

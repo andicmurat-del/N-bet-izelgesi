@@ -12,7 +12,7 @@
     tatilleriKendiligindenIsaretle,
   } from "./veri/depo.svelte";
   import { bulut, bulutuBaslat, bulutYenidenDene, cakismayiCoz } from "./veri/bulut.svelte";
-  import { kimlik, kisiAdi, ROL_ADI } from "./veri/kimlik.svelte";
+  import { kimlik, kisiAdi, ROL_ADI, adlariCoz, onayKimlikleri } from "./veri/kimlik.svelte";
   import { oda, odaBaslat, konumBildir } from "./veri/oda.svelte";
   import { dosyaKaydet, hataMetni } from "./disa/indir";
   import { ayAdi } from "./veri/tarih";
@@ -92,6 +92,10 @@
     gecmis: "geçmiş",
     yardim: "yardım",
   };
+  // onaylayanların adları önceden çözülür (ekranda ve çıktılarda görünsün)
+  $effect(() => {
+    if (kimlik.var) void adlariCoz(onayKimlikleri(depo.veri));
+  });
   const altGorunum = $derived(sayfa === "gunluk" ? gunlukAlt : sayfa === "acil" ? acilAlt : ayarAlt);
   const ayK = $derived(`${depo.yil}-${depo.ay}`);
   $effect(() => konumBildir({ sayfa, alt: altGorunum, ay: ayK }));

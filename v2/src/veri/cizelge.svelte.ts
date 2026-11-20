@@ -6,6 +6,7 @@ import { Baglam, eczaneHazirlamacisi, eczaneNobetcisi, gunNobetFm } from "../mot
 import { gunDuzeniDogrula } from "./dogrulama";
 import { tatilMi } from "./izinler.svelte";
 import { depo, gecmisiSifirla, veriAnlik } from "./depo.svelte";
+import { onaylayanKimligi } from "./kimlik.svelte";
 
 // ---------- çizelge ----------
 export const ayCizelgesi = (y: number, m: number): AyCizelgesi | undefined => depo.veri.schedules[ayAnahtari(y, m)];
@@ -103,7 +104,7 @@ export function cizelgeSil(y: number, m: number) {
 }
 export function onayla(y: number, m: number) {
   const c = ayCizelgesi(y, m);
-  if (c) c.onay = { zaman: Date.now(), kim: depo.veri.kurum.onaylayan };
+  if (c) c.onay = { zaman: Date.now(), kim: depo.veri.kurum.onaylayan, ...onaylayanKimligi() };
   gecmisiSifirla(); // onay bir geri alma noktasıdır
 }
 export function onayiKaldir(y: number, m: number) {

@@ -4,6 +4,7 @@ import type { OglenGunu, OglenSabit, PuantajKodu } from "./tipler";
 import { ayAnahtari, haftaAnahtari, haftaIciGunleri } from "./tarih";
 import { oglenSabitDogrula } from "./dogrulama";
 import { alan, depo, duzKopya, gecmisiSifirla } from "./depo.svelte";
+import { onaylayanKimligi } from "./kimlik.svelte";
 
 // ---------- acil eczane listesi (aylık), öğlen nöbeti ve onay listesi (haftalık) onayı ----------
 // Onaylanan liste elle değiştirilemez, yeniden oluşturulmaz ve silinemez (önce onay kaldırılır). Öğlen nöbetinde
@@ -12,7 +13,7 @@ import { alan, depo, duzKopya, gecmisiSifirla } from "./depo.svelte";
 export type ListeTuru = "acil";
 export const listeOnayi = (tur: ListeTuru, y: number, m: number) => depo.veri.listeOnay[tur][ayAnahtari(y, m)];
 export function listeyiOnayla(tur: ListeTuru, y: number, m: number) {
-  depo.veri.listeOnay[tur][ayAnahtari(y, m)] = { zaman: Date.now(), kim: depo.veri.kurum.onaylayan };
+  depo.veri.listeOnay[tur][ayAnahtari(y, m)] = { zaman: Date.now(), kim: depo.veri.kurum.onaylayan, ...onaylayanKimligi() };
   gecmisiSifirla(); // onay bir geri alma noktasıdır
 }
 export function listeOnayiniKaldir(tur: ListeTuru, y: number, m: number) {
@@ -24,7 +25,7 @@ export const haftaOnayi = (tur: HaftaListesi, y: number, m: number, d: number) =
 export const oglenOnayli = (y: number, m: number, d: number) => !!depo.veri.listeOnay.oglen[haftaAnahtari(y, m, d)];
 export function haftayiOnayla(tur: HaftaListesi, y: number, m: number, d: number) {
   if (tur === "oglen" && !haftaOnayi("onay", y, m, d)) return;
-  depo.veri.listeOnay[tur][haftaAnahtari(y, m, d)] = { zaman: Date.now(), kim: depo.veri.kurum.onaylayan };
+  depo.veri.listeOnay[tur][haftaAnahtari(y, m, d)] = { zaman: Date.now(), kim: depo.veri.kurum.onaylayan, ...onaylayanKimligi() };
   gecmisiSifirla();
 }
 /** haftanın onayını kaldırır; onay listesinin onayı kalkınca o haftanın öğlen nöbeti (onayıyla birlikte) silinir */

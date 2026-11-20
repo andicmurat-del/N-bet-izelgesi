@@ -9,6 +9,7 @@
   /** uyarı başına gösterilen en çok gün düğmesi */
   const GUN_SINIR = 14;
   import Ikon from "../ortak/Ikon.svelte";
+  import { onaylayanAdi } from "../../veri/kimlik.svelte";
 
   let {
     c,
@@ -96,6 +97,8 @@
         </dd>
         <dt>Onaylayan</dt>
         <dd>{c.onay?.kim || depo.veri.kurum.onaylayan || "—"}</dd>
+        {#if onaylayanAdi(c.onay)}<dt>Programda onaylayan</dt>
+          <dd>{onaylayanAdi(c.onay)}</dd>{/if}
         <dt>Onay tarihi</dt>
         <dd>{c.onay ? new Date(c.onay.zaman).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" }) : "—"}</dd>
       </dl>

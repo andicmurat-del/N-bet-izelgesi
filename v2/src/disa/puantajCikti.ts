@@ -106,7 +106,9 @@ export function puantajPdf(G: Izgara, y: number, m: number, kurum: string, onay:
   doc.setFontSize(8);
   doc.setTextColor(88, 105, 120);
   doc.text(
-    onay ? `Onaylandı: ${new Date(onay.zaman).toLocaleDateString("tr-TR")}${onay.kim ? " · " + onay.kim : ""}` : "Çizelge onaylanmadı",
+    onay
+      ? `Onaylandı: ${new Date(onay.zaman).toLocaleDateString("tr-TR")}${onay.kim ? " · " + onay.kim : ""}${onay.onaylayanAd ? " · onaylayan: " + onay.onaylayanAd : ""}`
+      : "Çizelge onaylanmadı",
     W - K,
     13,
     { align: "right" },
