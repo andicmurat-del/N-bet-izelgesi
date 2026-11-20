@@ -27,10 +27,6 @@ type Hamle =
 /** yinelemeli aramanın tur sayısı: uyarı kalmadıysa KISA, kaldıysa UZUN tura kadar sürer. Süreyle değil tur sayısıyla
  *  sınırlıdır: aynı veriyle her bilgisayarda (yavaş telefonda da) aynı çizelge çıkar. */
 export const ARAMA_TUR = { KISA: 500, UZUN: 800 } as const;
-/** DENEY (varsayılan kapalı; yalnız ölçüm için, programda kullanılmaz): yinelemeli aramada bozmanın bir hafta sonunu
- *  hedeflemesi. haftaSonu: hafta sonunun bütün görevleri rastgele yeniden dağıtılır; cift: Cumartesi hazırlaması o hafta
- *  sonunun Pazar nöbetçilerine verilmeye çalışılır. oran: turların ne kadarında (0: kapalı, sonuç birebir eskisi gibi) */
-export const aramaDeneyi = { tur: "haftaSonu" as "haftaSonu" | "cift", oran: 0 };
 
 /** aramanın ortak durumu: kurulum, kurallar, amaç, yardımcılar ve şu anki amaç değeri (J) */
 interface Arama {
@@ -471,8 +467,6 @@ function yinelemeliArama(S: Arama, ilerleme?: (oran: number) => void, turSiniri?
     if (!dy.locked) acikGunler.push(i);
   });
   let denemeSayisi = 0;
-  const hsOran = aramaDeneyi.oran,
-    haftaSonlari = acikGunler.filter(i => S.K.gunDow[i] === CUMARTESI && i + 1 < days.length && !days[i + 1].locked);
   // turSiniri: testlerdeki hızlı tarama için üst sınır (0: yinelemeli arama yapılmaz)
   // tek uyarı yapısalsa (eczacı az: fazla mesai farkı kaçınılmaz) uzun arama onu gideremez: kısa turda kalınır. Karar
   // kısa tur bitince bir kez verilir (o anda günler en iyi çizelgededir)
@@ -488,38 +482,6 @@ function yinelemeliArama(S: Arama, ilerleme?: (oran: number) => void, turSiniri?
   while (acikGunler.length > 2 && denemeSayisi < sinir()) {
     denemeSayisi++;
     if (ilerleme && denemeSayisi % 10 === 0) ilerleme(Math.min(1, denemeSayisi / sinir()));
-    // DENEY: bir hafta sonunu hedefleyen bozma (kapalıyken rnd çağrılmaz: sonuç eskisiyle aynı)
-    if (hsOran > 0 && haftaSonlari.length && rnd() < hsOran) {
-      const s = haftaSonlari[Math.floor(rnd() * haftaSonlari.length)];
-      if (aramaDeneyi.tur === "cift") {
-        // Pazar nöbetçisini Cumartesi hazırlamasına al (hafta sonu tek kişide toplansın)
-        for (const b of days[s + 1].assigned) {
-          if (days[s].prep.some(pp => pp.id === b.id)) continue;
-          const slot = days[s].prep.findIndex(pp => pp.role !== "destek");
-          if (slot < 0) break;
-          const eskiListe = days[s].prep;
-          days[s].prep = eskiListe.map((pp, ix) => (ix === slot ? gn(b) : pp));
-          if (!prepUygun(b.id, s)) days[s].prep = eskiListe;
-        }
-      } else
-        for (const i of [s, s + 1]) {
-          for (const a of days[i].assigned.slice()) {
-            const b = staffList[Math.floor(rnd() * staffList.length)];
-            if (zorunluMu(a.id, i) || b.id === a.id || days[i].assigned.some(p => p.id === b.id)) continue;
-            const eski = days[i].assigned;
-            days[i].assigned = eski.map(p => (p.id === a.id ? gn(b) : p));
-            if (!gunGecerli(i)) days[i].assigned = eski;
-          }
-          for (let slot = 0; slot < days[i].prep.length; slot++) {
-            const havuzB = degisimHavuzu(days[i].prep[slot], slot);
-            const b = havuzB[Math.floor(rnd() * havuzB.length)];
-            if (days[i].prep.some(pp => pp.id === b.id)) continue;
-            const eskiListe = days[i].prep;
-            days[i].prep = eskiListe.map((pp, ix) => (ix === slot ? gn(b) : pp));
-            if (!prepUygun(b.id, i)) days[i].prep = eskiListe;
-          }
-        }
-    }
     // birkaç nöbetçiyi rastgele değiştir
     const bozulacak = 3 + Math.floor(rnd() * 4);
     for (let z = 0; z < bozulacak; z++) {

@@ -264,7 +264,8 @@ function modelKur(veri, y, m, ref) {
   const dolu = [];
   for (let i = 0; i + 1 < G; i++) {
     if (gunDow[i] !== CUMARTESI) continue;
-    for (const id of fmKisi) {
+    // herkes: nöbetçiler, hazırlamacılar, destek personeli (motor/olcut.ts ile aynı)
+    for (const id of [...new Set([...staffList, ...prepAday, ...destekler].map(k => k.id))]) {
       const vs = [X(id, i), H(id, i), X(id, i + 1), H(id, i + 1)].filter(Boolean);
       if (!vs.length) continue;
       const w = `hs_${id}_${i}`;

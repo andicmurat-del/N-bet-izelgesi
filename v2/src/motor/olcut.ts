@@ -1,5 +1,5 @@
 // Bir ayın çizelgesinin özet ölçütleri: ayar değişikliğinin etkisini karşılaştırmak için (Ayarlar > ayar önizlemesi).
-import type { Baglam, MotorGunu } from "./baglam";
+import { aktifGunMu, eczaneHazirlamacisi, eczaneNobetcisi, type Baglam, type MotorGunu } from "./baglam";
 import { fmFarkBilgisi, fmKuralKisileri } from "./istatistik";
 import { uyariSiniflandir } from "./raporlar";
 import { CUMA, CUMARTESI, haftaGunu, PERSEMBE } from "./takvim";
@@ -11,7 +11,8 @@ export interface CizelgeOlcutleri {
   /** ayın tamamında çalışanlar arasında fazla mesai farkı (saat) ve nöbet sayısı farkı */
   fmFark: number;
   nobetFark: number;
-  /** kişi başı boş hafta sonu (Cumartesi + Pazar ikisinde de görev yok) toplamı ve olası toplam */
+  /** kişi başı boş hafta sonu (Cumartesi + Pazar ikisinde de görev yok) toplamı ve olası toplam: o hafta sonu çalışan herkes
+   *  (eczacı, tekniker, kemoterapi eczacısı, destek personeli; ay içinde başlayan / ayrılan dahil) */
   bosHaftaSonu: number;
   haftaSonuToplam: number;
   /** Cuma nöbetçisine aynı hafta Pazar nöbeti / hazırlaması; Perşembe nöbetçisine aynı hafta sonu nöbet */
@@ -24,7 +25,8 @@ export interface CizelgeOlcutleri {
 export function cizelgeOlcutleri(B: Baglam, y: number, m: number, sonuc: { days: MotorGunu[]; warnings: string[] }): CizelgeOlcutleri {
   const days = sonuc.days;
   const kisiler = fmKuralKisileri(B, y, m);
-  const ids = new Set(kisiler.map(k => k.id));
+  // hafta sonu görevi alabilenler: eczane nöbetçileri, hazırlamacılar ve destek personeli
+  const hsKadro = B.staff.filter(s => eczaneNobetcisi(s) || eczaneHazirlamacisi(s) || s.role === "destek");
   const nobetSay: Record<number, number> = {};
   kisiler.forEach(k => (nobetSay[k.id] = 0));
   days.forEach(d => d.assigned.forEach(p => p.id in nobetSay && nobetSay[p.id]++));
@@ -40,9 +42,10 @@ export function cizelgeOlcutleri(B: Baglam, y: number, m: number, sonuc: { days:
   days.forEach((d, i) => {
     const dw = haftaGunu(y, m, d.day);
     if (dw === CUMARTESI && i + 1 < days.length)
-      for (const id of ids) {
+      for (const s of hsKadro) {
+        if (!aktifGunMu(s, y, m, d.day) && !aktifGunMu(s, y, m, days[i + 1].day)) continue;
         toplam++;
-        if (!gorevli(i, id) && !gorevli(i + 1, id)) bos++;
+        if (!gorevli(i, s.id) && !gorevli(i + 1, s.id)) bos++;
       }
     if (dw === CUMA) for (const p of d.assigned) if (gorevli(i + 2, p.id)) cumaPazar++;
     if (dw === PERSEMBE) for (const p of d.assigned) if (gorevli(i + 2, p.id, false) || gorevli(i + 3, p.id, false)) persembe++;
