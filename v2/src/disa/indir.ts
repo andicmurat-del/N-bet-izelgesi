@@ -1,5 +1,7 @@
 // Dosya kaydetme: artifact içinde tarayıcı indirme bağlantıları çalışmaz; claude.ai'nin "downloads" yeteneği kullanılır.
-// Artifact dışında (geliştirme sırasında) normal indirme bağlantısına düşer.
+// Masaüstü uygulamasında "Farklı kaydet" penceresi açılır. Öteki durumlarda normal indirme bağlantısına düşer.
+import { masaustuMu, tauri } from "../veri/klasor/dosya";
+import { b64 } from "../veri/klasor/sifre";
 
 type Indirme = { save(o: { filename: string; data: Blob | string }): Promise<void> };
 declare global {
@@ -38,6 +40,14 @@ function indirmeYetenegi(): Promise<Indirme | null> {
 
 /** true: kaydedildi, false: kullanıcı vazgeçti. Kaydedilemezse IndirmeHatasi fırlatır. */
 export async function dosyaKaydet(dosyaAdi: string, veri: Blob | string, tur: string): Promise<boolean> {
+  if (masaustuMu()) {
+    const bayt = veri instanceof Blob ? new Uint8Array(await veri.arrayBuffer()) : new TextEncoder().encode(veri);
+    try {
+      return await tauri().core.invoke<boolean>("dosya_kaydet", { ad: dosyaAdi, veri: b64(bayt) });
+    } catch (e) {
+      throw new IndirmeHatasi("Dosya kaydedilemedi: " + String(typeof e === "string" ? e : ((e as Error)?.message ?? e)) + ".");
+    }
+  }
   const d = await indirmeYetenegi();
   if (d) {
     try {

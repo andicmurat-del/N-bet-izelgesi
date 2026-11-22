@@ -7,7 +7,18 @@ import globals from "globals";
 import svelteConfig from "./svelte.config.js";
 
 export default ts.config(
-  { ignores: ["dist/", "node_modules/", "coverage/", "playwright-report/", "test-results/", "test/eski/senaryolar.cjs"] },
+  {
+    ignores: [
+      "dist/",
+      "node_modules/",
+      "coverage/",
+      "playwright-report/",
+      "test-results/",
+      "test/eski/senaryolar.cjs",
+      "masaustu/target/",
+      "masaustu/gen/",
+    ],
+  },
   js.configs.recommended,
   ...ts.configs.recommended,
   ...svelte.configs.recommended,

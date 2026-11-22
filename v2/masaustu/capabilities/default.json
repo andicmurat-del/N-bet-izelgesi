@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Ana pencere: olay dinleme (kapanırken bekleyen değişiklikleri yazmak için). Dosya işlemleri uygulamanın kendi komutlarıyla.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

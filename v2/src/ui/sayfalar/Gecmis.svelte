@@ -18,6 +18,8 @@
   import { SUNUCU_KOPYA_GUN, type SunucuKopyasi } from "../../veri/sunucuKopya";
   import { oda } from "../../veri/oda.svelte";
   import Ikon from "../ortak/Ikon.svelte";
+  import Kullanicilar from "../klasor/Kullanicilar.svelte";
+  import { klasorKipi, klasorKipiKullanilabilir, klasorKipiniAyarla } from "../../veri/saklama";
 
   const TUR_AD: Record<KayitTuru, string> = {
     geri: "Geri alma",
@@ -80,7 +82,9 @@
 </script>
 
 <div class="duzen">
-  {#if kimlik.var}
+  {#if klasorKipi}
+    <div class="klasor-yan"><Kullanicilar /></div>
+  {:else if kimlik.var}
     <section class="kart panel-blok kullanicilar">
       <h2>Kullanıcılar ve yetki</h2>
       <p>
@@ -111,22 +115,45 @@
         </p>
       {/if}
     </section>
+  {:else if klasorKipiKullanilabilir()}
+    <section class="kart panel-blok kullanicilar">
+      <h2>Birden çok sorumlu: ortak klasör</h2>
+      <p class="aciklama">
+        Veriler şu an yalnız bu tarayıcıda. Hastanenin ortak ağ klasöründe (ör. <code>\\sunucu\eczane</code>) çalışırsanız her sorumlu kendi
+        bilgisayarından kendi kullanıcı adı ve şifresiyle girer; veriler klasörde şifreli durur, kimin ne değiştirdiği girişten gelir.
+        İnternet ve sunucu gerekmez. Kasayı kuran sahip olur ve kullanıcıları ekler; bu tarayıcıdaki veriler kasaya aktarılabilir. Masaüstü
+        uygulaması da aynı klasörü kullanır.
+      </p>
+      <div>
+        <button
+          class="dugme"
+          onclick={() => {
+            klasorKipiniAyarla(true);
+            location.reload();
+          }}>Ortak klasörde çalış (kullanıcı adı ve şifreyle)</button
+        >
+      </div>
+    </section>
   {/if}
   <section class="kart panel-blok">
     <h2>Değişiklik geçmişi</h2>
     {#if sunucuGecmis.acik}
       <p class="aciklama">
-        Her değişiklikte neyin değiştiği, ne zaman ve kimin yaptığı yazılır. Kişi claude.ai girişinden gelir; herkes yalnız kendi kaydını
-        yazabilir, kimse (sayfanın sahibi dahil) başkasının kaydını değiştiremez ya da silemez. Bütün sorumluların kayıtları sunucuda, her
-        cihazda aynıdır.
+        {#if klasorKipi}Her değişiklikte neyin değiştiği, ne zaman ve kimin yaptığı yazılır. Kişi kullanıcı adı ve şifreyle girişten gelir;
+          her kayıt yazanın anahtarıyla imzalıdır: başkası adına kayıt yazılamaz, değiştirilen kayıt kullanılmaz. Bütün sorumluların
+          kayıtları ortak klasörde, her bilgisayarda aynıdır.{:else}Her değişiklikte neyin değiştiği, ne zaman ve kimin yaptığı yazılır.
+          Kişi claude.ai girişinden gelir; herkes yalnız kendi kaydını yazabilir, kimse (sayfanın sahibi dahil) başkasının kaydını
+          değiştiremez ya da silemez. Bütün sorumluların kayıtları sunucuda, her cihazda aynıdır.{/if}
       </p>
       <div class="secim" role="group" aria-label="Geçmişin kaynağı">
-        <button class="dugme kucuk" class:ana={kaynak === "sunucu"} aria-pressed={kaynak === "sunucu"} onclick={() => (kaynak = "sunucu")}
-          >Bütün sorumlular (sunucu)</button
-        >
-        <button class="dugme kucuk" class:ana={kaynak === "yerel"} aria-pressed={kaynak === "yerel"} onclick={() => (kaynak = "yerel")}
-          >Bu tarayıcı</button
-        >
+        {#if !klasorKipi}
+          <button class="dugme kucuk" class:ana={kaynak === "sunucu"} aria-pressed={kaynak === "sunucu"} onclick={() => (kaynak = "sunucu")}
+            >Bütün sorumlular (sunucu)</button
+          >
+          <button class="dugme kucuk" class:ana={kaynak === "yerel"} aria-pressed={kaynak === "yerel"} onclick={() => (kaynak = "yerel")}
+            >Bu tarayıcı</button
+          >
+        {/if}
         {#if sunucuda}<button
             class="dugme kucuk sade"
             onclick={() => sunucuGecmisiYukle(sunucuGecmis.tumu)}
@@ -158,7 +185,7 @@
       >
     </div>
     {#if sunucuda && sunucuGecmis.yukleniyor && !kayitlar.length}
-      <p class="bos">Sunucudan okunuyor…</p>
+      <p class="bos">{klasorKipi ? "Ortak klasörden" : "Sunucudan"} okunuyor…</p>
     {:else if !kayitlar.length}
       <p class="bos">{hepsi.length ? "Aramaya uyan kayıt yok." : "Henüz kayıtlı değişiklik yok."}</p>
     {:else}
@@ -207,14 +234,16 @@
   <section class="kart panel-blok">
     <h2>Günlük otomatik kopyalar</h2>
     <p class="aciklama">
-      Her günün ilk değişikliğinden önce verilerin o anki hâli saklanır (bu tarayıcıda son {KOPYA_GUN} gün{sunucuGecmis.acik
-        ? "; sunucuda da bütün sorumlular için"
-        : ""}). Yanlışlıkla toplu silme ya da yanlış yedek yüklemesinden sonra bir önceki güne dönmek için. Tarayıcı verisi silinirse bunlar
-      da gider: düzenli olarak "Yedek al" ile dosya yedeği alın.
+      {#if klasorKipi}Her günün ilk değişikliğinden önce verilerin o anki hâli ortak klasörde saklanır (son {SUNUCU_KOPYA_GUN} gün, bütün sorumlular
+        için). Yanlışlıkla toplu silme ya da yanlış yedek yüklemesinden sonra bir önceki güne dönmek için. Ortak klasörün kendisi için yedek klasörü
+        kullanın.{:else}Her günün ilk değişikliğinden önce verilerin o anki hâli saklanır (bu tarayıcıda son {KOPYA_GUN} gün{sunucuGecmis.acik
+          ? "; sunucuda da bütün sorumlular için"
+          : ""}). Yanlışlıkla toplu silme ya da yanlış yedek yüklemesinden sonra bir önceki güne dönmek için. Tarayıcı verisi silinirse
+        bunlar da gider: düzenli olarak "Yedek al" ile dosya yedeği alın.{/if}
     </p>
     {#if durum}<p class="bant tamam" role="status">{durum}</p>{/if}
     {#if sunucuGecmis.acik}
-      <h3>Sunucuda (bütün sorumlular, son {SUNUCU_KOPYA_GUN} gün)</h3>
+      <h3>{klasorKipi ? "Ortak klasörde" : "Sunucuda"} (bütün sorumlular, son {SUNUCU_KOPYA_GUN} gün)</h3>
       {#if !sunucuKopyalari.length}
         <p class="bos">Henüz kopya yok; günün ilk değişikliğinde alınır.</p>
       {:else}
@@ -244,9 +273,11 @@
           {/each}
         </ul>
       {/if}
-      <h3>Bu tarayıcıda</h3>
+      {#if !klasorKipi}<h3>Bu tarayıcıda</h3>{/if}
     {/if}
-    {#if !kopyalar.length}
+    {#if klasorKipi}
+      <!-- ortak klasör kipinde bu bilgisayarda kopya tutulmaz -->
+    {:else if !kopyalar.length}
       <p class="bos">Henüz kopya yok; ilk değişiklikte alınır.</p>
     {:else}
       <ul class="kopyalar">
@@ -288,6 +319,11 @@
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     gap: var(--b4);
     align-items: start;
+  }
+  .klasor-yan {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: var(--b4);
   }
   section {
     display: grid;

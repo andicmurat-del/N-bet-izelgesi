@@ -5,6 +5,7 @@ import { KAYIT_ANAHTARI as ANAHTAR } from "./dogrulama";
 import { bosVeri, guvenliJson, veriyiDogrula } from "./dogrulama";
 import { depo, gecmisiSifirla, veriAnlik } from "./depo.svelte";
 import { gunlukKopyaVerisi, kaynakBelirt } from "./gunluk.svelte";
+import { yerel } from "./saklama";
 
 // ---------- yedek ----------
 export function yedekVerisi(): string {
@@ -41,7 +42,7 @@ export function gunlukKopyayaDon(gun: string): boolean {
 }
 export function tumVeriyiDegistir(v: Veri) {
   try {
-    localStorage.setItem(ANAHTAR + "-yukleme-oncesi", JSON.stringify(veriAnlik()));
+    yerel.setItem(ANAHTAR + "-yukleme-oncesi", JSON.stringify(veriAnlik()));
   } catch {
     /* yer yoksa geçilir */
   }
@@ -51,7 +52,7 @@ export function tumVeriyiDegistir(v: Veri) {
 /** yüklemeden / sunucudan almadan önceki veri saklı mı */
 export function yuklemeOncesiVar(): boolean {
   try {
-    return !!localStorage.getItem(ANAHTAR + "-yukleme-oncesi");
+    return !!yerel.getItem(ANAHTAR + "-yukleme-oncesi");
   } catch {
     return false;
   }
@@ -59,11 +60,11 @@ export function yuklemeOncesiVar(): boolean {
 /** Yedekten yüklemeden önceki veriye döner (yanlış dosya seçildiyse) */
 export function yuklemeOncesineDon(): boolean {
   try {
-    const s = localStorage.getItem(ANAHTAR + "-yukleme-oncesi");
+    const s = yerel.getItem(ANAHTAR + "-yukleme-oncesi");
     if (!s) return false;
     depo.veri = veriyiDogrula(guvenliJson(s));
     gecmisiSifirla();
-    localStorage.removeItem(ANAHTAR + "-yukleme-oncesi");
+    yerel.removeItem(ANAHTAR + "-yukleme-oncesi");
     return true;
   } catch {
     return false;
@@ -77,7 +78,7 @@ const YEDEK_ANAHTAR = ANAHTAR + "-yedek",
 export const YEDEK_GUN = 7;
 function yedekIziOku(): { son: number; ertele: number } {
   try {
-    const o = JSON.parse(localStorage.getItem(YEDEK_ANAHTAR) || "null");
+    const o = JSON.parse(yerel.getItem(YEDEK_ANAHTAR) || "null");
     return { son: Number(o?.son) || 0, ertele: Number(o?.ertele) || 0 };
   } catch {
     return { son: 0, ertele: 0 };
@@ -86,7 +87,7 @@ function yedekIziOku(): { son: number; ertele: number } {
 export const yedekIzi = $state(yedekIziOku());
 function yedekIziYaz() {
   try {
-    localStorage.setItem(YEDEK_ANAHTAR, JSON.stringify({ son: yedekIzi.son, ertele: yedekIzi.ertele }));
+    yerel.setItem(YEDEK_ANAHTAR, JSON.stringify({ son: yedekIzi.son, ertele: yedekIzi.ertele }));
   } catch {
     /* yazılamazsa hatırlatma yeniden çıkar */
   }
@@ -116,7 +117,7 @@ export function yedekHatirlatma(simdi = Date.now()): number | null {
  *  "Önceki verilere dön" ile geri alınabilir; bu oturumda geri al da çalışır. */
 export function tumVeriyiSil() {
   try {
-    localStorage.setItem(ANAHTAR + "-yukleme-oncesi", JSON.stringify(veriAnlik()));
+    yerel.setItem(ANAHTAR + "-yukleme-oncesi", JSON.stringify(veriAnlik()));
   } catch {
     /* yer yoksa geçilir */
   }

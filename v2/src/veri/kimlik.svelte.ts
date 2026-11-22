@@ -6,6 +6,8 @@
 
 import type { Onay, Veri } from "./tipler";
 import { gunluk } from "./gunluk.svelte";
+import { klasorKipi } from "./saklama";
+import { platform } from "./yetenek";
 
 interface Profil {
   id: string;
@@ -20,12 +22,14 @@ export interface KullaniciYetenegi {
 }
 
 export type Rol = "sahip" | "duzenleyen" | "katkida" | "okuyan";
-export const ROL_ADI: Record<Rol, string> = {
-  sahip: "Sahip",
-  duzenleyen: "Baş sorumlu (Editor)",
-  katkida: "Sorumlu (Contributor)",
-  okuyan: "Yalnız görüntüleyen: verilere erişemez",
-};
+export const ROL_ADI: Record<Rol, string> = klasorKipi
+  ? { sahip: "Sahip", duzenleyen: "Baş sorumlu", katkida: "Sorumlu", okuyan: "Yalnız görüntüleyen" }
+  : {
+      sahip: "Sahip",
+      duzenleyen: "Baş sorumlu (Editor)",
+      katkida: "Sorumlu (Contributor)",
+      okuyan: "Yalnız görüntüleyen: verilere erişemez",
+    };
 
 export const kimlik = $state({
   /** claude.ai kimliği belli (sayfa claude.ai'de, oturum açık) */
@@ -44,9 +48,10 @@ let baslama: Promise<KullaniciYetenegi | null> | null = null;
 export function kimlikBaslat(): Promise<KullaniciYetenegi | null> {
   if (baslama) return baslama;
   baslama = (async () => {
-    if (typeof window === "undefined" || !window.claude) return null;
+    const p = platform();
+    if (!p) return null;
     try {
-      kullanici = (await window.claude.use("user")) as KullaniciYetenegi | null;
+      kullanici = (await p.use("user")) as KullaniciYetenegi | null;
     } catch {
       kullanici = null;
     }
@@ -100,4 +105,13 @@ export const ciktiOnayi = (o: Onay | undefined | null): Onay | null => (o ? { ..
  *  herkes. Sunucuda veritabanı kuralı da uygular (nobet/yonetim belgesine yalnız admin yazar). */
 export const yonetimYetkisi = () => !kimlik.var || kimlik.rol === "sahip" || kimlik.rol === "duzenleyen";
 /** tüm veriyi değiştiren işlemler (yedekten yükleme, kopyaya dönme) de yönetim bölümlerini değiştirir */
-export const YONETIM_UYARISI = "Bunu yalnız sahip ve baş sorumlu (Editor) yapabilir.";
+export const YONETIM_UYARISI = klasorKipi
+  ? "Bunu yalnız sahip ve baş sorumlu yapabilir."
+  : "Bunu yalnız sahip ve baş sorumlu (Editor) yapabilir.";
+/** ortak klasör kipinde sahip kişinin rolünü ya da adını değiştirince (sayfa yenilenmeden) */
+export function kimlikGuncelle(o: { ad: string; rol: Rol; adlar?: Record<string, string> }) {
+  kimlik.ad = o.ad;
+  kimlik.rol = o.rol;
+  if (kimlik.id) kimlik.adlar[kimlik.id] = o.ad;
+  if (o.adlar) for (const [k, v] of Object.entries(o.adlar)) kimlik.adlar[k] = v;
+}

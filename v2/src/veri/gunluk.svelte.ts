@@ -6,6 +6,7 @@
 import { degisiklikOzeti } from "./degisiklikOzeti";
 import { KAYIT_ANAHTARI, guvenliJson, veriyiDogrula } from "./dogrulama";
 import type { Veri } from "./tipler";
+import { yerel } from "./saklama";
 
 const GECMIS_ANAHTAR = KAYIT_ANAHTARI + "-degisiklikler",
   KULLANICI_ANAHTAR = KAYIT_ANAHTARI + "-kullanici",
@@ -24,7 +25,7 @@ export interface DegisiklikKaydi {
 
 function oku<T>(anahtar: string, vars: T): T {
   try {
-    const s = localStorage.getItem(anahtar);
+    const s = yerel.getItem(anahtar);
     return s === null ? vars : (JSON.parse(s) as T);
   } catch {
     return vars;
@@ -32,7 +33,7 @@ function oku<T>(anahtar: string, vars: T): T {
 }
 function yaz(anahtar: string, deger: unknown) {
   try {
-    localStorage.setItem(anahtar, typeof deger === "string" ? deger : JSON.stringify(deger));
+    yerel.setItem(anahtar, typeof deger === "string" ? deger : JSON.stringify(deger));
     return true;
   } catch {
     return false;
@@ -100,7 +101,7 @@ export function gunlukKopyaAl(v: Veri, simdi = new Date()) {
   const gun = gunAnahtari(simdi);
   let var_ = false;
   try {
-    var_ = localStorage.getItem(KOPYA_ONEK + gun) !== null;
+    var_ = yerel.getItem(KOPYA_ONEK + gun) !== null;
   } catch {
     return;
   }
@@ -117,7 +118,7 @@ export function gunlukKopyaAl(v: Veri, simdi = new Date()) {
 }
 function sil(gun: string) {
   try {
-    localStorage.removeItem(KOPYA_ONEK + gun);
+    yerel.removeItem(KOPYA_ONEK + gun);
   } catch {
     /* yapılacak bir şey yok */
   }
@@ -126,8 +127,8 @@ function sil(gun: string) {
 function kopyaGunleri(): string[] {
   const l: string[] = [];
   try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
+    for (let i = 0; i < yerel.length; i++) {
+      const k = yerel.key(i);
       if (k?.startsWith(KOPYA_ONEK)) l.push(k.slice(KOPYA_ONEK.length));
     }
   } catch {
@@ -142,7 +143,7 @@ export function gunlukKopyalar(): { gun: string; z: number; kb: number; kisi: nu
     .reverse()
     .map(gun => {
       try {
-        const s = localStorage.getItem(KOPYA_ONEK + gun) ?? "";
+        const s = yerel.getItem(KOPYA_ONEK + gun) ?? "";
         const o = JSON.parse(s) as { z: number; veri: Veri };
         return {
           gun,
@@ -160,7 +161,7 @@ export function gunlukKopyalar(): { gun: string; z: number; kb: number; kisi: nu
 /** kopyanın verisi (doğrulanmış); okunamazsa null */
 export function gunlukKopyaVerisi(gun: string): Veri | null {
   try {
-    const s = localStorage.getItem(KOPYA_ONEK + gun);
+    const s = yerel.getItem(KOPYA_ONEK + gun);
     if (!s) return null;
     const o = guvenliJson(s) as { veri?: unknown };
     return o && o.veri ? veriyiDogrula(o.veri) : null;

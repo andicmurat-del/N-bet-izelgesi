@@ -32,6 +32,8 @@ import { kimlik, kimlikBaslat, yonetimYetkisi as yonetimYazabilir } from "./kiml
 import { degisiklikDinle } from "./gunluk.svelte";
 import { sunucuGecmisBaslat, sunucuyaKaydet } from "./sunucuGecmis.svelte";
 import { gunlukSunucuKopyasi, sunucuKopyalari, sunucuKopyasiOku, type SunucuKopyasi } from "./sunucuKopya";
+import { klasorKipi, yerel as yerelKayit } from "./saklama";
+import { platform } from "./yetenek";
 
 // claude.ai "db" yeteneğinin kullanılan kısmı
 interface Belge {
@@ -67,6 +69,8 @@ const ANA = "nobet/ana",
   YONETIM = "nobet/yonetim",
   IZ_ANAHTAR = "nobet-cizelgesi-v2-bulut";
 const cihaz = Math.random().toString(36).slice(2, 10);
+/** verilerin ortak tutulduğu yer (iletilerde) */
+const YER_BUYUK = klasorKipi ? "Ortak klasör" : "Sunucu";
 
 export type BulutDurumu =
   | /** sunucu yanıtı bekleniyor */ "bekliyor"
@@ -126,7 +130,7 @@ let zamanlayici: ReturnType<typeof setTimeout> | undefined;
 
 function izOku(): Iz | null {
   try {
-    const o = JSON.parse(localStorage.getItem(IZ_ANAHTAR) || "null");
+    const o = JSON.parse(yerelKayit.getItem(IZ_ANAHTAR) || "null");
     if (!o || !Number.isFinite(o.z) || typeof o.ozet !== "string") return null;
     const b = o.bolum && typeof o.bolum === "object" && !Array.isArray(o.bolum) ? (o.bolum as Record<string, string>) : undefined;
     return { z: o.z, ozet: o.ozet, ...(b ? { bolum: b } : {}) };
@@ -136,7 +140,7 @@ function izOku(): Iz | null {
 }
 function izYaz(iz: Iz) {
   try {
-    localStorage.setItem(IZ_ANAHTAR, JSON.stringify(iz));
+    yerelKayit.setItem(IZ_ANAHTAR, JSON.stringify(iz));
   } catch {
     /* yer yoksa bir sonraki açılışta yeniden karşılaştırılır */
   }
@@ -161,7 +165,10 @@ const bekle = (ms: number) => new Promise(r => setTimeout(r, ms));
  *  sorumlu araya girdiyse yazılmaz (false), çağıran yeniden okuyup birleştirir. */
 async function sunucuyaYaz(d: Db, p: Parcalar, v: Veri): Promise<boolean> {
   for (const [k, t] of [["ortak bölüm", p.ana], ...Object.entries(p.aylar)])
-    if (bayt(t) > BELGE_SINIRI) throw new Error(`Sunucuya yazılamadı: ${k} kaydı çok büyük. Veriler bu tarayıcıda duruyor; yedek alın.`);
+    if (bayt(t) > BELGE_SINIRI)
+      throw new Error(
+        `${YER_BUYUK} yazılamadı: ${k} kaydı çok büyük. Veriler bu ${klasorKipi ? "oturumda" : "tarayıcıda"} duruyor; yedek alın.`,
+      );
   const kilit = d.doc(KILIT);
   if (kilit.acquire) {
     const k = await kilit.acquire({ holder: cihaz, ttlMs: 8000 });
@@ -184,7 +191,7 @@ async function sunucuyaYaz(d: Db, p: Parcalar, v: Veri): Promise<boolean> {
   if (p.yonetim !== undefined && p.yonetim !== bilinen?.yonetim) {
     if (yonetimYazabilir()) await d.doc(YONETIM).set({ json: p.yonetim });
     else if (bilinen?.yonetim !== undefined) p = { ...p, yonetim: bilinen.yonetim };
-    else throw new Error("Sunucu: yönetim bölümleri yazılamadı (yetki yok).");
+    else throw new Error(`${YER_BUYUK}: yönetim bölümleri yazılamadı (yetki yok).`);
   }
   const kol = d.collection(AYLAR);
   for (const [k, t] of Object.entries(p.aylar)) if (bilinen?.aylar[k] !== t) await kol.doc(k).set({ json: t });
@@ -242,8 +249,7 @@ async function esitle() {
         for (const b of YONETIM_BOLUMLERI) v[b] = sv[b];
         kaynakBelirt("esitleme");
         tumVeriyiDegistir(veriyiDogrula(v));
-        bulut.bilgi =
-          "Personel, ayarlar, kurum ve servis ayarlarındaki değişiklik geri alındı: bunları yalnız sahip ve baş sorumlu (Editor) değiştirebilir.";
+        bulut.bilgi = `Personel, ayarlar, kurum ve servis ayarlarındaki değişiklik geri alındı: bunları yalnız sahip ve baş sorumlu${klasorKipi ? "" : " (Editor)"} değiştirebilir.`;
         yerelVeri = veriAnlik();
       }
       // yönetim belgesi henüz yoksa (eski biçim ya da boş sunucu) ve yazma yetkisi yoksa eski biçimle yazılır (personel ana
@@ -299,19 +305,29 @@ async function esitle() {
       return;
     }
     bulut.durum = "hata";
+    const m = (e as { mesaj?: unknown } | null)?.mesaj;
     bulut.mesaj =
-      e instanceof Error && /^Sunucu/.test(e.message)
-        ? e.message
-        : "Sunucuya ulaşılamadı; veriler bu tarayıcıda duruyor. Bağlantı gelince yeniden denenir.";
+      typeof m === "string" && m
+        ? m
+        : e instanceof Error && /^(Sunucu|Ortak klasör)/.test(e.message)
+          ? e.message
+          : klasorKipi
+            ? "Ortak klasöre ulaşılamadı; değişiklikler bu oturumda duruyor (programı kapatmayın). Bağlantı gelince yeniden denenir."
+            : "Sunucuya ulaşılamadı; veriler bu tarayıcıda duruyor. Bağlantı gelince yeniden denenir.";
     planla(30000);
   } finally {
     mesgul = false;
   }
 }
+let zamanlayiciKurulu = false;
 function planla(ms: number) {
   if (!db) return;
   clearTimeout(zamanlayici);
-  zamanlayici = setTimeout(esitle, ms);
+  zamanlayiciKurulu = true;
+  zamanlayici = setTimeout(() => {
+    zamanlayiciKurulu = false;
+    void esitle();
+  }, ms);
 }
 
 /** Çakışmada kullanıcının seçimi: "sunucu" sunucudaki veriyi bu cihaza alır (bu cihazdaki veri Ayarlar > Yedek'ten geri
@@ -337,6 +353,17 @@ export function cakismayiCoz(secim: "sunucu" | "cihaz") {
   bulut.durum = "bekliyor";
   void esitle();
 }
+/** bekleyen eşitlemeyi hemen yapar ve bitmesini bekler (oturum kapanırken); en çok sure ms */
+export async function bulutBekleyeniYaz(sure = 8000): Promise<boolean> {
+  if (!db) return true;
+  clearTimeout(zamanlayici);
+  const bitis = Date.now() + sure;
+  await Promise.race([esitle(), bekle(sure)]);
+  while (mesgul && Date.now() < bitis) await bekle(100);
+  return bulut.durum === "esit";
+}
+/** bu cihazda eşitlenmemiş değişiklik var mı (kapatmadan önce) */
+export const bulutBekleyenVar = () => !!db && (zamanlayiciKurulu || mesgul || bulut.durum === "gonderiliyor" || bulut.durum === "hata");
 export function bulutYenidenDene() {
   if (bulut.durum === "hata") {
     bulut.durum = "bekliyor";
@@ -348,7 +375,8 @@ export function bulutYenidenDene() {
 export async function bulutuBaslat() {
   if (typeof window === "undefined" || db) return;
   try {
-    db = window.claude ? ((await window.claude.use("db")) as Db | null) : null;
+    const p = platform();
+    db = p ? ((await p.use("db")) as Db | null) : null;
   } catch {
     db = null;
   }

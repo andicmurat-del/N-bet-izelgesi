@@ -23,6 +23,8 @@
   import AcilEczane from "./ui/sayfalar/AcilEczane.svelte";
   import type { AcilGorunum, AyarGorunum, GunlukGorunum } from "./ui/sayfalar/sayfaTipleri";
   import Ayarlar from "./ui/sayfalar/Ayarlar.svelte";
+  import { klasorKipi } from "./veri/saklama";
+  import { aktarimiTamamla, cikisYap } from "./veri/klasor/oturum.svelte";
 
   // ana bölümler: Günlük Eczane (nöbet, çalışma, öğlen, hazırlama listeleri, puantaj, izinler, raporlar), Acil Eczane
   // (nöbet listesi, puantaj, izinler, raporlar), Ayarlar (genel, personel, kurallar)
@@ -65,15 +67,31 @@
   };
   let sayfa = $state<SayfaAdi>(hashOku());
   // verilerin durduğu yer: sunucuya eşitleniyorsa söylenir, yoksa yalnız bu bilgisayar
-  const SAKLAMA: Record<typeof bulut.durum, string> = {
-    bekliyor: "Veriler bu bilgisayarda saklanır",
-    kapali: "Veriler bu bilgisayarda saklanır",
-    esit: "Veriler sunucuya kaydedildi",
-    gonderiliyor: "Sunucuya kaydediliyor…",
-    hata: "Sunucuya kaydedilemedi (veriler bu bilgisayarda)",
-    cakisma: "Sunucuyla eşitleme bekliyor",
-    yetkisiz: "Sunucudaki verilere erişim yetkiniz yok (veriler bu bilgisayarda)",
-  };
+  const SAKLAMA: Record<typeof bulut.durum, string> = klasorKipi
+    ? {
+        bekliyor: "Ortak klasöre bağlanıyor…",
+        kapali: "Ortak klasöre bağlanılamadı",
+        esit: "Veriler ortak klasöre kaydedildi",
+        gonderiliyor: "Ortak klasöre kaydediliyor…",
+        hata: "Ortak klasöre kaydedilemedi",
+        cakisma: "Ortak klasörle eşitleme bekliyor",
+        yetkisiz: "Ortak klasöre erişim yok",
+      }
+    : {
+        bekliyor: "Veriler bu bilgisayarda saklanır",
+        kapali: "Veriler bu bilgisayarda saklanır",
+        esit: "Veriler sunucuya kaydedildi",
+        gonderiliyor: "Sunucuya kaydediliyor…",
+        hata: "Sunucuya kaydedilemedi (veriler bu bilgisayarda)",
+        cakisma: "Sunucuyla eşitleme bekliyor",
+        yetkisiz: "Sunucudaki verilere erişim yetkiniz yok (veriler bu bilgisayarda)",
+      };
+  /** verilerin ortak tutulduğu yer (iletilerde) */
+  const YER = klasorKipi ? "ortak klasördeki" : "sunucudaki";
+  // tarayıcıdan aktarılan şifresiz veri, ortak klasöre yazılınca tarayıcıdan silinir
+  $effect(() => {
+    if (klasorKipi && bulut.durum === "esit") void aktarimiTamamla();
+  });
   // şu an açık olan öteki sorumlular: bu sekmenin ekranı ötekilere bildirilir; aynı ekranda, aynı ayda çalışan varsa söylenir
   const ALT_AD: Record<string, string> = {
     nobet: "nöbet çizelgesi",
@@ -184,6 +202,7 @@
       <span>Hastane Eczanesi · Nöbet ve Puantaj Sistemi</span>
       <span class="sag"
         >{#if kimlik.var}<span title={kimlik.rol ? ROL_ADI[kimlik.rol] : ""}>{kimlik.ad || "Giriş yapıldı"}</span> ·
+          {#if klasorKipi}<button class="serit-baglanti" onclick={() => cikisYap("Oturum kapatıldı.")}>Oturumu kapat</button> ·{/if}
         {/if}{#if oda.digerleri.length}<span title="Bu sayfayı şu an açmış öteki kişiler"
             >Şu an açık: {oda.digerleri.map(d => kisiAdi(d.id)).join(", ")}</span
           > ·
@@ -242,7 +261,7 @@
       <div class="kayit-sorunu esitleme kutu hata" role="alert">
         <Ikon ad="uyari" />
         <div>
-          <b>Bu cihazdaki veriler ile sunucudaki veriler farklı.</b>
+          <b>Bu cihazdaki veriler ile {YER} veriler farklı.</b>
           {#if bulut.catisan.length}
             <p>
               Siz ve başka bir sorumlu (ya da başka bir cihaz) aynı bölümü değiştirdiniz: <b>{bulut.catisan.join(", ")}</b>. Öteki
@@ -257,10 +276,18 @@
           {/if}
           <div class="dugmeler">
             <button class="dugme" onclick={() => cakismayiCoz("sunucu")}
-              >{bulut.catisan.length ? "Bu bölümlerde sunucudakini al" : "Sunucudakini al"}</button
+              >{bulut.catisan.length
+                ? `Bu bölümlerde ${klasorKipi ? "klasördekini" : "sunucudakini"} al`
+                : klasorKipi
+                  ? "Klasördekini al"
+                  : "Sunucudakini al"}</button
             >
             <button class="dugme" onclick={() => cakismayiCoz("cihaz")}
-              >{bulut.catisan.length ? "Bu bölümlerde bu cihazdakini yaz" : "Bu cihazdakini sunucuya yaz"}</button
+              >{bulut.catisan.length
+                ? "Bu bölümlerde bu cihazdakini yaz"
+                : klasorKipi
+                  ? "Bu cihazdakini klasöre yaz"
+                  : "Bu cihazdakini sunucuya yaz"}</button
             >
             <button class="dugme sade" onclick={yedekAl}><Ikon ad="indir" />Yedek al</button>
           </div>
@@ -273,10 +300,11 @@
     {:else if bulut.durum === "yetkisiz"}
       <div class="kayit-sorunu kutu hata" role="alert">
         <Ikon ad="uyari" /><span
-          >{#if bulut.yerelSilindi}Bu claude.ai hesabının bu sayfadaki verilere erişimi yok ya da kaldırıldı; bu tarayıcıdaki kopya da
-            silindi. Erişim gerekiyorsa sayfanın sahibinden sizi paylaşımda yeniden sorumlu olarak eklemesini isteyin.{:else}Bu claude.ai
-            hesabının sunucudaki ortak verilere erişim yetkisi yok; burada yaptığınız değişiklikler yalnız bu tarayıcıda kalır. Sayfanın
-            sahibinden sizi paylaşımda sorumlu olarak eklemesini isteyin (Ayarlar > Geçmiş > Kullanıcılar ve yetki).{/if}</span
+          >{#if klasorKipi}Ortak klasördeki verilere erişim kapandı; oturum kapatılıyor.{:else if bulut.yerelSilindi}Bu claude.ai hesabının
+            bu sayfadaki verilere erişimi yok ya da kaldırıldı; bu tarayıcıdaki kopya da silindi. Erişim gerekiyorsa sayfanın sahibinden
+            sizi paylaşımda yeniden sorumlu olarak eklemesini isteyin.{:else}Bu claude.ai hesabının sunucudaki ortak verilere erişim yetkisi
+            yok; burada yaptığınız değişiklikler yalnız bu tarayıcıda kalır. Sayfanın sahibinden sizi paylaşımda sorumlu olarak eklemesini
+            isteyin (Ayarlar > Geçmiş > Kullanıcılar ve yetki).{/if}</span
         >
       </div>
     {/if}
@@ -295,7 +323,7 @@
         >
       </div>
     {/if}
-    {#if yedekGun !== null && bulut.durum !== "cakisma"}
+    {#if yedekGun !== null && bulut.durum !== "cakisma" && !klasorKipi}
       <div class="kayit-sorunu yedek-hatirlatma kutu bilgi" role="status">
         <Ikon ad="indir" />
         <span

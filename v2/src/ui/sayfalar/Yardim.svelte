@@ -57,6 +57,17 @@
       ],
     },
     {
+      baslik: "Ortak klasörde, kullanıcı adı ve şifreyle (internetsiz)",
+      adimlar: [
+        'Masaüstü uygulamasını (eczane-nobet.exe) açın ya da tarayıcıda Ayarlar > Geçmiş > "Ortak klasörde çalış". Hastanenin ortak ağ klasörünü seçin (ör. \\\\sunucu\\eczane).',
+        "Klasör boşsa kasayı kuran sahip olur. Kurtarma anahtarını yazdırıp kilitli bir yerde saklayın: bütün şifreler unutulursa yalnız onunla açılır.",
+        "Sahip, Ayarlar > Geçmiş > Kullanıcılar'dan sorumluları ekler (rol ve geçici şifre). Kişi kendi bilgisayarında aynı klasörü seçer, geçici şifreyle girer, kendi şifresini belirler.",
+        'Görevden ayrılanı "Kaldır" ile çıkarın: oturumu kapanır, veri anahtarı yenilenir. Ortak klasörün Windows paylaşım izninden de çıkarın.',
+        "Her bilgisayarda Ayarlar > Geçmiş > Yedek klasörü seçin (USB bellek ya da başka ağ klasörü): ortak klasör her gün oraya şifreli kopyalanır.",
+        '30 dakika işlem yapılmazsa oturum kapanır; işiniz bitince üst şeritten "Oturumu kapat".',
+      ],
+    },
+    {
       baslik: "Güvenlik",
       adimlar: [
         "Yanlış bir değişikliği Ctrl+Z (telefonda üstteki geri ok) ile geri alın; onay bir geri alma noktasıdır.",

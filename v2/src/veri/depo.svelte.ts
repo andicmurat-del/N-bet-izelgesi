@@ -1,4 +1,5 @@
 // Uygulama durumu ve tarayıcıda saklanması. Veriler yalnız bu tarayıcıda durur; taşımak için yedek dosyası kullanılır.
+// Ortak klasör kipinde tarayıcı kaydı yerine bellek kullanılır (veri/saklama.ts); asıl kayıt klasördeki kasadır.
 // Burada: durum (depo), kayıt, geri al / yinele. Konu konu işlemler ayrı modüllerde; hepsi buradan da dışa verilir:
 // kişiler (kisiler), izin ve tatil işaretleri (izinler), çizelge (cizelge), acil / onay / öğlen listeleri ve puantaj
 // kodları (listeler), yedek (yedek). Modüller birbirini yalnız işlev içinden çağırır (yükleme sırası önemsiz).
@@ -11,12 +12,13 @@ export { AYAR_VARSAYILAN, AYAR_SINIR, bosVeri, guvenliJson, gunDuzeniDogrula, ve
 import { KAYIT_ANAHTARI as ANAHTAR, bosVeri, guvenliJson, veriyiDogrula } from "./dogrulama";
 import { oglenKaydet } from "./listeler.svelte";
 import { degisiklikIsle, gunlukBosalt, gunlukKopyaAl, kaynakBelirt } from "./gunluk.svelte";
+import { klasorKipi, yerel } from "./saklama";
 
 let acilisSorunu = "";
 function yukle(): Veri {
   let s: string | null = null;
   try {
-    s = localStorage.getItem(ANAHTAR);
+    s = yerel.getItem(ANAHTAR);
   } catch {
     return bosVeri();
   }
@@ -26,7 +28,7 @@ function yukle(): Veri {
   } catch {
     // kayıt okunamadı: boş veri kaydedilmeden önce ham hali ayrı anahtara alınır, kullanıcıya söylenir
     try {
-      localStorage.setItem(ANAHTAR + "-okunamayan", s);
+      yerel.setItem(ANAHTAR + "-okunamayan", s);
     } catch {
       /* yer yoksa yapılacak bir şey yok */
     }
@@ -102,7 +104,7 @@ function simdiKaydet() {
   degisiklikIsle(sonKaydedilen, v);
   sonKaydedilen = v;
   try {
-    localStorage.setItem(ANAHTAR, JSON.stringify(v));
+    yerel.setItem(ANAHTAR, JSON.stringify(v));
     gunlukKopyaAl(v);
     if (depo.kayitSorunu !== acilisSorunu && !depo.baskaPencere) depo.kayitSorunu = "";
   } catch {
@@ -134,7 +136,8 @@ if (typeof window !== "undefined") {
     if (document.visibilityState === "hidden") bekleyenKaydiYaz();
   });
 }
-if (typeof window !== "undefined")
+// (ortak klasör kipinde veri bellekte: pencereler birbirini etkilemez)
+if (typeof window !== "undefined" && !klasorKipi)
   window.addEventListener("storage", e => {
     if (e.key !== ANAHTAR && e.key !== null) return;
     clearTimeout(kayitZamanlayici);
@@ -186,11 +189,11 @@ export function yerelVerileriSil() {
   gunlukBosalt();
   try {
     const l: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
+    for (let i = 0; i < yerel.length; i++) {
+      const k = yerel.key(i);
       if (k?.startsWith(ANAHTAR)) l.push(k);
     }
-    for (const k of l) localStorage.removeItem(k);
+    for (const k of l) yerel.removeItem(k);
   } catch {
     /* depolama yok */
   }

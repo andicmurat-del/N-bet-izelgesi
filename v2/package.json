@@ -15,12 +15,14 @@
     "format": "prettier --write .",
     "format:denetle": "prettier --check .",
     "artifact": "vite build && node scripts/artifact.mjs",
-    "kesin-kontrol": "vitest run --config vitest.kesin.config.ts"
+    "kesin-kontrol": "vitest run --config vitest.kesin.config.ts",
+    "masaustu": "vite build && tauri build"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@playwright/test": "1.63.0",
     "@sveltejs/vite-plugin-svelte": "^5.1.1",
+    "@tauri-apps/cli": "^2.12.6",
     "@tsconfig/svelte": "^5.0.8",
     "@vitest/coverage-v8": "^5.1.0",
     "eslint": "^9.39.5",

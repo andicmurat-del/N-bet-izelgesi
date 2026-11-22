@@ -10,3 +10,5 @@ test/eski/senaryolar.cjs
 test/servis-beklenen.json
 e2e/veri/
 ikon/
+masaustu/target/
+masaustu/gen/

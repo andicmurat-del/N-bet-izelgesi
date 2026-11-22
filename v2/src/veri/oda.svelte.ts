@@ -2,6 +2,7 @@
 // Hiçbir şey saklanmaz; kişinin claude.ai kimliğini platform verir (ad, kimlik.svelte.ts'te çözülür). İki kişi aynı
 // ekranda, aynı ayda çalışıyorsa üst şeritte belirtilir (değişiklikleri birbirinin üzerine yazmasınlar diye).
 import { adlariCoz, kimlikBaslat } from "./kimlik.svelte";
+import { platform } from "./yetenek";
 
 interface Es {
   peer: string;
@@ -30,9 +31,10 @@ const konumOku = (p: Readonly<Record<string, unknown>>): Konum | null =>
     : null;
 
 export async function odaBaslat() {
-  if (typeof window === "undefined" || !window.claude || odaNs) return;
+  const pl = platform();
+  if (!pl || odaNs) return;
   try {
-    odaNs = (await window.claude.use("room")) as Oda | null;
+    odaNs = (await pl.use("room")) as Oda | null;
   } catch {
     odaNs = null;
   }
