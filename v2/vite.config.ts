@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import { build, type Plugin } from "vite";
+import { fileURLToPath } from "node:url";
 
 // Çıktı paketi (PDF / Excel: jsPDF ve gömülü yazı tipi) ayrı derlenir; ilk çıktı isteğinde çalıştırılır
 // (src/disa/yukle.ts). Derlemede HTML'e çalıştırılmayan bir <script type="text/plain"> olarak eklenir: tarayıcı açılışta
@@ -29,7 +30,8 @@ function ciktiPaketi(): Plugin {
           assetsInlineLimit: 100_000_000,
           minify: true,
           lib: {
-            entry: new URL("./src/disa/paket.ts", import.meta.url).pathname,
+            // fileURLToPath: Windows'ta da geçerli yol (pathname "/D:/..." verir)
+            entry: fileURLToPath(new URL("./src/disa/paket.ts", import.meta.url)),
             formats: ["iife"],
             name: "__ciktiPaketi",
             fileName: () => "cikti.js",
