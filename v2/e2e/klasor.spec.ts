@@ -11,8 +11,31 @@ test.skip(({ browserName }) => browserName !== "chromium", "ortak klasör kipi y
 async function ortakKlasor(page: Page, veri?: unknown) {
   await page.addInitScript(
     ([anahtar, v]) => {
-      (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker = async () =>
-        (await navigator.storage.getDirectory()).getDirectoryHandle("ortak", { create: true });
+      const ortak = async () => (await navigator.storage.getDirectory()).getDirectoryHandle("ortak", { create: true });
+      (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker = ortak;
+      // Test tarayıcısı, IndexedDB'ye yazılmış OPFS klasör tutamağını geri okurken çöküyor (gerçek kullanıcının seçtiği
+      // klasörde bu yol yok). Program tutamağı "tutamak" deposuna yazar: burada yalnız yazıldığı not edilir, okununca
+      // aynı OPFS klasörü yeniden verilir.
+      const put = IDBObjectStore.prototype.put,
+        get = IDBObjectStore.prototype.get;
+      IDBObjectStore.prototype.put = function (this: IDBObjectStore, deger: unknown, k?: IDBValidKey) {
+        if (this.name !== "tutamak") return put.call(this, deger, k);
+        localStorage.setItem("e2e-tutamak-" + String(k), "1");
+        return put.call(this, "e2e", k);
+      };
+      IDBObjectStore.prototype.get = function (this: IDBObjectStore, k: IDBValidKey) {
+        if (this.name !== "tutamak") return get.call(this, k);
+        const istek: { result: unknown; onerror: unknown; onsuccess: (() => void) | null } = {
+          result: null,
+          onerror: null,
+          onsuccess: null,
+        };
+        void (async () => {
+          istek.result = localStorage.getItem("e2e-tutamak-" + String(k)) ? await ortak() : null;
+          setTimeout(() => istek.onsuccess?.(), 0);
+        })();
+        return istek as unknown as IDBRequest;
+      };
       if (v && !sessionStorage.getItem("e2e-kuruldu")) {
         sessionStorage.setItem("e2e-kuruldu", "1");
         localStorage.setItem(anahtar, v);
