@@ -1,5 +1,5 @@
-// Şu an kim açık: sayfayı aynı anda açmış öteki sorumlular ve hangi ekranda oldukları (claude.ai "room" yeteneği).
-// Hiçbir şey saklanmaz; kişinin claude.ai kimliğini platform verir (ad, kimlik.svelte.ts'te çözülür). İki kişi aynı
+// Şu an kim açık: programı aynı anda açmış öteki sorumlular ve hangi ekranda oldukları (ortak klasör kipinde; kayıtlar
+// veri/klasor/platform.ts'te). Kişinin kimliğini oturum verir (ad, kimlik.svelte.ts'te çözülür). İki kişi aynı
 // ekranda, aynı ayda çalışıyorsa üst şeritte belirtilir (değişiklikleri birbirinin üzerine yazmasınlar diye).
 import { adlariCoz, kimlikBaslat } from "./kimlik.svelte";
 import { platform } from "./yetenek";

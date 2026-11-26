@@ -1,7 +1,7 @@
-// Sunucudaki değişiklik geçmişi: her sorumlunun değişiklikleri kendi claude.ai kimliğinin altına yazılır
-// ("gecmis/<kişi>/aylar/<yıl-ay>"). Veritabanı kuralı gereği herkes yalnız kendi kimliğinin altına yazabilir, başkasının
-// kayıtlarını değiştiremez ya da silemez (sayfanın sahibi dahil); bütün sorumlular hepsini okur. Böylece "kim, ne zaman,
-// ne değiştirdi" bilgisi kişinin beyanına değil, claude.ai girişine dayanır ve her cihazda aynıdır.
+// Ortak klasördeki değişiklik geçmişi: her sorumlunun değişiklikleri kendi kimliğinin altına yazılır
+// ("gecmis/<kişi>/aylar/<yıl-ay>"). Kayıtlar yazanın anahtarıyla imzalıdır ve öteki bilgisayarlar yalnız kişinin kendi
+// imzasını kabul eder (veri/klasor/belgeler.ts): kimse (sahip dahil) başkası adına kayıt yazamaz; bütün sorumlular hepsini
+// okur. Böylece "kim, ne zaman, ne değiştirdi" bilgisi kişinin beyanına değil, kullanıcı adı ve şifreyle girişe dayanır.
 // Belge sınırı (256 KiB) ve belge sayısı için kayıtlar ay ay tek belgede toplanır; ay belgesi dolarsa "yıl-ay.2" açılır.
 import type { DegisiklikKaydi, KayitTuru } from "./gunluk.svelte";
 
@@ -29,7 +29,7 @@ export interface SunucuKaydi {
   z: number;
   t: string[];
   tur?: KayitTuru;
-  /** değişikliği yapanın claude.ai kimliği */
+  /** değişikliği yapanın kimliği (kasadaki kullanıcı) */
   kim: string;
 }
 interface AyBelgesi {
@@ -42,7 +42,7 @@ interface AyBelgesi {
 const KOK = "gecmis",
   BELGE_SINIRI = 200 * 1024;
 export const sunucuGecmis = $state({
-  /** sunucu geçmişi kullanılıyor (claude.ai'de, oturum açık) */
+  /** ortak klasör geçmişi kullanılıyor (ortak klasör kipinde, oturum açık) */
   acik: false,
   kayit: [] as SunucuKaydi[],
   yukleniyor: false,

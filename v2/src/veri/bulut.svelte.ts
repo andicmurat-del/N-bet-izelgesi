@@ -1,14 +1,14 @@
-// Sunucuda saklama: veriler claude.ai'nin bu sayfaya ayırdığı veritabanında da tutulur; aynı hesapla başka bir
-// bilgisayardan ya da telefondan açılınca aynı veriler gelir. Tarayıcı kaydı (depo.svelte.ts) olduğu gibi kalır: sayfa
-// önce oradan açılır, sunucuya ulaşılamazsa uygulama eskisi gibi çalışır.
+// Ortak saklama: ortak klasör kipinde veriler ortak klasördeki şifreli kasada tutulur (veri/klasor/belgeler.ts verir;
+// bu dosyada "sunucu" diye geçer). Bu bilgisayarda veri yalnız bellektedir (saklama.ts). Ortak klasör kipi dışında
+// eşitleme yoktur (durum "kapali"): veriler yalnız bu tarayıcıda durur.
 //
 // Kurallar (bulutBicim.ts > eslemeKarari): yalnız değişmemiş ya da hiç eşitlenmemiş boş taraf ötekinin verisini alır.
 // İki tarafta da değişiklik varsa (ör. iki sorumlu aynı anda çalıştı) bölüm bölüm birleştirilir (ucluBirlestir): farklı
 // bölümlerdeki (ör. farklı aylardaki) değişiklikler kendiliğinden birleşir; yalnız iki tarafta da değişen bölümler sorulur.
-// Kimlik ve yetki claude.ai'den (kimlik.svelte.ts); değişiklik geçmişi ve günlük kopyalar da sunucuda tutulur
+// Kimlik ve yetki kasadan (kimlik.svelte.ts); değişiklik geçmişi ve günlük kopyalar da ortak klasörde tutulur
 // (sunucuGecmis.svelte.ts, sunucuKopya.ts).
 // Belgeler: "nobet/ana" (ortak bölüm + sürüm damgası z), "nobet/ana/aylar/<yil-ay>" (ayın kayıtları). Önce ay belgeleri,
-// en son ana belge yazılır; öteki cihazlar ana belgenin damgası değişince yeniden okur.
+// en son ana belge yazılır; öteki bilgisayarlar ana belgenin damgası değişince yeniden okur.
 import { depo, guvenliJson, kaynakBelirt, tumVeriyiDegistir, veriAnlik, veriyiDogrula, yerelVerileriSil } from "./depo.svelte";
 import {
   BELGE_SINIRI,
@@ -32,10 +32,10 @@ import { kimlik, kimlikBaslat, yonetimYetkisi as yonetimYazabilir } from "./kiml
 import { degisiklikDinle } from "./gunluk.svelte";
 import { sunucuGecmisBaslat, sunucuyaKaydet } from "./sunucuGecmis.svelte";
 import { gunlukSunucuKopyasi, sunucuKopyalari, sunucuKopyasiOku, type SunucuKopyasi } from "./sunucuKopya";
-import { klasorKipi, yerel as yerelKayit } from "./saklama";
+import { yerel as yerelKayit } from "./saklama";
 import { platform } from "./yetenek";
 
-// claude.ai "db" yeteneğinin kullanılan kısmı
+// kayıt yeteneğinin kullanılan kısmı (ortak klasör: veri/klasor/belgeler.ts)
 interface Belge {
   exists: boolean;
   data(): Record<string, unknown> | undefined;
@@ -65,23 +65,21 @@ const ANA = "nobet/ana",
   AYLAR = "nobet/ana/aylar",
   /** yazım kilidi: iki sorumlu aynı anda yazınca biri ötekinin değişikliğini ezmesin */
   KILIT = "nobet/kilit",
-  /** personel, ayarlar, kurum, servis ayarları: veritabanı kuralıyla yalnız sahip ve Editor (baş sorumlu) yazar */
+  /** personel, ayarlar, kurum, servis ayarları: yalnız sahip ve baş sorumlu yazar (öteki bilgisayarlar imzayı denetler) */
   YONETIM = "nobet/yonetim",
   IZ_ANAHTAR = "nobet-cizelgesi-v2-bulut";
 const cihaz = Math.random().toString(36).slice(2, 10);
-/** verilerin ortak tutulduğu yer (iletilerde) */
-const YER_BUYUK = klasorKipi ? "Ortak klasör" : "Sunucu";
 
 export type BulutDurumu =
-  | /** sunucu yanıtı bekleniyor */ "bekliyor"
-    /** bu görünümde sunucu yok: yalnız tarayıcı kaydı */
+  | /** ortak klasör yanıtı bekleniyor */ "bekliyor"
+    /** ortak klasör kipi değil: yalnız tarayıcı kaydı */
   | "kapali"
   | "esit"
   | "gonderiliyor"
   | "hata"
   /** iki tarafta da değişiklik var: kullanıcı seçecek */
   | "cakisma"
-  /** bu claude.ai hesabının sunucudaki verilere erişim ya da yazma yetkisi yok */
+  /** oturum kapandı (hesap kaldırıldı ya da yazma yetkisi yok) */
   | "yetkisiz";
 export const bulut = $state({
   durum: "bekliyor" as BulutDurumu,
@@ -89,8 +87,6 @@ export const bulut = $state({
   sunucuZaman: 0,
   /** çakışmada iki tarafta da değişen bölümlerin adları (boşsa bütün veri) */
   catisan: [] as string[],
-  /** erişimi kaldırıldığı için bu tarayıcıdaki kopya silindi */
-  yerelSilindi: false,
   /** bilgi notu (ör. yetkisiz değişiklik geri alındı) */
   bilgi: "",
 });
@@ -102,8 +98,8 @@ function yonetimYerelDegisti(v: Veri): boolean {
   const o = bolumOzetleri(v);
   return YONETIM_BOLUMLERI.some(b => taban[b] !== undefined && o[b] !== taban[b]);
 }
-/** Bu claude.ai hesabının erişimi yok ya da kaldırıldı: eşitleme durur; sahip değilse bu tarayıcıdaki kopya da silinir
- *  (yetkisi kaldırılan sorumlu son eşitlenen verileri görmeye devam etmesin). */
+/** Hesap kaldırıldı ya da oturum kapandı: eşitleme durur, bellekteki veri silinir (oturum da kapanır ve sayfa yenilenir:
+ *  veri/klasor/oturum.svelte.ts). */
 function erisimYok() {
   clearTimeout(zamanlayici);
   db = null;
@@ -112,10 +108,7 @@ function erisimYok() {
   bulut.mesaj = "";
   bulut.catisan = [];
   bekleyen = null;
-  if (kimlik.var && kimlik.rol !== "sahip") {
-    yerelVerileriSil();
-    bulut.yerelSilindi = true;
-  }
+  if (kimlik.var && kimlik.rol !== "sahip") yerelVerileriSil();
 }
 const kaldirildi = (e: unknown) => (e as { code?: string } | null)?.code === "revoked";
 
@@ -165,10 +158,7 @@ const bekle = (ms: number) => new Promise(r => setTimeout(r, ms));
  *  sorumlu araya girdiyse yazılmaz (false), çağıran yeniden okuyup birleştirir. */
 async function sunucuyaYaz(d: Db, p: Parcalar, v: Veri): Promise<boolean> {
   for (const [k, t] of [["ortak bölüm", p.ana], ...Object.entries(p.aylar)])
-    if (bayt(t) > BELGE_SINIRI)
-      throw new Error(
-        `${YER_BUYUK} yazılamadı: ${k} kaydı çok büyük. Veriler bu ${klasorKipi ? "oturumda" : "tarayıcıda"} duruyor; yedek alın.`,
-      );
+    if (bayt(t) > BELGE_SINIRI) throw new Error(`Ortak klasöre yazılamadı: ${k} kaydı çok büyük. Veriler bu oturumda duruyor; yedek alın.`);
   const kilit = d.doc(KILIT);
   if (kilit.acquire) {
     const k = await kilit.acquire({ holder: cihaz, ttlMs: 8000 });
@@ -191,7 +181,7 @@ async function sunucuyaYaz(d: Db, p: Parcalar, v: Veri): Promise<boolean> {
   if (p.yonetim !== undefined && p.yonetim !== bilinen?.yonetim) {
     if (yonetimYazabilir()) await d.doc(YONETIM).set({ json: p.yonetim });
     else if (bilinen?.yonetim !== undefined) p = { ...p, yonetim: bilinen.yonetim };
-    else throw new Error(`${YER_BUYUK}: yönetim bölümleri yazılamadı (yetki yok).`);
+    else throw new Error("Ortak klasör: yönetim bölümleri yazılamadı (yetki yok).");
   }
   const kol = d.collection(AYLAR);
   for (const [k, t] of Object.entries(p.aylar)) if (bilinen?.aylar[k] !== t) await kol.doc(k).set({ json: t });
@@ -249,7 +239,8 @@ async function esitle() {
         for (const b of YONETIM_BOLUMLERI) v[b] = sv[b];
         kaynakBelirt("esitleme");
         tumVeriyiDegistir(veriyiDogrula(v));
-        bulut.bilgi = `Personel, ayarlar, kurum ve servis ayarlarındaki değişiklik geri alındı: bunları yalnız sahip ve baş sorumlu${klasorKipi ? "" : " (Editor)"} değiştirebilir.`;
+        bulut.bilgi =
+          "Personel, ayarlar, kurum ve servis ayarlarındaki değişiklik geri alındı: bunları yalnız sahip ve baş sorumlu değiştirebilir.";
         yerelVeri = veriAnlik();
       }
       // yönetim belgesi henüz yoksa (eski biçim ya da boş sunucu) ve yazma yetkisi yoksa eski biçimle yazılır (personel ana
@@ -298,7 +289,7 @@ async function esitle() {
       erisimYok();
       return;
     }
-    // yetkisiz yazım (paylaşım düzeyi düşük): sunucu isteği reddeder
+    // yetkisiz yazım: kayıt katmanı reddeder
     if ((e as { code?: string })?.code === "invalid_argument" && kimlik.var && kimlik.rol !== "sahip") {
       bulut.durum = "yetkisiz";
       bulut.mesaj = "";
@@ -309,11 +300,9 @@ async function esitle() {
     bulut.mesaj =
       typeof m === "string" && m
         ? m
-        : e instanceof Error && /^(Sunucu|Ortak klasör)/.test(e.message)
+        : e instanceof Error && /^Ortak klasör/.test(e.message)
           ? e.message
-          : klasorKipi
-            ? "Ortak klasöre ulaşılamadı; değişiklikler bu oturumda duruyor (programı kapatmayın). Bağlantı gelince yeniden denenir."
-            : "Sunucuya ulaşılamadı; veriler bu tarayıcıda duruyor. Bağlantı gelince yeniden denenir.";
+          : "Ortak klasöre ulaşılamadı; değişiklikler bu oturumda duruyor (programı kapatmayın). Bağlantı gelince yeniden denenir.";
     planla(30000);
   } finally {
     mesgul = false;
@@ -371,7 +360,7 @@ export function bulutYenidenDene() {
   }
 }
 
-/** Sunucu bağlantısını kurar (uygulama açılırken bir kez). Sunucu yoksa (claude.ai dışında, oturum kapalı) kapalı kalır. */
+/** Ortak klasör bağlantısını kurar (uygulama açılırken bir kez). Ortak klasör kipi değilse kapalı kalır. */
 export async function bulutuBaslat() {
   if (typeof window === "undefined" || db) return;
   try {
@@ -384,12 +373,8 @@ export async function bulutuBaslat() {
     bulut.durum = "kapali";
     return;
   }
-  // kim kullanıyor, yetkisi ne (claude.ai): yalnız görüntüleyen verilere erişemez
+  // kim kullanıyor, rolü ne (kasadan)
   await kimlikBaslat();
-  if (kimlik.rol === "okuyan") {
-    erisimYok();
-    return;
-  }
   if (kimlik.id) {
     sunucuGecmisBaslat(db, kimlik.id);
     degisiklikDinle(sunucuyaKaydet);

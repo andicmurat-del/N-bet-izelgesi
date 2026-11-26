@@ -64,7 +64,7 @@ export interface Onay {
   zaman: number;
   /** kurumun onaylayanı (Ayarlar > Genel; çıktılarda) */
   kim: string;
-  /** programda onaylayan: claude.ai kimliği (adı gösterimde çözülür) ya da claude.ai dışında bu cihazda yazılan ad */
+  /** programda onaylayan: kullanıcı kimliği (ortak klasör kipinde; adı gösterimde çözülür) ya da bu cihazda yazılan ad */
   kimId?: string;
   kimAd?: string;
   /** yalnız çıktıya giderken: programda onaylayanın çözülmüş adı (saklanmaz) */
@@ -161,7 +161,7 @@ export interface Veri {
   notlar: Record<string, Record<string, GunNotu[]>>;
 }
 
-/** Bir güne bırakılan not: yazan (claude.ai kimliği ya da bu cihazda yazılan ad), zaman, metin */
+/** Bir güne bırakılan not: yazan (kullanıcı kimliği ya da bu cihazda yazılan ad), zaman, metin */
 export interface GunNotu {
   id: string;
   z: number;

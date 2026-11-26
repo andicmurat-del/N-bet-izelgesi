@@ -168,3 +168,22 @@ test("ayar önizlemesi: değişen ayarın bu aya etkisi karşılaştırılır, a
   await expect(minAra).toHaveValue("3");
   await expect(k).not.toContainText("3 → 4");
 });
+
+test("claude.ai içinde (yalnız dosya indirme yeteneği): tek kullanıcılı; kullanıcı, rol ve ortak klasör seçeneği yok", async ({
+  page,
+  kur,
+}) => {
+  await page.addInitScript(() => {
+    (window as unknown as { claude: { use(ad: string): Promise<unknown> } }).claude = {
+      use: async ad => (ad === "downloads" ? { save: async () => {} } : null),
+    };
+  });
+  await kur();
+  await expect(page.locator(".ust-serit")).toContainText("Veriler bu bilgisayarda saklanır");
+  await expect(page.locator(".ust-serit")).not.toContainText("Oturumu kapat");
+  await git(page, "#ayarlar/gecmis");
+  await expect(page.getByRole("heading", { name: "Değişiklik geçmişi", level: 2 })).toBeVisible();
+  await expect(page.locator("main")).not.toContainText("Kullanıcılar ve yetki");
+  await expect(page.locator("main")).not.toContainText("Ortak klasörde çalış");
+  await expect(page.getByLabel("Bu cihazda değişiklik yapan")).toBeVisible();
+});

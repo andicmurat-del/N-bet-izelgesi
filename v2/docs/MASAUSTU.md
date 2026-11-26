@@ -44,10 +44,10 @@ açılışta klasör iznini yeniden sorar. Masaüstü uygulaması ile tarayıcı
   anahtarları kasanın imza anahtarı imzalar; bu anahtar yalnız sahiplere (ve kurtarma anahtarına) açıktır. Her bilgisayar
   kasanın imza anahtarını ve gördüğü son sürümü hatırlar: kasa başka bir kasayla ya da eski bir kopyayla değiştirilirse
   açılmaz (yedekten dönülüyorsa kullanıcı onayıyla açılır).
-- **Kayıtlar (`belgeler.ts`, klasörde `veri/…/*.nbk`):** claude.ai veritabanıyla aynı arayüz; eşitleme, birleştirme,
-  değişiklik geçmişi ve günlük kopyalar (`bulut.svelte.ts`, `sunucuGecmis.svelte.ts`, `sunucuKopya.ts`) olduğu gibi çalışır.
+- **Kayıtlar (`belgeler.ts`, klasörde `veri/…/*.nbk`):** belge veritabanı arayüzü; eşitleme, birleştirme, değişiklik
+  geçmişi ve günlük kopyalar (`bulut.svelte.ts`, `sunucuGecmis.svelte.ts`, `sunucuKopya.ts`) bununla çalışır.
   Her kayıt AES-GCM 256 ile şifreli (dosyanın yolu da doğrulanır), içinde yazanın kimliği ve ECDSA imzası vardır. Okurken
-  imza ve yazanın yetkisi denetlenir (sunucudaki veritabanı kurallarının yerine): personel / ayar kaydını yalnız sahip ve
+  imza ve yazanın yetkisi denetlenir (sunucu yok; kurallar burada): personel / ayar kaydını yalnız sahip ve
   baş sorumlu, değişiklik geçmişini yalnız kişinin kendisi yazabilir. Geçmeyen kayıt kullanılmaz, nedeni gösterilir.
 - **Kullanıcı kaldırma:** girişi kapanır, açık oturumu birkaç saniyede kapanır, veri anahtarı yenilenir (yeni nesil yalnız
   kalanlara sarılır); kayıtlar arkadan yeni anahtarla yeniden şifrelenir ve kaldırılan kişinin yazdığı kayıtlar sahibin

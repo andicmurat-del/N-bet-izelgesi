@@ -1,6 +1,6 @@
-// Gün notları: sorumlular bir güne not bırakır ("Ayşe ile takas konuşuldu", "Bu gün değişmesin"). Yazan, claude.ai
-// kimliğiyle (claude.ai dışında bu cihazda yazılan adla) saklanır; notlar bütün sorumlulara görünür, onaylı ayda da
-// yazılabilir, çıktılara girmez. Herkes kendi notunu siler; sayfanın sahibi bütün notları silebilir.
+// Gün notları: sorumlular bir güne not bırakır ("Ayşe ile takas konuşuldu", "Bu gün değişmesin"). Yazan, kullanıcı
+// kimliğiyle (ortak klasör kipi dışında bu cihazda yazılan adla) saklanır; notlar bütün sorumlulara görünür, onaylı ayda da
+// yazılabilir, çıktılara girmez. Herkes kendi notunu siler; kasanın sahibi bütün notları silebilir.
 import type { GunNotu } from "./tipler";
 import { ayAnahtari } from "./tarih";
 import { NOT_SINIRI } from "./dogrulama";

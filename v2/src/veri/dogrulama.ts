@@ -92,7 +92,7 @@ export function gunDuzeniDogrula(x: Record<string, unknown> | null | undefined):
 type Ham = any;
 
 /** Yedekten ya da tarayıcıdan okunan veriyi güvenli biçime getirir; tanınmayan alanlar atılır. */
-/** onaylayan kişi: claude.ai kimliği (yalnız güvenli karakterler) ya da yazılan ad */
+/** onaylayan kişi: kullanıcı kimliği (yalnız güvenli karakterler) ya da yazılan ad */
 function onayKisisi(a: Record<string, unknown>): { kimId?: string; kimAd?: string } {
   const id = typeof a.kimId === "string" && /^[\w.:@+-]{1,200}$/.test(a.kimId) ? a.kimId : "";
   const ad = typeof a.kimAd === "string" ? a.kimAd.slice(0, 40) : "";

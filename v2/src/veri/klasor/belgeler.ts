@@ -1,10 +1,10 @@
-// Ortak klasörde kayıtlar: claude.ai veritabanının kullandığımız kısmıyla aynı arayüz (doc / collection / get / set /
-// delete / onSnapshot / acquire). Böylece eşitleme, birleştirme, değişiklik geçmişi ve günlük kopyalar (bulut.svelte.ts,
-// sunucuGecmis.svelte.ts, sunucuKopya.ts) olduğu gibi çalışır.
+// Ortak klasörde kayıtlar: belge veritabanı arayüzü (doc / collection / get / set / delete / onSnapshot / acquire).
+// Eşitleme, birleştirme, değişiklik geçmişi ve günlük kopyalar (bulut.svelte.ts, sunucuGecmis.svelte.ts, sunucuKopya.ts)
+// bu arayüzle çalışır.
 //
 // Her kayıt ayrı dosyadır: "nobet/ana/aylar/2026-11" → veri/nobet/ana/aylar/2026-11.nbk. Dosya veri anahtarıyla
 // şifrelidir (AES-GCM; dosyanın yolu da doğrulanır: başka yere kopyalanan dosya açılmaz). İçinde yazanın kimliği,
-// zaman ve yazanın imzası vardır. Okurken imza ve yazanın yetkisi denetlenir (sunucudaki veritabanı kurallarının yerine):
+// zaman ve yazanın imzası vardır. Okurken imza ve yazanın yetkisi denetlenir (sunucu yok; kurallar burada):
 // - nobet/yonetim (personel, ayarlar, kurum, servis ayarları): yalnız sahip ve baş sorumlu
 // - gecmis/<kişi>/…: yalnız o kişi (kişi sonradan kaldırılsa da kayıtları geçerli kalır)
 // - öteki kayıtlar: etkin kullanıcılar
@@ -125,7 +125,7 @@ async function ac_(o: Oturum, yol: string, metin: string): Promise<{ zarf: Zarf;
   return { zarf, ic };
 }
 
-// claude.ai db yeteneğinin kullanılan kısmı (bulut.svelte.ts ile aynı)
+// kayıt yeteneğinin kullanılan kısmı (bulut.svelte.ts ile aynı)
 interface Anlik {
   id: string;
   exists: boolean;

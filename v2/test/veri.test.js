@@ -575,7 +575,7 @@ describe("tatil gününde elle nöbetçi / hazırlama sayısı ve fazla mesai", 
 });
 
 describe("onaylayan kişi", () => {
-  test("claude.ai kimliği ya da yazılan ad saklanır; bozuk kimlik ve fazlalık alan atılır", () => {
+  test("kullanıcı kimliği ya da yazılan ad saklanır; bozuk kimlik ve fazlalık alan atılır", () => {
     const v = veriyiDogrula({
       staff: [],
       schedules: {

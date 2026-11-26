@@ -1,4 +1,4 @@
-// Ortak klasör oturumunu, uygulamanın claude.ai'den beklediği yeteneklere çevirir: "db" (kayıtlar: belgeler.ts),
+// Ortak klasör oturumunu uygulamanın yeteneklerine çevirir (veri/yetenek.ts): "db" (kayıtlar: belgeler.ts),
 // "user" (kim giriş yaptı, rolü, öteki kişilerin adları: kasadan) ve "room" (şu an kim açık: klasördeki oda kayıtları).
 import type { KlasorDb } from "./belgeler";
 import type { Oturum } from "./kasa";

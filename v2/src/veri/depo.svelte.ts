@@ -177,7 +177,7 @@ export function gecmiseIsle() {
 }
 /** Bu tarayıcıdaki bütün kayıtları siler: veri, tarayıcıdaki değişiklik geçmişi, günlük kopyalar, yükleme öncesi kopya,
  *  eşitleme izi (hepsi KAYIT_ANAHTARI ile başlar). Sayfadaki veri boşalır; bu oturumda tarayıcıya bir daha yazılmaz,
- *  değişiklik geçmişine kayıt düşülmez. Erişimi kaldırılan claude.ai hesabı için (veri/bulut.svelte.ts). */
+ *  değişiklik geçmişine kayıt düşülmez. Erişimi kaldırılan hesap için (veri/bulut.svelte.ts). */
 export function yerelVerileriSil() {
   yerelKayitKapali = true;
   clearTimeout(kayitZamanlayici);

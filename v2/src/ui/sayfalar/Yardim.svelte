@@ -73,8 +73,8 @@
         "Yanlış bir değişikliği Ctrl+Z (telefonda üstteki geri ok) ile geri alın; onay bir geri alma noktasıdır.",
         'Haftada bir "Yedek al". Yedek, verilerinizin elinizdeki bağımsız kopyasıdır; başka bilgisayara da onunla taşınır.',
         'Yanlış yedek yüklediyseniz ya da tüm verileri yanlışlıkla sildiyseniz Ayarlar > Genel > "Önceki verilere dön".',
-        'Ayarlar > Geçmiş: kimin ne zaman neyi değiştirdiği listelenir. claude.ai\'de kişi girişten gelir ve kayıtlar sunucuda, bütün sorumlular için aynıdır (claude.ai dışında "Bu cihazda değişiklik yapan" alanına adınızı yazın). Aynı yerde son 7 günün otomatik kopyaları vardır: bir önceki günün hâline dönebilirsiniz.',
-        "Birden çok sorumlu: sayfanın sahibi claude.ai'deki Paylaş menüsünden sorumluları ekler: Contributor sorumlu (çizelge, izin, puantaj, listeler, notlar), Editor baş sorumlu (ayrıca personel, ayarlar, servis listesi, yedekten yükleme); kurum dışından e-postayla davette Editor gerekir. Farklı bölümlerde (ör. farklı aylarda) yapılan değişiklikler kendiliğinden birleşir; aynı bölümü iki kişi aynı anda değiştirirse hangisinin kalacağı sorulur. Aynı ekranda başka bir sorumlu varsa üstte belirtilir.",
+        'Ayarlar > Geçmiş: kimin ne zaman neyi değiştirdiği listelenir. Ortak klasör kipinde kişi kullanıcı adı ve şifreyle girişten gelir ve kayıtlar ortak klasörde, bütün sorumlular için aynıdır (tek bilgisayarda "Bu cihazda değişiklik yapan" alanına adınızı yazın). Aynı yerde son 7 günün otomatik kopyaları vardır: bir önceki günün hâline dönebilirsiniz.',
+        "Birden çok sorumlu aynı anda çalışınca farklı bölümlerde (ör. farklı aylarda) yapılan değişiklikler kendiliğinden birleşir; aynı bölümü iki kişi aynı anda değiştirirse hangisinin kalacağı sorulur. Aynı ekranda başka bir sorumlu varsa üstte belirtilir.",
       ],
     },
   ];

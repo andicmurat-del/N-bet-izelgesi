@@ -1,4 +1,4 @@
-// Sunucudaki günlük kopyalar: günün ilk sunucu yazımından önce sunucudaki verinin o anki hâli (yani bir önceki günün
+// Ortak klasördeki günlük kopyalar: günün ilk yazımından önce klasördeki verinin o anki hâli (yani bir önceki günün
 // sonu) "kopyalar/<gün>" altına saklanır; son KOPYA_GUN gün tutulur. Bütün sorumlular görür ve bir kopyaya dönebilir
 // (dönüş de bir değişikliktir, geçmişe yazılır). Tarayıcıdaki günlük kopyalardan farkı: cihaz değişse, tarayıcı verisi
 // silinse de durur.
@@ -25,7 +25,7 @@ export const gunAnahtari = (t: Date) =>
   `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
 
 let alinanGun = "";
-/** bugünün kopyası yoksa p'yi (sunucudaki, yazımdan önceki hâl) saklar; eski kopyaları siler. kim: claude.ai kimliği */
+/** bugünün kopyası yoksa p'yi (sunucudaki, yazımdan önceki hâl) saklar; eski kopyaları siler. kim: kopyayı alanın kimliği */
 export async function gunlukSunucuKopyasi(db: KopyaDb, p: Parcalar, kim: string | null, simdi = new Date()): Promise<void> {
   const gun = gunAnahtari(simdi);
   if (alinanGun === gun) return;

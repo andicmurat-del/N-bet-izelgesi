@@ -1,5 +1,5 @@
-// claude.ai "db" yeteneğinin bellekte çalışan sahtesi (testler için): belgeler, koleksiyonlar, where / orderBy / limit,
-// belge dinleme. Kurallar (yetki) uygulanmaz; onlar platformun işidir.
+// Kayıt yeteneğinin (veri/klasor/belgeler.ts ile aynı arayüz) bellekte çalışan sahtesi (testler için): belgeler,
+// koleksiyonlar, where / orderBy / limit, belge dinleme. Kurallar (yetki) uygulanmaz; onlar belgeler.ts'in işidir.
 export function sahteDb() {
   const belgeler = new Map();
   const dinleyiciler = new Map();

@@ -7,7 +7,7 @@ import type { Veri } from "./tipler";
 /** aya göre tutulan bölümler: anahtarları "yil-ay" */
 const AY_BOLUMLERI = ["schedules", "puantaj", "acil", "acilElle", "oglen", "servisKayit", "notlar"] as const;
 /** yönetim bölümleri: personel, ayarlar, kurum, servis listesi ayarları. Sunucuda ayrı belgede ("nobet/yonetim") durur;
- *  veritabanı kuralı gereği yalnız sahip ve Editor (baş sorumlu) yazar */
+ *  yalnız sahip ve baş sorumlu yazar (öteki bilgisayarlar imzayı denetler) */
 export const YONETIM_BOLUMLERI = ["staff", "settings", "kurum", "servisAyar"] as const;
 /** bir belgenin metni en çok bu kadar olabilir (sunucu sınırı 256 KiB; kaçış karakterleri ve zarf için pay bırakılır) */
 export const BELGE_SINIRI = 200 * 1024;

@@ -66,28 +66,16 @@
     return (SAYFALAR.find(s => s.ad === h)?.ad ?? "gunluk") as SayfaAdi;
   };
   let sayfa = $state<SayfaAdi>(hashOku());
-  // verilerin durduğu yer: sunucuya eşitleniyorsa söylenir, yoksa yalnız bu bilgisayar
-  const SAKLAMA: Record<typeof bulut.durum, string> = klasorKipi
-    ? {
-        bekliyor: "Ortak klasöre bağlanıyor…",
-        kapali: "Ortak klasöre bağlanılamadı",
-        esit: "Veriler ortak klasöre kaydedildi",
-        gonderiliyor: "Ortak klasöre kaydediliyor…",
-        hata: "Ortak klasöre kaydedilemedi",
-        cakisma: "Ortak klasörle eşitleme bekliyor",
-        yetkisiz: "Ortak klasöre erişim yok",
-      }
-    : {
-        bekliyor: "Veriler bu bilgisayarda saklanır",
-        kapali: "Veriler bu bilgisayarda saklanır",
-        esit: "Veriler sunucuya kaydedildi",
-        gonderiliyor: "Sunucuya kaydediliyor…",
-        hata: "Sunucuya kaydedilemedi (veriler bu bilgisayarda)",
-        cakisma: "Sunucuyla eşitleme bekliyor",
-        yetkisiz: "Sunucudaki verilere erişim yetkiniz yok (veriler bu bilgisayarda)",
-      };
-  /** verilerin ortak tutulduğu yer (iletilerde) */
-  const YER = klasorKipi ? "ortak klasördeki" : "sunucudaki";
+  // verilerin durduğu yer: ortak klasör kipinde eşitlemenin durumu, yoksa yalnız bu bilgisayar
+  const SAKLAMA: Record<typeof bulut.durum, string> = {
+    bekliyor: "Ortak klasöre bağlanıyor…",
+    kapali: "Ortak klasöre bağlanılamadı",
+    esit: "Veriler ortak klasöre kaydedildi",
+    gonderiliyor: "Ortak klasöre kaydediliyor…",
+    hata: "Ortak klasöre kaydedilemedi",
+    cakisma: "Ortak klasörle eşitleme bekliyor",
+    yetkisiz: "Ortak klasöre erişim yok",
+  };
   // tarayıcıdan aktarılan şifresiz veri, ortak klasöre yazılınca tarayıcıdan silinir
   $effect(() => {
     if (klasorKipi && bulut.durum === "esit") void aktarimiTamamla();
@@ -122,8 +110,8 @@
       d => d.konum && d.konum.sayfa === sayfa && d.konum.alt === altGorunum && d.konum.ay === ayK && sayfa !== "ayarlar",
     ),
   );
-  // resmi tatiller: seçilen yıl ilk kez açılınca kendiliğinden işaretlenir. Sunucuyla eşitleme belli olduktan sonra
-  // (sunucudaki veri gelmeden yerel veri değişip iki cihaz arasında gereksiz çakışma çıkmasın)
+  // resmi tatiller: seçilen yıl ilk kez açılınca kendiliğinden işaretlenir. Ortak klasörle eşitleme belli olduktan sonra
+  // (klasördeki veri gelmeden yerel veri değişip iki bilgisayar arasında gereksiz çakışma çıkmasın)
   $effect(() => {
     const y = depo.yil,
       d = bulut.durum;
@@ -206,7 +194,9 @@
         {/if}{#if oda.digerleri.length}<span title="Bu sayfayı şu an açmış öteki kişiler"
             >Şu an açık: {oda.digerleri.map(d => kisiAdi(d.id)).join(", ")}</span
           > ·
-        {/if}<span role="status">{SAKLAMA[bulut.durum]}</span> · <button class="serit-baglanti" onclick={yedekAl}>Yedek al</button> ·
+        {/if}<span role="status">{klasorKipi ? SAKLAMA[bulut.durum] : "Veriler bu bilgisayarda saklanır"}</span> ·
+        <button class="serit-baglanti" onclick={yedekAl}>Yedek al</button>
+        ·
         <button
           class="serit-baglanti"
           onclick={() => {
@@ -261,7 +251,7 @@
       <div class="kayit-sorunu esitleme kutu hata" role="alert">
         <Ikon ad="uyari" />
         <div>
-          <b>Bu cihazdaki veriler ile {YER} veriler farklı.</b>
+          <b>Bu cihazdaki veriler ile ortak klasördeki veriler farklı.</b>
           {#if bulut.catisan.length}
             <p>
               Siz ve başka bir sorumlu (ya da başka bir cihaz) aynı bölümü değiştirdiniz: <b>{bulut.catisan.join(", ")}</b>. Öteki
@@ -276,18 +266,10 @@
           {/if}
           <div class="dugmeler">
             <button class="dugme" onclick={() => cakismayiCoz("sunucu")}
-              >{bulut.catisan.length
-                ? `Bu bölümlerde ${klasorKipi ? "klasördekini" : "sunucudakini"} al`
-                : klasorKipi
-                  ? "Klasördekini al"
-                  : "Sunucudakini al"}</button
+              >{bulut.catisan.length ? "Bu bölümlerde klasördekini al" : "Klasördekini al"}</button
             >
             <button class="dugme" onclick={() => cakismayiCoz("cihaz")}
-              >{bulut.catisan.length
-                ? "Bu bölümlerde bu cihazdakini yaz"
-                : klasorKipi
-                  ? "Bu cihazdakini klasöre yaz"
-                  : "Bu cihazdakini sunucuya yaz"}</button
+              >{bulut.catisan.length ? "Bu bölümlerde bu cihazdakini yaz" : "Bu cihazdakini klasöre yaz"}</button
             >
             <button class="dugme sade" onclick={yedekAl}><Ikon ad="indir" />Yedek al</button>
           </div>
@@ -299,13 +281,7 @@
       </div>
     {:else if bulut.durum === "yetkisiz"}
       <div class="kayit-sorunu kutu hata" role="alert">
-        <Ikon ad="uyari" /><span
-          >{#if klasorKipi}Ortak klasördeki verilere erişim kapandı; oturum kapatılıyor.{:else if bulut.yerelSilindi}Bu claude.ai hesabının
-            bu sayfadaki verilere erişimi yok ya da kaldırıldı; bu tarayıcıdaki kopya da silindi. Erişim gerekiyorsa sayfanın sahibinden
-            sizi paylaşımda yeniden sorumlu olarak eklemesini isteyin.{:else}Bu claude.ai hesabının sunucudaki ortak verilere erişim yetkisi
-            yok; burada yaptığınız değişiklikler yalnız bu tarayıcıda kalır. Sayfanın sahibinden sizi paylaşımda sorumlu olarak eklemesini
-            isteyin (Ayarlar > Geçmiş > Kullanıcılar ve yetki).{/if}</span
-        >
+        <Ikon ad="uyari" /><span>Ortak klasördeki verilere erişim kapandı; oturum kapatılıyor.</span>
       </div>
     {/if}
     {#if bulut.bilgi}

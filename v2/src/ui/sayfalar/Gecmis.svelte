@@ -1,7 +1,7 @@
 <script lang="ts">
   // Ayarlar > Geçmiş: kullanıcılar ve yetki, değişiklik geçmişi (ne zaman, kim, ne değişti) ve günlük otomatik kopyalar.
-  // claude.ai'de açılınca geçmiş ve kopyalar sunucudadır (bütün sorumlular, kimlik claude.ai girişinden); değilse yalnız bu
-  // tarayıcıdadır.
+  // Ortak klasör kipinde geçmiş ve kopyalar ortak klasördedir (bütün sorumlular, kişi kullanıcı adı ve şifreyle girişten);
+  // değilse yalnız bu tarayıcıdadır.
   import { onMount } from "svelte";
   import {
     gunluk,
@@ -12,11 +12,10 @@
     KOPYA_GUN,
     type KayitTuru,
   } from "../../veri/depo.svelte";
-  import { kimlik, kisiAdi, adlariCoz, ROL_ADI, yonetimYetkisi, YONETIM_UYARISI } from "../../veri/kimlik.svelte";
+  import { kimlik, kisiAdi, adlariCoz, yonetimYetkisi, YONETIM_UYARISI } from "../../veri/kimlik.svelte";
   import { sunucuGecmis, sunucuGecmisiYukle } from "../../veri/sunucuGecmis.svelte";
   import { sunucuKopyaListesi, sunucuKopyasinaDon } from "../../veri/bulut.svelte";
   import { SUNUCU_KOPYA_GUN, type SunucuKopyasi } from "../../veri/sunucuKopya";
-  import { oda } from "../../veri/oda.svelte";
   import Ikon from "../ortak/Ikon.svelte";
   import Kullanicilar from "../klasor/Kullanicilar.svelte";
   import { klasorKipi, klasorKipiKullanilabilir, klasorKipiniAyarla } from "../../veri/saklama";
@@ -30,9 +29,8 @@
   let ad = $state(gunluk.kullanici);
   let ara = $state("");
   let gosterilen = $state(100);
-  // kaynak: sunucu (bütün sorumlular) ya da bu tarayıcı
-  let kaynak = $state<"sunucu" | "yerel">(sunucuGecmis.acik ? "sunucu" : "yerel");
-  const sunucuda = $derived(kaynak === "sunucu" && sunucuGecmis.acik);
+  // kaynak: ortak klasör (bütün sorumlular; ortak klasör kipinde) ya da bu tarayıcı
+  const sunucuda = $derived(sunucuGecmis.acik);
   type Satir = { z: number; kim: string; t: string[]; tur?: KayitTuru };
   const hepsi = $derived<Satir[]>(
     sunucuda
@@ -42,7 +40,7 @@
   const kayitlar = $derived(
     hepsi.filter(k => !ara.trim() || [k.kim, ...k.t].some(x => x.toLocaleLowerCase("tr").includes(ara.trim().toLocaleLowerCase("tr")))),
   );
-  // ekrandaki kişilerin adları claude.ai'den çözülür
+  // ekrandaki kişilerin adları kasadan çözülür
   $effect(() => {
     void adlariCoz(sunucuGecmis.kayit.map(k => k.kim));
   });
@@ -76,7 +74,7 @@
   async function sunucuKopyayaDon(gun: string) {
     soru = null;
     durum = (await sunucuKopyasinaDon(gun).catch(() => false))
-      ? `Sunucudaki ${gun} kopyasına dönüldü; değişiklik sunucuya yazılır ve geçmişe girer. Önceki hâl için Ayarlar > Genel > "Önceki verilere dön".`
+      ? `Ortak klasördeki ${gun} kopyasına dönüldü; değişiklik ortak klasöre yazılır ve geçmişe girer. Önceki hâl için Ayarlar > Genel > "Önceki verilere dön".`
       : "Kopya okunamadı.";
   }
 </script>
@@ -84,37 +82,6 @@
 <div class="duzen">
   {#if klasorKipi}
     <div class="klasor-yan"><Kullanicilar /></div>
-  {:else if kimlik.var}
-    <section class="kart panel-blok kullanicilar">
-      <h2>Kullanıcılar ve yetki</h2>
-      <p>
-        Giriş yapan: <b>{kimlik.ad || "Adı görünmeyen kullanıcı"}</b> · {kimlik.rol ? ROL_ADI[kimlik.rol] : ""}{#if oda.digerleri.length}
-          · Şu an açık: {oda.digerleri.map(d => kisiAdi(d.id)).join(", ")}{/if}
-      </p>
-      <p class="aciklama">
-        Program yalnız sorumlularla paylaşılır; giriş ve kimlik doğrulamayı claude.ai yapar. Yetki, sayfanın claude.ai'deki paylaşım
-        düzeyinden gelir ve sunucuda uygulanır:
-      </p>
-      <ul class="roller">
-        <li><b>Sorumlu (Contributor):</b> çizelge, izin, puantaj, acil / öğlen / onay listeleri, gün notları.</li>
-        <li>
-          <b>Baş sorumlu (Editor):</b> ayrıca personel, ayarlar, kurum bilgileri, servis listesi; yedekten yükleme ve kopyaya dönme. Programın
-          yeni sürümünü de yayımlayabilir.
-        </li>
-        <li><b>Sahip:</b> hepsi; tüm verileri silme yalnız sahipte.</li>
-        <li><b>Viewer / Commenter:</b> verilere erişemez.</li>
-      </ul>
-      {#if kimlik.rol === "sahip"}
-        <p class="aciklama">
-          Sorumlu eklemek için claude.ai'de bu sayfanın <b>Paylaş</b> menüsünden kişiyi ekleyin: kurumunuzun (Team / Enterprise) üyesiyse
-          <b>Contributor</b> (sorumlu) ya da <b>Editor</b> (baş sorumlu) verin; kurum dışından e-postayla davet ediyorsanız veri yazabilmesi
-          için
-          <b>Editor</b> gerekir. Editor programın yeni sürümünü de yayımlayabildiğinden (kuralları değiştirebilir) yalnız güvendiğiniz kişiye
-          verin. Görevden ayrılanı paylaşımdan çıkarın ya da Viewer yapın: sunucudaki verilere erişimi hemen kesilir; sayfa o an açıksa ya da
-          sonra açarsa kendi tarayıcısındaki kopya da silinir. Geçmişteki kayıtları silinmez. Tüm verileri silme yalnız sizde.
-        </p>
-      {/if}
-    </section>
   {:else if klasorKipiKullanilabilir()}
     <section class="kart panel-blok kullanicilar">
       <h2>Birden çok sorumlu: ortak klasör</h2>
@@ -139,21 +106,11 @@
     <h2>Değişiklik geçmişi</h2>
     {#if sunucuGecmis.acik}
       <p class="aciklama">
-        {#if klasorKipi}Her değişiklikte neyin değiştiği, ne zaman ve kimin yaptığı yazılır. Kişi kullanıcı adı ve şifreyle girişten gelir;
-          her kayıt yazanın anahtarıyla imzalıdır: başkası adına kayıt yazılamaz, değiştirilen kayıt kullanılmaz. Bütün sorumluların
-          kayıtları ortak klasörde, her bilgisayarda aynıdır.{:else}Her değişiklikte neyin değiştiği, ne zaman ve kimin yaptığı yazılır.
-          Kişi claude.ai girişinden gelir; herkes yalnız kendi kaydını yazabilir, kimse (sayfanın sahibi dahil) başkasının kaydını
-          değiştiremez ya da silemez. Bütün sorumluların kayıtları sunucuda, her cihazda aynıdır.{/if}
+        Her değişiklikte neyin değiştiği, ne zaman ve kimin yaptığı yazılır. Kişi kullanıcı adı ve şifreyle girişten gelir; her kayıt
+        yazanın anahtarıyla imzalıdır: başkası adına kayıt yazılamaz, değiştirilen kayıt kullanılmaz. Bütün sorumluların kayıtları ortak
+        klasörde, her bilgisayarda aynıdır.
       </p>
       <div class="secim" role="group" aria-label="Geçmişin kaynağı">
-        {#if !klasorKipi}
-          <button class="dugme kucuk" class:ana={kaynak === "sunucu"} aria-pressed={kaynak === "sunucu"} onclick={() => (kaynak = "sunucu")}
-            >Bütün sorumlular (sunucu)</button
-          >
-          <button class="dugme kucuk" class:ana={kaynak === "yerel"} aria-pressed={kaynak === "yerel"} onclick={() => (kaynak = "yerel")}
-            >Bu tarayıcı</button
-          >
-        {/if}
         {#if sunucuda}<button
             class="dugme kucuk sade"
             onclick={() => sunucuGecmisiYukle(sunucuGecmis.tumu)}
@@ -164,7 +121,7 @@
     {:else}
       <p class="aciklama">
         Her kayıtta neyin değiştiği, ne zaman ve bu cihazda kimin yaptığı yazılır (son 500 kayıt, yalnız bu tarayıcıda). Geri alma, yedekten
-        yükleme ve başka cihazdan gelen veriler ayrıca belirtilir. Sayfa claude.ai'de açılınca geçmiş, giriş yapan kişiyle birlikte sunucuda
+        yükleme ve başka cihazdan gelen veriler ayrıca belirtilir. Ortak klasör kipinde geçmiş, giriş yapan kişiyle birlikte ortak klasörde
         tutulur.
       </p>
     {/if}
@@ -185,7 +142,7 @@
       >
     </div>
     {#if sunucuda && sunucuGecmis.yukleniyor && !kayitlar.length}
-      <p class="bos">{klasorKipi ? "Ortak klasörden" : "Sunucudan"} okunuyor…</p>
+      <p class="bos">Ortak klasörden okunuyor…</p>
     {:else if !kayitlar.length}
       <p class="bos">{hepsi.length ? "Aramaya uyan kayıt yok." : "Henüz kayıtlı değişiklik yok."}</p>
     {:else}
@@ -213,7 +170,7 @@
     {#if !sunucuda && gunluk.kayit.length}
       {#if soru === "temizle"}
         <div class="bant hata" role="alert">
-          Bu tarayıcıdaki geçmiş silinsin mi? Veriler{sunucuGecmis.acik ? " ve sunucudaki geçmiş" : ""} değişmez, yalnız bu liste silinir.
+          Bu tarayıcıdaki geçmiş silinsin mi? Veriler değişmez, yalnız bu liste silinir.
           <button
             class="dugme kucuk tehlike"
             onclick={() => {
@@ -224,9 +181,7 @@
           <button class="dugme kucuk" onclick={() => (soru = null)}>Vazgeç</button>
         </div>
       {:else}
-        <button class="dugme sade tehlike" onclick={() => (soru = "temizle")}
-          ><Ikon ad="sil" />{sunucuGecmis.acik ? "Bu tarayıcıdaki geçmişi temizle" : "Geçmişi temizle"}</button
-        >
+        <button class="dugme sade tehlike" onclick={() => (soru = "temizle")}><Ikon ad="sil" />Geçmişi temizle</button>
       {/if}
     {/if}
   </section>
@@ -236,14 +191,13 @@
     <p class="aciklama">
       {#if klasorKipi}Her günün ilk değişikliğinden önce verilerin o anki hâli ortak klasörde saklanır (son {SUNUCU_KOPYA_GUN} gün, bütün sorumlular
         için). Yanlışlıkla toplu silme ya da yanlış yedek yüklemesinden sonra bir önceki güne dönmek için. Ortak klasörün kendisi için yedek klasörü
-        kullanın.{:else}Her günün ilk değişikliğinden önce verilerin o anki hâli saklanır (bu tarayıcıda son {KOPYA_GUN} gün{sunucuGecmis.acik
-          ? "; sunucuda da bütün sorumlular için"
-          : ""}). Yanlışlıkla toplu silme ya da yanlış yedek yüklemesinden sonra bir önceki güne dönmek için. Tarayıcı verisi silinirse
-        bunlar da gider: düzenli olarak "Yedek al" ile dosya yedeği alın.{/if}
+        kullanın.{:else}Her günün ilk değişikliğinden önce verilerin o anki hâli saklanır (bu tarayıcıda son {KOPYA_GUN} gün). Yanlışlıkla toplu
+        silme ya da yanlış yedek yüklemesinden sonra bir önceki güne dönmek için. Tarayıcı verisi silinirse bunlar da gider: düzenli olarak "Yedek
+        al" ile dosya yedeği alın.{/if}
     </p>
     {#if durum}<p class="bant tamam" role="status">{durum}</p>{/if}
     {#if sunucuGecmis.acik}
-      <h3>{klasorKipi ? "Ortak klasörde" : "Sunucuda"} (bütün sorumlular, son {SUNUCU_KOPYA_GUN} gün)</h3>
+      <h3>Ortak klasörde (bütün sorumlular, son {SUNUCU_KOPYA_GUN} gün)</h3>
       {#if !sunucuKopyalari.length}
         <p class="bos">Henüz kopya yok; günün ilk değişikliğinde alınır.</p>
       {:else}
@@ -273,7 +227,6 @@
           {/each}
         </ul>
       {/if}
-      {#if !klasorKipi}<h3>Bu tarayıcıda</h3>{/if}
     {/if}
     {#if klasorKipi}
       <!-- ortak klasör kipinde bu bilgisayarda kopya tutulmaz -->
@@ -307,13 +260,6 @@
 </div>
 
 <style>
-  .roller {
-    margin: 0;
-    padding-left: 1.2em;
-    font-size: var(--f-sm);
-    display: grid;
-    gap: 2px;
-  }
   .duzen {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
